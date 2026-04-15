@@ -12,14 +12,13 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, section: "MAIN" },
-  { href: "/workbench", label: "Workbench", icon: ClipboardList, section: "MAIN", badge: "New" },
+  { href: "/intelligence", label: "Intelligence Hub", icon: BookOpen, section: "MAIN", badge: "New" },
   { href: "/search", label: "Code Search", icon: Search, section: "MAIN" },
   { href: "/chat", label: "Team Chat", icon: MessageSquare, section: "MAIN" },
   { href: "/compliance", label: "Compliance", icon: Shield, section: "ADMIN", badge: "Lock" },
   { href: "/analytics", label: "Analytics", icon: BarChart2, section: "MAIN" },
-  { href: "/guidelines", label: "Knowledge Center", icon: FileText, section: "MAIN", badge: "Live" },
-  { href: "/payers", label: "Payer Directory", icon: Building2, section: "TOOLS", badge: "USA" },
-  { href: "/workspace", label: "AI Workspace", icon: Bookmark, section: "MAIN" },
+  { href: "/workspace", label: "AI Op Note Coder", icon: Bookmark, section: "MAIN" },
+
   { href: "/ncci", label: "NCCI Checker", icon: Shield, section: "TOOLS" },
   { href: "/coverage", label: "Coverage Policies", icon: FileText, section: "TOOLS" },
   { href: "/rvu", label: "RVU Calculator", icon: Calculator, section: "TOOLS" },

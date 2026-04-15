@@ -14,13 +14,14 @@ import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { Settings } from "@/pages/Settings";
 import { Compliance } from "@/pages/Compliance";
-import { PayerIntelligence } from "@/pages/PayerIntelligence";
+import { IntelligenceHub } from "@/pages/IntelligenceHub";
+
 
 import { Login } from "@/pages/Login";
 import { Signup } from "@/pages/Signup";
 import { Home } from "@/pages/Home";
 import { Workspace } from "@/pages/Workspace";
-import { KnowledgeCenter } from "@/pages/KnowledgeCenter";
+
 import { Landing } from "@/pages/Landing";
 import { CodeIntel } from "@/pages/CodeIntel";
 import { Search } from "@/pages/Search";
@@ -158,14 +159,14 @@ function Router() {
                   <Route path="/search">
                     {() => <PageTransition><Search /></PageTransition>}
                   </Route>
-                  <Route path="/analytics">
-                    {() => <PageTransition><Analytics /></PageTransition>}
+                  <Route path="/intelligence">
+                    {() => <PageTransition><IntelligenceHub /></PageTransition>}
                   </Route>
                   <Route path="/guidelines">
-                    {() => <PageTransition><KnowledgeCenter /></PageTransition>}
+                    {() => <Redirect to="/intelligence" />}
                   </Route>
                   <Route path="/payers">
-                    {() => <PageTransition><PayerIntelligence /></PageTransition>}
+                    {() => <Redirect to="/intelligence" />}
                   </Route>
                   <Route path="/favorites">
                     {() => <PageTransition><Favorites /></PageTransition>}

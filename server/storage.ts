@@ -65,22 +65,21 @@ export class DatabaseStorage implements IStorage {
       const normalizedQuery = icdNormalized.toUpperCase();
       const isCodeLike = /^[A-Z][0-9A-Z.]+$/i.test(query.trim());
 
+      let rows;
       if (isCodeLike) {
-        const rows = await db.select().from(icd10Codes).limit(500);
-        return rows
-          .filter(r => String(r.code || "").toUpperCase().replace(/\./g, "").includes(normalizedQuery))
-          .slice(0, 50)
-          .map(r => ({
-            type: "ICD-10-CM",
-            code: formatIcd10Code(r.code),
-            description: r.description,
-            version: r.type || "2026"
-          }));
+        // Search by code prefix or normalized match
+        rows = await db.select().from(icd10Codes)
+          .where(or(
+            ilike(icd10Codes.code, `%${normalizedQuery}%`),
+            sql`replace(upper(${icd10Codes.code}), '.', '') ilike ${`%${normalizedQuery}%`}`
+          ))
+          .limit(50);
+      } else {
+        // Search by description
+        rows = await db.select().from(icd10Codes)
+          .where(ilike(icd10Codes.description, searchPattern))
+          .limit(50);
       }
-
-      const rows = await db.select().from(icd10Codes)
-        .where(ilike(icd10Codes.description, searchPattern))
-        .limit(50);
 
       return rows.map(r => ({
         type: "ICD-10-CM",

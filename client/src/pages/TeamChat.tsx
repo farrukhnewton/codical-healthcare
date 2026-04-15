@@ -15,6 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { UserPlus, ChevronLeft, MessageSquare } from 'lucide-react';
 import { FriendsManager } from '@/components/chat/FriendsManager';
 import { Badge } from '@/components/ui/badge';
+import { NewConversationModal } from "./NewConversation";
 
 export function TeamChat() {
   const { user, loading: authLoading } = useAuth();

@@ -1107,6 +1107,25 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
     }
   });
 
+  // Toggle user role (for testing/demo purposes)
+  app.patch("/api/user/role", async (req, res) => {
+    try {
+      const { userId, role } = req.body;
+      if (!userId || !role) return res.status(400).json({ message: "userId and role are required" });
+      
+      const [updatedUser] = await db.update(users)
+        .set({ role })
+        .where(eq(users.id, parseInt(userId)))
+        .returning();
+        
+      if (!updatedUser) return res.status(404).json({ message: "User not found" });
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update role" });
+    }
+  });
+
   // Search users for friend discovery
   app.get("/api/chat/users/search", async (req, res) => {
     try {

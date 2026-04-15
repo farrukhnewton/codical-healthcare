@@ -4,11 +4,16 @@ import { User, Mail, Shield, Moon, Sun, LogOut, Bell, Palette } from "lucide-rea
 import { supabase } from "@/lib/supabase";
 import { useTheme } from "@/lib/theme";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { queryClient } from "@/lib/queryClient";
+
 
 export function Settings() {
   const [email, setEmail] = useState("");
   const { theme, toggle } = useTheme();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -19,6 +24,30 @@ export function Settings() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({ title: "Signed out", description: "See you next time!" });
+  };
+
+  const toggleAdminMode = async () => {
+    if (!user) return;
+    const newRole = isAdmin ? 'coder' : 'admin';
+    try {
+      const res = await fetch("/api/user/role", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, role: newRole })
+      });
+      
+      if (!res.ok) throw new Error("Failed to update role");
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ 
+        title: isAdmin ? "Admin Mode Disabled" : "Admin Mode Enabled", 
+        description: isAdmin ? "Compliance features hidden." : "Access to Compliance and Audit logs unlocked." 
+      });
+      // Force refresh for simplicity in this demo environment
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      toast({ title: "Error", description: "Could not toggle admin mode", variant: "destructive" });
+    }
   };
 
   return (
@@ -64,14 +93,23 @@ export function Settings() {
       {/* Security */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
         className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)" }}>
-        <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-500" /> Security</h2>
+        <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-500" /> Administrative Access</h2>
         <div className="space-y-3">
           <div className="flex items-center justify-between py-2">
             <div>
-              <p className="font-semibold text-gray-900 text-sm">Two-Factor Auth</p>
-              <p className="text-xs text-gray-500">Add an extra layer of security</p>
+              <p className="font-semibold text-gray-900 text-sm">Developer Admin Mode</p>
+              <p className="text-xs text-gray-500">Toggle Compliance and Audit features</p>
             </div>
-            <span className="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg">Coming Soon</span>
+            <button 
+              onClick={toggleAdminMode}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                isAdmin 
+                  ? "bg-emerald-100 text-emerald-700 border border-emerald-200" 
+                  : "bg-gray-100 text-gray-700 border border-gray-200"
+              }`}
+            >
+              {isAdmin ? "Admin Enabled" : "Enable Admin"}
+            </button>
           </div>
           <div className="border-t border-gray-100 pt-3">
             <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors">
