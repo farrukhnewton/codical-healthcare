@@ -1,5 +1,4 @@
-import GoogleChat from './pages/GoogleChat';
-import EnterpriseDashboard from './pages/EnterpriseDashboard';
+
 import { Switch, Route, Redirect } from "wouter";
 import { useState, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
@@ -26,10 +25,10 @@ import { Landing } from "@/pages/Landing";
 import { CodeIntel } from "@/pages/CodeIntel";
 import { Search } from "@/pages/Search";
 import { Favorites } from "@/pages/Favorites";
-import { Guidelines } from "@/pages/Guidelines";
+
 import { Analytics } from "@/pages/Analytics";
 import { Reports } from "@/pages/Reports";
-import { Coverage } from "@/pages/Coverage";
+
 import { RvuCalculator } from "@/pages/RvuCalculator";
 import { AnesthesiaCalculator } from "@/pages/AnesthesiaCalculator";
 import { NpiChecker } from "@/pages/NpiChecker";

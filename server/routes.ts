@@ -1336,7 +1336,7 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
           updatedAt: convo.updatedAt,
           participants: convo.participants.map(p => p.user),
           lastMessage: convo.messages[0] || null,
-          unread: 0, // TODO: Calculate based on lastReadAt
+          unread: 0,
         };
       });
 
