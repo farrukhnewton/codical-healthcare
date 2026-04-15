@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import {
   Search, Brain, Shield, Activity, BookOpen, Pill,
   User, FileText, TrendingUp, Clock, ArrowRight,
-  Zap, Hash, ChevronRight, BarChart2
+  Zap, Hash, ChevronRight, BarChart2, Building2
 } from "lucide-react";
 import { AreaChart, Area, Tooltip, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from "recharts";
 
