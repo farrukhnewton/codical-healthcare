@@ -1,0 +1,44 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K3:56:27 PM [express] serving on port 5000
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:56:53 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/layout/Footer.tsx, /src/index.css[22m
+3:57:05 PM [express] GET /api/guidelines 200 in 17ms :: [{"code":"A00","guidelineText":"Cholera guidelines: Ensure proper hydration and electrolyte replacement. Monitor for signs of severe dehydration.","version":"2026","date":"2026-03-11T15:57:05.234Z"},{"code":"99213","guidelineText":"Office visit guidelines: Level 3 established patient. Requires 20-29 minutes of total time or low level of medical decision making.","version":"2026","date":"2026-03-11T15:57:05.234Z"},{"code":"A0021","guidelineText":"Ambulance service guidelines: Ensure documentation supports medical necessity for ambulance transport vs other means.","version":"2026","date":"2026-03-11T15:57:05.234Z"}]

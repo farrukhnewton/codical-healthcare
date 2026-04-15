@@ -1,0 +1,115 @@
+
+Title: Codical Health
+Objective:
+ Develop a responsive, enterprise-level web application branded for Codical Health. The app must provide ICD-10-CM, CPT, and HCPCS codes with real-time CMS guidelines, using Codical Health’s logo, color scheme, and tagline. The UI must be professional, smooth, and compliant with healthcare standards.
+
+Branding & Design
+Logo Placement:
+
+
+Top navigation bar (persistent).
+Splash screen (on load).
+Footer (with tagline).
+Color Scheme:
+
+
+Primary: Blue (#0057A8), Orange (#F28C28), Yellow (#FFD700).
+Secondary: White (#FFFFFF), Light Grey (#F5F5F5).
+Usage: Blue for headers, Orange for buttons, Yellow for highlights, Grey for backgrounds.
+Typography:
+
+
+Use Open Sans or Roboto.
+Headings: Bold uppercase.
+Body: Regular weight, high readability.
+Tagline:
+
+
+“Precision in Coding, Power in Revenue” displayed on splash screen and footer.
+
+UI Definition
+Navigation Tabs:
+
+
+ICD-10-CM
+CPT
+HCPCS
+Guidelines
+Favorites
+Search
+Layout:
+
+
+Responsive grid system (desktop, tablet, mobile).
+Split view: left panel (search/filter), right panel (code details + CMS guidelines).
+Collapsible panels for secondary info.
+Interactive Elements:
+
+
+Autocomplete search bar.
+Hover tooltips.
+Bookmark/favorite with animation.
+Accessibility:
+
+
+WCAG 2.1 compliance (contrast ratios, ARIA labels, keyboard navigation).
+
+Smoothness Definition
+Performance:
+
+
+Optimized queries, caching, instant search.
+CMS guideline fetch with skeleton loaders.
+Transitions:
+
+
+Tab switching with 200–300ms fade/slide animations.
+Micro-interactions (hover glow, card expansion).
+Consistency:
+
+
+Unified spacing, typography, and color usage across all tabs.
+Error Handling:
+
+
+Clear fallback messages if CMS API fails.
+Retry option with graceful UI.
+
+Functional Requirements
+CMS Integration:
+
+
+Fetch guidelines via CMS API (latest version).
+Cache results for performance.
+Show version/date of guideline.
+Security:
+
+
+HTTPS enforced.
+Role-based access (admin, coder, auditor).
+No PHI storage.
+Scalability:
+
+
+Modular React components.
+API-first backend (Node.js/Express).
+Database for favorites and audit logs (MongoDB/Postgres).
+Testing:
+
+
+Unit tests for components.
+Integration tests for API.
+UI tests for navigation and search.
+
+Example User Flow
+User opens app → Codical Health splash screen with logo + tagline.
+User navigates tabs (ICD-10-CM, CPT, HCPCS).
+User searches for a code → app displays code details + CMS guideline with version/date.
+User bookmarks code → saved under “Favorites.”
+User checks “Guidelines” tab → sees latest CMS compliance updates.
+If CMS API fails → app shows fallback message + retry option.
+
+Final Prompt Line for Replit
+"Build a responsive Codical Health web app with enterprise-level UI for medical coding assistance. Include tabs for ICD-10-CM, CPT, HCPCS, Guidelines, Favorites, and Search. Each code must display real-time CMS guidelines with version/date. Use Codical Health’s logo, color scheme (blue, orange, yellow, white, grey), and tagline. Ensure smooth transitions (200–300ms), instant search, WCAG accessibility, secure API integration, and modular React components with testing."
+
+

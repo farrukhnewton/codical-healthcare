@@ -1,0 +1,16 @@
+{
+  "name": "Codical Health",
+  "short_name": "Codical",
+  "description": "AI-powered healthcare revenue cycle management platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFDF7",
+  "theme_color": "#15803D",
+  "icons": [
+    {
+      "src": "/logo-bars.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

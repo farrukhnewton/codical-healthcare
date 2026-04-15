@@ -1,0 +1,170 @@
+Problem Statement:
+ The app currently only shows a very limited set of codes (3–4 each for ICD-10-CM, CPT, and HCPCS). When users search, most valid codes are missing. This makes the app unusable for real medical coding work, since coders need access to the entire official code sets.
+Root Cause (Likely):
+The app is using a small hardcoded sample dataset instead of the full ICD-10-CM, CPT, and HCPCS databases.
+Search functionality is limited to those few stored codes.
+No integration with official CMS/AMA datasets or bulk imports.
+
+Required Fix
+1. Data Source Update
+Replace the small sample with the complete official datasets:
+ICD-10-CM (Diagnosis Codes)
+
+
+Official source: CDC ICD-10-CM Code Sets
+https://www.cdc.gov/nchs/icd/icd-10-cm.htm
+Format: CSV, XML, or text files updated annually.
+CPT Codes (Procedural Codes)
+
+
+Official source: American Medical Association (AMA) CPT® Code Set
+https://www.ama-assn.org/practice-management/cpt
+Format: Licensed dataset (must be purchased or accessed via AMA API).
+HCPCS Level II Codes (Supplies & Services)
+
+
+Official source: CMS HCPCS Release & Code Sets
+https://www.cms.gov/medicare/coding/medhcpcsgeninfo
+Format: CSV/MDB files updated quarterly.
+Ensure all codes (tens of thousands) are loaded into the app’s database.
+
+2. Database Schema Design
+Use MongoDB or Postgres with the following schema:
+Table/Collection: icd10_codes
+id (primary key)
+code (string, e.g., "E11.9")
+description (text)
+guideline (text or linked CMS reference)
+version (string, e.g., "2026 ICD-10-CM")
+Table/Collection: cpt_codes
+id (primary key)
+code (string, e.g., "99213")
+description (text)
+guideline (text or linked CMS/AMA reference)
+version (string, e.g., "2026 CPT")
+Table/Collection: hcpcs_codes
+id (primary key)
+code (string, e.g., "A0429")
+description (text)
+guideline (text or linked CMS reference)
+version (string, e.g., "2026 HCPCS")
+Table/Collection: favorites
+id (primary key)
+user_id (string)
+code_type (enum: ICD, CPT, HCPCS)
+code (string)
+timestamp (datetime)
+Table/Collection: guidelines
+id (primary key)
+code (string)
+guideline_text (text)
+source_url (string)
+last_updated (datetime)
+
+3. Seed/Import Script Specification
+Create a Node.js script to automate dataset import:
+// seed.js
+const fs = require('fs');
+const csv = require('csv-parser');
+const { MongoClient } = require('mongodb');
+
+async function importICD10() {
+  const client = await MongoClient.connect('mongodb://localhost:27017');
+  const db = client.db('codical_health');
+  const collection = db.collection('icd10_codes');
+
+  fs.createReadStream('icd10cm.csv')
+    .pipe(csv())
+    .on('data', async (row) => {
+      await collection.insertOne({
+        code: row.Code,
+        description: row.Description,
+        guideline: null,
+        version: '2026 ICD-10-CM'
+      });
+    })
+    .on('end', () => {
+      console.log('ICD-10-CM import complete');
+      client.close();
+    });
+}
+
+importICD10();
+
+Similar scripts should be created for CPT and HCPCS datasets.
+Add indexes: db.icd10_codes.createIndex({ code: 1, description: "text" }) for fast search.
+Run node seed.js after downloading datasets to populate the database.
+
+4. API Endpoint Specifications
+Backend should expose REST endpoints:
+GET /api/search?query=...
+
+
+Searches across ICD-10-CM, CPT, and HCPCS collections.
+Returns array of matching codes with code, description, version, and guideline.
+GET /api/code/:id
+
+
+Returns full details for a single code, including guideline text and source.
+POST /api/favorites
+
+
+Saves a code to user’s favorites.
+GET /api/favorites/:userId
+
+
+Retrieves all favorites for a user.
+GET /api/guidelines/:code
+
+
+Fetches CMS guideline for a specific code.
+
+5. React Frontend Search Component
+// SearchComponent.jsx
+import React, { useState } from 'react';
+
+function SearchComponent() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+
+  const handleSearch = async () => {
+    const response = await fetch(`/api/search?query=${query}`);
+    const data = await response.json();
+    setResults(data);
+  };
+
+  return (
+    <div className="search-container">
+      <input
+        type="text"
+        placeholder="Search ICD-10, CPT, HCPCS..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      <button onClick={handleSearch}>Search</button>
+
+      <div className="results">
+        {results.map((code) => (
+          <div key={code.code} className="code-card">
+            <h3>{code.code}</h3>
+            <p>{code.description}</p>
+            <small>{code.version}</small>
+            {code.guideline && <p className="guideline">{code.guideline}</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default SearchComponent;
+
+
+6. CMS Guidelines Integration
+When a code is selected, fetch and display its CMS guideline dynamically.
+Ensure guidelines are linked to the full dataset, not just the sample codes.
+Show version/date of guideline.
+
+7. Testing & Validation
+Test searches for random ICD-10-CM, CPT, and HCPCS codes to confirm they appear.
+Validate against CMS/AMA official lists to ensure completeness.

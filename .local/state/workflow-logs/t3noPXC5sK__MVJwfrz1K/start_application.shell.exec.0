@@ -1,0 +1,46 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K4:04:26 PM [express] serving on port 5000
+4:04:41 PM [express] GET /api/guidelines/stats 200 in 37ms :: {"ncdCount":0,"lcdCount":0,"lastSync":"2026-03-11T16:04:41.591Z"}
+NCD fetch error: fetch failed
+4:04:41 PM [express] GET /api/guidelines/ncd 502 in 3ms :: {"message":"CMS API error: fetch failed"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:13:33 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Guidelines.tsx, /src/index.css[22m
