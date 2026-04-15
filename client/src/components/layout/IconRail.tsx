@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Search, Bookmark, FileText,
   BarChart2, FileBarChart, Shield, Calculator, Tag,
   Settings, LogOut, Pill, Menu, X, Activity, User, MessageSquare,
-  ClipboardList, Building2
+  ClipboardList, Building2, BookOpen
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
