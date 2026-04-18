@@ -62,7 +62,7 @@
     radial-gradient(900px 900px at 70% 10%, hsla(var(--rose) / 0.06), transparent 55%),
     radial-gradient(900px 900px at 10% 90%, hsla(var(--violet) / 0.06), transparent 55%);
   filter: saturate(1.12) contrast(1.02);
-  animation: auroraMeshDrift 18s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate;
+  animation: auroraMeshDrift 34s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate;
 }
 
 @keyframes auroraMeshDrift {
@@ -189,10 +189,11 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.55;
+  opacity: 0.38;
   pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .landingAurora canvas.dustCanvas { display: none !important; }
 }
+

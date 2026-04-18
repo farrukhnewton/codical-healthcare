@@ -55,7 +55,7 @@ export function AuroraScene() {
       { r: 251, g: 191, b: 36, a: 0.09 }, // amber
     ];
 
-    const count = 170; // calm, lightweight
+    const count = 110; // calm, lightweight
     return Array.from({ length: count }).map((_, i) => {
       const c = palette[i % palette.length];
       return {
@@ -133,7 +133,7 @@ export function AuroraScene() {
       }
 
       // ---- Aurora canvas
-      state.t += 0.0022;
+      state.t += 0.0015;
       ctx.clearRect(0, 0, state.w, state.h);
 
       if (isDark()) {
@@ -189,16 +189,16 @@ export function AuroraScene() {
         const ang = (Math.sin(fx) + Math.cos(fy)) * Math.PI;
 
         // accelerate gently
-        p.vx += Math.cos(ang) * 0.015 * p.s;
-        p.vy += Math.sin(ang) * 0.015 * p.s;
+        p.vx += Math.cos(ang) * 0.010 * p.s;
+        p.vy += Math.sin(ang) * 0.010 * p.s;
 
         // damp
         p.vx *= 0.92;
         p.vy *= 0.92;
 
         // move (in normalized space)
-        p.x += (p.vx / state.w) * 120;
-        p.y += (p.vy / state.h) * 120;
+        p.x += (p.vx / state.w) * 90;
+        p.y += (p.vy / state.h) * 90;
 
         // wrap around
         if (p.x < 0) p.x += 1;
@@ -218,7 +218,7 @@ export function AuroraScene() {
 
       dctx.restore();
 
-      requestAnimationFrame(tick);
+      if (state.running) requestAnimationFrame(tick);
     };
 
     resize();
@@ -229,13 +229,32 @@ export function AuroraScene() {
     }
 
     if (!reduceMotion) {
+      const onVis = () => {
+        const visible = document.visibilityState !== "hidden";
+        if (!visible) {
+          state.running = false;
+          return;
+        }
+        if (visible && !state.running) {
+          state.running = true;
+          requestAnimationFrame(tick);
+        }
+      };
+
+      document.addEventListener("visibilitychange", onVis);
+
       requestAnimationFrame(tick);
+
+      // cleanup hook
+      (state as any).__lnOnVis = onVis;
     }
 
     return () => {
       state.running = false;
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onPointerMove);
+      const onVis = (state as any).__lnOnVis as ((() => void) | undefined);
+      if (onVis) document.removeEventListener("visibilitychange", onVis);
     };
   }, [blobs, dust]);
 
@@ -252,3 +271,6 @@ export function AuroraScene() {
     </div>
   );
 }
+
+
+
