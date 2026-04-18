@@ -1,58 +1,45 @@
-import { useLocation } from "wouter";
+﻿import { useLocation } from "wouter";
 import { ArrowRight } from "lucide-react";
 
 export function CTASection() {
   const [, setLocation] = useLocation();
 
   return (
-    <section className="py-20 sm:py-32 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div
-          className="rounded-3xl p-10 sm:p-16 text-center relative overflow-hidden"
-          style={{
-            background: "linear-gradient(135deg, #14532D 0%, #0369A1 50%, #7C3AED 100%)",
-          }}
-        >
-          {/* Decorative blobs */}
-          <div
-            className="absolute -top-20 -right-20 w-60 h-60 rounded-full opacity-20"
-            style={{
-              background: "radial-gradient(circle, rgba(74,222,128,0.4), transparent)",
-              filter: "blur(40px)",
-            }}
-          />
-          <div
-            className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full opacity-20"
-            style={{
-              background: "radial-gradient(circle, rgba(56,189,248,0.4), transparent)",
-              filter: "blur(40px)",
-            }}
-          />
+    <section id="cta" className="ln-section">
+      <div className="ln-container">
+        <div className="ln-glassStrong ln-card p-0">
+          <div className="ln-gradBorder ln-ctaSurface">
+            <div className="relative p-10 sm:p-14 text-center">
+              <h2 className="ln-h2">
+                Ready to transform your
+                <br />
+                revenue cycle?
+              </h2>
 
-          <div className="relative z-10">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6 tracking-tight">
-              Ready to Transform Your
-              <br />
-              Revenue Cycle?
-            </h2>
-            <p className="text-lg text-white/80 mb-10 max-w-2xl mx-auto">
-              Join thousands of healthcare professionals using Codical Health to code faster,
-              bill smarter, and recover more revenue.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <button
-                onClick={() => setLocation("/signup")}
-                className="group px-8 py-4 bg-white text-emerald-800 font-bold rounded-2xl text-base hover:scale-105 transition-all duration-300 shadow-xl"
-              >
-                Start Free Trial
-                <ArrowRight className="inline w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button
-                onClick={() => setLocation("/login")}
-                className="px-8 py-4 text-white/90 font-semibold rounded-2xl text-base border-2 border-white/30 hover:bg-white/10 transition-all duration-300"
-              >
-                Schedule Demo
-              </button>
+              <p className="mt-4 mx-auto max-w-[70ch] text-[15px] sm:text-[16px] leading-[1.8] text-[hsl(var(--muted-foreground))]">
+                Codical helps teams code faster, stay compliant, and recover revenue—without a chaotic UI or constant motion.
+              </p>
+
+              <div className="mt-8 flex flex-wrap justify-center gap-10">
+                <button className="ln-btn ln-btnPrimary ln-magnetic" onClick={() => setLocation("/signup")}>
+                  Start free trial <ArrowRight size={18} />
+                </button>
+                <button className="ln-btn ln-btnSecondary ln-magnetic" onClick={() => setLocation("/login")}>
+                  Schedule a demo
+                </button>
+              </div>
+
+              <div className="mt-10 flex flex-wrap justify-center gap-2">
+                <span className="ln-chip">
+                  <span className="ln-chipSub">Security</span> HIPAA-ready
+                </span>
+                <span className="ln-chip">
+                  <span className="ln-chipSub">Compliance</span> NCCI / LCD / NCD signals
+                </span>
+                <span className="ln-chip">
+                  <span className="ln-chipSub">Scale</span> Teams + enterprise options
+                </span>
+              </div>
             </div>
           </div>
         </div>

@@ -1,16 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import {
-  ChevronRight,
-  Menu,
-  X,
-  Moon,
-  Sun,
-  Sparkles,
-  Cpu,
-  Wrench,
-  BadgeDollarSign,
-} from "lucide-react";
+import { ChevronRight, Menu, X, Moon, Sun, Sparkles, Cpu, Wrench, BadgeDollarSign } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 
 export function LandingNavbar() {
@@ -93,20 +83,12 @@ export function LandingNavbar() {
           </button>
 
           {/* Desktop CTAs */}
-          <div className="ln-desktopOnly" style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-            <button
-              className="ln-btn ln-btnSecondary ln-magnetic"
-              onClick={() => setLocation("/login")}
-              style={{ height: 40, paddingInline: 14 }}
-            >
+          <div className="ln-desktopOnly">
+            <button className="ln-btn ln-btnSecondary ln-magnetic" onClick={() => setLocation("/login")}>
               Log in
             </button>
 
-            <button
-              className="ln-btn ln-btnPrimary ln-magnetic"
-              onClick={() => setLocation("/signup")}
-              style={{ height: 40, paddingInline: 14 }}
-            >
+            <button className="ln-btn ln-btnPrimary ln-magnetic" onClick={() => setLocation("/signup")}>
               Start Free Trial <ChevronRight size={16} />
             </button>
           </div>

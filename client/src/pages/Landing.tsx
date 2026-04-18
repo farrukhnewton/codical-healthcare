@@ -2,6 +2,7 @@
 import "@/styles/landing-hero-next.css";
 import "@/styles/landing-nav-next.css";
 import "@/styles/landing-reveal.css";
+import "@/styles/landing-sections-v2.css";
 
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { HeroNext } from "@/components/landing-next/HeroNext";

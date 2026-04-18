@@ -1,32 +1,31 @@
-import { OrganicCard } from "@/components/ui/OrganicCard";
-import { Star } from "lucide-react";
+﻿import { Star, Quote } from "lucide-react";
 
 const TESTIMONIALS = [
   {
     name: "Dr. Sarah Chen",
     role: "Medical Director, Pacific Health Group",
-    text: "Codical Health transformed our coding accuracy from 87% to 99%. The AI suggestions are incredibly precise and save our team hours every day.",
+    text: "Codical Health transformed our coding accuracy. The suggestions are precise, and the compliance cues are clear enough that my team trusts the output.",
     rating: 5,
     impact: "+12% Revenue",
   },
   {
     name: "Marcus Williams",
     role: "CPC, Revenue Cycle Manager",
-    text: "The NCCI checker alone paid for itself in the first month. We caught bundling errors we'd been missing for years. Absolute game-changer.",
+    text: "The NCCI checker alone paid for itself. It catches what matters and doesn’t flood the UI with noise—just the next action.",
     rating: 5,
     impact: "$340K Recovered",
   },
   {
     name: "Jennifer Martinez",
     role: "Billing Supervisor, Metro Clinic",
-    text: "50+ tools in one platform means we cancelled 4 other subscriptions. The AI code suggestions are faster and more accurate than anything else we've tried.",
+    text: "One workspace replaced multiple subscriptions. The UI feels premium and calm, and the speed is exactly what we needed under volume.",
     rating: 5,
-    impact: "3x Productivity",
+    impact: "3× Productivity",
   },
   {
     name: "Dr. Robert Kim",
     role: "Orthopedic Surgeon",
-    text: "As a physician, I need coding to be fast and accurate. Codical gives me confidence that every claim is optimized without compliance risk.",
+    text: "I need coding to be fast and accurate. Codical gives me confidence that every claim is optimized without compliance risk.",
     rating: 5,
     impact: "40% Time Saved",
   },
@@ -34,38 +33,46 @@ const TESTIMONIALS = [
 
 export function TestimonialsSection() {
   return (
-    <section className="py-20 sm:py-32 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-pink-50 border border-pink-200/60 mb-6">
-            <span className="text-sm font-semibold text-pink-700">Trusted by Healthcare Leaders</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-gray-900 mb-6">
-            Real Results from{" "}
-            <span className="text-emerald-600">Real Teams</span>
-          </h2>
-        </div>
+    <section className="ln-section" aria-label="Testimonials">
+      <div className="ln-container">
+        <header className="ln-sectionHead">
+          <div className="ln-pill">Testimonials</div>
+          <h2 className="ln-h2">Real results from real teams.</h2>
+          <p className="ln-sub">Premium workflows earn trust when they’re calm, fast, and explainable.</p>
+        </header>
 
-        <div className="grid sm:grid-cols-2 gap-6 sm:gap-8">
-          {TESTIMONIALS.map((t, i) => (
-            <OrganicCard key={i} className="p-8">
-              <div className="flex gap-1 mb-4">
-                {Array.from({ length: t.rating }).map((_, j) => (
-                  <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <p className="text-gray-700 leading-relaxed mb-6 italic">"{t.text}"</p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-gray-900">{t.name}</div>
-                  <div className="text-sm text-gray-500">{t.role}</div>
+        <div className="grid grid-flow-col auto-cols-[minmax(320px,1fr)] gap-6 overflow-x-auto snap-x snap-mandatory pb-2 ln-scroller">
+          {TESTIMONIALS.map((t) => (
+            <article key={t.name} className="ln-glass ln-card ln-cardHover p-7 snap-start">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex gap-1" aria-label={`${t.rating} out of 5 stars`}>
+                  {Array.from({ length: t.rating }).map((_, i) => (
+                    <Star key={i} size={16} className="fill-[rgba(251,191,36,0.95)] text-[rgba(251,191,36,0.95)]" />
+                  ))}
                 </div>
-                <div className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg">
+
+                <div className="px-3 py-2 rounded-full border border-[rgba(255,255,255,0.34)] bg-[rgba(255,255,255,0.14)] text-[12px] font-black tracking-[-0.01em] text-[hsl(var(--foreground))]">
                   {t.impact}
                 </div>
               </div>
-            </OrganicCard>
+
+              <div className="mt-4 flex items-start gap-3">
+                <div className="mt-1">
+                  <Quote size={18} className="text-[rgba(56,189,248,0.85)]" />
+                </div>
+                <p className="text-[14px] leading-[1.85] text-[hsl(var(--muted-foreground))]">“{t.text}”</p>
+              </div>
+
+              <div className="mt-6">
+                <div className="text-[14px] font-black text-[hsl(var(--foreground))]">{t.name}</div>
+                <div className="text-[12px] font-black tracking-[0.02em] text-[hsl(var(--muted-foreground))]">{t.role}</div>
+              </div>
+            </article>
           ))}
+        </div>
+
+        <div className="mt-10 text-center text-[12px] font-black tracking-[0.14em] uppercase text-[hsl(var(--muted-foreground))]">
+          Designed for clarity: no noisy motion, only intentional emphasis.
         </div>
       </div>
     </section>

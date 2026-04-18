@@ -1,4 +1,4 @@
-import type { Config } from 'tailwindcss';
+﻿import type { Config } from 'tailwindcss';
 
 export default {
   darkMode: ['class'],
@@ -60,6 +60,10 @@ export default {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
+            transitionTimingFunction: {
+        hero: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+
       boxShadow: {
         glass: '0 8px 32px rgba(0,0,0,0.06), 0 0 0 1px rgba(255,255,255,0.5) inset',
         'glass-hover': '0 16px 48px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.8) inset',
@@ -87,3 +91,4 @@ export default {
   },
   plugins: [require('tailwindcss-animate'), require('@tailwindcss/typography')],
 } satisfies Config;
+

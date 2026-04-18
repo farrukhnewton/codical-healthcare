@@ -23,3 +23,7 @@ server/package-lock.json
 client/.env
 client/.env.*
 
+
+# landing polish artifacts
+landing-polish-bundle.txt
+

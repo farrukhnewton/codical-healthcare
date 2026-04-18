@@ -62,7 +62,6 @@
   width: 6px;
   border-radius: 6px;
   transform-origin: bottom;
-  animation: lnBarWave 3.6s cubic-bezier(0.16,1,0.3,1) infinite;
 }
 
 .landingAurora .ln-bar:nth-child(1){ height: 12px; background:#E8541A; animation-delay: 0ms; }
@@ -273,3 +272,27 @@
   height: 42px;
   border-radius: 14px;
 }
+
+/* v2 polish: remove inline styles in LandingNavbar.tsx */
+.landingAurora .ln-desktopOnly{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Make nav CTAs slightly tighter than hero buttons */
+.landingAurora .ln-nav .ln-btn{
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 13px;
+}
+
+
+/* v2: calm motion — animate logo bars only on hover (no perpetual motion) */
+@media (prefers-reduced-motion: no-preference) {
+  .landingAurora .ln-logo:hover .ln-bar {
+    animation: lnBarWave 1.8s cubic-bezier(0.16,1,0.3,1) 1;
+  }
+}
+

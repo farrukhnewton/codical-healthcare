@@ -1,79 +1,80 @@
-import { OrganicCard } from "@/components/ui/OrganicCard";
-import { OrganicIcon } from "@/components/ui/OrganicIcon";
+﻿import { useLocation } from "wouter";
+import { Search, Shield, BookOpen, ArrowRight } from "lucide-react";
 
-const TOOL_CATEGORIES = [
+const CATEGORIES = [
   {
     title: "Medical Coding",
-    emoji: "🏥",
-    variant: "forest" as const,
-    tools: [
-      "ICD-10 Code Search",
-      "CPT Code Lookup",
-      "HCPCS Browser",
-      "AI Code Suggestions",
-      "Code Crosswalks",
-    ],
+    desc: "Fast lookup with relationships, crosswalks, and explainable suggestions.",
+    Icon: Search,
+    accent: "ln-accentMint",
+    chips: ["ICD-10 Search", "CPT Lookup", "HCPCS Browser", "Crosswalks", "AI Suggestions"],
   },
   {
     title: "Compliance & Audit",
-    emoji: "🛡️",
-    variant: "ocean" as const,
-    tools: [
-      "NCCI Edit Checker",
-      "LCD/NCD Lookup",
-      "Modifier Validation",
-      "Audit Risk Scanner",
-      "Denial Prevention",
-    ],
+    desc: "Catch problems only when they matter—then get a clear next action.",
+    Icon: Shield,
+    accent: "ln-accentCyan",
+    chips: ["NCCI Checker", "LCD/NCD Lookup", "Modifier Guidance", "Audit Risk", "Denial Prevention"],
   },
   {
     title: "Clinical Reference",
-    emoji: "📚",
-    variant: "aurora" as const,
-    tools: [
-      "Drug Lookup (NDC)",
-      "NPI Registry",
-      "RVU Calculator",
-      "Fee Schedule Lookup",
-      "Anesthesia Calculator",
-    ],
+    desc: "Reference utilities that live inside the workflow, not in separate tabs.",
+    Icon: BookOpen,
+    accent: "ln-accentLilac",
+    chips: ["Drug Lookup", "NPI Registry", "RVU Calculator", "Fee Schedule", "Anesthesia Calc"],
   },
 ];
 
 export function ToolsSection() {
+  const [, setLocation] = useLocation();
+
   return (
-    <section id="tools" className="py-20 sm:py-32 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200/60 mb-6">
-            <span className="text-sm font-semibold text-emerald-700">50+ Tools</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-gray-900 mb-6">
-            One Platform,{" "}
-            <span className="text-emerald-600">Every Tool</span>
-          </h2>
-          <p className="text-lg text-gray-600 leading-relaxed">
-            Stop switching between apps. Codical Health brings every medical coding and billing tool into one intelligent workspace.
+    <section id="tools" className="ln-section">
+      <div className="ln-container">
+        <header className="ln-sectionHead">
+          <div className="ln-pill">Tools</div>
+          <h2 className="ln-h2">One platform, every tool.</h2>
+          <p className="ln-sub">
+            Stop switching apps. Codical keeps coding, compliance, and reference utilities in one premium workspace.
           </p>
+        </header>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {CATEGORIES.map((c) => (
+            <div key={c.title} className="ln-glass ln-card ln-cardHover p-7">
+              <div className="flex items-start justify-between gap-4">
+                <div className={"ln-stepIcon " + c.accent} aria-hidden="true">
+                  <c.Icon size={18} className="ln-accentText" />
+                </div>
+                <div className="text-[12px] font-black tracking-[0.16em] uppercase text-[hsl(var(--muted-foreground))]">
+                  Category
+                </div>
+              </div>
+
+              <div className="mt-4 text-[18px] font-black tracking-[-0.02em] text-[hsl(var(--foreground))]">
+                {c.title}
+              </div>
+              <p className="mt-2 text-[14px] leading-[1.7] text-[hsl(var(--muted-foreground))]">{c.desc}</p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                {c.chips.map((t) => (
+                  <span key={t} className="ln-chip">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {TOOL_CATEGORIES.map((category, i) => (
-            <OrganicCard key={i} className="p-8 group">
-              <OrganicIcon variant={category.variant} className="mb-5 group-hover:scale-110 transition-transform duration-300">
-                {category.emoji}
-              </OrganicIcon>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">{category.title}</h3>
-              <ul className="space-y-3">
-                {category.tools.map((tool, j) => (
-                  <li key={j} className="flex items-center gap-3 text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
-                    {tool}
-                  </li>
-                ))}
-              </ul>
-            </OrganicCard>
-          ))}
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-10">
+          <div className="text-[13px] font-black tracking-[-0.01em] text-[hsl(var(--muted-foreground))]">
+            Includes NCCI, RVU, NPI, drug lookup, fee schedules, and more.
+          </div>
+
+          <button className="ln-btn ln-btnSecondary ln-magnetic" onClick={() => setLocation("/signup")}>
+            See all tools <ArrowRight size={18} />
+          </button>
         </div>
       </div>
     </section>
