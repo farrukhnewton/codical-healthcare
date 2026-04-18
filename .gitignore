@@ -18,3 +18,8 @@ client/next-app/
 server/src/
 server/package.json
 server/package-lock.json
+
+# local client env
+client/.env
+client/.env.*
+

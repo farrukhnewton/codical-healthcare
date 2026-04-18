@@ -1,0 +1,198 @@
+﻿/* Enable smooth animation of CSS custom properties (mesh drift) */
+@property --p1x { syntax: "<percentage>"; inherits: true; initial-value: 12%; }
+@property --p1y { syntax: "<percentage>"; inherits: true; initial-value: 16%; }
+@property --p2x { syntax: "<percentage>"; inherits: true; initial-value: 86%; }
+@property --p2y { syntax: "<percentage>"; inherits: true; initial-value: 22%; }
+@property --p3x { syntax: "<percentage>"; inherits: true; initial-value: 62%; }
+@property --p3y { syntax: "<percentage>"; inherits: true; initial-value: 78%; }
+@property --p4x { syntax: "<percentage>"; inherits: true; initial-value: 18%; }
+@property --p4y { syntax: "<percentage>"; inherits: true; initial-value: 84%; }
+/* Landing Aurora Scene (calm futuristic) - isolated CSS */
+.landingAurora {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip;
+}
+
+/* Scene wrapper sits behind content */
+.landingAurora .auroraScene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  --mint: 142 70% 55%;
+  --cyan: 198 90% 58%;
+  --lilac: 255 90% 76%;
+  --amber: 40 95% 60%;
+  --rose: 335 80% 62%;
+  --violet: 265 78% 56%;
+
+  --p1x: 12%;
+  --p1y: 16%;
+  --p2x: 86%;
+  --p2y: 22%;
+  --p3x: 62%;
+  --p3y: 78%;
+  --p4x: 18%;
+  --p4y: 84%;
+
+  --sx: 50%;
+  --sy: 28%;
+}
+
+/* Canvas */
+.landingAurora canvas.auroraCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Mesh overlay */
+.landingAurora .auroraMesh {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  background:
+    radial-gradient(1100px 800px at var(--p1x) var(--p1y), hsla(var(--mint) / 0.16), transparent 60%),
+    radial-gradient(1000px 720px at var(--p2x) var(--p2y), hsla(var(--cyan) / 0.16), transparent 58%),
+    radial-gradient(1000px 720px at var(--p3x) var(--p3y), hsla(var(--lilac) / 0.12), transparent 60%),
+    radial-gradient(900px 700px at var(--p4x) var(--p4y), hsla(var(--amber) / 0.10), transparent 60%),
+    radial-gradient(900px 900px at 70% 10%, hsla(var(--rose) / 0.06), transparent 55%),
+    radial-gradient(900px 900px at 10% 90%, hsla(var(--violet) / 0.06), transparent 55%);
+  filter: saturate(1.12) contrast(1.02);
+  animation: auroraMeshDrift 18s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate;
+}
+
+@keyframes auroraMeshDrift {
+  0% {
+    --p1x: 12%; --p1y: 16%;
+    --p2x: 86%; --p2y: 22%;
+    --p3x: 62%; --p3y: 78%;
+    --p4x: 18%; --p4y: 84%;
+  }
+  100% {
+    --p1x: 18%; --p1y: 26%;
+    --p2x: 78%; --p2y: 16%;
+    --p3x: 68%; --p3y: 70%;
+    --p4x: 22%; --p4y: 74%;
+  }
+}
+
+/* Grid overlay */
+.landingAurora .auroraGrid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.10;
+  background:
+    linear-gradient(to right, rgba(0,0,0,0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,0.14) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mix-blend-mode: soft-light;
+  -webkit-mask-image: radial-gradient(70% 55% at 50% 22%, black 60%, transparent 100%);
+  mask-image: radial-gradient(70% 55% at 50% 22%, black 60%, transparent 100%);
+}
+
+/* Noise overlay */
+.landingAurora .auroraNoise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.9'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+/* Scanlines */
+.landingAurora .auroraScan {
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.08),
+    rgba(0,0,0,0.08) 1px,
+    transparent 1px,
+    transparent 7px
+  );
+  mix-blend-mode: soft-light;
+}
+
+/* Cursor spotlight */
+.landingAurora .auroraSpotlight {
+  position: absolute;
+  inset: -20%;
+  opacity: 0.75;
+  background: radial-gradient(560px 560px at var(--sx) var(--sy),
+    rgba(255,255,255,0.60),
+    rgba(255,255,255,0.08),
+    transparent 70%);
+  mix-blend-mode: soft-light;
+  filter: blur(10px);
+  transform: translateZ(0);
+}
+
+/* Cursor glow disc */
+.landingAurora .auroraGlow {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 999px;
+  transform: translate3d(-9999px, -9999px, 0);
+  background: radial-gradient(circle, rgba(74,222,128,0.10), rgba(56,189,248,0.07), transparent 68%);
+  opacity: 0.90;
+  will-change: transform;
+}
+
+/* Dark mode adjustments */
+.dark .landingAurora .auroraGrid {
+  opacity: 0.10;
+  background:
+    linear-gradient(to right, rgba(255,255,255,0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.12) 1px, transparent 1px);
+  mix-blend-mode: screen;
+}
+.dark .landingAurora .auroraScan {
+  opacity: 0.08;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0.08) 1px,
+    transparent 1px,
+    transparent 7px
+  );
+  mix-blend-mode: overlay;
+}
+.dark .landingAurora .auroraSpotlight {
+  opacity: 0.70;
+  background: radial-gradient(560px 560px at var(--sx) var(--sy),
+    rgba(56,189,248,0.14),
+    rgba(74,222,128,0.08),
+    transparent 70%);
+  mix-blend-mode: screen;
+}
+
+/* Accessibility / device */
+@media (prefers-reduced-motion: reduce) {
+  .landingAurora .auroraMesh { animation: none !important; }
+  .landingAurora .auroraSpotlight,
+  .landingAurora .auroraGlow { display: none !important; }
+}
+@media (pointer: coarse) {
+  .landingAurora .auroraSpotlight,
+  .landingAurora .auroraGlow { display: none !important; }
+}
+
+/* Ambient dust canvas (subtle particles) */
+.landingAurora canvas.dustCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landingAurora canvas.dustCanvas { display: none !important; }
+}

@@ -1,0 +1,32 @@
+﻿/* Landing reveal system - scoped under .landingAurora */
+.landingAurora .ln-reveal {
+  opacity: 0;
+  transform: translateY(18px) scale(0.99);
+  filter: blur(12px);
+  transition:
+    opacity 900ms cubic-bezier(0.16,1,0.3,1),
+    transform 900ms cubic-bezier(0.16,1,0.3,1),
+    filter 900ms cubic-bezier(0.16,1,0.3,1);
+  will-change: transform, opacity, filter;
+}
+
+.landingAurora .ln-reveal.ln-in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+/* Stagger: each child gets --i assigned by JS */
+.landingAurora .ln-stagger > .ln-reveal {
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+
+/* Reduced motion: show immediately */
+@media (prefers-reduced-motion: reduce) {
+  .landingAurora .ln-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+}
