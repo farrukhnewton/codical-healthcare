@@ -149,14 +149,8 @@ function Router() {
       {!session ? (
         <Redirect to="/login" />
       ) : (
-        <div
-          className="flex h-screen overflow-hidden font-sans selection:bg-primary/20"
-          style={{
-            background:
-              "linear-gradient(160deg, #F0FDF4 0%, #F0F9FF 30%, #F0FDF4 50%, #FEF3C7 80%, #FCE7F3 100%)",
-            backgroundSize: "400% 400%",
-          }}
-        >
+        <div className="landingAurora flex h-screen overflow-hidden font-sans selection:bg-primary/20 relative">
+          <AuroraScene />
           {/* Sidebar */}
           <IconRail />
 
@@ -327,3 +321,5 @@ function App() {
 }
 
 export default App;
+
+
