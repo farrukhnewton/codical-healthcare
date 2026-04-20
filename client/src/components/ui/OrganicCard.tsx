@@ -1,4 +1,4 @@
-import { useRef, ReactNode } from "react";
+﻿import { useRef, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface OrganicCardProps {
@@ -34,7 +34,7 @@ export function OrganicCard({ children, className, glowColor = "74,222,128", til
       onMouseLeave={handleMouseLeave}
       className={cn(
         "glass rounded-2xl p-6 relative overflow-hidden cursor-default",
-        "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "transition-all duration-500 ease-hero",
         "hover:shadow-glass-hover hover:bg-white/65",
         className
       )}
@@ -62,3 +62,4 @@ export function OrganicCard({ children, className, glowColor = "74,222,128", til
     </div>
   );
 }
+

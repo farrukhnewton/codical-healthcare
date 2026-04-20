@@ -4,14 +4,7 @@ import { Eye, EyeOff, Shield, Zap, Lock, Mail, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { Link, useLocation } from "wouter";
-
-const BAR_COLORS = [
-  { color: "#E8541A", height: 28 },
-  { color: "#C43B0E", height: 36 },
-  { color: "#1B2F6E", height: 44 },
-  { color: "#F0A500", height: 36 },
-  { color: "#E8541A", height: 28 },
-];
+import { AuthCard, AuthShell } from "@/components/auth/AuthShell";
 
 type Mode = "password" | "magic";
 
@@ -32,7 +25,7 @@ export function Login() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // Fix: don’t navigate to /dashboard before Router sees a session (prevents the “second attempt” blank form issue)
+  // Don’t navigate to /dashboard until a session exists (prevents "second attempt" weirdness)
   useEffect(() => {
     let alive = true;
 
@@ -52,7 +45,7 @@ export function Login() {
     };
   }, [setLocation]);
 
-  // Google One Tap + native button (free). Requires VITE_GOOGLE_CLIENT_ID and the gsi/client script in index.html.
+  // Google One Tap + native button (free). Requires VITE_GOOGLE_CLIENT_ID and gsi/client in index.html.
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
     if (!clientId) return;
@@ -147,12 +140,11 @@ export function Login() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         setLoginError(error.message);
-        toast({ title: "Login Failed", description: error.message, variant: "destructive" });
+        toast({ title: "Login failed", description: error.message, variant: "destructive" });
         return;
       }
 
       toast({ title: "Welcome back!", description: "Loading your workspace..." });
-      // Redirect is handled by the auth listener above.
     } finally {
       setIsLoading(false);
     }
@@ -177,10 +169,7 @@ export function Login() {
         return;
       }
 
-      toast({
-        title: "Check your email",
-        description: "We sent you a secure sign-in link.",
-      });
+      toast({ title: "Check your email", description: "We sent you a secure sign-in link." });
     } finally {
       setIsLoading(false);
     }
@@ -194,12 +183,9 @@ export function Login() {
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/login`,
-      },
+      options: { redirectTo: `${window.location.origin}/login` },
     });
 
-    // Usually redirects immediately. If it doesn’t, show error.
     if (error) {
       setLoginError(error.message);
       toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
@@ -207,105 +193,62 @@ export function Login() {
     }
   };
 
+  const fieldWrap =
+    "flex items-center gap-3 h-12 px-4 rounded-xl border transition-all duration-300 " +
+    "bg-[rgba(255,255,255,0.10)] border-[rgba(255,255,255,0.26)] backdrop-blur-[14px]";
+
+  const fieldActive =
+    "border-[rgba(74,222,128,0.42)] shadow-[0_0_0_4px_rgba(74,222,128,0.10)]";
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden nature-bg-living">
-      {/* Living background blobs */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: "500px",
-            height: "500px",
-            top: "-150px",
-            left: "-100px",
-            background: "linear-gradient(135deg, rgba(134,239,172,0.3), rgba(186,230,253,0.2))",
-            filter: "blur(80px)",
-            animation: "morphBlob 25s ease-in-out infinite, floatSlow 10s ease-in-out infinite",
-          }}
-        />
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: "400px",
-            height: "400px",
-            bottom: "-100px",
-            right: "-80px",
-            background: "linear-gradient(135deg, rgba(167,139,250,0.2), rgba(244,114,182,0.15))",
-            filter: "blur(80px)",
-            animation: "morphBlob 30s ease-in-out 5s infinite, floatSlow 12s ease-in-out 3s infinite",
-          }}
-        />
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: "300px",
-            height: "300px",
-            top: "50%",
-            left: "60%",
-            background: "linear-gradient(135deg, rgba(56,189,248,0.15), rgba(74,222,128,0.1))",
-            filter: "blur(80px)",
-            animation: "morphBlob 22s ease-in-out 10s infinite",
-          }}
-        />
-      </div>
+    <AuthShell>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+        <AuthCard
+          title="Welcome back"
+          subtitle="Sign in with Google, a secure email link, or your password."
+          footer={
+            <div className="grid gap-4">
+              <div className="flex items-center justify-center gap-4 flex-wrap">
+                {[
+                  { icon: Shield, label: "HIPAA-ready" },
+                  { icon: Lock, label: "256-bit TLS" },
+                  { icon: Zap, label: "SOC 2-aligned" },
+                ].map((badge, i) => (
+                  <div
+                    key={i}
+                    className="inline-flex items-center gap-2 text-[12px] font-black tracking-[-0.01em] text-[hsl(var(--muted-foreground))]"
+                  >
+                    <badge.icon className="w-4 h-4 text-[rgba(56,189,248,0.85)]" />
+                    {badge.label}
+                  </div>
+                ))}
+              </div>
 
-      {/* Login card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-md relative z-10"
-      >
-        <div
-          className="rounded-3xl p-8 sm:p-10"
-          style={{
-            background: "rgba(255,255,255,0.6)",
-            backdropFilter: "blur(24px) saturate(1.5)",
-            border: "1px solid rgba(255,255,255,0.7)",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.5) inset",
-          }}
+              <div className="text-center text-[13px] font-black tracking-[-0.01em] text-[hsl(var(--muted-foreground))]">
+                {"Don't have an account? "}
+                <Link href="/signup" className="underline underline-offset-4 text-[hsl(var(--foreground))]">
+                  Request access
+                </Link>
+              </div>
+            </div>
+          }
         >
-          {/* Logo */}
-          <div className="flex flex-col items-center gap-4 mb-8">
-            <div className="flex items-end gap-2 h-12">
-              {BAR_COLORS.map((bar, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ height: 0 }}
-                  animate={{ height: bar.height }}
-                  transition={{ duration: 0.4, delay: 0.1 + i * 0.1 }}
-                  className="w-3 rounded-md"
-                  style={{ backgroundColor: bar.color }}
-                />
-              ))}
-            </div>
-            <div className="text-center">
-              <h1 className="text-2xl font-black text-gray-900 tracking-wider">CODICAL HEALTH</h1>
-              <p className="text-xs font-bold text-emerald-600 tracking-widest mt-1">HEALTHCARE INTELLIGENCE</p>
-            </div>
-          </div>
-
           {/* Google */}
-          <div className="space-y-3 mb-5">
-            {/* Native Google button (One Tap / GIS) */}
+          <div className="grid gap-3">
             <div id="gsiBtn" className="flex justify-center" />
 
-            {/* Fallback if One Tap isn't configured */}
             {!gsiReady && (
-              <button
-                type="button"
-                onClick={handleGoogleRedirect}
-                disabled={isLoading}
-                className="w-full h-12 rounded-xl font-bold text-sm border-2 border-gray-200/80 bg-white/60 hover:bg-white/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <button type="button" onClick={handleGoogleRedirect} disabled={isLoading} className="ln-btn ln-btnSecondary ln-magnetic w-full">
                 Continue with Google
               </button>
             )}
 
             <div className="flex items-center gap-3">
-              <div className="h-px bg-gray-200/70 flex-1" />
-              <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">or</div>
-              <div className="h-px bg-gray-200/70 flex-1" />
+              <div className="h-px bg-[rgba(255,255,255,0.26)] flex-1" />
+              <div className="text-[11px] font-black tracking-[0.16em] uppercase text-[hsl(var(--muted-foreground))]">
+                or
+              </div>
+              <div className="h-px bg-[rgba(255,255,255,0.26)] flex-1" />
             </div>
           </div>
 
@@ -316,55 +259,41 @@ export function Login() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mb-4 p-3 bg-red-50/80 border border-red-200 rounded-xl flex items-start gap-2"
+                className="mt-4 p-3 rounded-xl border border-[rgba(244,63,94,0.30)] bg-[rgba(244,63,94,0.08)]"
               >
-                <span className="text-red-500 text-lg">!</span>
-                <p className="text-sm text-red-700 font-medium">{loginError}</p>
+                <p className="text-[13px] font-black text-[hsl(var(--foreground))]">Sign-in failed</p>
+                <p className="mt-1 text-[13px] leading-[1.6] text-[hsl(var(--muted-foreground))]">{loginError}</p>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* Mode toggle */}
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setMode("password")}
-              className={
-                "h-10 rounded-xl text-xs font-black tracking-wide border " +
-                (mode === "password"
-                  ? "bg-emerald-50/60 border-emerald-200 text-emerald-800"
-                  : "bg-white/40 border-gray-200/70 text-gray-600 hover:bg-white/60")
-              }
-            >
-              Password
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("magic")}
-              className={
-                "h-10 rounded-xl text-xs font-black tracking-wide border " +
-                (mode === "magic"
-                  ? "bg-emerald-50/60 border-emerald-200 text-emerald-800"
-                  : "bg-white/40 border-gray-200/70 text-gray-600 hover:bg-white/60")
-              }
-            >
-              Magic link
-            </button>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            {(["password", "magic"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={
+                  "h-10 rounded-xl border font-black text-[12px] tracking-[0.12em] uppercase transition-all " +
+                  (mode === m
+                    ? "bg-[rgba(74,222,128,0.10)] border-[rgba(74,222,128,0.30)] text-[hsl(var(--foreground))]"
+                    : "bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.18)] text-[hsl(var(--muted-foreground))] hover:bg-[rgba(255,255,255,0.10)]")
+                }
+              >
+                {m === "password" ? "Password" : "Magic link"}
+              </button>
+            ))}
           </div>
 
           {/* Form */}
-          <form onSubmit={mode === "password" ? handlePasswordLogin : handleMagicLink} className="space-y-5">
+          <form onSubmit={mode === "password" ? handlePasswordLogin : handleMagicLink} className="mt-4 grid gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Email Address</label>
-              <div
-                className={
-                  "flex items-center gap-3 h-12 px-4 rounded-xl border-2 transition-all duration-300 " +
-                  (focusedField === "email"
-                    ? "bg-emerald-50/50 border-emerald-400 shadow-[0_0_0_3px_rgba(74,222,128,0.1)]"
-                    : "bg-white/60 border-gray-200/80")
-                }
-              >
-                <Mail className={"w-4 h-4 flex-shrink-0 transition-colors " + (focusedField === "email" ? "text-emerald-500" : "text-gray-400")} />
+              <label className="block text-[11px] font-black tracking-[0.16em] uppercase text-[hsl(var(--muted-foreground))] mb-2">
+                Email address
+              </label>
+              <div className={fieldWrap + (focusedField === "email" ? " " + fieldActive : "")}>
+                <Mail className={"w-4 h-4 flex-shrink-0 " + (focusedField === "email" ? "text-[rgba(74,222,128,0.95)]" : "text-[hsl(var(--muted-foreground))]")} />
                 <input
                   id="email"
                   type="email"
@@ -372,26 +301,21 @@ export function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  placeholder="Enter your email"
+                  placeholder="you@company.com"
                   onFocus={() => setFocusedField("email")}
                   onBlur={() => setFocusedField(null)}
-                  className="flex-1 border-none outline-none text-sm font-medium text-gray-900 bg-transparent placeholder:text-gray-400"
+                  className="flex-1 border-none outline-none text-[14px] font-black tracking-[-0.01em] text-[hsl(var(--foreground))] bg-transparent placeholder:text-[hsl(var(--muted-foreground))]"
                 />
               </div>
             </div>
 
             {mode === "password" && (
               <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Password</label>
-                <div
-                  className={
-                    "flex items-center gap-3 h-12 px-4 rounded-xl border-2 transition-all duration-300 " +
-                    (focusedField === "password"
-                      ? "bg-emerald-50/50 border-emerald-400 shadow-[0_0_0_3px_rgba(74,222,128,0.1)]"
-                      : "bg-white/60 border-gray-200/80")
-                  }
-                >
-                  <Lock className={"w-4 h-4 flex-shrink-0 transition-colors " + (focusedField === "password" ? "text-emerald-500" : "text-gray-400")} />
+                <label className="block text-[11px] font-black tracking-[0.16em] uppercase text-[hsl(var(--muted-foreground))] mb-2">
+                  Password
+                </label>
+                <div className={fieldWrap + (focusedField === "password" ? " " + fieldActive : "")}>
+                  <Lock className={"w-4 h-4 flex-shrink-0 " + (focusedField === "password" ? "text-[rgba(74,222,128,0.95)]" : "text-[hsl(var(--muted-foreground))]")} />
                   <input
                     id="password"
                     type={showPassword ? "text" : "password"}
@@ -399,12 +323,17 @@ export function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    placeholder="Enter your password"
+                    placeholder="Your password"
                     onFocus={() => setFocusedField("password")}
                     onBlur={() => setFocusedField(null)}
-                    className="flex-1 border-none outline-none text-sm font-medium text-gray-900 bg-transparent placeholder:text-gray-400"
+                    className="flex-1 border-none outline-none text-[14px] font-black tracking-[-0.01em] text-[hsl(var(--foreground))] bg-transparent placeholder:text-[hsl(var(--muted-foreground))]"
                   />
-                  <button type="button" onClick={() => setShowPassword((p) => !p)} className="text-gray-400 hover:text-emerald-600 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
@@ -412,60 +341,26 @@ export function Login() {
             )}
 
             <div className="flex justify-end">
-              <a href="#" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
+              <Link href="/forgot-password" className="text-[13px] font-black text-[hsl(var(--foreground))] underline underline-offset-4">
                 Forgot password?
-              </a>
+              </Link>
             </div>
 
-            <motion.button
-              type="submit"
-              disabled={isLoading}
-              whileHover={{ scale: isLoading ? 1 : 1.02 }}
-              whileTap={{ scale: isLoading ? 1 : 0.98 }}
-              className="w-full h-12 text-white rounded-xl font-bold text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              style={{ background: "linear-gradient(135deg, #15803D 0%, #0369A1 100%)", boxShadow: "0 4px 24px rgba(21,128,61,0.3)" }}
-            >
+            <button type="submit" disabled={isLoading} className="ln-btn ln-btnPrimary ln-magnetic w-full">
               {isLoading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>{mode === "password" ? "Authenticating..." : "Sending link..."}</span>
+                  <span>Working…</span>
                 </>
               ) : (
                 <>
-                  <span>{mode === "password" ? "Sign In" : "Email me a link"}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>{mode === "password" ? "Sign in" : "Email me a link"}</span>
+                  <ArrowRight size={18} />
                 </>
               )}
-            </motion.button>
-
-            <p className="text-center text-sm text-gray-600">
-              {"Don't have an account? "}
-              <Link href="/signup" className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
-                Request access
-              </Link>
-            </p>
+            </button>
           </form>
-
-          {/* Trust badges */}
-          <div className="mt-6 pt-6 border-t border-gray-200/60 flex items-center justify-center gap-4 flex-wrap">
-            {[
-              { icon: Shield, label: "HIPAA Compliant" },
-              { icon: Lock, label: "256-bit SSL" },
-              { icon: Zap, label: "SOC 2 Ready" },
-            ].map((badge, i) => (
-              <div key={i} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-                <badge.icon className="w-3 h-3 text-emerald-500" />
-                {badge.label}
-              </div>
-            ))}
-          </div>
-        </div>
+        </AuthCard>
       </motion.div>
-
-      <p className="absolute bottom-4 left-0 right-0 text-center text-xs text-gray-500 font-medium">
-        © {new Date().getFullYear()} Codical Health · Healthcare Intelligence Reimagined
-      </p>
-    </div>
+    </AuthShell>
   );
 }
-

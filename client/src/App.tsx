@@ -1,5 +1,4 @@
-
-import { Switch, Route, Redirect } from "wouter";
+﻿import { Switch, Route, Redirect } from "wouter";
 import { useState, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -16,9 +15,11 @@ import { Settings } from "@/pages/Settings";
 import { Compliance } from "@/pages/Compliance";
 import { IntelligenceHub } from "@/pages/IntelligenceHub";
 
-
 import { Login } from "@/pages/Login";
 import { Signup } from "@/pages/Signup";
+import { ForgotPassword } from "@/pages/ForgotPassword";
+import { ResetPassword } from "@/pages/ResetPassword";
+
 import { Home } from "@/pages/Home";
 import { Workspace } from "@/pages/Workspace";
 
@@ -117,15 +118,22 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
+
+      {/* Public auth routes */}
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
+
       {!session ? (
         <Redirect to="/login" />
       ) : (
         <div
           className="flex h-screen overflow-hidden font-sans selection:bg-primary/20"
           style={{
-            background: "linear-gradient(160deg, #F0FDF4 0%, #F0F9FF 30%, #F0FDF4 50%, #FEF3C7 80%, #FCE7F3 100%)", backgroundSize: "400% 400%",
+            background:
+              "linear-gradient(160deg, #F0FDF4 0%, #F0F9FF 30%, #F0FDF4 50%, #FEF3C7 80%, #FCE7F3 100%)",
+            backgroundSize: "400% 400%",
           }}
         >
           {/* Sidebar */}
