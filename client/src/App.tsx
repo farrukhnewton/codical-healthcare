@@ -1,4 +1,6 @@
-﻿import { Switch, Route, Redirect } from "wouter";
+﻿import "@/styles/landing-aurora-scene.css";
+
+import { Switch, Route, Redirect } from "wouter";
 import { useState, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -41,34 +43,55 @@ import { TeamChat } from "@/pages/TeamChat";
 import { Workbench } from "@/pages/Workbench";
 import { supabase } from "./lib/supabase";
 import { Session } from "@supabase/supabase-js";
+import { AuroraScene } from "@/components/landing-next/AuroraScene";
 
-// Auth loading skeleton
+// Auth loading screen (matches landing/auth aurora system)
 function AuthLoadingScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center nature-bg-living">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center gap-4"
-      >
-        {/* Brand bars */}
-        <div className="flex items-end gap-2 h-12">
-          {["#E8541A", "#C43B0E", "#1B2F6E", "#F0A500", "#E8541A"].map((color, i) => (
-            <div
-              key={i}
-              className="w-3 rounded-md"
-              style={{
-                backgroundColor: color,
-                height: `${20 + (i === 2 ? 16 : i % 2 === 0 ? 6 : 0)}px`,
-                animation: `miniPiano 1.5s ease-in-out ${i * 0.15}s infinite`,
-              }}
-            />
-          ))}
-        </div>
-        <p className="text-sm font-semibold text-muted-foreground tracking-wide">
-          Loading your workspace...
-        </p>
-      </motion.div>
+    <div className="landingAurora min-h-screen relative">
+      <AuroraScene />
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 10, filter: "blur(10px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-sm"
+        >
+          <div className="ln-preview p-8 text-center">
+            <div className="flex items-center justify-center gap-3">
+              <div className="ln-bars" aria-hidden="true">
+                <span className="ln-bar" />
+                <span className="ln-bar" />
+                <span className="ln-bar" />
+                <span className="ln-bar" />
+                <span className="ln-bar" />
+              </div>
+              <div className="flex flex-col leading-none">
+                <span className="text-[14px] font-black tracking-[-0.03em] text-[hsl(var(--foreground))]">
+                  CODICAL
+                </span>
+                <span className="mt-1 text-[10px] font-black tracking-[0.28em] uppercase text-[rgba(16,185,129,0.95)]">
+                  Health
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 text-[12px] font-black tracking-[0.16em] uppercase text-[hsl(var(--muted-foreground))]">
+              Preparing your workspace
+            </div>
+
+            <div className="mt-4 flex items-center justify-center gap-10">
+              <div className="h-2 w-2 rounded-full bg-[rgba(74,222,128,0.85)] animate-pulse" />
+              <div className="h-2 w-2 rounded-full bg-[rgba(56,189,248,0.85)] animate-pulse [animation-delay:150ms]" />
+              <div className="h-2 w-2 rounded-full bg-[rgba(167,139,250,0.80)] animate-pulse [animation-delay:300ms]" />
+            </div>
+
+            <div className="mt-6 text-[13px] font-black tracking-[-0.01em] text-[hsl(var(--muted-foreground))]">
+              Loading your session…
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
@@ -98,12 +121,10 @@ function Router() {
       setAuthLoading(false);
     });
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setAuthLoading(false);
-      }
-    );
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -147,28 +168,60 @@ function Router() {
               <AnimatePresence mode="wait">
                 <Switch>
                   <Route path="/dashboard">
-                    {() => <PageTransition><Home /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <Home />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/workspace">
-                    {() => <PageTransition><Workspace /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <Workspace />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/chat">
-                    {() => <PageTransition><TeamChat /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <TeamChat />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/workbench">
-                    {() => <PageTransition><Workbench /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <Workbench />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/intel/:code">
-                    {() => <PageTransition><CodeIntel /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <CodeIntel />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/compliance">
-                    {() => <PageTransition><Compliance /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <Compliance />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/search">
-                    {() => <PageTransition><Search /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <Search />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/intelligence">
-                    {() => <PageTransition><IntelligenceHub /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <IntelligenceHub />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/guidelines">
                     {() => <Redirect to="/intelligence" />}
@@ -177,37 +230,77 @@ function Router() {
                     {() => <Redirect to="/intelligence" />}
                   </Route>
                   <Route path="/favorites">
-                    {() => <PageTransition><Favorites /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <Favorites />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/reports">
-                    {() => <PageTransition><Reports /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <Reports />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/ncci">
-                    {() => <PageTransition><NcciChecker /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <NcciChecker />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/coverage">
                     {() => <PageTransition><KnowledgeCenter /></PageTransition>}
                   </Route>
                   <Route path="/rvu">
-                    {() => <PageTransition><RvuCalculator /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <RvuCalculator />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/anesthesia">
-                    {() => <PageTransition><AnesthesiaCalculator /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <AnesthesiaCalculator />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/npi">
-                    {() => <PageTransition><NpiChecker /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <NpiChecker />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/codelookup">
-                    {() => <PageTransition><CodeLookup /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <CodeLookup />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/settings">
-                    {() => <PageTransition><Settings /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <Settings />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route path="/druglookup">
-                    {() => <PageTransition><DrugLookup /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <DrugLookup />
+                      </PageTransition>
+                    )}
                   </Route>
                   <Route>
-                    {() => <PageTransition><NotFound /></PageTransition>}
+                    {() => (
+                      <PageTransition>
+                        <NotFound />
+                      </PageTransition>
+                    )}
                   </Route>
                 </Switch>
               </AnimatePresence>
