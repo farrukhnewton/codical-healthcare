@@ -1,0 +1,54 @@
+﻿:root {
+  /* App Shell Glass Tokens (non-conflicting with Tailwind/ShadCN variables) */
+  --app-glass-bg: rgba(255, 255, 255, 0.45);
+  --app-glass-strong-bg: rgba(255, 255, 255, 0.72);
+  --app-glass-border: rgba(255, 255, 255, 0.55);
+  --app-shadow-color: rgba(15, 23, 42, 0.10);
+
+  --app-radius-sm: 12px;
+  --app-radius-md: 16px;
+  --app-radius-lg: 22px;
+
+  --app-ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.dark {
+  --app-glass-bg: rgba(2, 6, 23, 0.58);
+  --app-glass-strong-bg: rgba(2, 6, 23, 0.80);
+  --app-glass-border: rgba(148, 163, 184, 0.16);
+  --app-shadow-color: rgba(0, 0, 0, 0.72);
+}/* Apply optional baseline to the authenticated shell scope */
+.landingAurora.appShell {
+  color: hsl(var(--foreground));
+}
+
+/* Reusable surfaces */
+.appGlass {
+  background: var(--app-glass-bg);
+  border: 1px solid var(--app-glass-border);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  box-shadow: 0 18px 55px var(--app-shadow-color);
+}
+
+.appGlassStrong {
+  background: var(--app-glass-strong-bg);
+  border: 1px solid var(--app-glass-border);
+  backdrop-filter: blur(26px) saturate(1.35);
+  -webkit-backdrop-filter: blur(26px) saturate(1.35);
+  box-shadow: 0 22px 70px var(--app-shadow-color);
+}
+
+.appCard {
+  border-radius: var(--app-radius-lg);
+}
+
+.appPill {
+  border-radius: 9999px;
+}
+
+.appFocusRing:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+

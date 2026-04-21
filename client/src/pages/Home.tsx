@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import {
@@ -96,7 +96,7 @@ export function Home() {
               ))}
             </div>
             <div>
-              <div className="text-xl font-extrabold text-white">{greeting} 👋</div>
+              <div className="text-xl font-extrabold text-white">{greeting} ðŸ‘‹</div>
               <div className="text-sm text-white/40 mt-0.5">{time.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</div>
             </div>
           </div>
@@ -106,7 +106,7 @@ export function Home() {
               { label: "FY 2026", sub: "ICD-10-CM", color: "#38BDF8" },
               { label: "Live", sub: "CMS Data", color: "#FBBF24" },
             ].map((badge, i) => (
-              <div key={i} className="px-3 py-2 rounded-xl text-center" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div key={i} className="px-3 py-2 rounded-xl text-center bg-white/10 dark:bg-white/5 border border-white/10 dark:border-white/10">
                 <div className="text-sm font-extrabold" style={{ color: badge.color }}>{badge.label}</div>
                 <div className="text-[10px] text-white/40 font-semibold">{badge.sub}</div>
               </div>
@@ -120,14 +120,13 @@ export function Home() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {DB_STATS.map((stat, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-              className="rounded-2xl p-4 flex items-center gap-3"
-              style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)" }}>
+              className="rounded-2xl p-4 flex items-center gap-3 appGlass appCard border border-white/15 dark:border-white/10">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: stat.color + "15" }}>
                 <stat.icon size={20} color={stat.color} />
               </div>
               <div>
-                <div className="text-xl font-black text-gray-900 leading-none">{stat.value}</div>
-                <div className="text-[11px] text-gray-500 font-semibold mt-1">{stat.label}</div>
+                <div className="text-xl font-black text-foreground leading-none">{stat.value}</div>
+                <div className="text-[11px] text-muted-foreground font-semibold mt-1">{stat.label}</div>
               </div>
             </motion.div>
           ))}
@@ -136,23 +135,22 @@ export function Home() {
         <div className="grid lg:grid-cols-[1fr_340px] gap-6">
           {/* Tools grid */}
           <div>
-            <div className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <div className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
               <Zap size={14} className="text-emerald-500" /> Professional Workbench
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {TOOLS.map((tool, i) => (
                 <motion.button key={i} onClick={() => setLocation(tool.href)}
                   initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                  className="p-3.5 rounded-2xl flex items-center gap-3 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg group"
-                  style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)" }}>
+                  className="p-3.5 rounded-2xl flex items-center gap-3 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg group appGlass appCard border border-white/15 dark:border-white/10">
                   <div className={"w-9 h-9 rounded-xl bg-gradient-to-br flex items-center justify-center flex-shrink-0 " + (ICON_BG[tool.variant] || ICON_BG.forest)}>
                     <tool.icon size={18} className={ICON_CLR[tool.variant] || ICON_CLR.forest} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold text-gray-900">{tool.label}</div>
-                    <div className="text-[11px] text-gray-500 mt-0.5">{tool.desc}</div>
+                    <div className="text-sm font-bold text-foreground">{tool.label}</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">{tool.desc}</div>
                   </div>
-                  <ChevronRight size={14} className="text-gray-300 group-hover:text-emerald-500 transition-colors" />
+                  <ChevronRight size={14} className="text-muted-foreground/50 group-hover:text-emerald-500 transition-colors" />
                 </motion.button>
               ))}
             </div>
@@ -161,40 +159,40 @@ export function Home() {
           {/* Right sidebar */}
           <div className="space-y-4">
             {/* Recent searches */}
-            <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)" }}>
-              <div className="text-xs font-bold text-gray-900 mb-3 flex items-center justify-between">
+            <div className="rounded-2xl p-4 appGlass appCard border border-white/15 dark:border-white/10">
+              <div className="text-xs font-bold text-foreground mb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2"><Clock size={13} className="text-emerald-500" /> Recent Searches</span>
                 {recentSearches.length > 0 && (
-                  <button onClick={() => { localStorage.removeItem("codicalhealth_search_history"); setRecentSearches([]); }} className="text-[10px] text-gray-400 hover:text-gray-600">Clear</button>
+                  <button onClick={() => { localStorage.removeItem("codicalhealth_search_history"); setRecentSearches([]); }} className="text-[10px] text-muted-foreground/70 hover:text-muted-foreground">Clear</button>
                 )}
               </div>
               {recentSearches.length > 0 ? (
                 <div className="space-y-1.5">
                   {recentSearches.map((s, i) => (
-                    <button key={i} onClick={() => setLocation("/intel/" + s.split(" — ")[0])} className="w-full flex items-center gap-2 px-3 py-2 bg-white/50 rounded-lg hover:bg-emerald-50/50 transition-colors text-left">
-                      <Clock size={11} className="text-gray-300 flex-shrink-0" />
-                      <span className="text-xs text-gray-600 truncate">{s}</span>
+                    <button key={i} onClick={() => setLocation("/intel/" + s.split(" â€” ")[0])} className="w-full flex items-center gap-2 px-3 py-2 bg-background/40 backdrop-blur-md border border-white/10 dark:border-white/10 rounded-lg hover:bg-emerald-500/10 transition-colors text-left">
+                      <Clock size={11} className="text-muted-foreground/50 flex-shrink-0" />
+                      <span className="text-xs text-muted-foreground truncate">{s}</span>
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-4 text-xs text-gray-400">No recent searches yet</div>
+                <div className="text-center py-4 text-xs text-muted-foreground/70">No recent searches yet</div>
               )}
             </div>
 
             {/* Trending codes */}
-            <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)" }}>
-              <div className="text-xs font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <div className="rounded-2xl p-4 appGlass appCard border border-white/15 dark:border-white/10">
+              <div className="text-xs font-bold text-foreground mb-3 flex items-center gap-2">
                 <TrendingUp size={13} className="text-emerald-500" /> Trending Codes
               </div>
               <div className="space-y-1.5">
                 {TRENDING_CODES.map((c, i) => {
                   const s = TYPE_COLORS[c.type] || TYPE_COLORS["CPT"];
                   return (
-                    <button key={i} onClick={() => setLocation("/intel/" + c.code)} className="w-full flex items-center gap-2 px-3 py-2 bg-white/50 rounded-lg hover:bg-emerald-50/50 transition-colors text-left">
+                    <button key={i} onClick={() => setLocation("/intel/" + c.code)} className="w-full flex items-center gap-2 px-3 py-2 bg-background/40 backdrop-blur-md border border-white/10 dark:border-white/10 rounded-lg hover:bg-emerald-500/10 transition-colors text-left">
                       <span className={"px-1.5 py-0.5 rounded text-[10px] font-bold font-mono flex-shrink-0 " + s.bg + " " + s.text}>{c.code}</span>
-                      <span className="text-xs text-gray-600 truncate flex-1">{c.desc}</span>
-                      <ChevronRight size={11} className="text-gray-300" />
+                      <span className="text-xs text-muted-foreground truncate flex-1">{c.desc}</span>
+                      <ChevronRight size={11} className="text-muted-foreground/50" />
                     </button>
                   );
                 })}
@@ -204,12 +202,12 @@ export function Home() {
         </div>
 
         {/* Activity chart */}
-        <div className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)" }}>
+        <div className="rounded-2xl p-5 appGlass appCard border border-white/15 dark:border-white/10">
           <div className="flex items-center justify-between mb-4">
-            <div className="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <div className="text-sm font-bold text-foreground flex items-center gap-2">
               <BarChart2 size={14} className="text-emerald-500" /> Search Activity This Week
             </div>
-            <span className="text-[11px] text-gray-400">Sample data</span>
+            <span className="text-[11px] text-muted-foreground/70">Sample data</span>
           </div>
           <ResponsiveContainer width="100%" height={140}>
             <AreaChart data={WEEK_DATA}>
@@ -222,7 +220,7 @@ export function Home() {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" />
               <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.7)", fontSize: "12px", background: "rgba(255,255,255,0.8)", backdropFilter: "blur(12px)" }} />
+              <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--app-glass-border)", fontSize: "12px", background: "var(--app-glass-strong-bg)", backdropFilter: "blur(18px)", color: "hsl(var(--foreground))" }} />
               <Area type="monotone" dataKey="searches" stroke="#15803D" strokeWidth={2} fill="url(#colorSearches)" dot={{ fill: "#15803D", r: 3 }} />
             </AreaChart>
           </ResponsiveContainer>
@@ -234,8 +232,8 @@ export function Home() {
             <Zap size={20} className="text-white" />
           </div>
           <div className="flex-1">
-            <div className="text-sm font-bold text-gray-900">CY 2026 Data Active</div>
-            <div className="text-xs text-gray-600 mt-0.5">RVU data, anesthesia conversion factors, and NCCI edits current for CY 2026. ICD-10-CM FY2026 effective Oct 1, 2025.</div>
+            <div className="text-sm font-bold text-foreground">CY 2026 Data Active</div>
+            <div className="text-xs text-muted-foreground mt-0.5">RVU data, anesthesia conversion factors, and NCCI edits current for CY 2026. ICD-10-CM FY2026 effective Oct 1, 2025.</div>
           </div>
           <button onClick={() => setLocation("/guidelines")} className="px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 flex-shrink-0 hover:scale-105 transition-transform" style={{ background: "linear-gradient(135deg, #15803D, #0369A1)" }}>
             View <ArrowRight size={12} />
@@ -245,3 +243,4 @@ export function Home() {
     </div>
   );
 }
+

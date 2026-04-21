@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "./supabase-admin";
+﻿import { supabaseAdmin } from "./supabase-admin";
 import { api } from "../shared";
 import type { Express } from "express";
 import type { Server } from "http";
@@ -96,7 +96,7 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
-  // ─── Codes ────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Codes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get(api.codes.search.path, async (req, res) => {
     try {
       const query = req.query.query as string || "";
@@ -116,7 +116,7 @@ export async function registerRoutes(
     res.json(result);
   });
 
-  // ─── Favorites ───────────────────────────────────────────────────────────
+  // â”€â”€â”€ Favorites â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get(api.favorites.list.path, async (_req, res) => {
     const favs = await storage.getFavorites(1);
     res.json(favs);
@@ -144,7 +144,7 @@ export async function registerRoutes(
     res.status(204).end();
   });
 
-  // ─── Guidelines ──────────────────────────────────────────────────────────
+  // â”€â”€â”€ Guidelines â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get(api.guidelines.get.path, async (_req, res) => {
     try {
       const rows = await db.select().from(guidelinesTable);
@@ -242,7 +242,7 @@ export async function registerRoutes(
     }
   });
 
-  // ─── NCCI Edit Checker ────────────────────────────────────────────────────
+  // â”€â”€â”€ NCCI Edit Checker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get("/api/ncci/check", async (req, res) => {
     try {
       const col1 = (req.query.col1 as string)?.toUpperCase().trim();
@@ -284,12 +284,17 @@ export async function registerRoutes(
     }
   });
 
-  // ─── CMS Coverage — NCD ──────────────────────────────────────────────────
+  // â”€â”€â”€ CMS Coverage â€” NCD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get("/api/coverage/ncd", async (req, res) => {
     try {
       const search = (req.query.search as string) || "";
       const url = `https://api.coverage.cms.gov/v1/reports/national-coverage-ncd`;
-      const response = await fetch(url);
+      const token = await getLcdToken();
+      const response = await fetch(url, { headers: { "Authorization": "Bearer " + token, "Accept": "application/json", "User-Agent": "CodicalHealth/1.0" } });
+      if (!response.ok) {
+        const text = await response.text();
+        return res.status(response.status).json({ message: "CMS coverage API error " + response.status, preview: text.slice(0, 200) });
+      }
       const data = await response.json();
       let results = data.data || [];
       if (search) {
@@ -316,14 +321,19 @@ export async function registerRoutes(
     }
   });
 
-  // ─── CMS Coverage — LCD ──────────────────────────────────────────────────
+  // â”€â”€â”€ CMS Coverage â€” LCD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get("/api/coverage/lcd", async (req, res) => {
     try {
       const search = (req.query.search as string) || "";
       const cpt = (req.query.cpt as string) || "";
       let url = `https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds`;
       if (cpt) url += `?cpt=${cpt}`;
-      const response = await fetch(url);
+      const token = await getLcdToken();
+      const response = await fetch(url, { headers: { "Authorization": "Bearer " + token, "Accept": "application/json", "User-Agent": "CodicalHealth/1.0" } });
+      if (!response.ok) {
+        const text = await response.text();
+        return res.status(response.status).json({ message: "CMS coverage API error " + response.status, preview: text.slice(0, 200) });
+      }
       const data = await response.json();
       let results = data.data || [];
       if (search && !cpt) {
@@ -339,7 +349,7 @@ export async function registerRoutes(
     }
   });
 
-  // ─── Smart LCD Search ─────────────────────────────────────────────────────
+  // â”€â”€â”€ Smart LCD Search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get("/api/coverage/lcd/search/smart", async (req, res) => {
     try {
       const query = (req.query.q as string)?.trim() || "";
@@ -365,7 +375,12 @@ export async function registerRoutes(
         searchTerms = [query];
       }
       const url = `https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds`;
-      const response = await fetch(url);
+      const token = await getLcdToken();
+      const response = await fetch(url, { headers: { "Authorization": "Bearer " + token, "Accept": "application/json", "User-Agent": "CodicalHealth/1.0" } });
+      if (!response.ok) {
+        const text = await response.text();
+        return res.status(response.status).json({ message: "CMS coverage API error " + response.status, preview: text.slice(0, 200) });
+      }
       const data = await response.json();
       const allLcds = data.data || [];
       const results = allLcds.filter((lcd: any) => {
@@ -391,7 +406,7 @@ export async function registerRoutes(
     }
   });
 
-  // ─── CPT RVU Calculator ───────────────────────────────────────────────────
+  // â”€â”€â”€ CPT RVU Calculator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get("/api/rvu/:code", async (req, res) => {
     try {
       const code = req.params.code.toUpperCase().trim();
@@ -424,7 +439,7 @@ export async function registerRoutes(
     }
   });
 
-  // ─── Anesthesia Calculator ────────────────────────────────────────────────
+  // â”€â”€â”€ Anesthesia Calculator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get("/api/anesthesia/localities", async (req, res) => {
     try {
       const result = await db.execute(
@@ -476,7 +491,7 @@ export async function registerRoutes(
     }
   });
 
-  // ─── NPI Checker ─────────────────────────────────────────────────────────
+  // â”€â”€â”€ NPI Checker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get("/api/npi/search", async (req, res) => {
     try {
       const number = (req.query.number as string) || "";
@@ -503,7 +518,7 @@ export async function registerRoutes(
     }
   });
 
-  // ─── Place of Service Codes ───────────────────────────────────────────────
+  // â”€â”€â”€ Place of Service Codes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get("/api/pos", (req, res) => {
     const search = (req.query.search as string || "").toLowerCase();
     const posCodes = [
@@ -571,7 +586,7 @@ export async function registerRoutes(
     res.json(filtered);
   });
 
-  // ─── Modifier Codes ────────────────────────────────────────────────────────
+  // â”€â”€â”€ Modifier Codes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get("/api/modifiers", (req, res) => {
     const search = (req.query.search as string || "").toLowerCase();
     const modifiers = [
@@ -669,7 +684,7 @@ export async function registerRoutes(
     res.json(filtered);
   });
 
-  // ─── Drug/NDC Lookup ─────────────────────────────────────────────────────
+  // â”€â”€â”€ Drug/NDC Lookup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get("/api/drug/search", async (req, res) => {
     try {
       const query = (req.query.q as string) || "";
@@ -1086,7 +1101,7 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok", timestamp: new Date().toISOString() }));
 
-  // ─── CHAT API ROUTES ─────────────────────────────────────────────────────
+  // â”€â”€â”€ CHAT API ROUTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   // Get all users (for creating conversations)
   app.get("/api/chat/users", async (_req, res) => {
@@ -1408,7 +1423,7 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
         return res.status(400).json({ message: "At least one user ID is required" });
       }
 
-      // Resolve userIds — convert Supabase UUIDs to internal integer IDs
+      // Resolve userIds â€” convert Supabase UUIDs to internal integer IDs
       const resolvedUserIds = [];
       for (const uid of userIds) {
         if (typeof uid === "string" && uid.includes("-")) {
@@ -2021,3 +2036,4 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
 
   return httpServer;
 }
+

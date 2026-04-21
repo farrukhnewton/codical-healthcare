@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+﻿import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import {
@@ -16,7 +16,7 @@ const navItems = [
   { href: "/favorites", label: "Workspace", icon: Bookmark, section: "main" },
   { href: "/reports", label: "Reports", icon: FileBarChart, section: "tools" },
   { href: "/ncci", label: "NCCI Checker", icon: Shield, section: "tools" },
-  { href: "/coverage", label: "Coverage Policies", icon: FileText, section: "tools" },
+  { href: "/intelligence", label: "Coverage & Guidelines", icon: FileText, section: "tools" },
   { href: "/rvu", label: "RVU Calculator", icon: Calculator, section: "tools" },
   { href: "/anesthesia", label: "Anesthesia Calc", icon: Calculator, section: "tools" },
   { href: "/npi", label: "NPI Lookup", icon: Search, section: "tools" },
@@ -226,3 +226,4 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     </motion.aside>
   );
 }
+

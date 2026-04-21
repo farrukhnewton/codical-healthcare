@@ -1,7 +1,7 @@
-/*
-  CODICAL HEALTH 2.0 — NATURE DESIGN SYSTEM
+﻿/*
+  CODICAL HEALTH 2.0 â€” NATURE DESIGN SYSTEM
   Ocean + Forest + Aurora + Sunrise
-  Living Interface · 8K Ready
+  Living Interface Â· 8K Ready
 */
 
 @tailwind base;
@@ -55,24 +55,23 @@
     --input: 142 20% 90%;
     --ring: 142 64% 36%;
     --radius: 14px;
-  }
-
-  .dark {
-    --background: 137 27% 6%;
-    --foreground: 100 33% 98%;
-    --card: 137 20% 10%;
-    --card-foreground: 100 33% 98%;
+  }  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
     --primary: 142 69% 58%;
-    --primary-foreground: 137 27% 6%;
+    --primary-foreground: 222 47% 6%;
     --secondary: 198 93% 60%;
-    --secondary-foreground: 137 27% 6%;
-    --muted: 137 15% 20%;
-    --muted-foreground: 137 10% 60%;
-    --border: 137 15% 18%;
-    --input: 137 15% 18%;
+    --secondary-foreground: 222 47% 6%;
+    --muted: 222 32% 14%;
+    --muted-foreground: 215 20% 72%;
+    --border: 222 26% 18%;
+    --input: 222 26% 18%;
     --ring: 142 69% 58%;
-  }
-}
+  }}
 
 @layer base {
   * { @apply border-border; }
@@ -101,7 +100,7 @@
   }
 }
 
-/* ═══ NATURE ANIMATIONS ═══ */
+/* â•â•â• NATURE ANIMATIONS â•â•â• */
 @keyframes morphBlob {
   0%, 100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
   25% { border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%; }
@@ -204,7 +203,7 @@
   100% { background-position: 200% 0; }
 }
 
-/* ═══ NATURE UTILITIES ═══ */
+/* â•â•â• NATURE UTILITIES â•â•â• */
 @layer utilities {
   .glass {
     background: rgba(255, 255, 255, 0.45);
@@ -296,18 +295,13 @@
   }
 }
 
-/* ═══ DARK MODE OVERRIDES ═══ */
+/* â•â•â• DARK MODE OVERRIDES â•â•â• */
 .dark {
   --app-bg: linear-gradient(160deg, #0A1A0F 0%, #0C1929 30%, #0A1A0F 50%, #1A1500 80%, #1A0A14 100%);
 }
 
 .dark body {
   color-scheme: dark;
-}
-
-.dark .glass,
-.dark [style*="rgba(255,255,255,0.6)"] {
-  --tw-bg-opacity: 1;
 }
 
 @layer utilities {
@@ -347,3 +341,5 @@
   --text-secondary: #D1D5DB;
   --text-muted: #9CA3AF;
 }
+
+

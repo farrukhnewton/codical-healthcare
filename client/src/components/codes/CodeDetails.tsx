@@ -1,4 +1,4 @@
-import { MedicalCode } from "@shared/schema";
+﻿import { MedicalCode } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -75,7 +75,7 @@ function renderGuidelineContent(content: string) {
 
       if (next && !/^\(?[a-z]\)/i.test(next) && !/^\d+\)$/.test(next)) {
         nodes.push(
-          <h4 key={"heading-" + i} className="text-lg font-black text-slate-900 mt-3">
+          <h4 key={"heading-" + i} className="text-lg font-black text-foreground mt-3">
             {next}
           </h4>
         );
@@ -86,8 +86,8 @@ function renderGuidelineContent(content: string) {
 
     if (/^\([a-z]\)/i.test(block)) {
       nodes.push(
-        <div key={"sub-" + i} className="text-[15px] text-slate-700 leading-7 font-medium whitespace-pre-wrap">
-          <span className="font-black text-slate-900">{block.slice(0, 3)}</span>
+        <div key={"sub-" + i} className="text-[15px] text-muted-foreground leading-7 font-medium whitespace-pre-wrap">
+          <span className="font-black text-foreground">{block.slice(0, 3)}</span>
           {block.slice(3)}
         </div>
       );
@@ -99,8 +99,8 @@ function renderGuidelineContent(content: string) {
     if (lines.length >= 2 && lines[0].length > 0 && lines[0].length < 80 && !/^\(?[a-z]\)/i.test(lines[0])) {
       nodes.push(
         <div key={"split-" + i} className="space-y-3">
-          <h4 className="text-lg font-black text-slate-900">{lines[0]}</h4>
-          <p className="text-[15px] text-slate-700 leading-7 font-medium whitespace-pre-wrap">
+          <h4 className="text-lg font-black text-foreground">{lines[0]}</h4>
+          <p className="text-[15px] text-muted-foreground leading-7 font-medium whitespace-pre-wrap">
             {lines.slice(1).join("\n")}
           </p>
         </div>
@@ -110,7 +110,7 @@ function renderGuidelineContent(content: string) {
 
     if (block.length < 90 && !block.includes(".") && !block.includes(":")) {
       nodes.push(
-        <h4 key={"short-" + i} className="text-lg font-black text-slate-900">
+        <h4 key={"short-" + i} className="text-lg font-black text-foreground">
           {block}
         </h4>
       );
@@ -118,7 +118,7 @@ function renderGuidelineContent(content: string) {
     }
 
     nodes.push(
-      <p key={"p-" + i} className="text-[15px] text-slate-700 leading-7 font-medium whitespace-pre-wrap">
+      <p key={"p-" + i} className="text-[15px] text-muted-foreground leading-7 font-medium whitespace-pre-wrap">
         {block}
       </p>
     );
@@ -212,8 +212,8 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto bg-slate-50/30">
-      <div className="p-8 md:p-12 bg-white/60 backdrop-blur-xl border-b border-border/50 shadow-sm z-10 sticky top-0">
+    <div className="flex flex-col h-full overflow-y-auto">
+      <div className="p-8 md:p-12 appGlassStrong appCard border-b border-border/60 shadow-sm shadow-black/10 z-10 sticky top-0">
         <div className="flex justify-between items-start gap-8">
           <div className="space-y-6 flex-1">
             <div className="flex flex-wrap items-center gap-4">
@@ -255,7 +255,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
         </div>
 
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-3xl p-8 border border-border/50 shadow-xl shadow-slate-200/50 flex flex-col justify-center min-h-[160px]">
+          <div className="appGlass appCard rounded-3xl p-8 border border-border/60 dark:border-border/60 shadow-xl shadow-black/10 flex flex-col justify-center min-h-[160px]">
             <h3 className="text-xs font-black text-primary/50 uppercase tracking-[0.2em] mb-4">Official Clinical Description</h3>
             <p className="text-xl text-foreground leading-tight font-bold">
               {activeCode.description}
@@ -300,7 +300,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-3">Excludes1</p>
                     <div className="space-y-2">
                       {noteCards.excludes1.slice(0, 8).map((item) => (
-                        <div key={item} className="text-sm text-slate-700 font-medium leading-6">• {item}</div>
+                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">â€¢ {item}</div>
                       ))}
                     </div>
                   </div>
@@ -311,7 +311,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-3">Excludes2</p>
                     <div className="space-y-2">
                       {noteCards.excludes2.slice(0, 8).map((item) => (
-                        <div key={item} className="text-sm text-slate-700 font-medium leading-6">• {item}</div>
+                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">â€¢ {item}</div>
                       ))}
                     </div>
                   </div>
@@ -322,7 +322,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-3">Code First</p>
                     <div className="space-y-2">
                       {noteCards.codeFirst.slice(0, 8).map((item) => (
-                        <div key={item} className="text-sm text-slate-700 font-medium leading-6">• {item}</div>
+                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">â€¢ {item}</div>
                       ))}
                     </div>
                   </div>
@@ -333,7 +333,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-3">Use Additional Code</p>
                     <div className="space-y-2">
                       {noteCards.useAdditionalCode.slice(0, 8).map((item) => (
-                        <div key={item} className="text-sm text-slate-700 font-medium leading-6">• {item}</div>
+                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">â€¢ {item}</div>
                       ))}
                     </div>
                   </div>
@@ -344,7 +344,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-violet-600 mb-3">Inclusion Terms</p>
                     <div className="space-y-2">
                       {noteCards.inclusionTerms.slice(0, 8).map((item) => (
-                        <div key={item} className="text-sm text-slate-700 font-medium leading-6">• {item}</div>
+                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">â€¢ {item}</div>
                       ))}
                     </div>
                   </div>
@@ -354,14 +354,14 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                   <div className="bg-cyan-50 border border-cyan-200 rounded-2xl p-5 shadow-sm">
                     <p className="text-[10px] font-black uppercase tracking-widest text-cyan-700 mb-3">7th Character</p>
                     {noteCards.sevenChrNote && (
-                      <p className="text-sm text-slate-700 font-medium leading-6 mb-3">{noteCards.sevenChrNote}</p>
+                      <p className="text-sm text-muted-foreground font-medium leading-6 mb-3">{noteCards.sevenChrNote}</p>
                     )}
                     {noteCards.sevenChrDef?.length > 0 && (
                       <div className="space-y-2">
                         {noteCards.sevenChrDef.map((item) => (
-                          <div key={item.char} className="flex items-center justify-between rounded-xl bg-white/80 border border-cyan-100 px-3 py-2">
+                          <div key={item.char} className="flex items-center justify-between rounded-xl bg-background/500 border border-cyan-100 px-3 py-2">
                             <span className="font-mono font-black text-cyan-800">{item.char}</span>
-                            <span className="text-sm text-slate-700 font-medium">{item.meaning}</span>
+                            <span className="text-sm text-muted-foreground font-medium">{item.meaning}</span>
                           </div>
                         ))}
                       </div>
@@ -387,39 +387,39 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
               <div className="space-y-4">
                 {codeGuidelines?.nlmInfo && (
                   <div className="bg-gradient-to-r from-[#0057A8] to-[#003d75] text-white rounded-2xl p-5 shadow-lg">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-2">NLM Clinical Tables · Live Confirmation</p>
-                    <p className="text-sm font-black">{codeGuidelines.nlmInfo.code} — {codeGuidelines.nlmInfo.source}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-2">NLM Clinical Tables Â· Live Confirmation</p>
+                    <p className="text-sm font-black">{codeGuidelines.nlmInfo.code} â€” {codeGuidelines.nlmInfo.source}</p>
                     <p className="text-white/90 font-medium text-sm mt-1">{codeGuidelines.nlmInfo.description}</p>
                   </div>
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white border border-border/50 rounded-2xl p-5 shadow-sm">
+                  <div className="appGlass appCard border border-border/60 dark:border-border/60 rounded-2xl p-5 shadow-sm shadow-black/10">
                     <p className="text-[10px] font-black uppercase tracking-widest text-primary/50 mb-2">Primary Code</p>
                     <p className="font-mono text-xl font-black text-primary">{activeCode.code}</p>
-                    <p className="text-sm text-slate-600 font-medium mt-2">{activeCode.description}</p>
+                    <p className="text-sm text-muted-foreground font-medium mt-2">{activeCode.description}</p>
                   </div>
 
-                  <div className="bg-white border border-border/50 rounded-2xl p-5 shadow-sm">
+                  <div className="appGlass appCard border border-border/60 dark:border-border/60 rounded-2xl p-5 shadow-sm shadow-black/10">
                     <p className="text-[10px] font-black uppercase tracking-widest text-primary/50 mb-2">Relevant Guidance</p>
-                    <p className="text-2xl font-black text-slate-900">{cmsGuidelines.length}</p>
-                    <p className="text-sm text-slate-600 font-medium mt-2">Matched CMS guideline {cmsGuidelines.length === 1 ? "section" : "sections"}</p>
+                    <p className="text-2xl font-black text-foreground">{cmsGuidelines.length}</p>
+                    <p className="text-sm text-muted-foreground font-medium mt-2">Matched CMS guideline {cmsGuidelines.length === 1 ? "section" : "sections"}</p>
                   </div>
 
-                  <div className="bg-white border border-border/50 rounded-2xl p-5 shadow-sm">
+                  <div className="appGlass appCard border border-border/60 dark:border-border/60 rounded-2xl p-5 shadow-sm shadow-black/10">
                     <p className="text-[10px] font-black uppercase tracking-widest text-primary/50 mb-2">Coverage Scope</p>
-                    <p className="text-sm font-bold text-slate-800">
+                    <p className="text-sm font-bold text-foreground">
                       {cmsGuidelines[0]?.chapterTitle || "Official ICD-10-CM Guidance"}
                     </p>
-                    <p className="text-xs text-slate-500 font-medium mt-2">Most relevant chapter context for this code</p>
+                    <p className="text-xs text-muted-foreground/80 font-medium mt-2">Most relevant chapter context for this code</p>
                   </div>
                 </div>
 
-                <div className="rounded-[2rem] border border-border/50 bg-white shadow-xl overflow-hidden">
-                  <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/80 flex flex-wrap items-center justify-between gap-3">
+                <div className="rounded-[2rem] appGlass appCard border border-border/60 shadow-xl shadow-black/20 overflow-hidden">
+                  <div className="px-6 py-5 border-b border-border/60 bg-background/40 flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-primary/50">Regulatory Match Set</p>
-                      <p className="text-sm font-bold text-slate-700 mt-1">
+                      <p className="text-sm font-bold text-muted-foreground mt-1">
                         Top {Math.min(cmsGuidelines.length, 3)} relevant guideline{Math.min(cmsGuidelines.length, 3) === 1 ? "" : "s"} shown first
                       </p>
                     </div>
@@ -432,7 +432,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
 
                   <Accordion type="single" collapsible defaultValue={cmsGuidelines[0]?.id} className="w-full">
                     {cmsGuidelines.slice(0, 3).map((item, idx) => (
-                      <AccordionItem key={item.id} value={item.id} className="border-b border-slate-100 last:border-b-0">
+                      <AccordionItem key={item.id} value={item.id} className="border-b border-border/60 last:border-b-0">
                         <AccordionTrigger className="px-6 py-5 hover:no-underline">
                           <div className="flex-1 text-left">
                             <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -447,26 +447,26 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                               <span className="bg-secondary/10 text-secondary border border-secondary/20 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
                                 {item.section}
                               </span>
-                              <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                                {item.codeRangeStart}–{item.codeRangeEnd}
+                              <span className="bg-background/50 text-muted-foreground border border-border/60 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                                {item.codeRangeStart}â€“{item.codeRangeEnd}
                               </span>
                             </div>
-                            <h3 className="text-base md:text-lg font-black text-slate-900 leading-tight">{item.title}</h3>
-                            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mt-1">{item.chapterTitle}</p>
+                            <h3 className="text-base md:text-lg font-black text-foreground leading-tight">{item.title}</h3>
+                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground/60 mt-1">{item.chapterTitle}</p>
                           </div>
                         </AccordionTrigger>
                         <AccordionContent className="px-6 pb-6">
                           <div className="space-y-5">
-                            <div className="rounded-2xl bg-slate-50 border border-slate-100 p-5">
+                            <div className="rounded-2xl bg-background/40 border border-border/60 p-5">
                               {renderGuidelineContent(item.content)}
                             </div>
 
                             {item.tags?.length > 0 && (
                               <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Keywords</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Keywords</p>
                                 <div className="flex flex-wrap gap-2">
                                   {item.tags.slice(0, 8).map((tag) => (
-                                    <span key={tag} className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
+                                    <span key={tag} className="px-2.5 py-1 rounded-full bg-background/50 text-muted-foreground text-xs font-bold border border-border/60">
                                       {tag}
                                     </span>
                                   ))}
@@ -474,7 +474,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                               </div>
                             )}
 
-                            <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-4">
+                            <div className="pt-3 border-t border-border/60 flex items-center justify-between gap-4">
                               <div className="flex items-center gap-3 text-muted-foreground">
                                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                                 <span className="text-xs font-bold uppercase tracking-widest">CMS Source Verified</span>
@@ -496,7 +496,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
             ) : activeCode.guideline ? (
               <div className="group relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-[2.5rem] blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
-                <div className="relative bg-white border border-border/50 rounded-[2rem] shadow-2xl overflow-hidden p-8 space-y-8">
+                <div className="relative appGlass appCard border border-border/60 rounded-[2rem] shadow-2xl shadow-black/25 overflow-hidden p-8 space-y-8">
                   <div className="flex items-center justify-between">
                     <div className="flex gap-3">
                       <div className="bg-primary/10 px-4 py-2 rounded-xl text-primary font-black text-xs uppercase tracking-wider border border-primary/20">
@@ -509,12 +509,12 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                   </div>
                   
                   <div className="prose prose-slate max-w-none">
-                    <p className="text-xl text-slate-700 leading-relaxed font-medium">
+                    <p className="text-xl text-muted-foreground leading-relaxed font-medium">
                       {activeCode.guideline.text}
                     </p>
                   </div>
 
-                  <div className="pt-8 border-t border-slate-100 flex items-center justify-between">
+                  <div className="pt-8 border-t border-border/60 flex items-center justify-between">
                     <div className="flex items-center gap-3 text-muted-foreground">
                       <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                       <span className="text-xs font-bold uppercase tracking-widest">Source Verified</span>
@@ -527,12 +527,12 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-100/50 rounded-[2rem] border-2 border-dashed border-slate-200 p-20 text-center space-y-4">
-                <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto shadow-xl border border-slate-100 mb-6">
-                  <Info className="w-10 h-10 text-slate-300" />
+              <div className="bg-background/30 rounded-[2rem] border-2 border-dashed border-border/60 p-20 text-center space-y-4">
+                <div className="w-20 h-20 appGlass rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-black/25 border border-border/60 mb-6">
+                  <Info className="w-10 h-10 text-muted-foreground/50" />
                 </div>
-                <h3 className="text-xl font-black text-slate-800">No Regulatory Flags Found</h3>
-                <p className="text-slate-500 font-medium max-w-xs mx-auto">Standard enterprise coding protocols are currently applicable for this record.</p>
+                <h3 className="text-xl font-black text-foreground">No Regulatory Flags Found</h3>
+                <p className="text-muted-foreground/80 font-medium max-w-xs mx-auto">Standard enterprise coding protocols are currently applicable for this record.</p>
               </div>
             )}
           </div>
@@ -545,25 +545,25 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {intel?.rvu && (
-                <div className="bg-white border border-border/50 rounded-3xl p-6 shadow-sm">
+                <div className="appGlass appCard border border-border/60 dark:border-border/60 rounded-3xl p-6 shadow-sm shadow-black/10">
                   <h4 className="text-xs font-black text-primary/50 uppercase tracking-widest mb-4">RVU Data</h4>
                   <div className="space-y-2">
-                    <div className="flex justify-between"><span className="text-sm text-slate-500">Work RVU</span><span className="font-bold">{intel.rvu.workRvu}</span></div>
-                    <div className="flex justify-between"><span className="text-sm text-slate-500">Non-Facility</span><span className="font-bold text-green-600">${intel.rvu.nonFacilityPayment}</span></div>
-                    <div className="flex justify-between"><span className="text-sm text-slate-500">Facility</span><span className="font-bold text-blue-600">${intel.rvu.facilityPayment}</span></div>
-                    <div className="flex justify-between"><span className="text-sm text-slate-500">Global Period</span><span className="font-bold">{intel.rvu.globalPeriod || 'N/A'}</span></div>
+                    <div className="flex justify-between"><span className="text-sm text-muted-foreground/80">Work RVU</span><span className="font-bold">{intel.rvu.workRvu}</span></div>
+                    <div className="flex justify-between"><span className="text-sm text-muted-foreground/80">Non-Facility</span><span className="font-bold text-green-600">${intel.rvu.nonFacilityPayment}</span></div>
+                    <div className="flex justify-between"><span className="text-sm text-muted-foreground/80">Facility</span><span className="font-bold text-blue-600">${intel.rvu.facilityPayment}</span></div>
+                    <div className="flex justify-between"><span className="text-sm text-muted-foreground/80">Global Period</span><span className="font-bold">{intel.rvu.globalPeriod || 'N/A'}</span></div>
                   </div>
                 </div>
               )}
 
               {intel?.commonModifiers && intel.commonModifiers.length > 0 && (
-                <div className="bg-white border border-border/50 rounded-3xl p-6 shadow-sm">
+                <div className="appGlass appCard border border-border/60 dark:border-border/60 rounded-3xl p-6 shadow-sm shadow-black/10">
                   <h4 className="text-xs font-black text-primary/50 uppercase tracking-widest mb-4">Common Modifiers</h4>
                   <div className="space-y-2">
                     {intel.commonModifiers.map((m: any, i: number) => (
                       <div key={i} className="flex justify-between gap-3">
                         <span className="font-mono font-bold text-sm">{m.code}</span>
-                        <span className="text-sm text-slate-600 text-right">{m.description}</span>
+                        <span className="text-sm text-muted-foreground text-right">{m.description}</span>
                       </div>
                     ))}
                   </div>
@@ -571,13 +571,13 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
               )}
 
               {intel?.relatedDx && intel.relatedDx.length > 0 && (
-                <div className="bg-white border border-border/50 rounded-3xl p-6 shadow-sm">
+                <div className="appGlass appCard border border-border/60 dark:border-border/60 rounded-3xl p-6 shadow-sm shadow-black/10">
                   <h4 className="text-xs font-black text-primary/50 uppercase tracking-widest mb-4">Related Diagnoses</h4>
                   <div className="space-y-2">
                     {intel.relatedDx.slice(0, 5).map((dx: any, i: number) => (
                       <div key={i} className="flex justify-between gap-3">
                         <span className="font-mono font-bold text-sm">{dx.code}</span>
-                        <span className="text-sm text-slate-600 text-right">{dx.description}</span>
+                        <span className="text-sm text-muted-foreground text-right">{dx.description}</span>
                       </div>
                     ))}
                   </div>
@@ -590,3 +590,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
     </div>
   );
 }
+
+
+
+

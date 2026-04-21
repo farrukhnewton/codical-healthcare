@@ -48,7 +48,7 @@ import { AuroraScene } from "@/components/landing-next/AuroraScene";
 // Auth loading screen (matches landing/auth aurora system)
 function AuthLoadingScreen() {
   return (
-    <div className="landingAurora min-h-screen relative">
+    <div className="landingAurora appShell min-h-screen relative">
       <AuroraScene />
       <div className="min-h-screen flex items-center justify-center px-4">
         <motion.div
@@ -149,7 +149,7 @@ function Router() {
       {!session ? (
         <Redirect to="/login" />
       ) : (
-        <div className="landingAurora flex h-screen overflow-hidden font-sans selection:bg-primary/20 relative">
+        <div className="landingAurora appShell flex h-screen overflow-hidden font-sans selection:bg-primary/20 relative">
           <AuroraScene />
           {/* Sidebar */}
           <IconRail />
@@ -244,9 +244,7 @@ function Router() {
                       </PageTransition>
                     )}
                   </Route>
-                  <Route path="/coverage">
-                    {() => <PageTransition><KnowledgeCenter /></PageTransition>}
-                  </Route>
+                  <Route path="/coverage">{() => <Redirect to="/intelligence" />}</Route>
                   <Route path="/rvu">
                     {() => (
                       <PageTransition>
@@ -321,5 +319,9 @@ function App() {
 }
 
 export default App;
+
+
+
+
 
 

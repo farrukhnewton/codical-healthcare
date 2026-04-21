@@ -23,3 +23,15 @@ server/package-lock.json
 client/.env
 client/.env.*
 
+
+# Local backup files created during refactors
+*.bak
+*.bak_*
+*.bak*
+
+
+# Local backup files created during refactors
+*.bak
+*.bak_*
+*.bak*
+

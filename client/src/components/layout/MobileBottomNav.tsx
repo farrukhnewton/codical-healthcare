@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+﻿import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, 
   Search, 
@@ -22,7 +22,7 @@ export function MobileBottomNav() {
   const [location] = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-emerald-100/60 dark:border-emerald-900/30 px-6 flex items-center justify-between pb-safe z-50 lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 h-16 appGlassStrong appCard border-t border-border/60 px-6 flex items-center justify-between pb-safe z-50 lg:hidden">
       {MOBILE_NAV_ITEMS.map((item) => {
         const isActive = location === item.href;
         return (
@@ -33,7 +33,7 @@ export function MobileBottomNav() {
                   className={`w-6 h-6 transition-all ${
                     isActive 
                       ? "text-emerald-600 dark:text-emerald-400" 
-                      : "text-gray-400 dark:text-gray-500"
+                      : "text-muted-foreground/70"
                   }`} 
                 />
                 {isActive && (
@@ -46,7 +46,7 @@ export function MobileBottomNav() {
               <span className={`text-[10px] font-bold ${
                 isActive 
                   ? "text-emerald-600 dark:text-emerald-400" 
-                  : "text-gray-400 dark:text-gray-500"
+                  : "text-muted-foreground/70"
               }`}>
                 {item.label}
               </span>
@@ -57,3 +57,4 @@ export function MobileBottomNav() {
     </nav>
   );
 }
+
