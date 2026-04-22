@@ -2034,6 +2034,129 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
     res.json(policies);
   });
 
+
+  // ============ CMS OPEN DATA ROUTES ============
+
+  // In-memory catalog cache (24 hour TTL)
+  let _cmsCatalogCache: { data: any[]; fetchedAt: number } | null = null;
+  const CMS_CATALOG_TTL_MS = 24 * 60 * 60 * 1000;
+
+  async function getCmsCatalog(): Promise<any[]> {
+    const now = Date.now();
+    if (_cmsCatalogCache && now - _cmsCatalogCache.fetchedAt < CMS_CATALOG_TTL_MS) {
+      return _cmsCatalogCache.data;
+    }
+    const res = await fetch("https://data.cms.gov/data.json");
+    if (!res.ok) throw new Error("CMS catalog fetch failed: " + res.status);
+    const json = await res.json();
+    const raw: any[] = json.dataset || [];
+
+    const trimmed = raw.map((ds: any) => {
+      const distributions: any[] = Array.isArray(ds.distribution) ? ds.distribution : [];
+      const apiUrl = distributions.find((d: any) =>
+        typeof d.accessURL === "string" && d.accessURL.includes("/data-api/")
+      )?.accessURL || null;
+      return {
+        identifier: (String(ds.identifier || "").match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i) || [])[1] || String(ds.identifier || ""),
+        title: ds.title || "",
+        description: (ds.description || "").slice(0, 400),
+        keywords: Array.isArray(ds.keyword) ? ds.keyword.slice(0, 10) : (typeof ds.keyword === "string" && ds.keyword ? [ds.keyword] : []),
+        modified: ds.modified || "",
+        apiUrl,
+      };
+    });
+
+    _cmsCatalogCache = { data: trimmed, fetchedAt: now };
+    return trimmed;
+  }
+
+  // GET /api/cms/catalog
+  // Returns trimmed dataset list from data.cms.gov/data.json, cached 24h
+  app.get("/api/cms/catalog", async (req, res) => {
+    try {
+      const catalog = await getCmsCatalog();
+
+      // Optionally filter by search query
+      const q = String(req.query.q || "").trim().toLowerCase();
+      const filtered = q
+        ? catalog.filter((ds: any) =>
+            ds.title.toLowerCase().includes(q) ||
+            ds.description.toLowerCase().includes(q) ||
+            ds.keywords.some((k: string) => k.toLowerCase().includes(q))
+          )
+        : catalog;
+
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.json({ total: filtered.length, datasets: filtered });
+    } catch (error: any) {
+      console.error("CMS catalog error:", error.message);
+      res.status(502).json({ message: "Unable to fetch CMS catalog: " + error.message });
+    }
+  });
+
+  // GET /api/cms/registry
+  // Returns the curated dataset registry from DB
+  app.get("/api/cms/registry", async (req, res) => {
+    try {
+      const { cmsDatasetRegistry } = await import("../shared/schema");
+      const rows = await db.select().from(cmsDatasetRegistry).orderBy(asc(cmsDatasetRegistry.category));
+      res.json(rows);
+    } catch (error: any) {
+      console.error("CMS registry error:", error.message);
+      res.status(500).json({ message: "Unable to fetch registry: " + error.message });
+    }
+  });
+
+  // GET /api/cms/dataset/:uuid
+  // Proxies CMS data-api with safe pagination, pass-through filters
+  app.get("/api/cms/dataset/:uuid", async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      if (!uuid || !/^[a-f0-9-]{36}$/i.test(uuid)) {
+        return res.status(400).json({ message: "Invalid dataset UUID" });
+      }
+
+      const rawSize = parseInt(String(req.query.size || "50"));
+      const size = Math.min(Math.max(rawSize, 1), 5000);
+      const offset = Math.max(parseInt(String(req.query.offset || "0")), 0);
+
+      // Build query string — pass through any extra filter params
+      const params = new URLSearchParams();
+      params.set("size", String(size));
+      params.set("offset", String(offset));
+
+      // Forward any extra query params except size/offset (for CMS filter syntax)
+      for (const [key, val] of Object.entries(req.query)) {
+        if (key !== "size" && key !== "offset") {
+          params.set(key, String(val));
+        }
+      }
+
+      const cmsUrl = "https://data.cms.gov/data-api/v1/dataset/" + uuid + "/data?" + params.toString();
+      const cmsRes = await fetch(cmsUrl, {
+        headers: { "Accept": "application/json" }
+      });
+
+      if (!cmsRes.ok) {
+        const errText = await cmsRes.text();
+        return res.status(cmsRes.status).json({
+          message: "CMS dataset API error",
+          status: cmsRes.status,
+          detail: errText.slice(0, 500),
+        });
+      }
+
+      const data = await cmsRes.json();
+      res.setHeader("Cache-Control", "public, max-age=1800");
+      res.json({ uuid, size, offset, rows: Array.isArray(data) ? data : [] });
+    } catch (error: any) {
+      console.error("CMS dataset proxy error:", error.message);
+      res.status(502).json({ message: "CMS dataset proxy error: " + error.message });
+    }
+  });
+
   return httpServer;
 }
+
+
 

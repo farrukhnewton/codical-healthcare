@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, uniqueIndex, bigint, boolean, jsonb } from "drizzle-orm/pg-core";
+﻿import { pgTable, text, serial, timestamp, integer, uniqueIndex, bigint, boolean, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -320,6 +320,19 @@ export const commercialPayersRelations = relations(commercialPayers, ({ many }) 
   policies: many(payerPolicies),
 }));
 
+
+// ============ CMS OPEN DATA REGISTRY ============
+
+export const cmsDatasetRegistry = pgTable("cms_dataset_registry", {
+  uuid: text("uuid").primaryKey(),
+  title: text("title").notNull(),
+  category: text("category").notNull().default("General"),
+  enabled: boolean("enabled").notNull().default(true),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type CmsDatasetRegistry = typeof cmsDatasetRegistry.$inferSelect;
 // ============ ZOD SCHEMAS ============
 
 export const insertUserSchema = createInsertSchema(users);
@@ -370,3 +383,4 @@ export type MedicalCode = {
     sourceUrl?: string;
   }
 };
+
