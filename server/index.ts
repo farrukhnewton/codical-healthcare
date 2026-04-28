@@ -95,7 +95,7 @@ app.use((req, res, next) => {
 
   const argPortIndex = process.argv.indexOf("--port");
   const cliPort = argPortIndex !== -1 ? parseInt(process.argv[argPortIndex + 1]) : undefined;
-  const PORT = cliPort || (process.env.PORT ? parseInt(process.env.PORT) : 5000);
+  const PORT = cliPort || (process.env.PORT ? parseInt(process.env.PORT) : 8080);
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server listening on port: ${PORT}`);
     console.log(`🔌 Socket.io ready for connections`);
