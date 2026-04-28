@@ -1,4 +1,5 @@
 import { Shield, Lock, Zap } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 
 const FOOTER_LINKS = [
   {
@@ -26,26 +27,8 @@ export function LandingFooter() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-end gap-[3px] h-7">
-                {[
-                  { c: "#E8541A", h: 14 },
-                  { c: "#C43B0E", h: 18 },
-                  { c: "#1B2F6E", h: 24 },
-                  { c: "#F0A500", h: 18 },
-                  { c: "#E8541A", h: 14 },
-                ].map((bar, i) => (
-                  <div
-                    key={i}
-                    className="w-[4px] rounded-sm"
-                    style={{ backgroundColor: bar.c, height: bar.h + "px" }}
-                  />
-                ))}
-              </div>
-              <div className="flex flex-col leading-none">
-                <span className="text-sm font-black tracking-tight text-gray-900">CODICAL</span>
-                <span className="text-[9px] font-bold tracking-widest text-emerald-600 uppercase">Health</span>
-              </div>
+            <div className="mb-4">
+              <BrandMark />
             </div>
             <p className="text-sm text-gray-500 leading-relaxed mb-4">
               AI-powered healthcare revenue cycle management platform.

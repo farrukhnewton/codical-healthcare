@@ -57,6 +57,25 @@ export const clinicalNotes = pgTable("clinical_notes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const voiceTranscriptions = pgTable("voice_transcriptions", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id"),
+  patientName: text("patient_name"),
+  patientAge: text("patient_age"),
+  dateOfVisit: text("date_of_visit"),
+  chiefComplaint: text("chief_complaint"),
+  diagnosis: text("diagnosis"),
+  medications: text("medications"),
+  dosage: text("dosage"),
+  doctorName: text("doctor_name"),
+  doctorNotes: text("doctor_notes"),
+  followupDate: text("followup_date"),
+  rawTranscript: text("raw_transcript"),
+  confidenceScore: text("confidence_score"),
+  audioFileName: text("audio_file_name"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const assignments = pgTable("assignments", {
   id: serial("id").primaryKey(),
   encounterId: integer("encounter_id").notNull(),
@@ -363,6 +382,7 @@ export type FriendRequest = typeof friendRequests.$inferSelect;
 export type Patient = typeof patients.$inferSelect;
 export type Encounter = typeof encounters.$inferSelect;
 export type ClinicalNote = typeof clinicalNotes.$inferSelect;
+export type VoiceTranscription = typeof voiceTranscriptions.$inferSelect;
 export type Assignment = typeof assignments.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type CommercialPayer = typeof commercialPayers.$inferSelect;

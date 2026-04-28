@@ -1,0 +1,12 @@
+
+> rest-express@1.0.0 dev
+> cross-env NODE_ENV=development tsx server/index.ts --port 5001
+
+Warning: Indexing all PDF objects
+Re-optimizing dependencies because lockfile has changed
+🚀 Server listening on port: 5001
+🔌 Socket.io ready for connections
+5:09:21 PM [express] GET /api/health 200 in 7ms :: {"status":"ok","timestamp":"2026-04-27T21:09:21.054Z"}
+5:09:21 PM [express] GET /api/voice/transcriptions 200 in 855ms :: []
+5:09:28 PM [express] POST /api/voice/transcribe 400 in 1ms :: {"message":"Audio file is required"}
+5:10:03 PM [express] GET /api/voice/transcriptions 200 in 793ms :: []

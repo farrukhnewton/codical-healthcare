@@ -300,7 +300,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-3">Excludes1</p>
                     <div className="space-y-2">
                       {noteCards.excludes1.slice(0, 8).map((item) => (
-                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">â€¢ {item}</div>
+                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">- {item}</div>
                       ))}
                     </div>
                   </div>
@@ -311,7 +311,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-3">Excludes2</p>
                     <div className="space-y-2">
                       {noteCards.excludes2.slice(0, 8).map((item) => (
-                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">â€¢ {item}</div>
+                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">- {item}</div>
                       ))}
                     </div>
                   </div>
@@ -322,7 +322,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-3">Code First</p>
                     <div className="space-y-2">
                       {noteCards.codeFirst.slice(0, 8).map((item) => (
-                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">â€¢ {item}</div>
+                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">- {item}</div>
                       ))}
                     </div>
                   </div>
@@ -333,7 +333,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-3">Use Additional Code</p>
                     <div className="space-y-2">
                       {noteCards.useAdditionalCode.slice(0, 8).map((item) => (
-                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">â€¢ {item}</div>
+                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">- {item}</div>
                       ))}
                     </div>
                   </div>
@@ -344,7 +344,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-violet-600 mb-3">Inclusion Terms</p>
                     <div className="space-y-2">
                       {noteCards.inclusionTerms.slice(0, 8).map((item) => (
-                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">â€¢ {item}</div>
+                        <div key={item} className="text-sm text-muted-foreground font-medium leading-6">- {item}</div>
                       ))}
                     </div>
                   </div>
@@ -387,8 +387,8 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
               <div className="space-y-4">
                 {codeGuidelines?.nlmInfo && (
                   <div className="bg-gradient-to-r from-[#0057A8] to-[#003d75] text-white rounded-2xl p-5 shadow-lg">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-2">NLM Clinical Tables Â· Live Confirmation</p>
-                    <p className="text-sm font-black">{codeGuidelines.nlmInfo.code} â€” {codeGuidelines.nlmInfo.source}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-2">NLM Clinical Tables - Live Confirmation</p>
+                    <p className="text-sm font-black">{codeGuidelines.nlmInfo.code} - {codeGuidelines.nlmInfo.source}</p>
                     <p className="text-white/90 font-medium text-sm mt-1">{codeGuidelines.nlmInfo.description}</p>
                   </div>
                 )}
@@ -448,7 +448,7 @@ export function CodeDetails({ codeItem }: CodeDetailsProps) {
                                 {item.section}
                               </span>
                               <span className="bg-background/50 text-muted-foreground border border-border/60 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                                {item.codeRangeStart}â€“{item.codeRangeEnd}
+                                {item.codeRangeStart}-{item.codeRangeEnd}
                               </span>
                             </div>
                             <h3 className="text-base md:text-lg font-black text-foreground leading-tight">{item.title}</h3>

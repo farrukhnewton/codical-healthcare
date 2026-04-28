@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer className="appGlassStrong appCard border-t border-border/60 py-2.5 px-6 flex items-center justify-between flex-shrink-0 gap-4">
       <p className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-        Â© {new Date().getFullYear()} Codical Health Solutions
+        (c) {new Date().getFullYear()} Codical Health Solutions
       </p>
       <div className="hidden sm:flex items-center gap-4">
         {[

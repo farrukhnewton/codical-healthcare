@@ -13,7 +13,7 @@ import { motion } from "framer-motion";
 const MOBILE_NAV_ITEMS = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/workbench", label: "Workbench", icon: ClipboardList },
-  { href: "/workspace", label: "AI Copy", icon: Bookmark },
+  { href: "/workspace", label: "AI Coder", icon: Bookmark },
   { href: "/search", label: "Search", icon: Search },
   { href: "/compliance", label: "Audit", icon: ShieldCheck }, // Admin focused
 ];

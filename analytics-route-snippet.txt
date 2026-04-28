@@ -1,0 +1,86 @@
+  // GET /api/cms/analytics/:type
+  // Returns aggregated CMS dataset data for dashboard charts
+  app.get("/api/cms/analytics/:type", async (req, res) => {
+    try {
+      const { type } = req.params;
+      const datasetMap = {
+        "drug-spending-b": { uuid: "bf6a5b3b-31ee-4abb-b1ad-2607a1e7510a", desc: "Part B Drug Spending - Top drugs by Medicare spend" },
+        "drug-spending-d": { uuid: "4ff7c618-4e40-483a-b390-c8a58c94fa15", desc: "Part D Drug Spending - Spending trends" },
+        "telehealth": { uuid: "939226be-b107-476e-8777-f199a840138a", desc: "Telehealth Trends - Adoption over time" },
+        "dme": { uuid: "a2d56d3f-3531-4315-9d87-e29986516b41", desc: "DME Utilization - Category breakdown" },
+      };
+      const ds = datasetMap[type];
+      if (!ds) return res.status(400).json({ message: "Unknown analytics type" });
+
+      const params = new URLSearchParams();
+      params.set("size", "100");
+      if (type === "telehealth") {
+        params.set("Bene_Geo_Desc", "National"); params.set("Bene_Race_Desc", "All");
+        params.set("Bene_Sex_Desc", "All"); params.set("Bene_Mdcr_Entlmt_Stus", "All");
+        params.set("Bene_Mdcd_Mdcr_Enrl_Stus", "All"); params.set("Bene_Age_Desc", "All");
+        params.set("Bene_RUCA_Desc", "All");
+      }
+
+      const cmsRes = await fetch("https://data.cms.gov/data-api/v1/dataset/" + ds.uuid + "/data?" + params.toString(), {
+        headers: { "Accept": "application/json" }
+      });
+      if (!cmsRes.ok) return res.status(cmsRes.status).json({ message: "CMS dataset API error", detail: (await cmsRes.text()).slice(0, 500) });
+
+      const rows = Array.isArray(await cmsRes.json()) ? await cmsRes.json() : [];
+      let result = {};
+
+      if (type === "drug-spending-b" || type === "drug-spending-d") {
+        const yearGroups = {};
+        rows.forEach(r => { const y = r.Year || "Unknown"; if (!yearGroups[y]) yearGroups[y] = []; yearGroups[y].push(r); });
+        result = {
+          type: "drug-spending", title: ds.desc,
+          yearlyData: Object.entries(yearGroups).map(([year, yr]) => ({
+            year: parseInt(year),
+            totalSpend: Math.round(yr.reduce((s, r) => s + (parseFloat(r.Tot_Spndng) || 0), 0)),
+            totalClaims: yr.reduce((s, r) => s + (parseInt(r.Tot_Clms) || 0), 0),
+            totalBenes: yr.reduce((s, r) => s + (parseInt(r.Tot_Benes) || 0), 0),
+            topDrugs: yr.sort((a, b) => (parseFloat(b.Tot_Spndng) || 0) - (parseFloat(a.Tot_Spndng) || 0)).slice(0, 5).map(r => ({
+              name: r.Brnd_Name || r.Gnrc_Name || r.HCPCS_Cd || "Unknown",
+              totalSpend: Math.round(parseFloat(r.Tot_Spndng) || 0),
+              totalClaims: parseInt(r.Tot_Clms) || 0,
+              totalBenes: parseInt(r.Tot_Benes) || 0,
+            }))
+          })).sort((a, b) => a.year - b.year)
+        };
+      }
+
+      if (type === "telehealth") {
+        const groups = {};
+        rows.forEach(r => { const k = r.Year + "-" + r.Quarter; if (!groups[k]) groups[k] = []; groups[k].push(r); });
+        result = {
+          type: "telehealth", title: ds.desc,
+          trendData: Object.entries(groups).map(([k, qr]) => {
+            const [y, q] = k.split("-");
+            const o = qr.find(r => r.Bene_Age_Desc === "All" && r.Bene_RUCA_Desc === "All") || qr[0];
+            return { year: parseInt(y), quarter: q, label: "Q" + q + " " + y, pctTelehealth: parseFloat(o.Pct_Telehealth) || 0, totalBenes: parseInt(o.Total_Bene_Telehealth) || 0 };
+          }).sort((a, b) => a.year - b.year || (a.quarter === "Overall" ? -1 : 1))
+        };
+      }
+
+      if (type === "dme") {
+        const cats = {};
+        rows.forEach(r => {
+          const h = r.DME_Tot_Suplr_HCPCS_Cds || "Other";
+          let c = "Other DME";
+          if (typeof h === "string") { if (h.startsWith("E")) c = "Durable Medical Equipment"; else if (h.startsWith("K")) c = "Orthotics/Prosthetics"; else if (h.startsWith("L")) c = "Orthotic/Prosthetic Devices"; else if (h.startsWith("A")) c = "Medical Supplies"; }
+          if (!cats[c]) cats[c] = { count: 0, payments: 0, charges: 0 };
+          cats[c].count++; cats[c].payments += parseFloat(r.DME_Suplr_Mdcr_Pymt_Amt) || 0; cats[c].charges += parseFloat(r.DME_Suplr_Sbmtd_Chrgs) || 0;
+        });
+        result = {
+          type: "dme", title: ds.desc,
+          categoryData: Object.entries(cats).map(([cat, d]) => ({ category: cat, supplierCount: d.count, totalPayments: Math.round(d.payments), totalCharges: Math.round(d.charges) })).sort((a, b) => b.totalPayments - a.totalPayments)
+        };
+      }
+
+      res.setHeader("Cache-Control", "public, max-age=1800");
+      res.json(result);
+    } catch (error) {
+      console.error("CMS analytics error:", error.message);
+      res.status(502).json({ message: "CMS analytics error: " + error.message });
+    }
+  });

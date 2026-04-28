@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Plus, Send, Paperclip, Smile, MoreVertical, Search, Users } from 'lucide-react';
+import { io, type Socket } from 'socket.io-client';
 import EmojiPicker from 'emoji-picker-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -10,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { getConversations, sendMessage, uploadChatAttachment, type Conversation } from '@/lib/chat';
 import { cn } from "@/lib/utils";
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 import { formatDistanceToNow } from 'date-fns';
 import { UserPlus, ChevronLeft, MessageSquare } from 'lucide-react';
@@ -79,7 +81,7 @@ export function TeamChat() {
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-blue-600" />
-              Messages
+              Codical Chat
             </h2>
             <div className="flex gap-1">
               <Button onClick={() => setIsFriendsModalOpen(true)} size="icon" variant="ghost" className="rounded-full text-blue-600 hover:bg-blue-50">
@@ -216,6 +218,7 @@ function ChatWindow({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const socketRef = useRef<Socket | null>(null);
   const { toast } = useToast();
 
   const addEmoji = (emoji: any) => {
@@ -234,13 +237,48 @@ function ChatWindow({
     refetchInterval: 3000,
   });
 
+  useEffect(() => {
+    if (!conversation.id || !currentUser?.id) return;
+
+    const socket = io(window.location.origin, {
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+    });
+    socketRef.current = socket;
+
+    const refreshConversation = (incoming?: any) => {
+      if (!incoming || incoming.conversationId === conversation.id) {
+        queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    };
+
+    socket.emit("user:online", currentUser.id);
+    socket.emit("conversation:join", conversation.id);
+    socket.on("new_message", refreshConversation);
+    socket.on("message_edited", refreshConversation);
+    socket.on("message_deleted", refreshConversation);
+
+    return () => {
+      socket.emit("conversation:leave", conversation.id);
+      socket.off("new_message", refreshConversation);
+      socket.off("message_edited", refreshConversation);
+      socket.off("message_deleted", refreshConversation);
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [conversation.id, currentUser?.id]);
+
   const sendMessageMutation = useMutation({
     mutationFn: sendMessage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
-    onError: (err) => console.error("Failed to send message:", err),
+    onError: (err: Error) => {
+      console.error("Failed to send message:", err);
+      toast({ title: "Message failed", description: err.message, variant: "destructive" });
+    },
   });
 
   const uploadAttachmentMutation = useMutation({
@@ -292,6 +330,11 @@ function ChatWindow({
       setMessage('');
     } catch (error) {
       console.error("Failed to send message or attachment:", error);
+      toast({
+        title: "Send failed",
+        description: error instanceof Error ? error.message : "Could not send the message.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -570,7 +613,7 @@ function EmptyState({ onNewConversation }: { onNewConversation: () => void }) {
       <div className="w-24 h-24 mb-4 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
         <Users className="w-12 h-12 text-gray-400" />
       </div>
-      <h3 className="text-lg font-semibold mb-2">Welcome to Team Chat</h3>
+      <h3 className="text-lg font-semibold mb-2">Welcome to Codical Chat</h3>
       <p className="text-sm mb-4">Select a conversation or start a new one</p>
       <Button onClick={onNewConversation}>
         <Plus className="w-4 h-4 mr-2" />

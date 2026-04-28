@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import type { InsertFavorite } from "@shared/schema";
+import type { Favorite, InsertFavorite } from "@shared/schema";
 
 function parseWithLogging<T>(schema: z.ZodSchema<T>, data: unknown, label: string): T {
   const result = schema.safeParse(data);
@@ -14,7 +14,7 @@ function parseWithLogging<T>(schema: z.ZodSchema<T>, data: unknown, label: strin
 }
 
 export function useFavorites() {
-  return useQuery({
+  return useQuery<Favorite[]>({
     queryKey: [api.favorites.list.path],
     queryFn: async () => {
       const res = await fetch(api.favorites.list.path, { credentials: "include" });

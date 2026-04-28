@@ -27,7 +27,7 @@ export async function getIcd10CodeNotes(code: string): Promise<Icd10CodeNotesRes
 
   if (!rows[0]) {
     rows = await db.select().from(icd10CodeNotes)
-      .where(sql`replace(upper(${icd10CodeNotes.code}), ., ) = ${normalized.replace(/\./g, )}`)
+      .where(sql`replace(upper(${icd10CodeNotes.code}), '.', '') = ${normalized.replace(/\./g, "")}`)
       .limit(1);
   }
 

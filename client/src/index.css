@@ -1,8 +1,10 @@
 ﻿/*
-  CODICAL HEALTH 2.0 â€” NATURE DESIGN SYSTEM
+  CODICAL HEALTH 2.0 - NATURE DESIGN SYSTEM
   Ocean + Forest + Aurora + Sunrise
-  Living Interface Â· 8K Ready
+  Living Interface - 8K Ready
 */
+
+@import "./styles/codical-os.css";
 
 @tailwind base;
 @tailwind components;
@@ -100,7 +102,7 @@
   }
 }
 
-/* â•â•â• NATURE ANIMATIONS â•â•â• */
+/* NATURE ANIMATIONS */
 @keyframes morphBlob {
   0%, 100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
   25% { border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%; }
@@ -203,7 +205,7 @@
   100% { background-position: 200% 0; }
 }
 
-/* â•â•â• NATURE UTILITIES â•â•â• */
+/* NATURE UTILITIES */
 @layer utilities {
   .glass {
     background: rgba(255, 255, 255, 0.45);
@@ -295,7 +297,7 @@
   }
 }
 
-/* â•â•â• DARK MODE OVERRIDES â•â•â• */
+/* DARK MODE OVERRIDES */
 .dark {
   --app-bg: linear-gradient(160deg, #0A1A0F 0%, #0C1929 30%, #0A1A0F 50%, #1A1500 80%, #1A0A14 100%);
 }

@@ -13,6 +13,8 @@ import { IconRail } from "@/components/layout/IconRail";
 import { TopBar } from "@/components/layout/TopBar";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
+import { SplashScreen } from "@/components/layout/SplashScreen";
+import { BrandMark } from "@/components/BrandMark";
 import { Settings } from "@/pages/Settings";
 import { Compliance } from "@/pages/Compliance";
 import { IntelligenceHub } from "@/pages/IntelligenceHub";
@@ -41,6 +43,7 @@ import { DrugLookup } from "@/pages/DrugLookup";
 import { NcciChecker } from "@/pages/NcciChecker";
 import { TeamChat } from "@/pages/TeamChat";
 import { Workbench } from "@/pages/Workbench";
+import { VoiceTranscription } from "@/pages/VoiceTranscription";
 import { supabase } from "./lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { AuroraScene } from "@/components/landing-next/AuroraScene";
@@ -58,22 +61,8 @@ function AuthLoadingScreen() {
           className="w-full max-w-sm"
         >
           <div className="ln-preview p-8 text-center">
-            <div className="flex items-center justify-center gap-3">
-              <div className="ln-bars" aria-hidden="true">
-                <span className="ln-bar" />
-                <span className="ln-bar" />
-                <span className="ln-bar" />
-                <span className="ln-bar" />
-                <span className="ln-bar" />
-              </div>
-              <div className="flex flex-col leading-none">
-                <span className="text-[14px] font-black tracking-[-0.03em] text-[hsl(var(--foreground))]">
-                  CODICAL
-                </span>
-                <span className="mt-1 text-[10px] font-black tracking-[0.28em] uppercase text-[rgba(16,185,129,0.95)]">
-                  Health
-                </span>
-              </div>
+            <div className="flex items-center justify-center">
+              <BrandMark />
             </div>
 
             <div className="mt-6 text-[12px] font-black tracking-[0.16em] uppercase text-[hsl(var(--muted-foreground))]">
@@ -111,6 +100,32 @@ function PageTransition({ children }: { children: React.ReactNode }) {
   );
 }
 
+function LandingWithIntro() {
+  const [showIntro, setShowIntro] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowIntro(false), 1650);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return (
+    <AnimatePresence mode="wait">
+      {showIntro ? (
+        <SplashScreen key="intro" />
+      ) : (
+        <motion.div
+          key="landing"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.35 }}
+        >
+          <Landing />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function Router() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -138,7 +153,7 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/" component={Landing} />
+      <Route path="/" component={LandingWithIntro} />
 
       {/* Public auth routes */}
       <Route path="/login" component={Login} />
@@ -158,7 +173,7 @@ function Router() {
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             <TopBar />
 
-            <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
+            <main className="appShellMain flex-1 overflow-y-auto pb-16 lg:pb-0">
               <AnimatePresence mode="wait">
                 <Switch>
                   <Route path="/dashboard">
@@ -186,6 +201,13 @@ function Router() {
                     {() => (
                       <PageTransition>
                         <Workbench />
+                      </PageTransition>
+                    )}
+                  </Route>
+                  <Route path="/voice-transcription">
+                    {() => (
+                      <PageTransition>
+                        <VoiceTranscription />
                       </PageTransition>
                     )}
                   </Route>
@@ -234,6 +256,13 @@ function Router() {
                     {() => (
                       <PageTransition>
                         <Reports />
+                      </PageTransition>
+                    )}
+                  </Route>
+                  <Route path="/analytics">
+                    {() => (
+                      <PageTransition>
+                        <Analytics />
                       </PageTransition>
                     )}
                   </Route>

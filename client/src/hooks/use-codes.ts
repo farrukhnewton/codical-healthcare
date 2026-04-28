@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { z } from "zod";
+import type { MedicalCode } from "@shared/schema";
 
 function parseWithLogging<T>(schema: z.ZodSchema<T>, data: unknown, label: string): T {
   const result = schema.safeParse(data);
@@ -12,7 +13,7 @@ function parseWithLogging<T>(schema: z.ZodSchema<T>, data: unknown, label: strin
 }
 
 export function useSearchCodes(query: string, type?: string) {
-  return useQuery({
+  return useQuery<MedicalCode[]>({
     queryKey: [api.codes.search.path, query, type],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -30,7 +31,7 @@ export function useSearchCodes(query: string, type?: string) {
 }
 
 export function useCode(type: string, code: string) {
-  return useQuery({
+  return useQuery<MedicalCode | null>({
     queryKey: [api.codes.get.path, type, code],
     queryFn: async () => {
       const url = buildUrl(api.codes.get.path, { type, code });

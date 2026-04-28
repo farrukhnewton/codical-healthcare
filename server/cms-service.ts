@@ -59,6 +59,14 @@ function setCache(key: string, data: any, ttl = CACHE_TTL) {
   cache.set(key, { data, expires: Date.now() + ttl });
 }
 
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 48);
+}
+
 function mapGuideline(g: GuidelineEntry): CmsGuidelineResult {
   const type: CmsGuidelineResult["type"] =
     g.codeRangeStart >= "99202" && g.codeRangeStart <= "99499" ? "CPT"
@@ -67,7 +75,7 @@ function mapGuideline(g: GuidelineEntry): CmsGuidelineResult {
     : "ICD-10-CM";
 
   return {
-    id: `${g.chapter}-${g.section}`,
+    id: `${g.chapter}-${g.section}-${slugify(g.title)}`,
     chapter: g.chapter,
     chapterTitle: g.chapterTitle,
     section: g.section,

@@ -320,11 +320,11 @@ export function CodeIntel() {
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: "20px" }}>
                       {ncciResult.hasEdit ? (
                         <div style={{ padding: "16px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "12px" }}>
-                          <div style={{ fontSize: "14px", fontWeight: 700, color: "#DC2626", marginBottom: "8px" }}>âš  NCCI Edit Found</div>
+                          <div style={{ fontSize: "14px", fontWeight: 700, color: "#DC2626", marginBottom: "8px" }}>Warning: NCCI Edit Found</div>
                           <div style={{ fontSize: "13px", color: "#7F1D1D" }}>
                             {code} and {ncciCode2} have an NCCI edit.
                             {ncciResult.modifierAllowed === "1" && " Modifier may be allowed to bypass this edit."}
-                            {ncciResult.modifierAllowed === "0" && " No modifier allowed â€” these codes cannot be billed together."}
+                            {ncciResult.modifierAllowed === "0" && " No modifier allowed - these codes cannot be billed together."}
                           </div>
                           {ncciResult.effectiveDate && <div style={{ fontSize: "11px", color: "#991B1B", marginTop: "6px" }}>Effective: {ncciResult.effectiveDate}</div>}
                         </div>

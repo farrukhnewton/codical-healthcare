@@ -7,7 +7,7 @@ export function useTheme() {
     if (typeof window === "undefined") return "light";
     const stored = localStorage.getItem("codical-theme") as Theme;
     if (stored) return stored;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    return "light";
   });
 
   useEffect(() => {

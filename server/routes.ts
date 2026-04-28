@@ -1,14 +1,16 @@
-﻿import { supabaseAdmin } from "./supabase-admin";
+import { supabaseAdmin } from "./supabase-admin";
 import { api } from "../shared";
 import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
-import { guidelines as guidelinesTable } from "@shared/schema";
 import { db } from "./db";
 import { z } from "zod";
 import { users, conversations, messages, participants, attachments, friendRequests, messageReactions } from "@shared/schema";
-import { eq, and, desc, asc, inArray, ne } from "drizzle-orm";
+import { voiceTranscriptions } from "@shared/schema";
+import { eq, and, desc, asc, inArray, ne, or, ilike, sql } from "drizzle-orm";
 import multer from "multer";
+import path from "node:path";
+import fs from "node:fs/promises";
 import pdfParse from "pdf-parse";
 import {
   enrichCodeFromNlm, searchNlmCodes
@@ -20,6 +22,103 @@ import { patients, encounters, assignments, clinicalNotes, auditLogs, commercial
 const upload = multer({ storage: multer.memoryStorage() });
 const CODICAL_AI_USERNAME = "codical.ai";
 const CODICAL_AI_NAME = "Codical AI";
+
+type ChatUserProfile = {
+  supabaseId?: string;
+  email?: string;
+  fullName?: string;
+  avatarUrl?: string | null;
+};
+
+function normalizeUsername(value: string) {
+  const normalized = value
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, ".")
+    .replace(/\.+/g, ".")
+    .replace(/^\.|\.$/g, "")
+    .slice(0, 42);
+
+  return normalized || "codical.user";
+}
+
+async function getUniqueUsername(base: string) {
+  const usernameBase = normalizeUsername(base);
+
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const candidate = attempt === 0 ? usernameBase : `${usernameBase}.${attempt + 1}`;
+    const existing = await db.select({ id: users.id }).from(users).where(eq(users.username, candidate)).limit(1);
+
+    if (!existing[0]) {
+      return candidate;
+    }
+  }
+
+  return `${usernameBase}.${Date.now()}`;
+}
+
+async function ensureChatUser(profile: ChatUserProfile) {
+  const supabaseId = String(profile.supabaseId || "").trim();
+  const email = String(profile.email || "").trim().toLowerCase();
+  const fullName = String(profile.fullName || "").trim();
+  const avatarUrl = profile.avatarUrl || null;
+
+  if (!supabaseId && !email) {
+    throw new Error("Supabase ID or email is required");
+  }
+
+  const existingBySupabaseId = supabaseId
+    ? await db.select().from(users).where(eq(users.supabaseId, supabaseId)).limit(1)
+    : [];
+  const existingByEmail = !existingBySupabaseId[0] && email
+    ? await db.select().from(users).where(eq(users.email, email)).limit(1)
+    : [];
+  const existing = existingBySupabaseId[0] || existingByEmail[0];
+
+  if (existing) {
+    const [updated] = await db.update(users)
+      .set({
+        supabaseId: existing.supabaseId || supabaseId || null,
+        email: existing.email || email || null,
+        fullName: fullName || existing.fullName,
+        avatarUrl: avatarUrl || existing.avatarUrl,
+        lastSeen: new Date(),
+      })
+      .where(eq(users.id, existing.id))
+      .returning();
+
+    return updated;
+  }
+
+  const baseUsername = email ? email.split("@")[0] : fullName || supabaseId.slice(0, 8);
+  const username = await getUniqueUsername(baseUsername);
+  const [created] = await db.insert(users).values({
+    supabaseId: supabaseId || null,
+    username,
+    email: email || null,
+    fullName: fullName || username,
+    avatarUrl,
+    role: "coder",
+    isOnline: true,
+    lastSeen: new Date(),
+  }).returning();
+
+  return created;
+}
+
+async function resolveChatUserId(value: unknown) {
+  const raw = String(value || "").trim();
+
+  if (!raw) {
+    return null;
+  }
+
+  if (/^\d+$/.test(raw)) {
+    return Number(raw);
+  }
+
+  const [found] = await db.select({ id: users.id }).from(users).where(eq(users.supabaseId, raw)).limit(1);
+  return found?.id || null;
+}
 
 async function ensureCodicalAiUser() {
   const existing = await db.select().from(users).where(eq(users.username, CODICAL_AI_USERNAME)).limit(1);
@@ -84,17 +183,181 @@ let lcdTokenExpiry: number = 0;
 
 async function getLcdToken(): Promise<string> {
   if (lcdToken && lcdTokenExpiry > Date.now()) return lcdToken;
-  const res = await fetch("https://api.coverage.cms.gov/v1/metadata/license-agreement?agree=true");
-  const data = await res.json();
+  const res = await fetch("https://api.coverage.cms.gov/v1/metadata/license-agreement?agree=true", {
+    headers: {
+      "Accept": "application/json",
+      "User-Agent": "CodicalHealth/1.0",
+    },
+  });
+  const text = await res.text();
+  const contentType = res.headers.get("content-type") || "";
+  if (!res.ok || !contentType.toLowerCase().includes("application/json")) {
+    throw new Error(`CMS coverage license API unavailable (${res.status}): ${apiPreview(text)}`);
+  }
+  const data = JSON.parse(text);
   lcdToken = data.data[0].Token;
   lcdTokenExpiry = Date.now() + 55 * 60 * 1000;
   return lcdToken!;
+}
+
+function sqlText(value: string) {
+  return String(value || "").replace(/'/g, "''");
+}
+
+function limitList<T>(items: T[], limit: number) {
+  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(100, limit)) : 50;
+  return items.slice(0, safeLimit);
+}
+
+function apiPreview(text: string) {
+  return String(text || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 240);
+}
+
+async function fetchCoverageJson(url: string, useLicenseToken = true) {
+  const headers: Record<string, string> = {
+    "Accept": "application/json",
+    "User-Agent": "CodicalHealth/1.0",
+  };
+
+  if (useLicenseToken) {
+    headers.Authorization = "Bearer " + await getLcdToken();
+  }
+
+  const response = await fetch(url, { headers });
+  const text = await response.text();
+  const contentType = response.headers.get("content-type") || "";
+
+  if (!response.ok || !contentType.toLowerCase().includes("application/json")) {
+    throw new Error(`CMS coverage API unavailable (${response.status}): ${apiPreview(text)}`);
+  }
+
+  return JSON.parse(text);
+}
+
+function getCoverageRows(data: any): any[] {
+  return Array.isArray(data?.data) ? data.data : [];
 }
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ============ VOICE TRANSCRIPTION ROUTES ============
+
+  app.post("/api/voice/transcribe",
+    upload.single("audio"),
+    async (req, res) => {
+      try {
+        const file = req.file;
+
+        if (!file) {
+          return res.status(400).json({
+            message: "Audio file is required"
+          });
+        }
+
+        const allowedTypes = [
+          "audio/wav", "audio/mpeg", "audio/mp3",
+          "audio/flac", "audio/x-flac", "audio/m4a",
+          "audio/mp4", "audio/ogg", "audio/x-m4a",
+          "audio/x-wav", "audio/wave", "audio/vnd.wave",
+          "application/octet-stream"
+        ];
+        const allowedExtensions = [
+          ".wav", ".mp3", ".flac", ".m4a", ".ogg"
+        ];
+        const fileExt = path.extname(
+          file.originalname
+        ).toLowerCase();
+
+        const hasAllowedExtension = allowedExtensions.includes(fileExt);
+        const hasAllowedMimeType = !file.mimetype || allowedTypes.includes(file.mimetype);
+
+        if (!hasAllowedExtension && !hasAllowedMimeType) {
+          return res.status(400).json({
+            message: "Invalid file type. Please upload .wav, .mp3, .flac, .m4a, or .ogg"
+          });
+        }
+
+        if (file.size > 25 * 1024 * 1024) {
+          return res.status(400).json({
+            message: "File too large. Maximum size is 25MB"
+          });
+        }
+
+        const { transcribeAudio } =
+          await import("./services/transcription");
+
+        const result = await transcribeAudio(
+          file.buffer,
+          file.originalname
+        );
+
+        if (!result.rawTranscript || result.rawTranscript.trim().length < 5) {
+          return res.status(422).json({
+            message: "Could not transcribe audio. Audio may be too short, silent, or unclear."
+          });
+        }
+
+        const [saved] = await db
+          .insert(voiceTranscriptions)
+          .values({
+            audioFileName: file.originalname,
+            rawTranscript: result.rawTranscript,
+            patientName: result.structured.patientName,
+            patientAge: result.structured.patientAge,
+            dateOfVisit: result.structured.dateOfVisit,
+            chiefComplaint: result.structured.chiefComplaint,
+            diagnosis: result.structured.diagnosis,
+            medications: result.structured.medications,
+            dosage: result.structured.dosage,
+            doctorName: result.structured.doctorName,
+            doctorNotes: result.structured.doctorNotes,
+            followupDate: result.structured.followupDate,
+          })
+          .returning();
+
+        res.status(200).json({
+          success: true,
+          id: saved.id,
+          rawTranscript: result.rawTranscript,
+          structured: {
+            patientName: result.structured.patientName,
+            patientAge: result.structured.patientAge,
+            dateOfVisit: result.structured.dateOfVisit,
+            chiefComplaint: result.structured.chiefComplaint,
+            diagnosis: result.structured.diagnosis,
+            medications: result.structured.medications,
+            dosage: result.structured.dosage,
+            doctorName: result.structured.doctorName,
+            doctorNotes: result.structured.doctorNotes,
+            followupDate: result.structured.followupDate,
+          },
+          createdAt: saved.createdAt,
+        });
+
+      } catch (error: any) {
+        console.error("Voice transcription error:", error);
+        res.status(500).json({
+          message: error.message || "Transcription failed"
+        });
+      }
+    }
+  );
+
+  app.get("/api/voice/transcriptions", async (req, res) => {
+    try {
+      const results = await db
+        .select()
+        .from(voiceTranscriptions)
+        .orderBy(desc(voiceTranscriptions.createdAt))
+        .limit(50);
+      res.json(results);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
 
   // â”€â”€â”€ Codes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get(api.codes.search.path, async (req, res) => {
@@ -110,7 +373,8 @@ export async function registerRoutes(
   });
 
   app.get(api.codes.get.path, async (req, res) => {
-    const { type, code } = req.params;
+    const type = String(req.params.type);
+    const code = String(req.params.code);
     const result = await storage.getCode(type, code);
     if (!result) return res.status(404).json({ message: "Code not found" });
     res.json(result);
@@ -144,77 +408,7 @@ export async function registerRoutes(
     res.status(204).end();
   });
 
-  // â”€â”€â”€ Guidelines â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  app.get(api.guidelines.get.path, async (_req, res) => {
-    try {
-      const rows = await db.select().from(guidelinesTable);
-      res.json(rows.map(g => ({
-        code: g.code,
-        guidelineText: g.guidelineText,
-        version: "2026",
-        date: g.lastUpdated?.toISOString(),
-      })));
-    } catch {
-      res.status(500).json({ message: "Failed to fetch guidelines" });
-    }
-  });
-
-  app.get("/api/guidelines/stats", async (_req, res) => {
-    try {
-      res.json(await getGuidelinesStatsDb());
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
-    }
-  });
-
-  app.get("/api/guidelines/search", async (req, res) => {
-    try {
-      const keyword = (req.query.q as string) || "";
-      const page = Math.max(1, Number(req.query.page) || 1);
-      const pageSize = Math.min(50, Math.max(5, Number(req.query.pageSize) || 12));
-      res.json(await searchGuidelinesDb(keyword, page, pageSize));
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
-    }
-  });
-
-  app.get("/api/guidelines/chapter/:chapter", async (req, res) => {
-    try {
-      const chapter = Number(req.params.chapter);
-      if (isNaN(chapter)) return res.status(400).json({ message: "Invalid chapter" });
-      const page = Math.max(1, Number(req.query.page) || 1);
-      const pageSize = Math.min(50, Math.max(5, Number(req.query.pageSize) || 20));
-      res.json(await getGuidelinesByChapterDb(chapter, page, pageSize));
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
-    }
-  });
-
-  app.get("/api/guidelines/type/:type", async (req, res) => {
-    try {
-      const type = req.params.type as "ICD-10-CM" | "CPT" | "HCPCS" | "General";
-      if (!["ICD-10-CM", "CPT", "HCPCS", "General"].includes(type)) {
-        return res.status(400).json({ message: "Invalid type" });
-      }
-      const page = Math.max(1, Number(req.query.page) || 1);
-      const pageSize = Math.min(50, Math.max(5, Number(req.query.pageSize) || 12));
-      res.json(await getGuidelinesByTypeDb(type, page, pageSize));
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
-    }
-  });
-
-  app.get("/api/guidelines/code/:code", async (req, res) => {
-    try {
-      const code = req.params.code.toUpperCase();
-      const guidelines = await getGuidelinesForCodeDb(code);
-      const nlmInfo = await enrichCodeFromNlm(code);
-      res.json({ guidelines, nlmInfo });
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
-    }
-  });
-
+  // ──────────────────────────────────────────────────────────────────────────────────────────────────
   app.get("/api/guidelines/nlm/search", async (req, res) => {
     try {
       const q = (req.query.q as string) || "";
@@ -288,24 +482,19 @@ export async function registerRoutes(
   app.get("/api/coverage/ncd", async (req, res) => {
     try {
       const search = (req.query.search as string) || "";
+      const limit = Number(req.query.limit || 50);
       const url = `https://api.coverage.cms.gov/v1/reports/national-coverage-ncd`;
-      const token = await getLcdToken();
-      const response = await fetch(url, { headers: { "Authorization": "Bearer " + token, "Accept": "application/json", "User-Agent": "CodicalHealth/1.0" } });
-      if (!response.ok) {
-        const text = await response.text();
-        return res.status(response.status).json({ message: "CMS coverage API error " + response.status, preview: text.slice(0, 200) });
-      }
-      const data = await response.json();
-      let results = data.data || [];
+      const data = await fetchCoverageJson(url);
+      let results = getCoverageRows(data);
       if (search) {
         results = results.filter((item: any) =>
           item.title?.toLowerCase().includes(search.toLowerCase()) ||
           item.document_display_id?.toLowerCase().includes(search.toLowerCase())
         );
       }
-      res.json(results);
+      res.json(limitList(results, limit));
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(502).json({ message: error.message });
     }
   });
 
@@ -313,11 +502,10 @@ export async function registerRoutes(
     try {
       const { id, version } = req.params;
       const url = `https://api.coverage.cms.gov/v1/data/ncd?ncdid=${id}&ncdver=${version}`;
-      const response = await fetch(url);
-      const data = await response.json();
+      const data = await fetchCoverageJson(url);
       res.json(data.data?.[0] || null);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(502).json({ message: error.message });
     }
   });
 
@@ -326,16 +514,11 @@ export async function registerRoutes(
     try {
       const search = (req.query.search as string) || "";
       const cpt = (req.query.cpt as string) || "";
+      const limit = Number(req.query.limit || 50);
       let url = `https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds`;
       if (cpt) url += `?cpt=${cpt}`;
-      const token = await getLcdToken();
-      const response = await fetch(url, { headers: { "Authorization": "Bearer " + token, "Accept": "application/json", "User-Agent": "CodicalHealth/1.0" } });
-      if (!response.ok) {
-        const text = await response.text();
-        return res.status(response.status).json({ message: "CMS coverage API error " + response.status, preview: text.slice(0, 200) });
-      }
-      const data = await response.json();
-      let results = data.data || [];
+      const data = await fetchCoverageJson(url);
+      let results = getCoverageRows(data);
       if (search && !cpt) {
         results = results.filter((item: any) =>
           item.title?.toLowerCase().includes(search.toLowerCase()) ||
@@ -343,9 +526,9 @@ export async function registerRoutes(
           item.contractor_name_type?.toLowerCase().includes(search.toLowerCase())
         );
       }
-      res.json(results);
+      res.json(limitList(results, limit));
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(502).json({ message: error.message });
     }
   });
 
@@ -358,7 +541,7 @@ export async function registerRoutes(
       const isCptCode = /^\d{4,5}[A-Z]?$/.test(query.toUpperCase());
       if (isCptCode) {
         const cptResult = await db.execute(
-          `SELECT description, category FROM cpt_codes WHERE code = '${query.toUpperCase()}' LIMIT 1`
+          `SELECT description, category FROM cpt_codes WHERE code = '${sqlText(query.toUpperCase())}' LIMIT 1`
         );
         if (cptResult.rows.length > 0) {
           const desc = String(cptResult.rows[0].description).replace(/^"|"$/g, '').toLowerCase();
@@ -375,34 +558,31 @@ export async function registerRoutes(
         searchTerms = [query];
       }
       const url = `https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds`;
-      const token = await getLcdToken();
-      const response = await fetch(url, { headers: { "Authorization": "Bearer " + token, "Accept": "application/json", "User-Agent": "CodicalHealth/1.0" } });
-      if (!response.ok) {
-        const text = await response.text();
-        return res.status(response.status).json({ message: "CMS coverage API error " + response.status, preview: text.slice(0, 200) });
-      }
-      const data = await response.json();
-      const allLcds = data.data || [];
+      const data = await fetchCoverageJson(url);
+      const allLcds = getCoverageRows(data);
       const results = allLcds.filter((lcd: any) => {
         const title = lcd.title?.toLowerCase() || "";
-        return searchTerms.some(term => title.includes(term.toLowerCase()));
+        const displayId = lcd.document_display_id?.toLowerCase() || "";
+        const contractor = lcd.contractor_name_type?.toLowerCase() || "";
+        return searchTerms.some(term => {
+          const normalized = term.toLowerCase();
+          return title.includes(normalized) || displayId.includes(normalized) || contractor.includes(normalized);
+        });
       });
       res.json({ searchTerms, isCptCode, results: results.slice(0, 50) });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(502).json({ message: error.message });
     }
   });
 
   app.get("/api/coverage/lcd/:id/:version", async (req, res) => {
     try {
       const { id, version } = req.params;
-      const token = await getLcdToken();
       const url = `https://api.coverage.cms.gov/v1/data/lcd?lcdid=${id}&ver=${version}`;
-      const response = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
-      const data = await response.json();
+      const data = await fetchCoverageJson(url);
       res.json(data.data?.[0] || null);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(502).json({ message: error.message });
     }
   });
 
@@ -722,52 +902,188 @@ export async function registerRoutes(
     try {
       const q = ((req.query.q as string) || "").trim();
       if (!q) return res.json({ results: [], intent: "empty" });
-      const isCpt = /^\d{4,5}[A-Z]?$/.test(q.toUpperCase());
-      const isIcd = /^[A-Z]\d{2}/.test(q.toUpperCase());
+      const upper = q.toUpperCase();
+      const isCpt = /^\d{4,5}[A-Z]?$/.test(upper);
+      const isIcd = /^[A-Z]\d{2}/.test(upper);
       const isNpi = /^\d{10}$/.test(q);
+      const looksLikeNdc = /^[0-9-]{4,}$/.test(q);
       let intent = "general";
       if (isNpi) intent = "npi";
       else if (isCpt) intent = "cpt";
       else if (isIcd) intent = "icd";
+
       const results: any[] = [];
-      const safe = q.replace(/'/g, "''");
-      try {
-        const r = await db.execute(`SELECT 'ICD-10-CM' as type, code, description FROM icd10_codes WHERE code ILIKE '${safe}%' OR description ILIKE '%${safe}%' LIMIT 3 UNION ALL SELECT 'CPT' as type, code, description FROM cpt_codes WHERE code ILIKE '${safe}%' OR description ILIKE '%${safe}%' LIMIT 3 UNION ALL SELECT 'HCPCS' as type, code, description FROM hcpcs_codes WHERE code ILIKE '${safe}%' OR description ILIKE '%${safe}%' LIMIT 3`);
-        r.rows.forEach((c: any) => results.push({ id: c.code, type: c.type, category: "code", title: c.code, subtitle: String(c.description||"").replace(/^"|"$/g,""), action: "code", data: c }));
-      } catch(e: any) { console.log("codes err:", e.message); }
-      if (isCpt || /^\d{4,5}$/.test(q)) {
-        try {
-          const r = await db.execute(`SELECT * FROM rvu_2026 WHERE TRIM(hcpc) = '${q.toUpperCase()}' AND (modifier IS NULL OR TRIM(modifier) = '') LIMIT 1`);
-          if (r.rows.length > 0) {
-            const row = r.rows[0] as any;
-            const nf = (Number(row.full_nfac_total)||0) * 33.4009;
-            const f = (Number(row.full_fac_total)||0) * 33.4009;
-            results.push({ id: "rvu-"+q, type: "RVU", category: "rvu", title: "RVU: "+q.toUpperCase(), subtitle: "Non-facility: $"+nf.toFixed(2)+" | Facility: $"+f.toFixed(2), action: "rvu", data: { code: q.toUpperCase(), nonFacilityPayment: nf.toFixed(2), facilityPayment: f.toFixed(2) } });
+      const seen = new Set<string>();
+      const addResult = (item: any) => {
+        const key = `${item.category}:${item.id}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        results.push(item);
+      };
+
+      const codeSearch = async () => {
+        if (q.length < 2 && !isIcd) return [];
+        const codes = await storage.searchCodes(q, undefined);
+        return codes.slice(0, 8).map((code: any) => ({
+          id: `${code.type}-${code.code}`,
+          type: code.type,
+          category: "code",
+          title: code.code,
+          subtitle: String(code.description || "").replace(/^"|"$/g, ""),
+          action: "code",
+          data: code,
+        }));
+      };
+
+      const rvuSearch = async () => {
+        if (!isCpt && !/^\d{4,5}$/.test(q)) return [];
+        const r = await db.execute(`SELECT * FROM rvu_2026 WHERE TRIM(hcpc) = '${sqlText(upper)}' AND (modifier IS NULL OR TRIM(modifier) = '') LIMIT 1`);
+        if (r.rows.length === 0) return [];
+        const row = r.rows[0] as any;
+        const cf = Number(row.conv_fact) || 33.4009;
+        const nf = (Number(row.full_nfac_total) || 0) * cf;
+        const f = (Number(row.full_fac_total) || 0) * cf;
+        return [{
+          id: "rvu-" + upper,
+          type: "RVU",
+          category: "rvu",
+          title: upper,
+          subtitle: "Non-facility: $" + nf.toFixed(2) + " | Facility: $" + f.toFixed(2),
+          action: "rvu",
+          data: { code: upper, nonFacilityPayment: nf.toFixed(2), facilityPayment: f.toFixed(2) },
+        }];
+      };
+
+      const npiSearch = async () => {
+        if (!isNpi && !(q.length > 2 && /^[a-zA-Z\s'.-]+$/.test(q))) return [];
+        const urls: string[] = [];
+        if (isNpi) {
+          urls.push("https://npiregistry.cms.hhs.gov/api/?version=2.1&limit=4&number=" + encodeURIComponent(q));
+        } else {
+          const parts = q.split(/\s+/).filter(Boolean);
+          if (parts.length >= 2) {
+            urls.push("https://npiregistry.cms.hhs.gov/api/?version=2.1&limit=3&first_name=" + encodeURIComponent(parts[0]) + "&last_name=" + encodeURIComponent(parts.slice(1).join(" ")));
           }
-        } catch(e: any) { console.log("rvu err:", e.message); }
-      }
-      if (isNpi || (!isCpt && !isIcd && q.length > 3 && /^[a-zA-Z\s]+$/.test(q))) {
-        try {
-          const parts = q.split(" ");
-          let url = "https://npiregistry.cms.hhs.gov/api/?version=2.1&limit=2";
-          if (isNpi) url += "&number="+q;
-          else { url += "&first_name="+encodeURIComponent(parts[0]); if(parts[1]) url += "&last_name="+encodeURIComponent(parts[1]); }
+          urls.push("https://npiregistry.cms.hhs.gov/api/?version=2.1&limit=3&organization_name=" + encodeURIComponent(q));
+          urls.push("https://npiregistry.cms.hhs.gov/api/?version=2.1&limit=3&last_name=" + encodeURIComponent(q));
+        }
+
+        const responses = await Promise.allSettled(urls.map(async (url) => {
           const nr = await fetch(url);
+          if (!nr.ok) return [];
           const nd = await nr.json();
-          if (nd.results) nd.results.slice(0,2).forEach((p: any) => {
-            const name = p.basic?.organization_name||[p.basic?.first_name,p.basic?.last_name].filter(Boolean).join(" ");
-            const spec = p.taxonomies?.find((t: any)=>t.primary)?.desc||"";
-            results.push({ id:"npi-"+p.number, type:"NPI", category:"npi", title:name, subtitle:spec+" | NPI: "+p.number, action:"npi", data:p });
+          return Array.isArray(nd.results) ? nd.results : [];
+        }));
+
+        return responses
+          .flatMap((item) => item.status === "fulfilled" ? item.value : [])
+          .slice(0, 4)
+          .map((p: any) => {
+            const name = p.basic?.organization_name || [p.basic?.first_name, p.basic?.last_name].filter(Boolean).join(" ");
+            const spec = p.taxonomies?.find((t: any) => t.primary)?.desc || p.taxonomies?.[0]?.desc || "";
+            return {
+              id: "npi-" + p.number,
+              type: "NPI",
+              category: "npi",
+              title: name || "Provider",
+              subtitle: [spec, "NPI: " + p.number].filter(Boolean).join(" | "),
+              action: "npi",
+              data: p,
+            };
           });
-        } catch {}
-      }
-      if (!isNpi && !isCpt && !isIcd && q.length > 2) {
-        try {
-          const dr = await fetch("https://api.fda.gov/drug/ndc.json?search=brand_name:"+encodeURIComponent(q)+"&limit=2");
+      };
+
+      const drugSearch = async () => {
+        if (q.length < 3 || isNpi || isIcd) return [];
+        const urls: string[] = [];
+        if (looksLikeNdc) {
+          urls.push("https://api.fda.gov/drug/ndc.json?search=product_ndc:" + encodeURIComponent(q) + "*&limit=4");
+        }
+        if (!isCpt || /[a-zA-Z]/.test(q)) {
+          urls.push("https://api.fda.gov/drug/ndc.json?search=brand_name:" + encodeURIComponent(q) + "*&limit=3");
+          urls.push("https://api.fda.gov/drug/ndc.json?search=generic_name:" + encodeURIComponent(q) + "*&limit=3");
+        }
+
+        const responses = await Promise.allSettled(urls.map(async (url) => {
+          const dr = await fetch(url);
+          if (!dr.ok) return [];
           const dd = await dr.json();
-          if (dd.results) dd.results.slice(0,2).forEach((d: any) => results.push({ id:"drug-"+d.product_ndc, type:"DRUG", category:"drug", title:d.brand_name||d.generic_name||q, subtitle:String(d.generic_name||"")+" | NDC: "+d.product_ndc, action:"drug", data:d }));
-        } catch {}
-      }
+          return Array.isArray(dd.results) ? dd.results : [];
+        }));
+
+        return responses
+          .flatMap((item) => item.status === "fulfilled" ? item.value : [])
+          .slice(0, 5)
+          .map((d: any) => ({
+            id: "drug-" + d.product_ndc,
+            type: "NDC",
+            category: "drug",
+            title: d.brand_name || d.generic_name || q,
+            subtitle: [d.generic_name, "NDC: " + d.product_ndc, d.labeler_name].filter(Boolean).join(" | "),
+            action: "drug",
+            data: d,
+          }));
+      };
+
+      const coverageSearch = async () => {
+        if (q.length < 3 || isNpi || looksLikeNdc) return [];
+        try {
+          const [lcdData, ncdData] = await Promise.all([
+            fetchCoverageJson("https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds"),
+            fetchCoverageJson("https://api.coverage.cms.gov/v1/reports/national-coverage-ncd"),
+          ]);
+          const needle = q.toLowerCase();
+          const lcdResults = getCoverageRows(lcdData)
+            .filter((item: any) =>
+              item.title?.toLowerCase().includes(needle) ||
+              item.document_display_id?.toLowerCase().includes(needle) ||
+              item.contractor_name_type?.toLowerCase().includes(needle)
+            )
+            .slice(0, 2)
+            .map((item: any) => ({
+              id: "lcd-" + (item.document_display_id || item.lcd_id || item.id),
+              type: "LCD",
+              category: "coverage",
+              title: item.document_display_id || item.lcd_id || "LCD",
+              subtitle: [item.title, item.contractor_name_type].filter(Boolean).join(" | "),
+              action: "coverage",
+              data: { ...item, coverageType: "LCD", search: q },
+            }));
+          const ncdResults = getCoverageRows(ncdData)
+            .filter((item: any) =>
+              item.title?.toLowerCase().includes(needle) ||
+              item.document_display_id?.toLowerCase().includes(needle)
+            )
+            .slice(0, 2)
+            .map((item: any) => ({
+              id: "ncd-" + (item.document_display_id || item.ncd_id || item.id),
+              type: "NCD",
+              category: "coverage",
+              title: item.document_display_id || item.ncd_id || "NCD",
+              subtitle: item.title || "National Coverage Determination",
+              action: "coverage",
+              data: { ...item, coverageType: "NCD", search: q },
+            }));
+          return [...lcdResults, ...ncdResults];
+        } catch {
+          return [];
+        }
+      };
+
+      const settled = await Promise.allSettled([
+        codeSearch(),
+        rvuSearch(),
+        npiSearch(),
+        drugSearch(),
+        coverageSearch(),
+      ]);
+
+      settled.forEach((group) => {
+        if (group.status === "fulfilled") {
+          group.value.forEach(addResult);
+        }
+      });
+
       res.json({ results: results.slice(0,12), intent, query: q });
     } catch (error: any) { res.status(500).json({ message: error.message }); }
   });
@@ -855,11 +1171,11 @@ export async function registerRoutes(
           return res.status(400).json({ message: "Invalid conversation ID" });
         }
   
-        if (!userId || isNaN(Number(userId))) {
+        const numericUserId = await resolveChatUserId(userId);
+
+        if (!numericUserId) {
           return res.status(400).json({ message: "Valid userId is required" });
         }
-  
-        const numericUserId = Number(userId);
   
         const [participant] = await db.select().from(participants).where(
           and(
@@ -932,7 +1248,7 @@ export async function registerRoutes(
           ? "Analyze the conversation and list clear next steps."
           : "Suggest a concise, professional reply the current user can send next.";
   
-        const prompt = `You are an AI assistant inside a professional healthcare team chat. 
+        const prompt = `You are an AI assistant inside Codical Chat, a professional healthcare team chat. 
   GUARDRAIL: You are designed to assist with medical coding, healthcare billing, and clinical documentation. 
   If any provided document or conversation is entirely unrelated to these fields, politely state: "I am designed to assist with medical coding and healthcare billing. I cannot process this specific request as it appears to be unrelated to these professional fields."
   
@@ -1046,7 +1362,7 @@ export async function registerRoutes(
         if (payer) {
           payerContext = `\n\nPAYER CONTEXT: This claim is for ${payer.name} (${payer.shortName}).\n`;
           if (payer.policies && payer.policies.length > 0) {
-            payerContext += "Relevant Payer Policies:\n" + payer.policies.map(p => `- ${p.policyName}: ${p.description}`).join("\n");
+            payerContext += "Relevant Payer Policies:\n" + payer.policies.map(p => `- ${p.title}: ${p.requirementsText}`).join("\n");
           }
         }
       }
@@ -1104,6 +1420,32 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
   // â”€â”€â”€ CHAT API ROUTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   // Get all users (for creating conversations)
+  app.post("/api/chat/me", async (req, res) => {
+    try {
+      const user = await ensureChatUser({
+        supabaseId: req.body.supabaseId,
+        email: req.body.email,
+        fullName: req.body.fullName,
+        avatarUrl: req.body.avatarUrl,
+      });
+
+      res.json({
+        id: user.id,
+        supabaseId: user.supabaseId,
+        username: user.username,
+        fullName: user.fullName,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+        isOnline: user.isOnline,
+        lastSeen: user.lastSeen,
+      });
+    } catch (error: any) {
+      console.error("Error resolving current chat user:", error);
+      res.status(500).json({ message: error.message || "Failed to resolve current user" });
+    }
+  });
+
   app.get("/api/chat/users", async (_req, res) => {
     try {
       const allUsers = await db.select({
@@ -1173,8 +1515,8 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
   
   app.post("/api/chat/ai/conversation", async (req, res) => {
     try {
-      const userId = parseInt(String(req.body.userId));
-      if (isNaN(userId)) {
+      const userId = await resolveChatUserId(req.body.userId);
+      if (!userId) {
         return res.status(400).json({ message: "Valid userId is required" });
       }
 
@@ -1201,10 +1543,10 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
  
   app.post("/api/chat/ai/message", async (req, res) => {
     try {
-      const userId = parseInt(String(req.body.userId));
+      const userId = await resolveChatUserId(req.body.userId);
       const content = String(req.body.content || "").trim();
 
-      if (isNaN(userId)) {
+      if (!userId) {
         return res.status(400).json({ message: "Valid userId is required" });
       }
 
@@ -1256,7 +1598,7 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
       let aiText = "I'm Codical AI. How can I help you today?";
 
       if (apiKey) {
-        const prompt = `You are Codical AI, an AI assistant inside Codical Health team chat.
+        const prompt = `You are Codical AI, an AI assistant inside Codical Chat.
 Respond conversationally, helpfully, and professionally.
 Keep responses concise unless the user asks for more detail.
 
@@ -1298,6 +1640,30 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
         .set({ updatedAt: new Date() })
         .where(eq(conversations.id, conversation.id));
 
+      if ((global as any).io) {
+        const fullUserMessage = await db.query.messages.findFirst({
+          where: eq(messages.id, userMessage.id),
+          with: {
+            sender: {
+              columns: { id: true, fullName: true, username: true, avatarUrl: true }
+            },
+            attachments: true,
+          }
+        });
+        const fullAiMessage = await db.query.messages.findFirst({
+          where: eq(messages.id, aiMessage.id),
+          with: {
+            sender: {
+              columns: { id: true, fullName: true, username: true, avatarUrl: true }
+            },
+            attachments: true,
+          }
+        });
+
+        (global as any).io.to(`conversation:${conversation.id}`).emit("new_message", fullUserMessage);
+        (global as any).io.to(`conversation:${conversation.id}`).emit("new_message", fullAiMessage);
+      }
+
       return res.json({
         conversationId: conversation.id,
         userMessage,
@@ -1312,8 +1678,8 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
   // Get conversations for a user
   app.get("/api/chat/conversations/user/:userId", async (req, res) => {
     try {
-      const userId = parseInt(req.params.userId);
-      if (isNaN(userId)) {
+      const userId = await resolveChatUserId(req.params.userId);
+      if (!userId) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
@@ -1510,7 +1876,8 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
         const isAiConversation = conversationParticipants.some(p => p.userId === aiUser.id);
   
         if (isAiConversation && resolvedSenderId !== aiUser.id) {
-          const recentMessages = await db.query.messages.findMany({
+          try {
+            const recentMessages = await db.query.messages.findMany({
             where: eq(messages.conversationId, conversationId),
             with: {
               sender: {
@@ -1539,7 +1906,7 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
   
           const apiKey = process.env.GEMINI_API_KEY;
           if (apiKey) {
-            const prompt = `You are Codical AI, an AI assistant inside Codical Health team chat.
+            const prompt = `You are Codical AI, an AI assistant inside Codical Chat.
   Respond conversationally, helpfully, and professionally.
   Keep responses concise unless the user asks for more detail.
   
@@ -1569,18 +1936,35 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
               const aiText = aiJson.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
   
               if (aiText) {
-                await db.insert(messages).values({
+                const [aiMessage] = await db.insert(messages).values({
                   conversationId,
                   senderId: aiUser.id,
                   content: aiText,
                   messageType: "text",
-                });
+                }).returning();
   
                 await db.update(conversations)
                   .set({ updatedAt: new Date() })
                   .where(eq(conversations.id, conversationId));
+
+                const fullAiMessage = await db.query.messages.findFirst({
+                  where: eq(messages.id, aiMessage.id),
+                  with: {
+                    sender: {
+                      columns: { id: true, fullName: true, username: true, avatarUrl: true }
+                    },
+                    attachments: true,
+                  }
+                });
+
+                if ((global as any).io) {
+                  (global as any).io.to(`conversation:${conversationId}`).emit("new_message", fullAiMessage);
+                }
               }
             }
+          }
+          } catch (aiError) {
+            console.error("Codical AI chat response failed:", aiError);
           }
         }
       // Get full message with sender info
@@ -1610,13 +1994,13 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
       try {
         const file = req.file;
         const conversationId = parseInt(String(req.body.conversationId));
-        const senderId = parseInt(String(req.body.senderId));
+        const senderId = await resolveChatUserId(req.body.senderId);
   
         if (!file) {
           return res.status(400).json({ message: "File is required" });
         }
   
-        if (isNaN(conversationId) || isNaN(senderId)) {
+        if (isNaN(conversationId) || !senderId) {
           return res.status(400).json({ message: "conversationId and senderId are required" });
         }
   
@@ -1633,6 +2017,7 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
   
         const safeFileName = `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
         const storagePath = `chat/${conversationId}/${safeFileName}`;
+        let fileUrl = "";
 
         const { error: uploadError } = await supabaseAdmin.storage
           .from("chat-attachments")
@@ -1642,7 +2027,17 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
           });
 
         if (uploadError) {
-          return res.status(500).json({ message: uploadError.message || "Failed to upload file to storage" });
+          console.warn("Supabase chat attachment upload failed, using local uploads fallback:", uploadError.message);
+          const localDir = path.resolve(process.cwd(), "uploads", "chat", String(conversationId));
+          await fs.mkdir(localDir, { recursive: true });
+          await fs.writeFile(path.join(localDir, safeFileName), file.buffer);
+          fileUrl = `/uploads/chat/${conversationId}/${safeFileName}`;
+        } else {
+          const { data: publicUrlData } = supabaseAdmin.storage
+            .from("chat-attachments")
+            .getPublicUrl(storagePath);
+
+          fileUrl = publicUrlData.publicUrl;
         }
 
         // --- NEW: Extract text for AI reading ---
@@ -1667,12 +2062,6 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
           content: file.originalname,
           messageType: "file",
         }).returning();
-  
-        const { data: publicUrlData } = supabaseAdmin.storage
-        .from("chat-attachments")
-        .getPublicUrl(storagePath);
- 
-      const fileUrl = publicUrlData.publicUrl;
   
         await db.insert(attachments).values({
           messageId: newMessage.id,
@@ -1929,7 +2318,7 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
 
     const results = await db.select({
       id: encounters.id,
-      patientName: text(`patients.first_name || ' ' || patients.last_name`), // Drizzle won't handle this concat easily like this, I'll fix it below
+      patientName: sql<string>`${patients.firstName} || ' ' || ${patients.lastName}`.as("patientName"),
       date: encounters.date,
       status: encounters.status,
       encounterType: encounters.encounterType,
@@ -2007,7 +2396,7 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
       return res.status(403).json({ message: "Forbidden: Admin access only" });
     }
 
-    const logs = await db.query.audit_logs.findMany({
+    const logs = await db.query.auditLogs.findMany({
       orderBy: desc(auditLogs.timestamp),
       limit: 100,
       with: {
@@ -2034,6 +2423,67 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
     res.json(policies);
   });
 
+
+  // ============ GUIDELINES ROUTES ============
+
+  app.get("/api/guidelines", async (req, res) => {
+    try {
+      const { searchGuidelines: search } = await import("./cms-service");
+      const keyword = String(req.query.q || "").trim();
+      const page = Math.max(parseInt(String(req.query.page || "1")), 1);
+      const pageSize = Math.min(Math.max(parseInt(String(req.query.pageSize || "50")), 1), 100);
+      const result = search(keyword, page, pageSize);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Guidelines search error:", error.message);
+      res.status(500).json({ message: "Failed to fetch guidelines" });
+    }
+  });
+
+  app.get("/api/guidelines/stats", async (req, res) => {
+    try {
+      const { getGuidelinesStats } = await import("./cms-service");
+      res.json(getGuidelinesStats());
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  app.get("/api/guidelines/type/:type", async (req, res) => {
+    try {
+      const { getGuidelinesByType } = await import("./cms-service");
+      const type = req.params.type as any;
+      const page = Math.max(parseInt(String(req.query.page || "1")), 1);
+      const pageSize = Math.min(Math.max(parseInt(String(req.query.pageSize || "50")), 1), 100);
+      res.json(getGuidelinesByType(type, page, pageSize));
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch guidelines by type" });
+    }
+  });
+
+  app.get("/api/guidelines/chapter/:chapter", async (req, res) => {
+    try {
+      const { getGuidelinesByChapter } = await import("./cms-service");
+      const chapter = parseInt(req.params.chapter);
+      const page = Math.max(parseInt(String(req.query.page || "1")), 1);
+      const pageSize = Math.min(Math.max(parseInt(String(req.query.pageSize || "50")), 1), 100);
+      res.json(getGuidelinesByChapter(chapter, page, pageSize));
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch guidelines by chapter" });
+    }
+  });
+
+  app.get("/api/guidelines/code/:code", async (req, res) => {
+    try {
+      const { getGuidelinesForCode } = await import("./cms-service");
+      const code = req.params.code.toUpperCase();
+      const guidelines = getGuidelinesForCode(code);
+      const nlmInfo = await enrichCodeFromNlm(code);
+      res.json({ guidelines, nlmInfo });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch guidelines for code" });
+    }
+  });
 
   // ============ CMS OPEN DATA ROUTES ============
 
@@ -2152,6 +2602,103 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
     } catch (error: any) {
       console.error("CMS dataset proxy error:", error.message);
       res.status(502).json({ message: "CMS dataset proxy error: " + error.message });
+    }
+  });
+
+
+  // GET /api/cms/analytics/:type
+  // Returns aggregated CMS dataset data for dashboard charts
+  app.get("/api/cms/analytics/:type", async (req, res) => {
+    try {
+      const { type } = req.params;
+      const datasetMap: Record<string, { uuid: string; desc: string }> = {
+        "drug-spending-b": { uuid: "bf6a5b3b-31ee-4abb-b1ad-2607a1e7510a", desc: "Part B Drug Spending - Top drugs by Medicare spend" },
+        "drug-spending-d": { uuid: "4ff7c618-4e40-483a-b390-c8a58c94fa15", desc: "Part D Drug Spending - Spending trends" },
+        "telehealth": { uuid: "939226be-b107-476e-8777-f199a840138a", desc: "Telehealth Trends - Adoption over time" },
+        "dme": { uuid: "a2d56d3f-3531-4315-9d87-e29986516b41", desc: "DME Utilization - Category breakdown" },
+      };
+      const ds = datasetMap[type];
+      if (!ds) return res.status(400).json({ message: "Unknown analytics type" });
+
+      const params = new URLSearchParams();
+      params.set("size", "100");
+      if (type === "telehealth") {
+        params.set("Bene_Geo_Desc", "National"); params.set("Bene_Race_Desc", "All");
+        params.set("Bene_Sex_Desc", "All"); params.set("Bene_Mdcr_Entlmt_Stus", "All");
+        params.set("Bene_Mdcd_Mdcr_Enrl_Stus", "All"); params.set("Bene_Age_Desc", "All");
+        params.set("Bene_RUCA_Desc", "All");
+      }
+
+      const cmsRes = await fetch("https://data.cms.gov/data-api/v1/dataset/" + ds.uuid + "/data?" + params.toString(), {
+        headers: { "Accept": "application/json" }
+      });
+      if (!cmsRes.ok) return res.status(cmsRes.status).json({ message: "CMS dataset API error", detail: (await cmsRes.text()).slice(0, 500) });
+
+      const rawData = await cmsRes.json();
+      const rows: Record<string, string>[] = Array.isArray(rawData) ? rawData : [];
+      let result: Record<string, unknown> = {};
+
+      if (type === "drug-spending-b" || type === "drug-spending-d") {
+        const yearGroups: Record<string, Record<string, string>[]> = {};
+        rows.forEach(r => {
+          const y = r.Year || "Unknown";
+          if (!yearGroups[y]) yearGroups[y] = [];
+          yearGroups[y].push(r);
+        });
+        result = {
+          type: "drug-spending", title: ds.desc,
+          yearlyData: Object.entries(yearGroups).map(([year, yr]) => ({
+            year: parseInt(year),
+            totalSpend: Math.round(yr.reduce((s, r) => s + (parseFloat(r.Tot_Spndng) || 0), 0)),
+            totalClaims: yr.reduce((s, r) => s + (parseInt(r.Tot_Clms) || 0), 0),
+            totalBenes: yr.reduce((s, r) => s + (parseInt(r.Tot_Benes) || 0), 0),
+            topDrugs: [...yr].sort((a, b) => (parseFloat(b.Tot_Spndng) || 0) - (parseFloat(a.Tot_Spndng) || 0)).slice(0, 5).map(r => ({
+              name: r.Brnd_Name || r.Gnrc_Name || r.HCPCS_Cd || "Unknown",
+              totalSpend: Math.round(parseFloat(r.Tot_Spndng) || 0),
+              totalClaims: parseInt(r.Tot_Clms) || 0,
+              totalBenes: parseInt(r.Tot_Benes) || 0,
+            }))
+          })).sort((a, b) => a.year - b.year)
+        };
+      }
+
+      if (type === "telehealth") {
+        const groups: Record<string, Record<string, string>[]> = {};
+        rows.forEach(r => {
+          const k = r.Year + "-" + r.Quarter;
+          if (!groups[k]) groups[k] = [];
+          groups[k].push(r);
+        });
+        result = {
+          type: "telehealth", title: ds.desc,
+          trendData: Object.entries(groups).map(([k, qr]) => {
+            const [y, q] = k.split("-");
+            const o = qr.find(r => r.Bene_Age_Desc === "All" && r.Bene_RUCA_Desc === "All") || qr[0];
+            return { year: parseInt(y), quarter: q, label: "Q" + q + " " + y, pctTelehealth: parseFloat(o.Pct_Telehealth) || 0, totalBenes: parseInt(o.Total_Bene_Telehealth) || 0 };
+          }).sort((a, b) => a.year - b.year || (a.quarter === "Overall" ? -1 : 1))
+        };
+      }
+
+      if (type === "dme") {
+        const cats: Record<string, { count: number; payments: number; charges: number }> = {};
+        rows.forEach(r => {
+          const h = r.DME_Tot_Suplr_HCPCS_Cds || "Other";
+          let c = "Other DME";
+          if (typeof h === "string") { if (h.startsWith("E")) c = "Durable Medical Equipment"; else if (h.startsWith("K")) c = "Orthotics/Prosthetics"; else if (h.startsWith("L")) c = "Orthotic/Prosthetic Devices"; else if (h.startsWith("A")) c = "Medical Supplies"; }
+          if (!cats[c]) cats[c] = { count: 0, payments: 0, charges: 0 };
+          cats[c].count++; cats[c].payments += parseFloat(r.DME_Suplr_Mdcr_Pymt_Amt) || 0; cats[c].charges += parseFloat(r.DME_Suplr_Sbmtd_Chrgs) || 0;
+        });
+        result = {
+          type: "dme", title: ds.desc,
+          categoryData: Object.entries(cats).map(([cat, d]) => ({ category: cat, supplierCount: d.count, totalPayments: Math.round(d.payments), totalCharges: Math.round(d.charges) })).sort((a, b) => b.totalPayments - a.totalPayments)
+        };
+      }
+
+      res.setHeader("Cache-Control", "public, max-age=1800");
+      res.json(result);
+    } catch (error: any) {
+      console.error("CMS analytics error:", error.message);
+      res.status(502).json({ message: "CMS analytics error: " + error.message });
     }
   });
 

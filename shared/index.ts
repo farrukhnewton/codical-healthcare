@@ -9,6 +9,7 @@ export const api = {
     list: { path: '/api/favorites' },
     create: { 
       path: '/api/favorites',
+      method: 'POST',
       input: z.object({
         userId: z.number(),
         codeType: z.string(),
@@ -16,7 +17,7 @@ export const api = {
         description: z.string(),
       })
     },
-    delete: { path: '/api/favorites/:id' }
+    delete: { path: '/api/favorites/:id', method: 'DELETE' }
   },
   guidelines: {
     get: { path: '/api/guidelines' }
@@ -26,11 +27,11 @@ export const api = {
   }
 };
 
-export function buildUrl(path: string, params?: Record<string, string>): string {
+export function buildUrl(path: string, params?: Record<string, string | number>): string {
   let url = path;
   if (params) {
     for (const [key, value] of Object.entries(params)) {
-      url = url.replace(`:${key}`, encodeURIComponent(value));
+      url = url.replace(`:${key}`, encodeURIComponent(String(value)));
     }
   }
   return url;

@@ -1,0 +1,21 @@
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+Error [TransformError]: spawn EPERM
+    at ChildProcess.spawn (node:internal/child_process:421:11)
+    at Object.spawn (node:child_process:796:9)
+    at ensureServiceIsRunning (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\@esbuild-kit\esm-loader\node_modules\esbuild\lib\main.js:2268:29)
+    at transform (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\@esbuild-kit\esm-loader\node_modules\esbuild\lib\main.js:2168:37)
+    at file:///C:/Users/TekSoft/.gemini/antigravity/scratch/codical-healthcare/node_modules/@esbuild-kit/esm-loader/dist/index-7AaEi15b.mjs:14:2865
+    at applyTransformers (file:///C:/Users/TekSoft/.gemini/antigravity/scratch/codical-healthcare/node_modules/@esbuild-kit/esm-loader/dist/index-7AaEi15b.mjs:14:1266)
+    at transform (file:///C:/Users/TekSoft/.gemini/antigravity/scratch/codical-healthcare/node_modules/@esbuild-kit/esm-loader/dist/index-7AaEi15b.mjs:14:2812)
+    at load (file:///C:/Users/TekSoft/.gemini/antigravity/scratch/codical-healthcare/node_modules/@esbuild-kit/esm-loader/dist/esm/index.mjs?1777308600681:2:2348)
+    at async nextLoad (node:internal/modules/esm/hooks:785:22)
+    at async AsyncLoaderHooksOnLoaderHookWorker.load (node:internal/modules/esm/hooks:410:20) {
+  errno: -4048,
+  code: 'EPERM',
+  syscall: 'spawn'
+}
+
+Node.js v24.14.1

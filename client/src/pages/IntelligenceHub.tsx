@@ -1,6 +1,7 @@
-﻿import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { useDebounce } from "use-debounce";
 import {
   BookOpen, FileText, Shield, Search, ExternalLink,
   Download, ChevronRight, Globe, ArrowLeft,
@@ -30,23 +31,47 @@ const CMS_RESOURCES = [
     items: [
       { title: "FY 2026 ICD-10-CM Official Coding Guidelines", desc: "Official guidelines for coding and reporting FY2026", url: "https://www.cms.gov/files/document/fy-2026-icd-10-cm-coding-guidelines.pdf", type: "PDF", date: "Oct 2025" },
       { title: "FY 2026 ICD-10-CM Codes", desc: "Complete tabular list and index", url: "https://www.cms.gov/medicare/coding-billing/icd-10-codes", type: "WEB", date: "Oct 2025" },
+      { title: "ICD-10-CM Code Updates (Addenda)", desc: "Additions, deletions, and revisions to the ICD-10-CM code set", url: "https://www.cms.gov/medicare/coding-billing/icd-10-codes/icd-10-cm-code-updates", type: "WEB", date: "Oct 2025" },
+    ]
+  },
+  {
+    category: "CPT / E&M", color: "#7C3AED",
+    items: [
+      { title: "AMA CPT E/M Guidelines 2026", desc: "Current Procedural Terminology evaluation and management documentation guidelines", url: "https://www.ama-assn.org/practice-management/cpt/cpt-evaluation-and-management", type: "WEB", date: "Jan 2026" },
+      { title: "Medicare Claims Processing Manual Ch.12", desc: "Physicians/Nonphysician Practitioners billing instructions", url: "https://www.cms.gov/regulations-and-guidance/guidance/manuals/downloads/clm104c12.pdf", type: "PDF", date: "2026" },
     ]
   },
   {
     category: "Medicare Fee Schedule", color: "#16A34A",
     items: [
       { title: "CY 2026 Physician Fee Schedule Final Rule", desc: "Complete CY2026 PFS final rule and payment rates", url: "https://www.cms.gov/medicare/payment/fee-schedules/physician", type: "WEB", date: "Nov 2025" },
+      { title: "MPFS Relative Value Files", desc: "Download RVU data files for current and prior years", url: "https://www.cms.gov/medicare/payment/fee-schedules/physician/pfs-relative-value-files", type: "WEB", date: "2026" },
+    ]
+  },
+  {
+    category: "HCPCS / DME", color: "#EA580C",
+    items: [
+      { title: "HCPCS Level II Code Set", desc: "Alphanumeric medical code set for products, supplies, and services", url: "https://www.cms.gov/medicare/coding-billing/healthcare-common-procedure-system", type: "WEB", date: "2026" },
+      { title: "DME Coverage Determination", desc: "Medicare coverage policies for durable medical equipment", url: "https://www.cms.gov/medicare/coverage/coverage-database", type: "WEB", date: "2026" },
     ]
   },
 ];
 
-const KEY_GUIDELINES = [
-  { id: "g1", category: "General",  icon: BookMarked,  color: "#2563EB", title: "Code to Highest Level of Specificity",              content: "Code to the highest number of characters available. A code is invalid if it has not been coded to the full number of characters required for that code, including the 7th character, if applicable.", source: "ICD-10-CM Guidelines §I.B.1",       year: "FY2026" },
-  { id: "g2", category: "General",  icon: BookMarked,  color: "#2563EB", title: "Signs and Symptoms",                                 content: "Codes that describe symptoms and signs, as opposed to diagnoses, are acceptable for reporting purposes when a related definitive diagnosis has not been established (confirmed) by the provider.", source: "ICD-10-CM Guidelines §I.B.4",       year: "FY2026" },
-  { id: "g3", category: "E/M",      icon: Stethoscope, color: "#7C3AED", title: "E/M Level Selection - Medical Decision Making",       content: "For E/M services, the level of medical decision making (MDM) is based on three elements: number and complexity of problems, amount and/or complexity of data reviewed, and risk of complications and/or morbidity or mortality.", source: "AMA CPT E/M Guidelines 2026",        year: "2026"   },
+// Type filter tabs for guidelines
+const TYPE_FILTERS = [
+  { id: "All", label: "All" },
+  { id: "General", label: "General" },
+  { id: "ICD-10-CM", label: "ICD-10-CM" },
+  { id: "CPT", label: "CPT / E&M" },
+  { id: "HCPCS", label: "HCPCS" },
 ];
 
-const CATEGORIES = ["All", "General", "E/M", "Surgery", "Modifiers", "Telehealth", "Sequencing"];
+const TYPE_COLORS: Record<string, { icon: string; bg: string }> = {
+  "General":    { icon: "#2563EB", bg: "#2563EB20" },
+  "ICD-10-CM":  { icon: "#16A34A", bg: "#16A34A20" },
+  "CPT":        { icon: "#7C3AED", bg: "#7C3AED20" },
+  "HCPCS":      { icon: "#EA580C", bg: "#EA580C20" },
+};
 
 const CATEGORY_COLORS: Record<string, string> = {
   Compliance:  "bg-red-500/20 text-red-300 border-red-500/30",
@@ -56,72 +81,233 @@ const CATEGORY_COLORS: Record<string, string> = {
   General:     "bg-gray-500/20 text-gray-300 border-gray-500/30",
 };
 
-// ─── Medicare blocked notice ──────────────────────────────────────────────────
-function MedicarePolicyList() {
+type CoverageMode = "lcd" | "ncd";
+
+function getCoverageId(item: any) {
+  return String(item?.document_display_id || item?.lcd_id || item?.ncd_id || item?.id || "Coverage");
+}
+
+function getCoverageVersion(item: any) {
+  return String(item?.version || item?.document_version || item?.version_number || item?.ncd_version || item?.lcd_version || "");
+}
+
+function getCoverageUrl(item: any, mode: CoverageMode) {
+  const id = getCoverageId(item);
+  const version = getCoverageVersion(item);
+  const numericId = id.replace(/^[A-Z]/i, "");
+
+  if (mode === "lcd") {
+    return `https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?lcdid=${encodeURIComponent(numericId)}${version ? `&ver=${encodeURIComponent(version)}` : ""}`;
+  }
+
+  return `https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?ncdid=${encodeURIComponent(id)}${version ? `&ncdver=${encodeURIComponent(version)}` : ""}`;
+}
+
+function CoverageResultCard({ item, mode }: { item: any; mode: CoverageMode }) {
+  const id = getCoverageId(item);
+  const title = item?.title || item?.document_title || "Untitled coverage document";
+  const contractor = item?.contractor_name_type || item?.contractor_name || item?.contractor || "";
+  const status = item?.status || item?.document_status || "";
+  const effective = item?.effective_date || item?.effectiveDate || item?.original_effective_date || "";
+  const updated = item?.last_updated || item?.last_updated_date || item?.revision_effective_date || "";
+
   return (
-    <div className="space-y-6">
-      <div className="p-6 rounded-2xl appGlass appCard border border-amber-500/30 flex gap-4 items-start">
-        <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-          <AlertTriangle className="w-5 h-5 text-amber-400" />
+    <div className="p-4 rounded-2xl appGlass appCard border border-white/15 hover:border-emerald-500/40 transition-all">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <Badge className={mode === "lcd" ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30" : "bg-orange-500/20 text-orange-300 border-orange-500/30"} variant="outline">
+              {mode.toUpperCase()}
+            </Badge>
+            <span className="font-mono text-xs font-black text-foreground">{id}</span>
+            {status && <span className="text-[10px] font-bold text-emerald-300">{status}</span>}
+          </div>
+          <h3 className="text-sm font-black text-foreground leading-snug">{title}</h3>
+          {contractor && <p className="text-xs text-muted-foreground mt-1">{contractor}</p>}
+          <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+            {effective && <span>Effective: {effective}</span>}
+            {updated && <span>Updated: {updated}</span>}
+            {getCoverageVersion(item) && <span>Version: {getCoverageVersion(item)}</span>}
+          </div>
         </div>
-        <div className="flex-1">
-          <h3 className="font-bold text-foreground mb-1">Medicare LCD/NCD Temporarily Unavailable</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-            The CMS Coverage API (<code className="text-xs bg-black/20 px-1 py-0.5 rounded">api.coverage.cms.gov</code>) is
-            currently returning a 403 CloudFront block in this environment. This affects LCD and NCD list lookups.
-          </p>
-          <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-            As an alternative, use the <strong className="text-foreground">CMS Open Data</strong> tab to browse real Medicare
-            datasets directly from <code className="text-xs bg-black/20 px-1 py-0.5 rounded">data.cms.gov</code>.
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            <a
-              href="https://www.cms.gov/medicare/coverage/coverage-database"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-400 hover:text-sky-300 transition-colors"
+        <Button asChild size="sm" variant="outline" className="gap-1.5 flex-shrink-0">
+          <a href={getCoverageUrl(item, mode)} target="_blank" rel="noreferrer noopener">
+            <ExternalLink size={12} /> MCD
+          </a>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function LiveMedicarePolicyList() {
+  const storedCoverage = useMemo(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem("coverage_lcd") || "null");
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const [mode, setMode] = useState<CoverageMode>(() => storedCoverage?.coverageType === "NCD" ? "ncd" : "lcd");
+  const [searchTerm, setSearchTerm] = useState(() =>
+    sessionStorage.getItem("coverage_search") || storedCoverage?.search || ""
+  );
+  const [debouncedSearch] = useDebounce(searchTerm, 350);
+
+  useEffect(() => {
+    sessionStorage.removeItem("coverage_lcd");
+    sessionStorage.removeItem("coverage_search");
+  }, []);
+
+  const query = debouncedSearch.trim();
+  const lcdQuery = useQuery({
+    queryKey: ["/api/coverage/lcd", "smart", query],
+    queryFn: async () => {
+      const endpoint = query
+        ? `/api/coverage/lcd/search/smart?q=${encodeURIComponent(query)}`
+        : "/api/coverage/lcd?limit=30";
+      const res = await fetch(endpoint, { credentials: "include" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "CMS LCD API unavailable");
+      }
+      return res.json();
+    },
+    enabled: mode === "lcd",
+    retry: false,
+    staleTime: 1000 * 60 * 20,
+  });
+
+  const ncdQuery = useQuery({
+    queryKey: ["/api/coverage/ncd", query],
+    queryFn: async () => {
+      const endpoint = `/api/coverage/ncd?limit=30${query ? `&search=${encodeURIComponent(query)}` : ""}`;
+      const res = await fetch(endpoint, { credentials: "include" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "CMS NCD API unavailable");
+      }
+      return res.json();
+    },
+    enabled: mode === "ncd",
+    retry: false,
+    staleTime: 1000 * 60 * 20,
+  });
+
+  const currentQuery = mode === "lcd" ? lcdQuery : ncdQuery;
+  const rows: any[] = mode === "lcd"
+    ? Array.isArray(lcdQuery.data?.results) ? lcdQuery.data.results : Array.isArray(lcdQuery.data) ? lcdQuery.data : []
+    : Array.isArray(ncdQuery.data) ? ncdQuery.data : [];
+
+  const searchTerms: string[] = mode === "lcd" && Array.isArray(lcdQuery.data?.searchTerms)
+    ? lcdQuery.data.searchTerms
+    : query ? [query] : [];
+
+  const examples = mode === "lcd"
+    ? ["diabetes", "cardiac", "wound care", "sleep study", "99214", "J1100"]
+    : ["diabetes", "sleep apnea", "transplants", "home health", "mri"];
+
+  return (
+    <div className="space-y-5">
+      <div className="p-5 rounded-2xl appGlass appCard border border-emerald-500/20 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex gap-4">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+            <Shield className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <h3 className="font-bold text-foreground mb-1">Live CMS Coverage API</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Search Medicare Local Coverage Determinations and National Coverage Determinations from the CMS Coverage API inside Codical.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {(["lcd", "ncd"] as const).map((item) => (
+            <Button
+              key={item}
+              size="sm"
+              variant={mode === item ? "default" : "outline"}
+              onClick={() => setMode(item)}
+              className="rounded-full"
             >
-              <ExternalLink size={12} /> Open CMS LCD/NCD Database Directly
-            </a>
-          </div>
+              {item.toUpperCase()}
+            </Button>
+          ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-5 rounded-2xl appGlass appCard border border-white/10 space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-cyan-400" />
-            </div>
-            <span className="font-bold text-sm text-foreground">Local Coverage Determinations</span>
-          </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            LCDs are made by Medicare Administrative Contractors (MACs) and specify when items/services are covered in their jurisdiction.
-          </p>
-          <a href="https://www.cms.gov/medicare-coverage-database/search/search-criteria.aspx" target="_blank" rel="noreferrer noopener">
-            <Button size="sm" variant="outline" className="w-full text-xs gap-1.5">
-              <ExternalLink size={12} /> Search LCD Database
-            </Button>
-          </a>
+      <div className="p-4 rounded-2xl appGlass appCard border border-white/15">
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={mode === "lcd" ? "Search LCDs by keyword, CPT/HCPCS, contractor, or LCD ID..." : "Search NCDs by keyword, chapter, or NCD section..."}
+            className="pl-10 h-11"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-
-        <div className="p-5 rounded-2xl appGlass appCard border border-white/10 space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
-              <FileText className="w-4 h-4 text-orange-400" />
-            </div>
-            <span className="font-bold text-sm text-foreground">National Coverage Determinations</span>
-          </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            NCDs are made by CMS centrally and apply nationwide. They define coverage for specific services for all Medicare beneficiaries.
-          </p>
-          <a href="https://www.cms.gov/medicare-coverage-database/search/search-criteria.aspx?searchType=NCD" target="_blank" rel="noreferrer noopener">
-            <Button size="sm" variant="outline" className="w-full text-xs gap-1.5">
-              <ExternalLink size={12} /> Search NCD Database
-            </Button>
-          </a>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {examples.map((item) => (
+            <button
+              key={item}
+              onClick={() => setSearchTerm(item)}
+              className="px-3 py-1.5 rounded-full text-xs font-bold bg-white/10 hover:bg-emerald-600 hover:text-white transition-colors text-muted-foreground"
+            >
+              {item}
+            </button>
+          ))}
         </div>
       </div>
+
+      {searchTerms.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span>Search terms:</span>
+          {searchTerms.map((term) => (
+            <Badge key={term} variant="outline" className="rounded-full bg-white/5">{term}</Badge>
+          ))}
+        </div>
+      )}
+
+      {currentQuery.isLoading || currentQuery.isFetching ? (
+        <div className="grid gap-3">
+          {[...Array(5)].map((_, index) => (
+            <div key={index} className="h-24 rounded-2xl appGlass border border-white/10 animate-pulse" />
+          ))}
+        </div>
+      ) : currentQuery.isError ? (
+        <div className="p-6 rounded-2xl appGlass appCard border border-amber-500/30 flex gap-4 items-start">
+          <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-bold text-foreground mb-1">CMS coverage data could not load from this environment</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              {(currentQuery.error as Error)?.message || "The CMS Coverage API did not return JSON."}
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              The in-app LCD/NCD workflow is still wired to the live API. If CMS blocks the current network route, use the MCD link while the API is unreachable.
+            </p>
+            <Button asChild size="sm" variant="outline" className="mt-4 gap-1.5">
+              <a href="https://www.cms.gov/medicare-coverage-database/search/search-criteria.aspx" target="_blank" rel="noreferrer noopener">
+                <ExternalLink size={12} /> Open Medicare Coverage Database
+              </a>
+            </Button>
+          </div>
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="py-12 text-center text-muted-foreground appGlass appCard rounded-2xl border border-white/15">
+          <Shield className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">No {mode.toUpperCase()} results found{query ? ` for "${query}"` : ""}.</p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          <p className="text-xs text-muted-foreground">
+            Showing {rows.length} live {mode.toUpperCase()} result{rows.length === 1 ? "" : "s"} from CMS Coverage API
+          </p>
+          {rows.map((item, index) => (
+            <CoverageResultCard key={`${getCoverageId(item)}-${index}`} item={item} mode={mode} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -495,16 +681,53 @@ function CmsOpenDataHub() {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function IntelligenceHub() {
-  const [activeTab, setActiveTab] = useState("guidelines");
+  const [activeTab, setActiveTab] = useState(() =>
+    sessionStorage.getItem("coverage_search") || sessionStorage.getItem("coverage_lcd")
+      ? "medicare"
+      : "guidelines"
+  );
   const [guideSearch, setGuideSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [debouncedSearch] = useDebounce(guideSearch, 300);
+  const [activeType, setActiveType] = useState("All");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filteredGuidelines = KEY_GUIDELINES.filter(g => {
-    const matchesCategory = activeCategory === "All" || g.category === activeCategory;
-    const matchesSearch = !guideSearch || g.title.toLowerCase().includes(guideSearch.toLowerCase());
-    return matchesCategory && matchesSearch;
+  // Fetch guidelines from the API
+  const { data: guidelinesData, isLoading: guidelinesLoading } = useQuery({
+    queryKey: ["/api/guidelines", debouncedSearch],
+    queryFn: async () => {
+      const url = debouncedSearch
+        ? `/api/guidelines?q=${encodeURIComponent(debouncedSearch)}&pageSize=50`
+        : `/api/guidelines?pageSize=50`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch guidelines");
+      return res.json();
+    },
   });
+
+  const { data: statsData } = useQuery({
+    queryKey: ["/api/guidelines/stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/guidelines/stats");
+      if (!res.ok) throw new Error("Failed to fetch stats");
+      return res.json();
+    },
+  });
+
+  const allGuidelines: any[] = guidelinesData?.data || [];
+
+  const filteredGuidelines = useMemo(() => {
+    if (activeType === "All") return allGuidelines;
+    return allGuidelines.filter((g: any) => g.type === activeType);
+  }, [allGuidelines, activeType]);
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "CPT": return Stethoscope;
+      case "HCPCS": return Tag;
+      case "ICD-10-CM": return BookMarked;
+      default: return BookMarked;
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto min-h-screen">
@@ -518,6 +741,14 @@ export function IntelligenceHub() {
             <h1 className="text-xl font-black text-foreground">Coverage & Guidelines</h1>
             <p className="text-xs text-muted-foreground">Medicare LCD/NCD, payer policies, CMS open data & coding guidelines</p>
           </div>
+          {statsData && (
+            <div className="ml-auto hidden md:flex items-center gap-4 text-[10px] text-muted-foreground/70">
+              <span className="font-bold">{statsData.totalGuidelines} guidelines</span>
+              <span>{statsData.icdChapters} ICD chapters</span>
+              <span>{statsData.cptGuidelines} CPT</span>
+              <span>{statsData.hcpcsGuidelines} HCPCS</span>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-1 overflow-x-auto no-scrollbar">
@@ -554,52 +785,86 @@ export function IntelligenceHub() {
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground/70" />
-                    <Input placeholder="Search general guidelines..." className="pl-10" value={guideSearch} onChange={(e) => setGuideSearch(e.target.value)} />
+                    <Input placeholder="Search guidelines (e.g. diabetes, sepsis, E/M, fracture...)" className="pl-10" value={guideSearch} onChange={(e) => setGuideSearch(e.target.value)} />
                   </div>
                   <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    {CATEGORIES.map(cat => (
+                    {TYPE_FILTERS.map(f => (
                       <Badge
-                        key={cat}
-                        onClick={() => setActiveCategory(cat)}
+                        key={f.id}
+                        onClick={() => setActiveType(f.id)}
                         className={`cursor-pointer px-4 py-1.5 rounded-full transition-colors ${
-                          activeCategory === cat
+                          activeType === f.id
                             ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
                             : "bg-white/5 text-muted-foreground hover:bg-white/10"
                         }`}
                         variant="outline"
-                      >{cat}</Badge>
+                      >{f.label}</Badge>
                     ))}
                   </div>
                 </div>
 
-                <div className="grid gap-3">
-                  {filteredGuidelines.map(g => (
-                    <Card key={g.id} className="overflow-hidden appGlass appCard border-white/20 dark:border-white/10">
-                      <button
-                        onClick={() => setExpandedId(expandedId === g.id ? null : g.id)}
-                        className="w-full text-left p-4 flex items-center gap-4 hover:bg-white/5 transition-colors"
-                      >
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: g.color + "20" }}>
-                          <g.icon size={18} color={g.color} />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-bold text-foreground text-sm">{g.title}</h4>
-                          <p className="text-[10px] text-muted-foreground">{g.source} · {g.year}</p>
-                        </div>
-                        <ChevronDown className={`w-4 h-4 text-muted-foreground/50 transition-transform ${expandedId === g.id ? "rotate-180" : ""}`} />
-                      </button>
-                      {expandedId === g.id && (
-                        <div className="p-4 pt-0 text-xs text-muted-foreground leading-relaxed border-t border-white/10 bg-white/5">
-                          <p className="mt-4">{g.content}</p>
-                        </div>
-                      )}
-                    </Card>
-                  ))}
-                </div>
+                {guidelinesLoading ? (
+                  <div className="space-y-3">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="h-16 rounded-xl appGlass border border-white/10 animate-pulse" />
+                    ))}
+                  </div>
+                ) : filteredGuidelines.length === 0 ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">No guidelines found{guideSearch ? ` for "${guideSearch}"` : ""}. Try broader terms.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      Showing {filteredGuidelines.length} of {guidelinesData?.total || 0} guidelines
+                      {activeType !== "All" && ` · Filtered by ${activeType}`}
+                    </p>
+                    {filteredGuidelines.map((g: any) => {
+                      const IconComp = getTypeIcon(g.type);
+                      const colors = TYPE_COLORS[g.type] || TYPE_COLORS["General"];
+                      return (
+                        <Card key={g.id} className="overflow-hidden appGlass appCard border-white/20 dark:border-white/10">
+                          <button
+                            onClick={() => setExpandedId(expandedId === g.id ? null : g.id)}
+                            className="w-full text-left p-4 flex items-center gap-4 hover:bg-white/5 transition-colors"
+                          >
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: colors.bg }}>
+                              <IconComp size={18} color={colors.icon} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-foreground text-sm">{g.title}</h4>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] text-muted-foreground">{g.chapterTitle} · §{g.section}</span>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: colors.bg, color: colors.icon }}>{g.type}</span>
+                              </div>
+                            </div>
+                            <ChevronDown className={`w-4 h-4 text-muted-foreground/50 transition-transform flex-shrink-0 ${expandedId === g.id ? "rotate-180" : ""}`} />
+                          </button>
+                          {expandedId === g.id && (
+                            <div className="p-4 pt-0 text-xs text-muted-foreground leading-relaxed border-t border-white/10 bg-white/5">
+                              <p className="mt-4">{g.content}</p>
+                              <div className="mt-3 flex flex-wrap gap-1.5">
+                                {g.tags?.map((tag: string) => (
+                                  <span key={tag} className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-muted-foreground/80">{tag}</span>
+                                ))}
+                              </div>
+                              {g.sourceUrl && (
+                                <a href={g.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 mt-3 text-[10px] font-semibold text-sky-400 hover:text-sky-300">
+                                  <ExternalLink size={10} /> View source
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
-            {activeTab === "medicare"   && <MedicarePolicyList />}
+            {activeTab === "medicare"   && <LiveMedicarePolicyList />}
             {activeTab === "commercial" && <CommercialPayerList />}
             {activeTab === "cmsdata"    && <CmsOpenDataHub />}
 

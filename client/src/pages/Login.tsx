@@ -210,9 +210,9 @@ export function Login() {
             <div className="grid gap-4">
               <div className="flex items-center justify-center gap-4 flex-wrap">
                 {[
-                  { icon: Shield, label: "HIPAA-ready" },
-                  { icon: Lock, label: "256-bit TLS" },
-                  { icon: Zap, label: "SOC 2-aligned" },
+                  { icon: Shield, label: "Role controls" },
+                  { icon: Lock, label: "Secure access" },
+                  { icon: Zap, label: "Audit trail" },
                 ].map((badge, i) => (
                   <div
                     key={i}

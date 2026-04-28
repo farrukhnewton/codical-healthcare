@@ -1,0 +1,100 @@
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1322:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1322:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1322:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+[33m[vite:css] @import must precede all other statements (besides @charset or empty @layer)
+344|  
+345|  
+346|  @import "./styles/codical-os.css";
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+347|  [39m
+[33m[vite:css] @import must precede all other statements (besides @charset or empty @layer)
+344|  
+345|  
+346|  @import "./styles/codical-os.css";
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+347|  [39m
+[33m[vite:css] @import must precede all other statements (besides @charset or empty @layer)
+344|  
+345|  
+346|  @import "./styles/codical-os.css";
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+347|  [39m
+[33m[vite:css] @import must precede all other statements (besides @charset or empty @layer)
+344|  
+345|  
+346|  @import "./styles/codical-os.css";
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+347|  [39m
+[33m[vite:css] @import must precede all other statements (besides @charset or empty @layer)
+344|  
+345|  
+346|  @import "./styles/codical-os.css";
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+347|  [39m
+[2m2:15:07 PM[22m [31m[1m[vite][22m[39m Pre-transform error: Failed to load url /src/components/layout/TopBar.tsx (resolved id: C:/Users/TekSoft/.gemini/antigravity/scratch/codical-healthcare/client/src/components/layout/TopBar.tsx) in C:/Users/TekSoft/.gemini/antigravity/scratch/codical-healthcare/client/src/App.tsx. Does the file exist?

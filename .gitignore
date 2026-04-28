@@ -8,6 +8,7 @@ vite.config.ts.*
 .env
 server/.env
 uploads/
+model/
 *.bak
 *.backup.ts
 server/routes.ts.before_dedicated_ai_flow

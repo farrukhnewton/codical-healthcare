@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { icd10Codes, cptCodes, hcpcsCodes, guidelines, users } from "@shared/schema";
+import { icd10Codes, cptCodes, hcpcsCodes, guidelines, users, commercialPayers } from "@shared/schema";
 
 async function seed() {
   console.log("Seeding database...");
@@ -35,26 +35,26 @@ async function seed() {
   ];
 
   const payerData = [
-    { name: "UnitedHealthcare", shortName: "UHC", policy_portal_url: "https://www.uhcprovider.com/en/policies-protocols.html", pa_portal_url: "https://www.uhcprovider.com/en/prior-auth.html" },
-    { name: "Aetna", shortName: "Aetna", policy_portal_url: "https://www.aetna.com/health-care-professionals/clinical-policy-bulletins.html", pa_portal_url: "https://www.aetna.com/health-care-professionals/prior-authorization.html" },
-    { name: "Cigna", shortName: "Cigna", policy_portal_url: "https://www.cigna.com/health-care-professionals/medical-performance-clinical-policy/", pa_portal_url: "https://www.cigna.com/health-care-professionals/prior-authorization-precertification" },
-    { name: "Humana", shortName: "Humana", policy_portal_url: "https://www.humana.com/provider/medical-resources/clinical-resources/medical-policies", pa_portal_url: "https://www.humana.com/provider/medical-resources/prior-authorization" },
-    { name: "Anthem Blue Cross", shortName: "Anthem", policy_portal_url: "https://www.anthem.com/provider/medical-policies-clinical-guidelines/", pa_portal_url: "https://web.anthem.com/provider/prior-authorization" },
-    { name: "Kaiser Permanente", shortName: "Kaiser", policy_portal_url: "https://healthy.kaiserpermanente.org/health-wellness/health-encyclopedia/medical-policies", pa_portal_url: "https://provider.kaiserpermanente.org/" },
-    { name: "Centene", shortName: "Centene", policy_portal_url: "https://www.centene.com/health-plans/medical-policies.html", pa_portal_url: "https://www.centene.com/" },
-    { name: "Molina Healthcare", shortName: "Molina", policy_portal_url: "https://www.molinahealthcare.com/providers/common/medicaid/manual/pages/medpol.aspx", pa_portal_url: "https://provider.molinahealthcare.com/" },
-    { name: "Blue Cross Blue Shield (National)", shortName: "BCBS", policy_portal_url: "https://www.bcbs.com/medical-policy", pa_portal_url: "https://www.bcbs.com/prior-authorization" },
-    { name: "Tricare", shortName: "Tricare", policy_portal_url: "https://manuals.health.mil/pages/v3/DownloadManuals.aspx", pa_portal_url: "https://www.tricare-west.com/content/hnw/home/provider/auth.html" },
-    { name: "CareSource", shortName: "CareSource", policy_portal_url: "https://www.caresource.com/providers/tools-resources/medical-policies/", pa_portal_url: "https://www.caresource.com/providers/tools-resources/prior-authorization/" },
-    { name: "Highmark", shortName: "Highmark", policy_portal_url: "https://medicalpolicy.highmarkbluecrossblueshield.com/", pa_portal_url: "https://hb.highmark.com/" },
-    { name: "Independence Blue Cross", shortName: "IBX", policy_portal_url: "https://www.ibx.com/providers/guidelines-and-resources/medical-policy", pa_portal_url: "https://www.ibx.com/providers/authorization" },
-    { name: "HCSC", shortName: "HCSC", policy_portal_url: "https://www.hcsc.com/provider/clinical-guidelines", pa_portal_url: "https://www.hcsc.com/" },
-    { name: "Blue Shield of California", shortName: "BSCA", policy_portal_url: "https://www.blueshieldca.com/provider/guidelines/medical-policy/index.sp", pa_portal_url: "https://www.blueshieldca.com/provider/authorizations/" },
-    { name: "Florida Blue", shortName: "FloridaBlue", policy_portal_url: "https://www.floridablue.com/providers/medical-policies", pa_portal_url: "https://www.floridablue.com/providers/authorizations" },
-    { name: "Horizon BCBS", shortName: "Horizon", policy_portal_url: "https://www.horizonblue.com/providers/policies-procedures/medical-policy", pa_portal_url: "https://www.horizonblue.com/providers/authorizations" },
-    { name: "WellCare", shortName: "WellCare", policy_portal_url: "https://www.wellcare.com/Providers/Clinical-Guidelines", pa_portal_url: "https://www.wellcare.com/" },
-    { name: "Amerigroup", shortName: "Amerigroup", policy_portal_url: "https://provider.amerigroup.com/provider/medical-policies", pa_portal_url: "https://provider.amerigroup.com/authorizations" },
-    { name: "Oscar Health", shortName: "Oscar", policy_portal_url: "https://www.hioscar.com/providers/policies", pa_portal_url: "https://www.hioscar.com/providers/prior-authorization" },
+    { name: "UnitedHealthcare", shortName: "UHC", policyPortalUrl: "https://www.uhcprovider.com/en/policies-protocols.html", paPortalUrl: "https://www.uhcprovider.com/en/prior-auth.html" },
+    { name: "Aetna", shortName: "Aetna", policyPortalUrl: "https://www.aetna.com/health-care-professionals/clinical-policy-bulletins.html", paPortalUrl: "https://www.aetna.com/health-care-professionals/prior-authorization.html" },
+    { name: "Cigna", shortName: "Cigna", policyPortalUrl: "https://www.cigna.com/health-care-professionals/medical-performance-clinical-policy/", paPortalUrl: "https://www.cigna.com/health-care-professionals/prior-authorization-precertification" },
+    { name: "Humana", shortName: "Humana", policyPortalUrl: "https://www.humana.com/provider/medical-resources/clinical-resources/medical-policies", paPortalUrl: "https://www.humana.com/provider/medical-resources/prior-authorization" },
+    { name: "Anthem Blue Cross", shortName: "Anthem", policyPortalUrl: "https://www.anthem.com/provider/medical-policies-clinical-guidelines/", paPortalUrl: "https://web.anthem.com/provider/prior-authorization" },
+    { name: "Kaiser Permanente", shortName: "Kaiser", policyPortalUrl: "https://healthy.kaiserpermanente.org/health-wellness/health-encyclopedia/medical-policies", paPortalUrl: "https://provider.kaiserpermanente.org/" },
+    { name: "Centene", shortName: "Centene", policyPortalUrl: "https://www.centene.com/health-plans/medical-policies.html", paPortalUrl: "https://www.centene.com/" },
+    { name: "Molina Healthcare", shortName: "Molina", policyPortalUrl: "https://www.molinahealthcare.com/providers/common/medicaid/manual/pages/medpol.aspx", paPortalUrl: "https://provider.molinahealthcare.com/" },
+    { name: "Blue Cross Blue Shield (National)", shortName: "BCBS", policyPortalUrl: "https://www.bcbs.com/medical-policy", paPortalUrl: "https://www.bcbs.com/prior-authorization" },
+    { name: "Tricare", shortName: "Tricare", policyPortalUrl: "https://manuals.health.mil/pages/v3/DownloadManuals.aspx", paPortalUrl: "https://www.tricare-west.com/content/hnw/home/provider/auth.html" },
+    { name: "CareSource", shortName: "CareSource", policyPortalUrl: "https://www.caresource.com/providers/tools-resources/medical-policies/", paPortalUrl: "https://www.caresource.com/providers/tools-resources/prior-authorization/" },
+    { name: "Highmark", shortName: "Highmark", policyPortalUrl: "https://medicalpolicy.highmarkbluecrossblueshield.com/", paPortalUrl: "https://hb.highmark.com/" },
+    { name: "Independence Blue Cross", shortName: "IBX", policyPortalUrl: "https://www.ibx.com/providers/guidelines-and-resources/medical-policy", paPortalUrl: "https://www.ibx.com/providers/authorization" },
+    { name: "HCSC", shortName: "HCSC", policyPortalUrl: "https://www.hcsc.com/provider/clinical-guidelines", paPortalUrl: "https://www.hcsc.com/" },
+    { name: "Blue Shield of California", shortName: "BSCA", policyPortalUrl: "https://www.blueshieldca.com/provider/guidelines/medical-policy/index.sp", paPortalUrl: "https://www.blueshieldca.com/provider/authorizations/" },
+    { name: "Florida Blue", shortName: "FloridaBlue", policyPortalUrl: "https://www.floridablue.com/providers/medical-policies", paPortalUrl: "https://www.floridablue.com/providers/authorizations" },
+    { name: "Horizon BCBS", shortName: "Horizon", policyPortalUrl: "https://www.horizonblue.com/providers/policies-procedures/medical-policy", paPortalUrl: "https://www.horizonblue.com/providers/authorizations" },
+    { name: "WellCare", shortName: "WellCare", policyPortalUrl: "https://www.wellcare.com/Providers/Clinical-Guidelines", paPortalUrl: "https://www.wellcare.com/" },
+    { name: "Amerigroup", shortName: "Amerigroup", policyPortalUrl: "https://provider.amerigroup.com/provider/medical-policies", paPortalUrl: "https://provider.amerigroup.com/authorizations" },
+    { name: "Oscar Health", shortName: "Oscar", policyPortalUrl: "https://www.hioscar.com/providers/policies", paPortalUrl: "https://www.hioscar.com/providers/prior-authorization" },
   ];
 
   for (const payer of payerData) {

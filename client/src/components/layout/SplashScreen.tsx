@@ -1,45 +1,28 @@
 import { motion } from "framer-motion";
+import { BrandMark } from "@/components/BrandMark";
 
 export function SplashScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center nature-bg-living">
+    <div className="codical-intro-screen min-h-screen flex items-center justify-center overflow-hidden">
+      <div className="codical-intro-grid" aria-hidden="true" />
+      <div className="codical-intro-pulse codical-intro-pulse-a" aria-hidden="true" />
+      <div className="codical-intro-pulse codical-intro-pulse-b" aria-hidden="true" />
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center gap-4"
+        initial={{ opacity: 0, y: 12, filter: "blur(10px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        exit={{ opacity: 0, scale: 0.98, filter: "blur(8px)" }}
+        transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+        className="flex flex-col items-center gap-5"
       >
-        <div className="flex items-end gap-2 h-12">
-          {[
-            { c: "#E8541A", h: 24 },
-            { c: "#C43B0E", h: 32 },
-            { c: "#1B2F6E", h: 40 },
-            { c: "#F0A500", h: 32 },
-            { c: "#E8541A", h: 24 },
-          ].map((bar, i) => (
-            <motion.div
-              key={i}
-              initial={{ height: 0 }}
-              animate={{ height: bar.h }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="w-3 rounded-md"
-              style={{ backgroundColor: bar.c }}
-            />
-          ))}
-        </div>
-        <div className="text-center">
-          <h1 className="text-xl font-black text-gray-900 tracking-wider">CODICAL HEALTH</h1>
-          <p className="text-xs font-bold text-emerald-600 tracking-widest mt-1">LOADING</p>
-        </div>
-        <div className="flex gap-1.5 mt-2">
-          {[0, 1, 2].map(i => (
-            <motion.div
-              key={i}
-              className="w-2 h-2 rounded-full bg-emerald-400"
-              animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 0.6, delay: i * 0.15, repeat: Infinity }}
-            />
-          ))}
-        </div>
+        <BrandMark className="co-brand-intro" />
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 1, 1, 0.78] }}
+          transition={{ duration: 1.45, delay: 0.15, ease: "easeInOut" }}
+          className="text-[12px] font-black uppercase tracking-[0.22em] text-[#081db8]"
+        >
+          Precision in coding, power in revenue
+        </motion.p>
       </motion.div>
     </div>
   );

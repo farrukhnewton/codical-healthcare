@@ -149,6 +149,7 @@ export function UnifiedSearch({ open, onClose }: UnifiedSearchProps) {
       }
       if (result.action === "coverage") {
         sessionStorage.setItem("coverage_lcd", JSON.stringify(result.data));
+        sessionStorage.setItem("coverage_search", result.data.search || result.title);
         // Coverage is merged into Coverage & Guidelines hub
         setLocation("/intelligence");
         return;
@@ -221,7 +222,7 @@ export function UnifiedSearch({ open, onClose }: UnifiedSearchProps) {
   const showEmpty = !loading && query.length === 0;
 
   const orderedCategories = useMemo(
-    () => ["code", "rvu", "npi", "drug", "coverage"],
+    () => ["code", "drug", "rvu", "npi", "coverage"],
     []
   );
 
@@ -234,7 +235,7 @@ export function UnifiedSearch({ open, onClose }: UnifiedSearchProps) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
           onClick={onClose}
-          className="fixed inset-0 z-[9999] bg-slate-950/72 backdrop-blur-lg flex items-start justify-center pt-[10vh] px-4"
+          className="fixed inset-0 z-[9999] bg-slate-950/72 backdrop-blur-lg flex items-start justify-center px-3 py-4 sm:px-4 sm:py-[8vh]"
           aria-modal="true"
           role="dialog"
         >
@@ -244,7 +245,7 @@ export function UnifiedSearch({ open, onClose }: UnifiedSearchProps) {
             exit={{ opacity: 0, scale: 0.98, y: -18 }}
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[640px] appGlassStrong appCard overflow-hidden shadow-2xl"
+            className="w-full max-w-[760px] max-h-[calc(100vh-2rem)] sm:max-h-[min(760px,calc(100vh-16vh))] appGlassStrong appCard overflow-hidden shadow-2xl flex flex-col"
           >
             {/* Input row */}
             <div className={"flex items-center gap-3 px-5 py-4 " + ((results.length > 0 || showEmpty) ? "border-b border-white/10" : "")}>
@@ -258,7 +259,7 @@ export function UnifiedSearch({ open, onClose }: UnifiedSearchProps) {
                 ref={inputRef}
                 value={query}
                 onChange={(e) => handleChange(e.target.value)}
-                placeholder="Search codes, providers, drugs..."
+                placeholder="Search ICD, CPT, HCPCS, RVU, NPI, NDC, LCD/NCD..."
                 className="flex-1 bg-transparent outline-none border-0 text-[16px] text-foreground placeholder:text-muted-foreground/80"
               />
 
@@ -323,7 +324,7 @@ export function UnifiedSearch({ open, onClose }: UnifiedSearchProps) {
 
             {/* Results */}
             {results.length > 0 && (
-              <div className="max-h-[420px] overflow-y-auto py-2">
+              <div className="flex-1 min-h-0 overflow-y-auto py-2">
                 {orderedCategories.map((cat) => {
                   const items = results.filter((r) => r.category === cat);
                   if (!items.length) return null;
@@ -455,16 +456,16 @@ export function UnifiedSearch({ open, onClose }: UnifiedSearchProps) {
               <div className="p-10 text-center">
                 <div className="text-2xl mb-2">No results</div>
                 <div className="text-sm font-bold text-foreground">
-                  No results for “{query}”
+                  No results for "{query}"
                 </div>
                 <div className="text-xs text-muted-foreground mt-2">
-                  Try a code (99213), drug name, or provider name.
+                  Try a code (99213), drug/NDC, provider name, or coverage keyword.
                 </div>
               </div>
             )}
 
             {/* Footer */}
-            <div className="px-5 py-3 border-t border-white/10 flex items-center gap-4">
+            <div className="px-5 py-3 border-t border-white/10 flex flex-wrap items-center gap-3">
               {[
                 { key: "↑↓", label: "navigate" },
                 { key: "Enter", label: "open" },

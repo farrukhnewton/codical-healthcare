@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, UserCheck, UserX } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
@@ -32,14 +32,14 @@ export const NotificationBell = ({ userId }: { userId: string | number }) => {
     fetchRequests();
 
     const channel = supabase
-      .channel("friend-reqs")
+      .channel(`friend-reqs-${uid}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "friend_requests",
-          filter: eceiver_id=eq.,
+          filter: `receiver_id=eq.${uid}`,
         },
         fetchRequests
       )
@@ -50,7 +50,7 @@ export const NotificationBell = ({ userId }: { userId: string | number }) => {
     };
   }, [uid]);
 
-  // Click outside to close (premium UX)
+  // Click outside to close.
   useEffect(() => {
     if (!isOpen) return;
 
@@ -133,4 +133,3 @@ export const NotificationBell = ({ userId }: { userId: string | number }) => {
     </div>
   );
 };
-

@@ -1,5 +1,5 @@
 import { db } from "../../db";
-import { patients, encounters, clinicalNotes, auditLogs } from "@shared/schema";
+import { patients, encounters, clinicalNotes, auditLogs, assignments } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 
 const DRCHRONO_BASE = "https://drchrono.com/api";

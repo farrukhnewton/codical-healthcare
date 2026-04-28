@@ -15,15 +15,20 @@ export function useAuth() {
 
       try {
         const authUser = session.user;
-        const res = await fetch('/api/chat/users');
-        const allUsers = await res.json();
+        const res = await fetch('/api/chat/me', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            supabaseId: authUser.id,
+            email: authUser.email,
+            fullName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+            avatarUrl: authUser.user_metadata?.avatar_url || null,
+          }),
+        });
 
-        const matchedUser = Array.isArray(allUsers)
-          ? allUsers.find((u: any) => u.email && authUser.email && u.email.toLowerCase() === authUser.email.toLowerCase())
-          : null;
-
-        if (matchedUser) {
-          setUser(matchedUser);
+        if (res.ok) {
+          const appUser = await res.json();
+          setUser(appUser);
         } else {
           setUser({
             id: authUser.id,
@@ -64,6 +69,5 @@ export function useAuth() {
     };
   }, []);
 
-  console.log('useAuth user =', user);
   return { user, loading };
 }

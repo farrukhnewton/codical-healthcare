@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 export const adminService = {
   // Check if current user is admin in this conversation
-  async checkAdminStatus(convoId, userId) {
+  async checkAdminStatus(convoId: string | number, userId: string | number) {
     const { data } = await supabase
       .from('participants')
       .select('is_admin')
@@ -13,7 +13,7 @@ export const adminService = {
   },
 
   // Hard delete a message (Admin only)
-  async deleteMessage(messageId) {
+  async deleteMessage(messageId: string | number) {
     const { error } = await supabase
       .from('messages')
       .update({ is_deleted: true, content: '[Message deleted by Admin]' })

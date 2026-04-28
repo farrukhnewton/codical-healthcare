@@ -202,7 +202,7 @@ export function Workspace() {
   };
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "24px", maxWidth: "900px", margin: "0 auto", width: "100%" }}>
+    <div style={{ flex: 1, overflowY: "auto", padding: "24px", maxWidth: "1240px", margin: "0 auto", width: "100%" }}>
 
       {/* Header */}
       <div style={{ marginBottom: "24px" }}>
@@ -211,7 +211,7 @@ export function Workspace() {
             <Brain size={20} color="white" />
           </div>
           <div>
-            <h1 style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary, #111827)", margin: 0 }}>AI Op Note Coder</h1>
+            <h1 style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary, #111827)", margin: 0 }}>Codical AI Coder</h1>
             <p style={{ fontSize: "13px", color: "var(--text-secondary, #4B5563)", margin: 0 }}>Paste or upload a clinical document — get CPT, ICD-10, HCPCS codes instantly</p>
           </div>
         </div>
@@ -264,7 +264,10 @@ export function Workspace() {
         </div>
       </div>
 
-      {/* Input area */}
+      {/* Two-window AI coding workspace */}
+      <div className="workspace-ai-demo">
+        <div className="workspace-ai-window-wrap">
+          {loading && <div className="co-scan-line" />}
       <div style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.7)", padding: "20px", marginBottom: "20px" }}>
         {/* Upload zone */}
         <div
@@ -366,6 +369,55 @@ FINDINGS: Distended, inflamed gallbladder with multiple stones..."
           </div>
         </div>
       </div>
+        </div>
+
+        <div className="workspace-ai-panel workspace-ai-output-panel">
+          <div className="workspace-ai-panel-header">
+            <div>
+              <div className="workspace-ai-eyebrow">AI coding output</div>
+              <h2>Suggested code window</h2>
+            </div>
+            <span className="workspace-ai-pill">{result ? "Complete" : loading ? "Scanning" : "Waiting"}</span>
+          </div>
+
+          {result ? (
+            <div className="workspace-output-list">
+              {(result.cpt_codes || []).slice(0, 2).map((code) => (
+                <div className="workspace-output-item" key={`cpt-${code.code}`}>
+                  <small>Suggested CPT</small>
+                  <strong>{code.code}</strong>
+                  <span>{code.description}</span>
+                </div>
+              ))}
+              {(result.icd10_codes || []).slice(0, 2).map((code) => (
+                <div className="workspace-output-item" key={`icd-${code.code}`}>
+                  <small>Possible ICD-10</small>
+                  <strong>{code.code}</strong>
+                  <span>{code.description}</span>
+                </div>
+              ))}
+              <div className="workspace-output-item">
+                <small>Coder control</small>
+                <span>{result.billing_notes || "Review suggested codes, payer context, and documentation requirements before final billing."}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="workspace-output-list">
+              {[
+                ["Suggested CPT", loading ? loadingMsg : "Codes appear after analysis"],
+                ["Possible ICD-10", "Diagnoses and indications are mapped here"],
+                ["Modifier / payer logic", "Commercial and CMS context stays visible"],
+                ["Coder control", "Final coding remains under certified coder review"],
+              ].map(([label, value], index) => (
+                <div className="workspace-output-item" key={label} style={{ animationDelay: `${index * 90}ms` }}>
+                  <small>{label}</small>
+                  <span>{value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Loading state */}
       {loading && (
@@ -421,9 +473,19 @@ FINDINGS: Distended, inflamed gallbladder with multiple stones..."
                 { label: "HCPCS Codes", value: result.hcpcs_codes?.length || 0, color: "#F59E0B" },
                 { label: "POS", value: result.pos_code?.code || "-", color: "#C084FC" },
               ].map((s, i) => (
-                <div key={i} style={{ padding: "8px 14px", background: "rgba(255,255,255,0.1)", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  <div style={{ fontSize: "18px", fontWeight: 900, color: s.color }}>{s.value}</div>
-                  <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", fontWeight: 600, marginTop: "1px" }}>{s.label}</div>
+                <div
+                  key={i}
+                  style={{
+                    padding: "8px 14px",
+                    minWidth: "68px",
+                    background: "rgba(15, 23, 42, 0.28)",
+                    borderRadius: "10px",
+                    border: "1px solid rgba(255,255,255,0.24)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+                  }}
+                >
+                  <div style={{ fontSize: "18px", fontWeight: 900, color: s.color, textShadow: "0 1px 2px rgba(0,0,0,0.35)" }}>{s.value}</div>
+                  <div style={{ fontSize: "10px", color: "#F8FAFC", fontWeight: 800, marginTop: "1px", textShadow: "0 1px 2px rgba(0,0,0,0.45)" }}>{s.label}</div>
                 </div>
               ))}
             </div>

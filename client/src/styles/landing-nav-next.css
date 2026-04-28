@@ -65,11 +65,11 @@
   animation: lnBarWave 3.6s cubic-bezier(0.16,1,0.3,1) infinite;
 }
 
-.landingAurora .ln-bar:nth-child(1){ height: 12px; background:#E8541A; animation-delay: 0ms; }
-.landingAurora .ln-bar:nth-child(2){ height: 18px; background:#C43B0E; animation-delay: 120ms; }
-.landingAurora .ln-bar:nth-child(3){ height: 22px; background:#1B2F6E; animation-delay: 240ms; }
-.landingAurora .ln-bar:nth-child(4){ height: 18px; background:#F0A500; animation-delay: 360ms; }
-.landingAurora .ln-bar:nth-child(5){ height: 12px; background:#E8541A; animation-delay: 480ms; }
+.landingAurora .ln-bar:nth-child(1){ height: 12px; background:#f47a45; animation-delay: 0ms; }
+.landingAurora .ln-bar:nth-child(2){ height: 22px; background:#081db8; animation-delay: 120ms; }
+.landingAurora .ln-bar:nth-child(3){ height: 18px; background:#f47a45; animation-delay: 240ms; }
+.landingAurora .ln-bar:nth-child(4){ height: 26px; background:#f6b64b; animation-delay: 360ms; }
+.landingAurora .ln-bar:nth-child(5){ height: 15px; background:#081db8; animation-delay: 480ms; }
 
 @keyframes lnBarWave{
   0%{ transform: scaleY(1); }
@@ -81,7 +81,9 @@
 
 .landingAurora .ln-brandText { display:flex; flex-direction: column; line-height: 1; }
 .landingAurora .ln-brandText strong { font-weight: 900; letter-spacing: -0.03em; font-size: 14px; }
-.landingAurora .ln-brandText span { font-size: 10px; font-weight: 900; letter-spacing: 0.28em; text-transform: uppercase; color: rgba(16,185,129,0.95); margin-top: 3px; }
+.landingAurora .ln-brandText strong,
+.landingAurora .ln-brandText span { color: #081db8; }
+.landingAurora .ln-brandText span { font-size: 10px; font-weight: 900; letter-spacing: 0.28em; text-transform: uppercase; margin-top: 3px; }
 
 /* Center links (desktop only) */
 .landingAurora .ln-navLinks {

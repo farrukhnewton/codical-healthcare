@@ -1,0 +1,207 @@
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1492:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1492:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1492:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1492:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1492:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1492:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1492:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1492:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching messages: error: column messages_attachments.extracted_text does not exist
+    at C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\node_modules\src\node-postgres\session.ts:104:19)
+    at async <anonymous> (C:\Users\TekSoft\.gemini\antigravity\scratch\codical-healthcare\server\routes.ts:1492:28) {
+  length: 135,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1033',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}

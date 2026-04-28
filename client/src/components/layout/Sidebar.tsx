@@ -2,11 +2,12 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import {
-  Stethoscope, LayoutDashboard, Search, Bookmark, FileText,
+  LayoutDashboard, Search, Bookmark, FileText,
   BarChart2, FileBarChart, ChevronLeft, ChevronRight,
   Shield, Bell, Settings, LogOut, Calculator, Tag
 , Pill} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { BrandMark } from "@/components/BrandMark";
 
 const navItems = [
   { href: "/", label: "Overview", icon: LayoutDashboard, section: "main" },
@@ -50,11 +51,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       <div className="relative flex items-center h-20 px-4 border-b border-white/10">
         <Link href="/" className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 flex-shrink-0 bg-white/20 rounded-xl flex items-center justify-center shadow-lg backdrop-blur-sm border border-white/20">
-            <Stethoscope className="w-5 h-5 text-white" />
-          </div>
+          <BrandMark compact={collapsed} />
           <AnimatePresence>
-            {!collapsed && (
+            {false && !collapsed && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
