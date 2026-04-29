@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
+import { ensureDatabaseSchema } from "./db";
 import { createServer } from "http";
 import { setupSocketIO } from "./socket";
 import fs from "fs";
@@ -32,6 +33,18 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+app.get("/env.js", (_req, res) => {
+  res
+    .type("application/javascript")
+    .set("Cache-Control", "no-store")
+    .send(
+      `window.__CODICAL_ENV__ = ${JSON.stringify({
+        VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL,
+        VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY,
+      })};`,
+    );
+});
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -71,6 +84,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await ensureDatabaseSchema();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
@@ -95,7 +109,8 @@ app.use((req, res, next) => {
 
   const argPortIndex = process.argv.indexOf("--port");
   const cliPort = argPortIndex !== -1 ? parseInt(process.argv[argPortIndex + 1]) : undefined;
-  const PORT = cliPort || (process.env.PORT ? parseInt(process.env.PORT) : 8080);
+  const envPort = process.env.PORT || process.env.port;
+  const PORT = cliPort || (envPort ? parseInt(envPort) : 8080);
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server listening on port: ${PORT}`);
     console.log(`🔌 Socket.io ready for connections`);

@@ -3,7 +3,9 @@ import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";
 import { config } from "dotenv";
 
-// Load environment variables from .env file in the client directory
+// Load local env files for developer builds. Deployment platforms should supply
+// these through the runtime environment.
+config();
 config({ path: "client/.env" });
 
 // server deps to bundle to reduce openat(2) syscalls
@@ -50,11 +52,6 @@ async function buildAll() {
   ];
   const externals = allDeps.filter((dep) => !allowlist.includes(dep));
 
-  // Check if the environment variables are loaded
-  if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_ANON_KEY) {
-    throw new Error("Supabase environment variables are not set. Make sure a .env file exists in /client with the required variables.");
-  }
-
   await esbuild({
     entryPoints: ["server/index.ts"],
     platform: "node",
@@ -63,8 +60,6 @@ async function buildAll() {
     outfile: "dist/index.cjs",
     define: {
       "process.env.NODE_ENV": JSON.stringify("production"),
-      "process.env.VITE_SUPABASE_URL": JSON.stringify(process.env.VITE_SUPABASE_URL),
-      "process.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY),
     },
     minify: true,
     external: externals,

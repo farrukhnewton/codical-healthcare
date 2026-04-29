@@ -1,20 +1,15 @@
 FROM node:20-alpine
 
 WORKDIR /app
+ENV PORT=8080
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
-
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
-
-RUN echo "VITE_SUPABASE_URL=" > client/.env && \
-    echo "VITE_SUPABASE_ANON_KEY=" >> client/.env
 
 RUN npm run build
 
 EXPOSE 8080
 
-CMD ["node", "dist/index.cjs"]
+CMD ["npm", "run", "start"]

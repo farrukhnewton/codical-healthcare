@@ -1,0 +1,12 @@
+node_modules
+dist
+uploads
+.env
+client/.env
+client/.env.*
+.git
+.firebase
+.idx
+.local
+*.log
+*.tar.gz
