@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { NewConversationModal } from "./NewConversation";
 
 export function TeamChat() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, error: authError } = useAuth();
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
@@ -102,6 +102,7 @@ export function TeamChat() {
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
   if (authLoading) return <ChatLoadingSkeleton />;
+  if (authError) return <div className="p-4 text-red-500">Error: {authError}</div>;
   if (!user) return <div className="p-4">Please log in to access chat.</div>;
   if (isLoading) return <ChatLoadingSkeleton />;
   if (error) return <div className="p-4 text-red-500">Error: {(error as Error).message}</div>;

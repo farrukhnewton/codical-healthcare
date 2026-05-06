@@ -4,16 +4,19 @@ import { supabase } from '@/lib/supabase';
 export function useAuth() {
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const resolveUser = async (session: any) => {
       if (!session?.user) {
         setUser(null);
+        setError(null);
         setLoading(false);
         return;
       }
 
       try {
+        setError(null);
         const authUser = session.user;
         const res = await fetch('/api/chat/me', {
           method: 'POST',
@@ -26,26 +29,17 @@ export function useAuth() {
           }),
         });
 
-        if (res.ok) {
-          const appUser = await res.json();
-          setUser(appUser);
-        } else {
-          setUser({
-            id: authUser.id,
-            fullName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
-            email: authUser.email,
-            avatarUrl: authUser.user_metadata?.avatar_url || null,
-          });
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.message || 'Unable to prepare chat user');
         }
+
+        const appUser = await res.json();
+        setUser(appUser);
       } catch (err) {
         console.error('Error resolving app user:', err);
-        const authUser = session.user;
-        setUser({
-          id: authUser.id,
-          fullName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
-          email: authUser.email,
-          avatarUrl: authUser.user_metadata?.avatar_url || null,
-        });
+        setUser(null);
+        setError(err instanceof Error ? err.message : 'Unable to prepare chat user');
       }
 
       setLoading(false);
@@ -54,6 +48,7 @@ export function useAuth() {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('Error fetching session:', error);
+        setError(error.message || 'Unable to load auth session');
         setLoading(false);
         return;
       }
@@ -69,5 +64,5 @@ export function useAuth() {
     };
   }, []);
 
-  return { user, loading };
+  return { user, loading, error };
 }
