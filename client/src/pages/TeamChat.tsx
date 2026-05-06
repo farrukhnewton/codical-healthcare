@@ -34,6 +34,11 @@ export function TeamChat() {
     refetchInterval: 10000,
   });
 
+  const hasCodicalAiConversation = conversations.some((conversation) =>
+    conversation.name === 'Codical AI' ||
+    conversation.participants?.some((participant) => participant?.username === 'codical.ai')
+  );
+
   useEffect(() => {
     if (!user?.id) return;
 
@@ -70,7 +75,7 @@ export function TeamChat() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || isLoading || hasCodicalAiConversation) return;
 
     fetch(`${window.location.origin}/api/chat/ai/conversation`, {
       method: 'POST',
@@ -81,7 +86,7 @@ export function TeamChat() {
     }).catch((err) => {
       console.error('Failed to ensure AI conversation:', err);
     });
-  }, [user?.id]);
+  }, [user?.id, isLoading, hasCodicalAiConversation]);
   const filteredConversations = conversations.filter(c =>
     c.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );

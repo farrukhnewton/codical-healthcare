@@ -13,6 +13,10 @@ import {
 } from "@shared/schema";
 import { eq, or, ilike, sql } from "drizzle-orm";
 
+const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
+const MAX_SEARCH_CACHE_ENTRIES = 250;
+const searchCache = new Map<string, { expiresAt: number; results: MedicalCode[] }>();
+
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getFavorites(userId: number): Promise<Favorite[]>;
@@ -29,6 +33,35 @@ function formatIcd10Code(code: string): string {
   const c = String(code || "").toUpperCase().replace(/\./g, "");
   if (c.length <= 3) return c;
   return c.slice(0, 3) + "." + c.slice(3);
+}
+
+function getCachedSearch(key: string) {
+  const cached = searchCache.get(key);
+
+  if (!cached) {
+    return null;
+  }
+
+  if (Date.now() > cached.expiresAt) {
+    searchCache.delete(key);
+    return null;
+  }
+
+  return cached.results.slice();
+}
+
+function setCachedSearch(key: string, results: MedicalCode[]) {
+  if (searchCache.size >= MAX_SEARCH_CACHE_ENTRIES) {
+    const oldestKey = searchCache.keys().next().value;
+    if (oldestKey) {
+      searchCache.delete(oldestKey);
+    }
+  }
+
+  searchCache.set(key, {
+    expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
+    results: results.slice(),
+  });
 }
 
 export class DatabaseStorage implements IStorage {
@@ -56,14 +89,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchCodes(query: string, typeFilter?: string): Promise<MedicalCode[]> {
-    const searchPattern = `%${query}%`;
-    const icdNormalized = query.replace(/\./g, "");
-    const icdPattern = `%${icdNormalized}%`;
+    const normalizedType = typeFilter || "All";
+    const trimmedQuery = query.trim();
+    const cacheKey = `${normalizedType}:${trimmedQuery.toLowerCase()}`;
+    const cached = getCachedSearch(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const searchPattern = `%${trimmedQuery}%`;
+    const icdNormalized = trimmedQuery.replace(/\./g, "");
     const results: MedicalCode[] = [];
 
     const searchICD = async () => {
       const normalizedQuery = icdNormalized.toUpperCase();
-      const isCodeLike = /^[A-Z][0-9][0-9A-Z.]*$/i.test(query.trim());
+      const isCodeLike = /^[A-Z][0-9][0-9A-Z.]*$/i.test(trimmedQuery);
 
       let rows;
       if (isCodeLike) {
@@ -135,6 +176,7 @@ export class DatabaseStorage implements IStorage {
       results.push(...(await searchHCPCS()));
     }
 
+    setCachedSearch(cacheKey, results);
     return results;
   }
 

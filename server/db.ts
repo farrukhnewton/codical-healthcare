@@ -3,7 +3,7 @@ import pg from "pg";
 import * as schema from "@shared/schema";
 
 const { Pool } = pg;
-const BOOTSTRAP_SCHEMA_VERSION = "2026-05-06-supabase-core-v1";
+const BOOTSTRAP_SCHEMA_VERSION = "2026-05-06-performance-indexes-v2";
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -13,6 +13,12 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool, { schema });
+
+const OPTIONAL_INDEX_ERROR_CODES = new Set([
+  "42501", // insufficient_privilege
+  "42704", // undefined_object, e.g. extension/operator class unavailable
+  "58P01", // undefined_file, e.g. extension files unavailable
+]);
 
 const icdSeedData = [
   { code: "E11.9", description: "Type 2 diabetes mellitus without complications", guideline: "Use additional code to identify control using insulin or oral hypoglycemic drugs when documented." },
@@ -430,6 +436,39 @@ async function ensureSerialDefaults() {
   }
 }
 
+async function ensurePerformanceIndexes() {
+  await pool.query(`
+    create index if not exists "participants_user_id_idx" on "participants" ("user_id");
+    create index if not exists "participants_conversation_id_idx" on "participants" ("conversation_id");
+    create index if not exists "messages_conversation_created_at_idx" on "messages" ("conversation_id", "created_at" desc);
+    create index if not exists "messages_sender_id_idx" on "messages" ("sender_id");
+    create index if not exists "conversations_updated_at_idx" on "conversations" ("updated_at" desc);
+    create index if not exists "users_supabase_id_idx" on "users" ("supabase_id") where "supabase_id" is not null;
+    create index if not exists "users_email_idx" on "users" ("email") where "email" is not null;
+    create index if not exists "favorites_user_id_idx" on "favorites" ("user_id");
+    create index if not exists "guidelines_code_idx" on "guidelines" ("code");
+  `);
+
+  try {
+    await pool.query(`
+      create extension if not exists pg_trgm;
+      create index if not exists "icd10_codes_code_trgm_idx" on "icd10_codes" using gin ("code" gin_trgm_ops);
+      create index if not exists "icd10_codes_description_trgm_idx" on "icd10_codes" using gin ("description" gin_trgm_ops);
+      create index if not exists "cpt_codes_code_trgm_idx" on "cpt_codes" using gin ("code" gin_trgm_ops);
+      create index if not exists "cpt_codes_description_trgm_idx" on "cpt_codes" using gin ("description" gin_trgm_ops);
+      create index if not exists "hcpcs_codes_code_trgm_idx" on "hcpcs_codes" using gin ("code" gin_trgm_ops);
+      create index if not exists "hcpcs_codes_description_trgm_idx" on "hcpcs_codes" using gin ("description" gin_trgm_ops);
+    `);
+  } catch (error: any) {
+    if (OPTIONAL_INDEX_ERROR_CODES.has(error?.code)) {
+      console.warn("Skipping optional trigram search indexes:", error.message);
+      return;
+    }
+
+    throw error;
+  }
+}
+
 export async function seedReferenceData() {
   await pool.query(
     `insert into "users" ("username", "role")
@@ -539,6 +578,7 @@ export async function ensureDatabaseSchema() {
 
   await createBaseTables();
   await ensureSerialDefaults();
+  await ensurePerformanceIndexes();
 
   await pool.query(`
     create table if not exists "voice_transcriptions" (
