@@ -1,18 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Plus, Send, Paperclip, Smile, MoreVertical, Search, Users } from 'lucide-react';
-import { io, type Socket } from 'socket.io-client';
 import EmojiPicker from 'emoji-picker-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getConversations, sendMessage, uploadChatAttachment, type Conversation } from '@/lib/chat';
+import { getConversations, getMessages, sendMessage, uploadChatAttachment, type Conversation } from '@/lib/chat';
 import { cn } from "@/lib/utils";
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
+import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { UserPlus, ChevronLeft, MessageSquare } from 'lucide-react';
 import { FriendsManager } from '@/components/chat/FriendsManager';
@@ -33,6 +33,42 @@ export function TeamChat() {
     enabled: !!user?.id,
     refetchInterval: 10000,
   });
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const refreshConversations = () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
+    };
+
+    const channel = supabase
+      .channel(`chat-list:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'participants',
+          filter: `user_id=eq.${user.id}`,
+        },
+        refreshConversations,
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversations',
+        },
+        refreshConversations,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   useEffect(() => {
     if (!user?.id) return;
 
@@ -218,7 +254,6 @@ function ChatWindow({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const socketRef = useRef<Socket | null>(null);
   const { toast } = useToast();
 
   const addEmoji = (emoji: any) => {
@@ -228,46 +263,46 @@ function ChatWindow({
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['messages', conversation.id],
-    queryFn: async () => {
-      const res = await fetch(`/api/chat/messages/${conversation.id}`);
-      if (!res.ok) throw new Error('Failed to fetch messages');
-      return res.json();
-    },
+    queryFn: () => getMessages(conversation.id),
     enabled: !!conversation.id,
-    refetchInterval: 3000,
+    refetchInterval: 30000,
   });
 
   useEffect(() => {
-    if (!conversation.id || !currentUser?.id) return;
+    if (!conversation.id) return;
 
-    const socket = io(window.location.origin, {
-      transports: ["websocket", "polling"],
-      withCredentials: true,
-    });
-    socketRef.current = socket;
-
-    const refreshConversation = (incoming?: any) => {
-      if (!incoming || incoming.conversationId === conversation.id) {
-        queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
-      }
+    const refreshConversation = () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     };
 
-    socket.emit("user:online", currentUser.id);
-    socket.emit("conversation:join", conversation.id);
-    socket.on("new_message", refreshConversation);
-    socket.on("message_edited", refreshConversation);
-    socket.on("message_deleted", refreshConversation);
+    const channel = supabase
+      .channel(`chat:${conversation.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversation.id}`,
+        },
+        refreshConversation,
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'attachments',
+        },
+        refreshConversation,
+      )
+      .subscribe();
 
     return () => {
-      socket.emit("conversation:leave", conversation.id);
-      socket.off("new_message", refreshConversation);
-      socket.off("message_edited", refreshConversation);
-      socket.off("message_deleted", refreshConversation);
-      socket.disconnect();
-      socketRef.current = null;
+      supabase.removeChannel(channel);
     };
-  }, [conversation.id, currentUser?.id]);
+  }, [conversation.id]);
 
   const sendMessageMutation = useMutation({
     mutationFn: sendMessage,
