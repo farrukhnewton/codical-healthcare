@@ -63,7 +63,7 @@ export class DatabaseStorage implements IStorage {
 
     const searchICD = async () => {
       const normalizedQuery = icdNormalized.toUpperCase();
-      const isCodeLike = /^[A-Z][0-9A-Z.]+$/i.test(query.trim());
+      const isCodeLike = /^[A-Z][0-9][0-9A-Z.]*$/i.test(query.trim());
 
       let rows;
       if (isCodeLike) {
