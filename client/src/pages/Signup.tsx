@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { Link, useLocation } from "wouter";
 import { AuthCard, AuthShell } from "@/components/auth/AuthShell";
+import { getAuthCallbackUrl } from "@/lib/authRedirect";
 
 type Mode = "password" | "magic";
 
@@ -48,7 +49,7 @@ export function Signup() {
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/login` },
+      options: { redirectTo: getAuthCallbackUrl() },
     });
 
     if (error) {
@@ -66,7 +67,7 @@ export function Signup() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/login` },
+        options: { emailRedirectTo: getAuthCallbackUrl() },
       });
 
       if (error) {
@@ -91,7 +92,7 @@ export function Signup() {
         email,
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/login`,
+          emailRedirectTo: getAuthCallbackUrl(),
         },
       });
 

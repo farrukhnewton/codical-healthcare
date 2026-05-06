@@ -23,6 +23,7 @@ import { Login } from "@/pages/Login";
 import { Signup } from "@/pages/Signup";
 import { ForgotPassword } from "@/pages/ForgotPassword";
 import { ResetPassword } from "@/pages/ResetPassword";
+import { AuthCallback } from "@/pages/AuthCallback";
 
 import { Home } from "@/pages/Home";
 import { Workspace } from "@/pages/Workspace";
@@ -158,6 +159,7 @@ function Router() {
       {/* Public auth routes */}
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/auth/callback" component={AuthCallback} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
 

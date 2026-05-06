@@ -1,10 +1,11 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Shield, Zap, Lock, Mail, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { Link, useLocation } from "wouter";
 import { AuthCard, AuthShell } from "@/components/auth/AuthShell";
+import { getAuthCallbackUrl } from "@/lib/authRedirect";
 
 type Mode = "password" | "magic";
 
@@ -19,11 +20,23 @@ export function Login() {
   const [loginError, setLoginError] = useState("");
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  const [gsiReady, setGsiReady] = useState(false);
-  const gsiInitOnce = useRef(false);
-
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    const storedError = window.sessionStorage.getItem("codical_auth_error");
+    if (storedError) {
+      window.sessionStorage.removeItem("codical_auth_error");
+      setLoginError(storedError);
+      return;
+    }
+
+    const query = location.split("?")[1];
+    if (!query) return;
+
+    const error = new URLSearchParams(query).get("error");
+    if (error) setLoginError(error);
+  }, [location]);
 
   // Don’t navigate to /dashboard until a session exists (prevents "second attempt" weirdness)
   useEffect(() => {
@@ -44,90 +57,6 @@ export function Login() {
       sub.subscription.unsubscribe();
     };
   }, [setLocation]);
-
-  // Google One Tap + native button (free). Requires VITE_GOOGLE_CLIENT_ID and gsi/client in index.html.
-  useEffect(() => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
-    if (!clientId) return;
-    if (gsiInitOnce.current) return;
-
-    let cancelled = false;
-    let tries = 0;
-    let timer: number | undefined;
-
-    const start = () => {
-      if (cancelled) return;
-
-      const google = (window as any).google;
-      if (!google?.accounts?.id) {
-        tries += 1;
-        if (tries > 30) return; // ~6s max
-        timer = window.setTimeout(start, 200);
-        return;
-      }
-
-      gsiInitOnce.current = true;
-
-      google.accounts.id.initialize({
-        client_id: clientId,
-        callback: async (resp: any) => {
-          const token = resp?.credential as string | undefined;
-          if (!token) return;
-
-          setIsLoading(true);
-          setLoginError("");
-
-          try {
-            const { error } = await supabase.auth.signInWithIdToken({
-              provider: "google",
-              token,
-            });
-
-            if (error) {
-              setLoginError(error.message);
-              toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
-              return;
-            }
-
-            toast({ title: "Signed in with Google", description: "Loading your workspace..." });
-            // Redirect handled by auth listener above.
-          } finally {
-            setIsLoading(false);
-          }
-        },
-        cancel_on_tap_outside: false,
-        auto_select: true,
-      });
-
-      const btn = document.getElementById("gsiBtn");
-      if (btn) {
-        btn.innerHTML = "";
-        google.accounts.id.renderButton(btn, {
-          type: "standard",
-          theme: "outline",
-          size: "large",
-          shape: "pill",
-          text: "continue_with",
-          width: 360,
-        });
-        setGsiReady(true);
-      }
-
-      google.accounts.id.prompt();
-    };
-
-    start();
-
-    return () => {
-      cancelled = true;
-      if (timer) window.clearTimeout(timer);
-      try {
-        (window as any).google?.accounts?.id?.cancel();
-      } catch {
-        // ignore
-      }
-    };
-  }, [toast]);
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,7 +89,7 @@ export function Login() {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/login` },
+        options: { emailRedirectTo: getAuthCallbackUrl() },
       });
 
       if (error) {
@@ -183,7 +112,7 @@ export function Login() {
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/login` },
+      options: { redirectTo: getAuthCallbackUrl() },
     });
 
     if (error) {
@@ -235,13 +164,9 @@ export function Login() {
         >
           {/* Google */}
           <div className="grid gap-3">
-            <div id="gsiBtn" className="flex justify-center" />
-
-            {!gsiReady && (
-              <button type="button" onClick={handleGoogleRedirect} disabled={isLoading} className="ln-btn ln-btnSecondary ln-magnetic w-full">
-                Continue with Google
-              </button>
-            )}
+            <button type="button" onClick={handleGoogleRedirect} disabled={isLoading} className="ln-btn ln-btnSecondary ln-magnetic w-full">
+              Continue with Google
+            </button>
 
             <div className="flex items-center gap-3">
               <div className="h-px bg-[rgba(255,255,255,0.26)] flex-1" />

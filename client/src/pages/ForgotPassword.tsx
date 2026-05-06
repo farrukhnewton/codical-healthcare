@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { AuthCard, AuthShell } from "@/components/auth/AuthShell";
+import { getPasswordResetUrl } from "@/lib/authRedirect";
 
 export function ForgotPassword() {
   const { toast } = useToast();
@@ -20,7 +21,7 @@ export function ForgotPassword() {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: getPasswordResetUrl(),
       });
 
       if (error) {
