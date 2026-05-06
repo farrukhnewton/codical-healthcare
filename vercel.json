@@ -10,6 +10,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/diagnostics",
+      "destination": "/api/diagnostics"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index"
     },
