@@ -1,5 +1,6 @@
 ﻿import { pgTable, text, serial, timestamp, integer, uniqueIndex, bigint, boolean, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import { index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -110,13 +111,25 @@ export const payerPolicies = pgTable("payer_policies", {
   payerId: integer("payer_id").notNull(),
   title: text("title").notNull(),
   policyNumber: text("policy_number"),
+  documentType: text("document_type").notNull().default("medical_policy"),
+  status: text("status").notNull().default("indexed"),
   effectiveDate: text("effective_date"),
+  lastPublishedAt: text("last_published_at"),
   cptCodes: jsonb("cpt_codes").$type<string[]>().notNull().default([]),
+  hcpcsCodes: jsonb("hcpcs_codes").$type<string[]>().notNull().default([]),
+  drugCodes: jsonb("drug_codes").$type<string[]>().notNull().default([]),
   requirementsText: text("requirements_text").notNull(),
   isBillable: boolean("is_billable").default(true),
   sourceUrl: text("source_url"),
+  sourceHost: text("source_host"),
+  lastFetchedAt: timestamp("last_fetched_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  payerIdx: index("payer_policies_payer_id_idx").on(table.payerId),
+  createdAtIdx: index("payer_policies_created_at_idx").on(table.createdAt),
+  payerSourceUrlIdx: uniqueIndex("payer_policies_payer_source_url_idx").on(table.payerId, table.sourceUrl),
+}));
 
 
 
@@ -339,19 +352,6 @@ export const commercialPayersRelations = relations(commercialPayers, ({ many }) 
   policies: many(payerPolicies),
 }));
 
-
-// ============ CMS OPEN DATA REGISTRY ============
-
-export const cmsDatasetRegistry = pgTable("cms_dataset_registry", {
-  uuid: text("uuid").primaryKey(),
-  title: text("title").notNull(),
-  category: text("category").notNull().default("General"),
-  enabled: boolean("enabled").notNull().default(true),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export type CmsDatasetRegistry = typeof cmsDatasetRegistry.$inferSelect;
 // ============ ZOD SCHEMAS ============
 
 export const insertUserSchema = createInsertSchema(users);

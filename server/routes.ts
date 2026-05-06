@@ -16,6 +16,7 @@ import {
   enrichCodeFromNlm, searchNlmCodes
 } from "./cms-service";
 import { getIcd10CodeNotes } from "./icd10-notes-service";
+import { discoverPayerPolicies } from "./services/payer-policy-ingestion";
 import { DrChronoService } from "./services/emr/drchrono";
 import { patients, encounters, assignments, clinicalNotes, auditLogs, commercialPayers, payerPolicies } from "@shared/schema";
 
@@ -29,6 +30,43 @@ type ChatUserProfile = {
   fullName?: string;
   avatarUrl?: string | null;
 };
+
+type SupabaseAuthUserLike = {
+  id: string;
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+};
+
+function getMetadataString(
+  metadata: Record<string, unknown> | null | undefined,
+  keys: string[],
+) {
+  for (const key of keys) {
+    const value = metadata?.[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return "";
+}
+
+function buildChatProfileFromSupabaseUser(user: SupabaseAuthUserLike): ChatUserProfile {
+  const metadata = user.user_metadata || {};
+  const fullName =
+    getMetadataString(metadata, ["full_name", "name", "display_name"]) ||
+    user.email?.split("@")[0] ||
+    "Codical User";
+
+  const avatarUrl = getMetadataString(metadata, ["avatar_url", "picture"]);
+
+  return {
+    supabaseId: user.id,
+    email: user.email || undefined,
+    fullName,
+    avatarUrl: avatarUrl || null,
+  };
+}
 
 function normalizeUsername(value: string) {
   const normalized = value
@@ -105,6 +143,25 @@ async function ensureChatUser(profile: ChatUserProfile) {
   return created;
 }
 
+async function ensureChatUserFromSupabaseId(supabaseId: string) {
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(supabaseId);
+
+    if (error || !data.user) {
+      console.warn("Unable to resolve Supabase chat user:", error?.message || "User not found");
+      return null;
+    }
+
+    return await ensureChatUser(buildChatProfileFromSupabaseUser(data.user));
+  } catch (error) {
+    console.warn(
+      "Supabase chat user lookup failed:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
+    return null;
+  }
+}
+
 async function resolveChatUserId(value: unknown) {
   const raw = String(value || "").trim();
 
@@ -117,7 +174,24 @@ async function resolveChatUserId(value: unknown) {
   }
 
   const [found] = await db.select({ id: users.id }).from(users).where(eq(users.supabaseId, raw)).limit(1);
-  return found?.id || null;
+  if (found?.id) {
+    return found.id;
+  }
+
+  if (raw.includes("@")) {
+    const [foundByEmail] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, raw.toLowerCase()))
+      .limit(1);
+
+    if (foundByEmail?.id) {
+      return foundByEmail.id;
+    }
+  }
+
+  const syncedUser = await ensureChatUserFromSupabaseId(raw);
+  return syncedUser?.id || null;
 }
 
 async function ensureCodicalAiUser() {
@@ -261,11 +335,12 @@ export async function registerRoutes(
           "audio/wav", "audio/mpeg", "audio/mp3",
           "audio/flac", "audio/x-flac", "audio/m4a",
           "audio/mp4", "audio/ogg", "audio/x-m4a",
+          "audio/aac", "audio/aiff", "audio/x-aiff",
           "audio/x-wav", "audio/wave", "audio/vnd.wave",
           "application/octet-stream"
         ];
         const allowedExtensions = [
-          ".wav", ".mp3", ".flac", ".m4a", ".ogg"
+          ".wav", ".mp3", ".flac", ".m4a", ".aac", ".aif", ".aiff", ".ogg"
         ];
         const fileExt = path.extname(
           file.originalname
@@ -276,7 +351,7 @@ export async function registerRoutes(
 
         if (!hasAllowedExtension && !hasAllowedMimeType) {
           return res.status(400).json({
-            message: "Invalid file type. Please upload .wav, .mp3, .flac, .m4a, or .ogg"
+            message: "Invalid file type. Please upload .wav, .mp3, .flac, .m4a, .aac, .aiff, or .ogg"
           });
         }
 
@@ -291,7 +366,8 @@ export async function registerRoutes(
 
         const result = await transcribeAudio(
           file.buffer,
-          file.originalname
+          file.originalname,
+          file.mimetype
         );
 
         if (!result.rawTranscript || result.rawTranscript.trim().length < 5) {
@@ -524,6 +600,32 @@ export async function registerRoutes(
           item.title?.toLowerCase().includes(search.toLowerCase()) ||
           item.document_display_id?.toLowerCase().includes(search.toLowerCase()) ||
           item.contractor_name_type?.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+      res.json(limitList(results, limit));
+    } catch (error: any) {
+      res.status(502).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/coverage/articles", async (req, res) => {
+    try {
+      const search = (req.query.search as string) || "";
+      const cpt = (req.query.cpt as string) || "";
+      const limit = Number(req.query.limit || 50);
+      let url = `https://api.coverage.cms.gov/v1/reports/local-coverage-articles`;
+      if (cpt) url += `?cpt=${encodeURIComponent(cpt)}`;
+      const data = await fetchCoverageJson(url);
+      let results = getCoverageRows(data);
+      if (search && !cpt) {
+        const normalized = search.toLowerCase();
+        results = results.filter((item: any) =>
+          item.title?.toLowerCase().includes(normalized) ||
+          item.document_title?.toLowerCase().includes(normalized) ||
+          item.article_title?.toLowerCase().includes(normalized) ||
+          item.document_display_id?.toLowerCase().includes(normalized) ||
+          item.article_id?.toLowerCase().includes(normalized) ||
+          item.contractor_name_type?.toLowerCase().includes(normalized)
         );
       }
       res.json(limitList(results, limit));
@@ -1119,10 +1221,9 @@ export async function registerRoutes(
 
       // LCD from CMS API
       try {
-        const lcdResp = await fetch(`https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds`);
-        const lcdData = await lcdResp.json();
-        const allLcds = lcdData.data || [];
-        const lcdMatches = allLcds.filter((lcd: any) => (lcd.title||"").toLowerCase().includes(code.toLowerCase())).slice(0,5);
+        const lcdData = await fetchCoverageJson(`https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds?cpt=${encodeURIComponent(code)}`);
+        const allLcds = getCoverageRows(lcdData);
+        const lcdMatches = allLcds.slice(0, 5);
         results.lcds = lcdMatches;
         results.lcdCount = lcdMatches.length;
       } catch { results.lcds = []; results.lcdCount = 0; }
@@ -1422,12 +1523,20 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
   // Get all users (for creating conversations)
   app.post("/api/chat/me", async (req, res) => {
     try {
-      const user = await ensureChatUser({
+      const requestedProfile = {
         supabaseId: req.body.supabaseId,
         email: req.body.email,
         fullName: req.body.fullName,
         avatarUrl: req.body.avatarUrl,
-      });
+      };
+
+      const user = requestedProfile.supabaseId && !requestedProfile.email
+        ? await ensureChatUserFromSupabaseId(requestedProfile.supabaseId)
+        : await ensureChatUser(requestedProfile);
+
+      if (!user) {
+        return res.status(401).json({ message: "Unable to resolve authenticated chat user" });
+      }
 
       res.json({
         id: user.id,
@@ -1790,14 +1899,15 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
       }
 
       // Resolve userIds â€” convert Supabase UUIDs to internal integer IDs
-      const resolvedUserIds = [];
+      const resolvedUserIds: number[] = [];
       for (const uid of userIds) {
-        if (typeof uid === "string" && uid.includes("-")) {
-          const [found] = await db.select({ id: users.id }).from(users).where(eq(users.supabaseId, uid)).limit(1);
-          if (!found) return res.status(404).json({ message: `User not found for supabase ID: ${uid}` });
-          resolvedUserIds.push(found.id);
-        } else {
-          resolvedUserIds.push(Number(uid));
+        const resolvedId = await resolveChatUserId(uid);
+        if (!resolvedId) {
+          return res.status(404).json({ message: `User not found: ${String(uid)}` });
+        }
+
+        if (!resolvedUserIds.includes(resolvedId)) {
+          resolvedUserIds.push(resolvedId);
         }
       }
 
@@ -2407,20 +2517,183 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
     res.json(logs);
   });
 
-  app.get("/api/payers", async (req, res) => {
-    const allPayers = await db.query.commercialPayers.findMany({
-      orderBy: asc(commercialPayers.name)
-    });
-    res.json(allPayers);
+  app.get("/api/payers", async (_req, res) => {
+    const [allPayers, policyCounts] = await Promise.all([
+      db.query.commercialPayers.findMany({ orderBy: asc(commercialPayers.name) }),
+      db
+        .select({
+          payerId: payerPolicies.payerId,
+          policyCount: sql<number>`count(*)::int`,
+          lastFetchedAt: sql<Date | null>`max(${payerPolicies.lastFetchedAt})`,
+        })
+        .from(payerPolicies)
+        .groupBy(payerPolicies.payerId),
+    ]);
+
+    const countsByPayer = new Map(policyCounts.map((row) => [row.payerId, row]));
+    res.json(allPayers.map((payer) => {
+      const stats = countsByPayer.get(payer.id);
+      return {
+        ...payer,
+        policyCount: Number(stats?.policyCount || 0),
+        lastPolicyFetch: stats?.lastFetchedAt || null,
+      };
+    }));
+  });
+
+  app.get("/api/payer-policies", async (req, res) => {
+    const q = String(req.query.q || "").trim();
+    const code = String(req.query.code || "").trim().toUpperCase();
+    const payerId = Number(req.query.payerId || 0);
+    const limit = Math.min(Math.max(Number(req.query.limit || 60), 1), 150);
+    const conditions: any[] = [];
+
+    if (payerId) {
+      conditions.push(eq(payerPolicies.payerId, payerId));
+    }
+
+    if (q) {
+      const pattern = `%${q}%`;
+      conditions.push(or(
+        ilike(payerPolicies.title, pattern),
+        ilike(payerPolicies.policyNumber, pattern),
+        ilike(payerPolicies.requirementsText, pattern),
+        ilike(commercialPayers.name, pattern),
+        ilike(commercialPayers.shortName, pattern)
+      ));
+    }
+
+    if (code) {
+      const jsonCode = JSON.stringify([code]);
+      conditions.push(or(
+        sql`${payerPolicies.cptCodes} @> ${jsonCode}::jsonb`,
+        sql`${payerPolicies.hcpcsCodes} @> ${jsonCode}::jsonb`,
+        sql`${payerPolicies.drugCodes} @> ${jsonCode}::jsonb`
+      ));
+    }
+
+    const columns = {
+      id: payerPolicies.id,
+      payerId: payerPolicies.payerId,
+      payerName: commercialPayers.name,
+      payerShortName: commercialPayers.shortName,
+      title: payerPolicies.title,
+      policyNumber: payerPolicies.policyNumber,
+      documentType: payerPolicies.documentType,
+      status: payerPolicies.status,
+      effectiveDate: payerPolicies.effectiveDate,
+      lastPublishedAt: payerPolicies.lastPublishedAt,
+      cptCodes: payerPolicies.cptCodes,
+      hcpcsCodes: payerPolicies.hcpcsCodes,
+      drugCodes: payerPolicies.drugCodes,
+      requirementsText: payerPolicies.requirementsText,
+      sourceUrl: payerPolicies.sourceUrl,
+      sourceHost: payerPolicies.sourceHost,
+      lastFetchedAt: payerPolicies.lastFetchedAt,
+      createdAt: payerPolicies.createdAt,
+    };
+
+    const baseQuery = db
+      .select(columns)
+      .from(payerPolicies)
+      .leftJoin(commercialPayers, eq(commercialPayers.id, payerPolicies.payerId));
+
+    const rows = conditions.length > 0
+      ? await baseQuery
+          .where(and(...conditions))
+          .orderBy(desc(payerPolicies.lastFetchedAt), asc(commercialPayers.name), asc(payerPolicies.title))
+          .limit(limit)
+      : await baseQuery
+          .orderBy(desc(payerPolicies.lastFetchedAt), asc(commercialPayers.name), asc(payerPolicies.title))
+          .limit(limit);
+
+    res.json({ total: rows.length, policies: rows });
   });
 
   app.get("/api/payers/:id/policies", async (req, res) => {
     const payerId = parseInt(req.params.id);
     const policies = await db.query.payerPolicies.findMany({
       where: eq(payerPolicies.payerId, payerId),
-      orderBy: desc(payerPolicies.createdAt)
+      orderBy: desc(payerPolicies.lastFetchedAt)
     });
     res.json(policies);
+  });
+
+  app.post("/api/payers/:id/sync-policies", async (req, res) => {
+    try {
+      const supabaseUid = req.headers["x-supabase-uid"] as string;
+      const internalUser = supabaseUid
+        ? await db.query.users.findFirst({
+            where: eq(users.supabaseId, supabaseUid)
+          })
+        : null;
+
+      if (!internalUser || internalUser.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden: Admin access only" });
+      }
+
+      const payerId = parseInt(req.params.id);
+      const limit = Math.min(Math.max(Number(req.body?.limit || 20), 1), 50);
+      const payer = await db.query.commercialPayers.findFirst({
+        where: eq(commercialPayers.id, payerId),
+      });
+
+      if (!payer) {
+        return res.status(404).json({ message: "Commercial carrier not found" });
+      }
+
+      const documents = await discoverPayerPolicies(payer, limit);
+      let created = 0;
+      let updated = 0;
+      const fetchedAt = new Date();
+
+      for (const doc of documents) {
+        const existing = await db.query.payerPolicies.findFirst({
+          where: and(
+            eq(payerPolicies.payerId, payer.id),
+            eq(payerPolicies.sourceUrl, doc.sourceUrl)
+          ),
+        });
+
+        const values = {
+          payerId: payer.id,
+          title: doc.title,
+          policyNumber: doc.policyNumber,
+          documentType: doc.documentType,
+          status: "indexed",
+          effectiveDate: doc.effectiveDate,
+          lastPublishedAt: doc.lastPublishedAt,
+          cptCodes: doc.cptCodes,
+          hcpcsCodes: doc.hcpcsCodes,
+          drugCodes: doc.drugCodes,
+          requirementsText: doc.requirementsText,
+          isBillable: true,
+          sourceUrl: doc.sourceUrl,
+          sourceHost: doc.sourceHost,
+          lastFetchedAt: fetchedAt,
+          updatedAt: fetchedAt,
+        };
+
+        if (existing) {
+          await db.update(payerPolicies).set(values).where(eq(payerPolicies.id, existing.id));
+          updated += 1;
+        } else {
+          await db.insert(payerPolicies).values(values);
+          created += 1;
+        }
+      }
+
+      res.json({
+        payer: { id: payer.id, name: payer.name, shortName: payer.shortName },
+        indexed: documents.length,
+        created,
+        updated,
+        fetchedAt,
+      });
+    } catch (error: any) {
+      console.error("Payer policy sync error:", error.message);
+      res.status(502).json({ message: error.message || "Unable to sync payer policies" });
+    }
   });
 
 
@@ -2482,223 +2755,6 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
       res.json({ guidelines, nlmInfo });
     } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch guidelines for code" });
-    }
-  });
-
-  // ============ CMS OPEN DATA ROUTES ============
-
-  // In-memory catalog cache (24 hour TTL)
-  let _cmsCatalogCache: { data: any[]; fetchedAt: number } | null = null;
-  const CMS_CATALOG_TTL_MS = 24 * 60 * 60 * 1000;
-
-  async function getCmsCatalog(): Promise<any[]> {
-    const now = Date.now();
-    if (_cmsCatalogCache && now - _cmsCatalogCache.fetchedAt < CMS_CATALOG_TTL_MS) {
-      return _cmsCatalogCache.data;
-    }
-    const res = await fetch("https://data.cms.gov/data.json");
-    if (!res.ok) throw new Error("CMS catalog fetch failed: " + res.status);
-    const json = await res.json();
-    const raw: any[] = json.dataset || [];
-
-    const trimmed = raw.map((ds: any) => {
-      const distributions: any[] = Array.isArray(ds.distribution) ? ds.distribution : [];
-      const apiUrl = distributions.find((d: any) =>
-        typeof d.accessURL === "string" && d.accessURL.includes("/data-api/")
-      )?.accessURL || null;
-      return {
-        identifier: (String(ds.identifier || "").match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i) || [])[1] || String(ds.identifier || ""),
-        title: ds.title || "",
-        description: (ds.description || "").slice(0, 400),
-        keywords: Array.isArray(ds.keyword) ? ds.keyword.slice(0, 10) : (typeof ds.keyword === "string" && ds.keyword ? [ds.keyword] : []),
-        modified: ds.modified || "",
-        apiUrl,
-      };
-    });
-
-    _cmsCatalogCache = { data: trimmed, fetchedAt: now };
-    return trimmed;
-  }
-
-  // GET /api/cms/catalog
-  // Returns trimmed dataset list from data.cms.gov/data.json, cached 24h
-  app.get("/api/cms/catalog", async (req, res) => {
-    try {
-      const catalog = await getCmsCatalog();
-
-      // Optionally filter by search query
-      const q = String(req.query.q || "").trim().toLowerCase();
-      const filtered = q
-        ? catalog.filter((ds: any) =>
-            ds.title.toLowerCase().includes(q) ||
-            ds.description.toLowerCase().includes(q) ||
-            ds.keywords.some((k: string) => k.toLowerCase().includes(q))
-          )
-        : catalog;
-
-      res.setHeader("Cache-Control", "public, max-age=3600");
-      res.json({ total: filtered.length, datasets: filtered });
-    } catch (error: any) {
-      console.error("CMS catalog error:", error.message);
-      res.status(502).json({ message: "Unable to fetch CMS catalog: " + error.message });
-    }
-  });
-
-  // GET /api/cms/registry
-  // Returns the curated dataset registry from DB
-  app.get("/api/cms/registry", async (req, res) => {
-    try {
-      const { cmsDatasetRegistry } = await import("../shared/schema");
-      const rows = await db.select().from(cmsDatasetRegistry).orderBy(asc(cmsDatasetRegistry.category));
-      res.json(rows);
-    } catch (error: any) {
-      console.error("CMS registry error:", error.message);
-      res.status(500).json({ message: "Unable to fetch registry: " + error.message });
-    }
-  });
-
-  // GET /api/cms/dataset/:uuid
-  // Proxies CMS data-api with safe pagination, pass-through filters
-  app.get("/api/cms/dataset/:uuid", async (req, res) => {
-    try {
-      const { uuid } = req.params;
-      if (!uuid || !/^[a-f0-9-]{36}$/i.test(uuid)) {
-        return res.status(400).json({ message: "Invalid dataset UUID" });
-      }
-
-      const rawSize = parseInt(String(req.query.size || "50"));
-      const size = Math.min(Math.max(rawSize, 1), 5000);
-      const offset = Math.max(parseInt(String(req.query.offset || "0")), 0);
-
-      // Build query string — pass through any extra filter params
-      const params = new URLSearchParams();
-      params.set("size", String(size));
-      params.set("offset", String(offset));
-
-      // Forward any extra query params except size/offset (for CMS filter syntax)
-      for (const [key, val] of Object.entries(req.query)) {
-        if (key !== "size" && key !== "offset") {
-          params.set(key, String(val));
-        }
-      }
-
-      const cmsUrl = "https://data.cms.gov/data-api/v1/dataset/" + uuid + "/data?" + params.toString();
-      const cmsRes = await fetch(cmsUrl, {
-        headers: { "Accept": "application/json" }
-      });
-
-      if (!cmsRes.ok) {
-        const errText = await cmsRes.text();
-        return res.status(cmsRes.status).json({
-          message: "CMS dataset API error",
-          status: cmsRes.status,
-          detail: errText.slice(0, 500),
-        });
-      }
-
-      const data = await cmsRes.json();
-      res.setHeader("Cache-Control", "public, max-age=1800");
-      res.json({ uuid, size, offset, rows: Array.isArray(data) ? data : [] });
-    } catch (error: any) {
-      console.error("CMS dataset proxy error:", error.message);
-      res.status(502).json({ message: "CMS dataset proxy error: " + error.message });
-    }
-  });
-
-
-  // GET /api/cms/analytics/:type
-  // Returns aggregated CMS dataset data for dashboard charts
-  app.get("/api/cms/analytics/:type", async (req, res) => {
-    try {
-      const { type } = req.params;
-      const datasetMap: Record<string, { uuid: string; desc: string }> = {
-        "drug-spending-b": { uuid: "bf6a5b3b-31ee-4abb-b1ad-2607a1e7510a", desc: "Part B Drug Spending - Top drugs by Medicare spend" },
-        "drug-spending-d": { uuid: "4ff7c618-4e40-483a-b390-c8a58c94fa15", desc: "Part D Drug Spending - Spending trends" },
-        "telehealth": { uuid: "939226be-b107-476e-8777-f199a840138a", desc: "Telehealth Trends - Adoption over time" },
-        "dme": { uuid: "a2d56d3f-3531-4315-9d87-e29986516b41", desc: "DME Utilization - Category breakdown" },
-      };
-      const ds = datasetMap[type];
-      if (!ds) return res.status(400).json({ message: "Unknown analytics type" });
-
-      const params = new URLSearchParams();
-      params.set("size", "100");
-      if (type === "telehealth") {
-        params.set("Bene_Geo_Desc", "National"); params.set("Bene_Race_Desc", "All");
-        params.set("Bene_Sex_Desc", "All"); params.set("Bene_Mdcr_Entlmt_Stus", "All");
-        params.set("Bene_Mdcd_Mdcr_Enrl_Stus", "All"); params.set("Bene_Age_Desc", "All");
-        params.set("Bene_RUCA_Desc", "All");
-      }
-
-      const cmsRes = await fetch("https://data.cms.gov/data-api/v1/dataset/" + ds.uuid + "/data?" + params.toString(), {
-        headers: { "Accept": "application/json" }
-      });
-      if (!cmsRes.ok) return res.status(cmsRes.status).json({ message: "CMS dataset API error", detail: (await cmsRes.text()).slice(0, 500) });
-
-      const rawData = await cmsRes.json();
-      const rows: Record<string, string>[] = Array.isArray(rawData) ? rawData : [];
-      let result: Record<string, unknown> = {};
-
-      if (type === "drug-spending-b" || type === "drug-spending-d") {
-        const yearGroups: Record<string, Record<string, string>[]> = {};
-        rows.forEach(r => {
-          const y = r.Year || "Unknown";
-          if (!yearGroups[y]) yearGroups[y] = [];
-          yearGroups[y].push(r);
-        });
-        result = {
-          type: "drug-spending", title: ds.desc,
-          yearlyData: Object.entries(yearGroups).map(([year, yr]) => ({
-            year: parseInt(year),
-            totalSpend: Math.round(yr.reduce((s, r) => s + (parseFloat(r.Tot_Spndng) || 0), 0)),
-            totalClaims: yr.reduce((s, r) => s + (parseInt(r.Tot_Clms) || 0), 0),
-            totalBenes: yr.reduce((s, r) => s + (parseInt(r.Tot_Benes) || 0), 0),
-            topDrugs: [...yr].sort((a, b) => (parseFloat(b.Tot_Spndng) || 0) - (parseFloat(a.Tot_Spndng) || 0)).slice(0, 5).map(r => ({
-              name: r.Brnd_Name || r.Gnrc_Name || r.HCPCS_Cd || "Unknown",
-              totalSpend: Math.round(parseFloat(r.Tot_Spndng) || 0),
-              totalClaims: parseInt(r.Tot_Clms) || 0,
-              totalBenes: parseInt(r.Tot_Benes) || 0,
-            }))
-          })).sort((a, b) => a.year - b.year)
-        };
-      }
-
-      if (type === "telehealth") {
-        const groups: Record<string, Record<string, string>[]> = {};
-        rows.forEach(r => {
-          const k = r.Year + "-" + r.Quarter;
-          if (!groups[k]) groups[k] = [];
-          groups[k].push(r);
-        });
-        result = {
-          type: "telehealth", title: ds.desc,
-          trendData: Object.entries(groups).map(([k, qr]) => {
-            const [y, q] = k.split("-");
-            const o = qr.find(r => r.Bene_Age_Desc === "All" && r.Bene_RUCA_Desc === "All") || qr[0];
-            return { year: parseInt(y), quarter: q, label: "Q" + q + " " + y, pctTelehealth: parseFloat(o.Pct_Telehealth) || 0, totalBenes: parseInt(o.Total_Bene_Telehealth) || 0 };
-          }).sort((a, b) => a.year - b.year || (a.quarter === "Overall" ? -1 : 1))
-        };
-      }
-
-      if (type === "dme") {
-        const cats: Record<string, { count: number; payments: number; charges: number }> = {};
-        rows.forEach(r => {
-          const h = r.DME_Tot_Suplr_HCPCS_Cds || "Other";
-          let c = "Other DME";
-          if (typeof h === "string") { if (h.startsWith("E")) c = "Durable Medical Equipment"; else if (h.startsWith("K")) c = "Orthotics/Prosthetics"; else if (h.startsWith("L")) c = "Orthotic/Prosthetic Devices"; else if (h.startsWith("A")) c = "Medical Supplies"; }
-          if (!cats[c]) cats[c] = { count: 0, payments: 0, charges: 0 };
-          cats[c].count++; cats[c].payments += parseFloat(r.DME_Suplr_Mdcr_Pymt_Amt) || 0; cats[c].charges += parseFloat(r.DME_Suplr_Sbmtd_Chrgs) || 0;
-        });
-        result = {
-          type: "dme", title: ds.desc,
-          categoryData: Object.entries(cats).map(([cat, d]) => ({ category: cat, supplierCount: d.count, totalPayments: Math.round(d.payments), totalCharges: Math.round(d.charges) })).sort((a, b) => b.totalPayments - a.totalPayments)
-        };
-      }
-
-      res.setHeader("Cache-Control", "public, max-age=1800");
-      res.json(result);
-    } catch (error: any) {
-      console.error("CMS analytics error:", error.message);
-      res.status(502).json({ message: "CMS analytics error: " + error.message });
     }
   });
 

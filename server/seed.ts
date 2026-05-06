@@ -35,10 +35,10 @@ async function seed() {
   ];
 
   const payerData = [
-    { name: "UnitedHealthcare", shortName: "UHC", policyPortalUrl: "https://www.uhcprovider.com/en/policies-protocols.html", paPortalUrl: "https://www.uhcprovider.com/en/prior-auth.html" },
-    { name: "Aetna", shortName: "Aetna", policyPortalUrl: "https://www.aetna.com/health-care-professionals/clinical-policy-bulletins.html", paPortalUrl: "https://www.aetna.com/health-care-professionals/prior-authorization.html" },
-    { name: "Cigna", shortName: "Cigna", policyPortalUrl: "https://www.cigna.com/health-care-professionals/medical-performance-clinical-policy/", paPortalUrl: "https://www.cigna.com/health-care-professionals/prior-authorization-precertification" },
-    { name: "Humana", shortName: "Humana", policyPortalUrl: "https://www.humana.com/provider/medical-resources/clinical-resources/medical-policies", paPortalUrl: "https://www.humana.com/provider/medical-resources/prior-authorization" },
+    { name: "UnitedHealthcare", shortName: "UHC", policyPortalUrl: "https://www.uhcprovider.com/en/policies-protocols/commercial-policies/commercial-medical-drug-policies.html", paPortalUrl: "https://www.uhcprovider.com/en/prior-auth.html" },
+    { name: "Aetna", shortName: "Aetna", policyPortalUrl: "https://www.aetna.com/cpb/medical/data/cpb_num.html", paPortalUrl: "https://www.aetna.com/health-care-professionals/prior-authorization.html" },
+    { name: "Cigna", shortName: "Cigna", policyPortalUrl: "https://static.cigna.com/assets/chcp/resourceLibrary/coveragePolicies/index.html", paPortalUrl: "https://www.cigna.com/health-care-professionals/prior-authorization-precertification" },
+    { name: "Humana", shortName: "Humana", policyPortalUrl: "https://mcp.humana.com/tad/tad_new/home.aspx?type=provider", paPortalUrl: "https://provider.humana.com/coverage-claims/prior-authorizations" },
     { name: "Anthem Blue Cross", shortName: "Anthem", policyPortalUrl: "https://www.anthem.com/provider/medical-policies-clinical-guidelines/", paPortalUrl: "https://web.anthem.com/provider/prior-authorization" },
     { name: "Kaiser Permanente", shortName: "Kaiser", policyPortalUrl: "https://healthy.kaiserpermanente.org/health-wellness/health-encyclopedia/medical-policies", paPortalUrl: "https://provider.kaiserpermanente.org/" },
     { name: "Centene", shortName: "Centene", policyPortalUrl: "https://www.centene.com/health-plans/medical-policies.html", paPortalUrl: "https://www.centene.com/" },

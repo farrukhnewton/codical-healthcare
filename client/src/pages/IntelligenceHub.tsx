@@ -1,26 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 import {
-  BookOpen, FileText, Shield, Search, ExternalLink,
-  Download, ChevronRight, Globe, ArrowLeft,
+  BookOpen, Shield, Search, ExternalLink,
+  Download, Globe,
   BookMarked, Stethoscope, Tag,
   ChevronDown, Building2, ShieldAlert,
-  Database, AlertTriangle, RefreshCw, Table2,
-  Layers, Activity, CheckCircle2, XCircle
+  AlertTriangle, RefreshCw, CheckCircle2,
+  Loader2, Link2, DatabaseZap, ClipboardList
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/lib/supabase";
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 const TABS = [
   { id: "guidelines",  label: "National Guidelines",   icon: BookOpen   },
   { id: "medicare",    label: "Medicare (LCD/NCD)",     icon: Shield     },
   { id: "commercial",  label: "Commercial Carriers",    icon: Building2  },
-  { id: "cmsdata",     label: "CMS Open Data",          icon: Database   },
   { id: "resources",   label: "Official Resources",     icon: Globe      },
 ];
 
@@ -73,22 +73,14 @@ const TYPE_COLORS: Record<string, { icon: string; bg: string }> = {
   "HCPCS":      { icon: "#EA580C", bg: "#EA580C20" },
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Compliance:  "bg-red-500/20 text-red-300 border-red-500/30",
-  Drugs:       "bg-violet-500/20 text-violet-300 border-violet-500/30",
-  Provider:    "bg-sky-500/20 text-sky-300 border-sky-500/30",
-  Utilization: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  General:     "bg-gray-500/20 text-gray-300 border-gray-500/30",
-};
-
-type CoverageMode = "lcd" | "ncd";
+type CoverageMode = "lcd" | "ncd" | "article";
 
 function getCoverageId(item: any) {
-  return String(item?.document_display_id || item?.lcd_id || item?.ncd_id || item?.id || "Coverage");
+  return String(item?.document_display_id || item?.lcd_id || item?.ncd_id || item?.article_id || item?.id || "Coverage");
 }
 
 function getCoverageVersion(item: any) {
-  return String(item?.version || item?.document_version || item?.version_number || item?.ncd_version || item?.lcd_version || "");
+  return String(item?.version || item?.document_version || item?.version_number || item?.ncd_version || item?.lcd_version || item?.article_version || "");
 }
 
 function getCoverageUrl(item: any, mode: CoverageMode) {
@@ -100,24 +92,34 @@ function getCoverageUrl(item: any, mode: CoverageMode) {
     return `https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?lcdid=${encodeURIComponent(numericId)}${version ? `&ver=${encodeURIComponent(version)}` : ""}`;
   }
 
+  if (mode === "article") {
+    return `https://www.cms.gov/medicare-coverage-database/view/article.aspx?articleid=${encodeURIComponent(numericId)}${version ? `&ver=${encodeURIComponent(version)}` : ""}`;
+  }
+
   return `https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?ncdid=${encodeURIComponent(id)}${version ? `&ncdver=${encodeURIComponent(version)}` : ""}`;
 }
 
 function CoverageResultCard({ item, mode }: { item: any; mode: CoverageMode }) {
   const id = getCoverageId(item);
-  const title = item?.title || item?.document_title || "Untitled coverage document";
+  const title = item?.title || item?.document_title || item?.article_title || "Untitled coverage document";
   const contractor = item?.contractor_name_type || item?.contractor_name || item?.contractor || "";
   const status = item?.status || item?.document_status || "";
   const effective = item?.effective_date || item?.effectiveDate || item?.original_effective_date || "";
   const updated = item?.last_updated || item?.last_updated_date || item?.revision_effective_date || "";
+  const badgeClass =
+    mode === "lcd"
+      ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+      : mode === "article"
+        ? "bg-violet-500/20 text-violet-300 border-violet-500/30"
+        : "bg-orange-500/20 text-orange-300 border-orange-500/30";
 
   return (
     <div className="p-4 rounded-2xl appGlass appCard border border-white/15 hover:border-emerald-500/40 transition-all">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <Badge className={mode === "lcd" ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30" : "bg-orange-500/20 text-orange-300 border-orange-500/30"} variant="outline">
-              {mode.toUpperCase()}
+            <Badge className={badgeClass} variant="outline">
+              {mode === "article" ? "Article" : mode.toUpperCase()}
             </Badge>
             <span className="font-mono text-xs font-black text-foreground">{id}</span>
             {status && <span className="text-[10px] font-bold text-emerald-300">{status}</span>}
@@ -161,6 +163,7 @@ function LiveMedicarePolicyList() {
   }, []);
 
   const query = debouncedSearch.trim();
+
   const lcdQuery = useQuery({
     queryKey: ["/api/coverage/lcd", "smart", query],
     queryFn: async () => {
@@ -195,10 +198,28 @@ function LiveMedicarePolicyList() {
     staleTime: 1000 * 60 * 20,
   });
 
-  const currentQuery = mode === "lcd" ? lcdQuery : ncdQuery;
+  const articleQuery = useQuery({
+    queryKey: ["/api/coverage/articles", query],
+    queryFn: async () => {
+      const endpoint = `/api/coverage/articles?limit=30${query ? `&search=${encodeURIComponent(query)}` : ""}`;
+      const res = await fetch(endpoint, { credentials: "include" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "CMS article API unavailable");
+      }
+      return res.json();
+    },
+    enabled: mode === "article",
+    retry: false,
+    staleTime: 1000 * 60 * 20,
+  });
+
+  const activeQuery = mode === "lcd" ? lcdQuery : mode === "article" ? articleQuery : ncdQuery;
   const rows: any[] = mode === "lcd"
     ? Array.isArray(lcdQuery.data?.results) ? lcdQuery.data.results : Array.isArray(lcdQuery.data) ? lcdQuery.data : []
-    : Array.isArray(ncdQuery.data) ? ncdQuery.data : [];
+    : mode === "article"
+      ? Array.isArray(articleQuery.data) ? articleQuery.data : []
+      : Array.isArray(ncdQuery.data) ? ncdQuery.data : [];
 
   const searchTerms: string[] = mode === "lcd" && Array.isArray(lcdQuery.data?.searchTerms)
     ? lcdQuery.data.searchTerms
@@ -206,7 +227,9 @@ function LiveMedicarePolicyList() {
 
   const examples = mode === "lcd"
     ? ["diabetes", "cardiac", "wound care", "sleep study", "99214", "J1100"]
-    : ["diabetes", "sleep apnea", "transplants", "home health", "mri"];
+    : mode === "article"
+      ? ["billing and coding", "cardiac", "wound care", "J1100", "sleep testing"]
+      : ["diabetes", "sleep apnea", "transplants", "home health", "mri"];
 
   return (
     <div className="space-y-5">
@@ -216,14 +239,14 @@ function LiveMedicarePolicyList() {
             <Shield className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <h3 className="font-bold text-foreground mb-1">Live CMS Coverage API</h3>
+            <h3 className="font-bold text-foreground mb-1">Live Medicare Coverage</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Search Medicare Local Coverage Determinations and National Coverage Determinations from the CMS Coverage API inside Codical.
+              Search LCDs, NCDs, and related coverage articles from the CMS Coverage API inside Codical.
             </p>
           </div>
         </div>
         <div className="flex gap-2">
-          {(["lcd", "ncd"] as const).map((item) => (
+          {(["lcd", "ncd", "article"] as const).map((item) => (
             <Button
               key={item}
               size="sm"
@@ -231,7 +254,7 @@ function LiveMedicarePolicyList() {
               onClick={() => setMode(item)}
               className="rounded-full"
             >
-              {item.toUpperCase()}
+              {item === "article" ? "Articles" : item.toUpperCase()}
             </Button>
           ))}
         </div>
@@ -241,7 +264,13 @@ function LiveMedicarePolicyList() {
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={mode === "lcd" ? "Search LCDs by keyword, CPT/HCPCS, contractor, or LCD ID..." : "Search NCDs by keyword, chapter, or NCD section..."}
+            placeholder={
+              mode === "lcd"
+                ? "Search LCDs by keyword, CPT/HCPCS, contractor, or LCD ID..."
+                : mode === "article"
+                  ? "Search coverage articles by keyword, CPT/HCPCS, contractor, or article ID..."
+                  : "Search NCDs by keyword, chapter, or NCD section..."
+            }
             className="pl-10 h-11"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -269,22 +298,22 @@ function LiveMedicarePolicyList() {
         </div>
       )}
 
-      {currentQuery.isLoading || currentQuery.isFetching ? (
+      {activeQuery.isLoading || activeQuery.isFetching ? (
         <div className="grid gap-3">
           {[...Array(5)].map((_, index) => (
             <div key={index} className="h-24 rounded-2xl appGlass border border-white/10 animate-pulse" />
           ))}
         </div>
-      ) : currentQuery.isError ? (
+      ) : activeQuery.isError ? (
         <div className="p-6 rounded-2xl appGlass appCard border border-amber-500/30 flex gap-4 items-start">
           <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <h3 className="font-bold text-foreground mb-1">CMS coverage data could not load from this environment</h3>
+            <h3 className="font-bold text-foreground mb-1">Medicare coverage data could not load from this environment</h3>
             <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-              {(currentQuery.error as Error)?.message || "The CMS Coverage API did not return JSON."}
+              {(activeQuery.error as Error)?.message || "The CMS Coverage API did not return JSON."}
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              The in-app LCD/NCD workflow is still wired to the live API. If CMS blocks the current network route, use the MCD link while the API is unreachable.
+              The in-app LCD/NCD/article workflow is still wired to the live CMS Coverage API. If CMS blocks this network route, use the MCD link while the API is unreachable.
             </p>
             <Button asChild size="sm" variant="outline" className="mt-4 gap-1.5">
               <a href="https://www.cms.gov/medicare-coverage-database/search/search-criteria.aspx" target="_blank" rel="noreferrer noopener">
@@ -296,12 +325,12 @@ function LiveMedicarePolicyList() {
       ) : rows.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground appGlass appCard rounded-2xl border border-white/15">
           <Shield className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No {mode.toUpperCase()} results found{query ? ` for "${query}"` : ""}.</p>
+          <p className="text-sm">No {mode === "article" ? "article" : mode.toUpperCase()} results found{query ? ` for "${query}"` : ""}.</p>
         </div>
       ) : (
         <div className="grid gap-3">
           <p className="text-xs text-muted-foreground">
-            Showing {rows.length} live {mode.toUpperCase()} result{rows.length === 1 ? "" : "s"} from CMS Coverage API
+            Showing {rows.length} live {mode === "article" ? "article" : mode.toUpperCase()} result{rows.length === 1 ? "" : "s"} from CMS Coverage API
           </p>
           {rows.map((item, index) => (
             <CoverageResultCard key={`${getCoverageId(item)}-${index}`} item={item} mode={mode} />
@@ -315,12 +344,33 @@ function LiveMedicarePolicyList() {
 // ─── Commercial payers ────────────────────────────────────────────────────────
 function CommercialPayerList() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: payers, isLoading } = useQuery({
+  const [selectedPayerId, setSelectedPayerId] = useState<number | null>(null);
+  const [syncingId, setSyncingId] = useState<number | null>(null);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [debouncedSearch] = useDebounce(searchTerm, 300);
+  const queryClient = useQueryClient();
+
+  const { data: payers = [], isLoading: payersLoading } = useQuery({
     queryKey: ["/api/payers"],
     queryFn: async () => {
       const res = await fetch("/api/payers");
+      if (!res.ok) throw new Error("Unable to load carriers");
       return res.json();
     }
+  });
+
+  const policyQuery = useQuery({
+    queryKey: ["/api/payer-policies", debouncedSearch, selectedPayerId],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set("limit", "80");
+      if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
+      if (selectedPayerId) params.set("payerId", String(selectedPayerId));
+      const res = await fetch(`/api/payer-policies?${params.toString()}`);
+      if (!res.ok) throw new Error("Unable to load payer policies");
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5,
   });
 
   const normalizeUrl = (u?: string) => {
@@ -330,351 +380,252 @@ function CommercialPayerList() {
     return "https://" + t;
   };
 
-  const filteredPayers = payers?.filter((p: any) =>
+  const formatDate = (value?: string | null) => {
+    if (!value) return "";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+  };
+
+  const filteredPayers = payers.filter((p: any) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.shortName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const policies = policyQuery.data?.policies || [];
+  const totalPolicies = payers.reduce((sum: number, payer: any) => sum + Number(payer.policyCount || 0), 0);
+  const syncedCarriers = payers.filter((payer: any) => Number(payer.policyCount || 0) > 0).length;
+  const selectedPayer = selectedPayerId ? payers.find((payer: any) => payer.id === selectedPayerId) : null;
+
+  const handleSync = async (payerId: number) => {
+    setSyncingId(payerId);
+    setSyncMessage("");
+    try {
+      const { data: authData } = await supabase.auth.getSession();
+      const supabaseUid = authData.session?.user.id;
+      const res = await fetch(`/api/payers/${payerId}/sync-policies`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(supabaseUid ? { "x-supabase-uid": supabaseUid } : {}),
+        },
+        body: JSON.stringify({ limit: 20 }),
+      });
+      const syncData = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(syncData.message || "Sync failed");
+      setSyncMessage(`${syncData.payer?.shortName || syncData.payer?.name || "Carrier"} indexed ${syncData.indexed} source${syncData.indexed === 1 ? "" : "s"} (${syncData.created} new, ${syncData.updated} updated).`);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/payers"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/payer-policies"] }),
+      ]);
+    } catch (error: any) {
+      setSyncMessage(error?.message || "Unable to sync payer policies from this environment.");
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
+  const renderCodes = (policy: any) => {
+    const codes = [
+      ...(policy.cptCodes || []).slice(0, 3),
+      ...(policy.hcpcsCodes || []).slice(0, 3),
+      ...(policy.drugCodes || []).slice(0, 2),
+    ].slice(0, 6);
+    if (codes.length === 0) {
+      return <span className="text-[10px] text-muted-foreground/60">No code list extracted</span>;
+    }
+    return codes.map((code: string) => (
+      <Badge key={code} variant="outline" className="rounded-full bg-white/5 text-[10px]">
+        {code}
+      </Badge>
+    ));
+  };
 
   return (
     <div className="space-y-6">
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search carriers (Aetna, UHC, Cigna...)" className="pl-10 h-11" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {isLoading ? (
-          [...Array(6)].map((_, i) => (
-            <div key={i} className="h-32 rounded-2xl appGlass appCard border border-white/15 dark:border-white/10 animate-pulse" />
-          ))
-        ) : filteredPayers?.map((payer: any) => {
-          const policyUrl = normalizeUrl(payer.policyPortalUrl);
-          const paUrl = normalizeUrl(payer.paPortalUrl);
-          return (
-            <div key={payer.id} className="p-4 rounded-2xl appGlass appCard border border-white/20 dark:border-white/10 hover:bg-white/10 transition-all group">
-              <div className="flex items-start justify-between mb-3">
-                <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-foreground truncate">{payer.name}</h3>
-                  <span className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">{payer.shortName}</span>
-                </div>
-                <Building2 className="w-5 h-5 text-muted-foreground/50 group-hover:text-emerald-500 transition-colors" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {[
+          ["Carriers", payers.length, Building2],
+          ["Indexed Policies", totalPolicies, DatabaseZap],
+          ["Synced Sources", syncedCarriers, CheckCircle2],
+        ].map(([label, value, Icon]: any) => (
+          <div key={label} className="p-4 rounded-2xl appGlass appCard border border-white/15">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
+                <p className="mt-1 text-2xl font-black text-foreground">{Number(value).toLocaleString()}</p>
               </div>
-              <div className="flex gap-2 mt-4">
-                {policyUrl ? (
-                  <Button asChild size="sm" variant="outline" className="flex-1 text-[10px] h-8">
-                    <a href={policyUrl} target="_blank" rel="noreferrer noopener" className="w-full justify-center">
-                      <BookOpen className="w-3 h-3 mr-1" /> Policies
-                    </a>
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="outline" className="flex-1 text-[10px] h-8" disabled>
-                    <BookOpen className="w-3 h-3 mr-1" /> Policies
-                  </Button>
-                )}
-                {paUrl ? (
-                  <Button asChild size="sm" variant="outline" className="flex-1 text-[10px] h-8">
-                    <a href={paUrl} target="_blank" rel="noreferrer noopener" className="w-full justify-center">
-                      <Search className="w-3 h-3 mr-1" /> PA Lookup
-                    </a>
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="outline" className="flex-1 text-[10px] h-8" disabled>
-                    <Search className="w-3 h-3 mr-1" /> PA Lookup
-                  </Button>
-                )}
-              </div>
-              <div className="mt-3 text-[10px] text-muted-foreground/80 flex items-center justify-between">
-                <span className="truncate">{payer.phone ? "Phone: " + payer.phone : " "}</span>
-                <span className="text-muted-foreground/60">External</span>
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                <Icon className="w-5 h-5 text-emerald-500" />
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
+      </div>
+
+      <div className="p-5 rounded-2xl appGlass appCard border border-emerald-500/20">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+              <ClipboardList className="w-5 h-5 text-emerald-500" />
+            </div>
+            <div>
+              <h3 className="font-bold text-foreground mb-1">Commercial Carrier Policy Index</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Sync official carrier policy pages into Supabase, then search indexed policy titles, excerpts, CPT, HCPCS, and drug code references inside Codical.
+              </p>
+            </div>
+          </div>
+          {syncMessage && (
+            <Badge variant="outline" className="w-fit max-w-full rounded-full bg-white/10 text-[11px]">
+              {syncMessage}
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search carriers, policies, CPT, HCPCS, NDC, or policy text..."
+          className="pl-10 h-11"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[340px_minmax(0,1fr)] gap-5">
+        <div className="space-y-3">
+          <button
+            onClick={() => setSelectedPayerId(null)}
+            className={`w-full text-left p-4 rounded-2xl appGlass appCard border transition-all ${selectedPayerId === null ? "border-emerald-500/50 bg-emerald-500/10" : "border-white/15 hover:bg-white/10"}`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-black text-foreground">All commercial carriers</span>
+              <Badge variant="outline" className="rounded-full">{totalPolicies}</Badge>
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">Search the full Supabase policy index.</p>
+          </button>
+
+          {payersLoading ? (
+            [...Array(6)].map((_, i) => (
+              <div key={i} className="h-24 rounded-2xl appGlass appCard border border-white/15 animate-pulse" />
+            ))
+          ) : filteredPayers.map((payer: any) => {
+            const policyUrl = normalizeUrl(payer.policyPortalUrl);
+            const paUrl = normalizeUrl(payer.paPortalUrl);
+            const isSelected = selectedPayerId === payer.id;
+            return (
+              <div key={payer.id} className={`p-4 rounded-2xl appGlass appCard border transition-all ${isSelected ? "border-emerald-500/50 bg-emerald-500/10" : "border-white/15 hover:bg-white/10"}`}>
+                <button onClick={() => setSelectedPayerId(payer.id)} className="w-full text-left">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-foreground truncate">{payer.name}</h3>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">{payer.shortName}</span>
+                        <Badge variant="outline" className="rounded-full bg-white/5 text-[10px]">{payer.policyCount || 0} indexed</Badge>
+                      </div>
+                    </div>
+                    <Building2 className="w-5 h-5 text-muted-foreground/50 flex-shrink-0" />
+                  </div>
+                  <p className="mt-2 text-[10px] text-muted-foreground">
+                    {payer.lastPolicyFetch ? `Last sync ${formatDate(payer.lastPolicyFetch)}` : "Not synced yet"}
+                  </p>
+                </button>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <Button size="sm" variant="outline" className="h-8 text-[10px]" onClick={() => handleSync(payer.id)} disabled={syncingId === payer.id || !policyUrl}>
+                    {syncingId === payer.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+                    Sync
+                  </Button>
+                  <Button asChild size="sm" variant="outline" className="h-8 text-[10px]" disabled={!policyUrl}>
+                    <a href={policyUrl || "#"} target="_blank" rel="noreferrer noopener">
+                      <BookOpen className="w-3 h-3 mr-1" /> Source
+                    </a>
+                  </Button>
+                  <Button asChild size="sm" variant="outline" className="h-8 text-[10px]" disabled={!paUrl}>
+                    <a href={paUrl || "#"} target="_blank" rel="noreferrer noopener">
+                      <Link2 className="w-3 h-3 mr-1" /> PA
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="text-base font-black text-foreground">
+                {selectedPayer ? `${selectedPayer.name} Policies` : "Indexed Commercial Policies"}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {policyQuery.isFetching ? "Refreshing from Supabase..." : `${policies.length} policy record${policies.length === 1 ? "" : "s"} shown`}
+              </p>
+            </div>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => policyQuery.refetch()}>
+              <RefreshCw className="w-3 h-3" /> Refresh
+            </Button>
+          </div>
+
+          {policyQuery.isLoading ? (
+            [...Array(5)].map((_, i) => (
+              <div key={i} className="h-28 rounded-2xl appGlass appCard border border-white/15 animate-pulse" />
+            ))
+          ) : policyQuery.isError ? (
+            <div className="p-6 rounded-2xl appGlass appCard border border-amber-500/30 flex gap-4">
+              <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+              <p className="text-sm text-muted-foreground">Commercial policies could not load from Supabase.</p>
+            </div>
+          ) : policies.length === 0 ? (
+            <div className="py-14 text-center appGlass appCard rounded-2xl border border-white/15">
+              <ShieldAlert className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+              <p className="text-sm font-bold text-foreground">No indexed commercial policies yet.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Use Sync on a carrier to ingest official policy sources into Supabase.</p>
+            </div>
+          ) : (
+            policies.map((policy: any) => (
+              <Card key={policy.id} className="overflow-hidden appGlass appCard border-white/20 dark:border-white/10">
+                <CardHeader className="pb-3">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="min-w-0">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="rounded-full bg-emerald-500/10 text-[10px]">{policy.payerShortName || policy.payerName}</Badge>
+                        {policy.policyNumber && <span className="font-mono text-[10px] text-muted-foreground">{policy.policyNumber}</span>}
+                        <span className="text-[10px] text-muted-foreground">{policy.documentType?.replace(/_/g, " ")}</span>
+                      </div>
+                      <CardTitle className="text-sm leading-snug">{policy.title}</CardTitle>
+                      <CardDescription className="mt-1 text-[11px]">
+                        {[policy.effectiveDate && `Effective ${policy.effectiveDate}`, policy.lastPublishedAt && `Published ${policy.lastPublishedAt}`, policy.lastFetchedAt && `Fetched ${formatDate(policy.lastFetchedAt)}`].filter(Boolean).join(" · ")}
+                      </CardDescription>
+                    </div>
+                    {policy.sourceUrl && (
+                      <Button asChild size="sm" variant="outline" className="gap-1.5 flex-shrink-0">
+                        <a href={policy.sourceUrl} target="_blank" rel="noreferrer noopener">
+                          <ExternalLink className="w-3 h-3" /> Source
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">{policy.requirementsText}</p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">{renderCodes(policy)}</div>
+                  <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground/70">
+                    <span>{policy.sourceHost || "official carrier source"}</span>
+                    <span>{policy.status || "indexed"}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       </div>
 
       <div className="p-4 appGlass appCard border border-white/15 dark:border-white/10 flex gap-4">
         <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0" />
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Commercial policies vary significantly. We link to official portals when available. Next, we will ingest key payer policies into Codical so your team can search and view them without leaving the app.
+          Commercial policy sources remain carrier-controlled and can change without notice. Codical stores indexed source metadata and searchable excerpts with source links so teams can verify final coverage requirements against the official carrier document.
         </p>
       </div>
-    </div>
-  );
-}
-
-// ─── Dataset preview table ────────────────────────────────────────────────────
-function DatasetPreview({ uuid, title, onBack }: { uuid: string; title: string; onBack: () => void }) {
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["/api/cms/dataset", uuid],
-    queryFn: async () => {
-      const res = await fetch("/api/cms/dataset/" + uuid + "?size=25");
-      if (!res.ok) throw new Error("Failed to fetch dataset");
-      return res.json();
-    },
-    staleTime: 1000 * 60 * 30,
-  });
-
-  const rows: any[] = data?.rows || [];
-  const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
-
-  return (
-    <div className="space-y-4">
-      <Button variant="ghost" onClick={onBack} className="gap-2 text-muted-foreground">
-        <ArrowLeft size={16} /> Back to CMS Datasets
-      </Button>
-
-      <div className="p-5 rounded-2xl appGlass appCard border border-white/15">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div>
-            <h2 className="text-base font-black text-foreground">{title}</h2>
-            <p className="text-[11px] font-mono text-muted-foreground/70 mt-0.5">{uuid}</p>
-          </div>
-          <Button size="sm" variant="outline" onClick={() => refetch()} className="gap-1.5 flex-shrink-0">
-            <RefreshCw size={12} /> Refresh
-          </Button>
-        </div>
-
-        {isLoading && (
-          <div className="py-12 text-center">
-            <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-sm text-muted-foreground">Fetching live data from CMS...</p>
-          </div>
-        )}
-
-        {isError && (
-          <div className="py-10 text-center space-y-3">
-            <XCircle className="w-8 h-8 text-red-400 mx-auto" />
-            <p className="text-sm text-muted-foreground">Could not load this dataset. It may not have a data API endpoint.</p>
-            <a
-              href={"https://data.cms.gov/search#dataset-uuid=" + uuid}
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              <Button size="sm" variant="outline" className="gap-1.5">
-                <ExternalLink size={12} /> View on data.cms.gov
-              </Button>
-            </a>
-          </div>
-        )}
-
-        {!isLoading && !isError && rows.length === 0 && (
-          <div className="py-10 text-center space-y-3">
-            <Table2 className="w-8 h-8 text-muted-foreground/40 mx-auto" />
-            <p className="text-sm text-muted-foreground">No rows returned. This dataset may require specific filter parameters.</p>
-          </div>
-        )}
-
-        {!isLoading && rows.length > 0 && (
-          <div className="overflow-x-auto rounded-xl border border-white/10">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="bg-white/5 border-b border-white/10">
-                  {columns.map(col => (
-                    <th key={col} className="px-3 py-2.5 text-left font-bold text-muted-foreground/80 whitespace-nowrap uppercase tracking-wider text-[10px]">
-                      {col.replace(/_/g, " ")}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, i) => (
-                  <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    {columns.map(col => (
-                      <td key={col} className="px-3 py-2 text-muted-foreground max-w-[200px] truncate">
-                        {String(row[col] ?? "")}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="px-3 py-2 text-[10px] text-muted-foreground/60 border-t border-white/5">
-              Showing first {rows.length} rows · Live from data.cms.gov
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── CMS Open Data hub ────────────────────────────────────────────────────────
-function CmsOpenDataHub() {
-  const [catalogSearch, setCatalogSearch] = useState("");
-  const [selectedDataset, setSelectedDataset] = useState<{ uuid: string; title: string } | null>(null);
-  const [activeView, setActiveView] = useState<"registry" | "catalog">("registry");
-
-  const { data: registry, isLoading: regLoading } = useQuery({
-    queryKey: ["/api/cms/registry"],
-    queryFn: async () => {
-      const res = await fetch("/api/cms/registry");
-      if (!res.ok) throw new Error("Registry unavailable");
-      return res.json();
-    },
-    staleTime: 1000 * 60 * 60,
-  });
-
-  const { data: catalogData, isLoading: catLoading, isFetching: catFetching } = useQuery({
-    queryKey: ["/api/cms/catalog", catalogSearch],
-    queryFn: async () => {
-      const url = catalogSearch
-        ? "/api/cms/catalog?q=" + encodeURIComponent(catalogSearch)
-        : "/api/cms/catalog";
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Catalog unavailable");
-      return res.json();
-    },
-    staleTime: 1000 * 60 * 60,
-    enabled: activeView === "catalog",
-  });
-
-  if (selectedDataset) {
-    return (
-      <DatasetPreview
-        uuid={selectedDataset.uuid}
-        title={selectedDataset.title}
-        onBack={() => setSelectedDataset(null)}
-      />
-    );
-  }
-
-  const registryItems: any[] = Array.isArray(registry) ? registry : [];
-  const catalogItems: any[] = catalogData?.datasets || [];
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="p-5 rounded-2xl appGlass appCard border border-emerald-500/20 flex gap-4 items-start">
-        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-        </div>
-        <div>
-          <h3 className="font-bold text-foreground mb-1">CMS Open Data Catalog</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Live data from <code className="text-xs bg-black/20 px-1 py-0.5 rounded">data.cms.gov</code> — the official CMS Open Data portal.
-            Browse curated datasets or search the full catalog of {catalogData?.total?.toLocaleString() || "1,000+"} datasets.
-          </p>
-        </div>
-      </div>
-
-      {/* View switcher */}
-      <div className="flex gap-2">
-        <Button
-          variant={activeView === "registry" ? "default" : "outline"}
-          onClick={() => setActiveView("registry")}
-          className="rounded-full gap-2"
-          size="sm"
-        >
-          <Layers size={14} /> Curated ({registryItems.length})
-        </Button>
-        <Button
-          variant={activeView === "catalog" ? "default" : "outline"}
-          onClick={() => setActiveView("catalog")}
-          className="rounded-full gap-2"
-          size="sm"
-        >
-          <Globe size={14} /> Full Catalog
-        </Button>
-      </div>
-
-      {/* Registry view */}
-      {activeView === "registry" && (
-        <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">Datasets curated for Codical Health — click any to preview live data.</p>
-          {regLoading ? (
-            [...Array(5)].map((_, i) => (
-              <div key={i} className="h-16 rounded-xl appGlass border border-white/10 animate-pulse" />
-            ))
-          ) : registryItems.length === 0 ? (
-            <div className="py-10 text-center text-muted-foreground text-sm">
-              No datasets in registry yet. Run the seed script to populate.
-            </div>
-          ) : (
-            registryItems.map((ds: any) => (
-              <button
-                key={ds.uuid}
-                onClick={() => setSelectedDataset({ uuid: ds.uuid, title: ds.title })}
-                className="w-full text-left p-4 appGlass appCard rounded-xl border border-white/15 hover:border-emerald-500/40 hover:bg-white/10 transition-all flex items-center gap-4 group"
-              >
-                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-                  <Database size={14} className="text-emerald-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-foreground truncate">{ds.title}</p>
-                  {ds.notes && <p className="text-[11px] text-muted-foreground truncate mt-0.5">{ds.notes}</p>}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${CATEGORY_COLORS[ds.category] || CATEGORY_COLORS.General}`}>
-                    {ds.category}
-                  </span>
-                  <ChevronRight size={14} className="text-muted-foreground/40 group-hover:text-emerald-400 transition-colors" />
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* Full catalog view */}
-      {activeView === "catalog" && (
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground/70" />
-            <Input
-              placeholder="Search CMS datasets (e.g. telehealth, drug spending, DME...)"
-              className="pl-10"
-              value={catalogSearch}
-              onChange={(e) => setCatalogSearch(e.target.value)}
-            />
-          </div>
-
-          {(catLoading || catFetching) && (
-            <div className="py-8 text-center">
-              <div className="w-6 h-6 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-xs text-muted-foreground">Loading catalog from data.cms.gov...</p>
-            </div>
-          )}
-
-          {!catLoading && catalogItems.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">{catalogData?.total?.toLocaleString()} total datasets{catalogSearch ? " matching your search" : ""} — showing first {catalogItems.length}</p>
-              {catalogItems.slice(0, 50).map((ds: any) => {
-                const hasApi = !!ds.apiUrl;
-                return (
-                  <button
-                    key={ds.identifier}
-                    onClick={() => hasApi && setSelectedDataset({ uuid: ds.identifier, title: ds.title })}
-                    className={`w-full text-left p-4 appGlass appCard rounded-xl border border-white/10 transition-all flex items-start gap-3 group ${hasApi ? "hover:border-emerald-500/40 hover:bg-white/10 cursor-pointer" : "opacity-70 cursor-default"}`}
-                  >
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${hasApi ? "bg-emerald-500/20" : "bg-white/5"}`}>
-                      {hasApi ? <Activity size={13} className="text-emerald-400" /> : <FileText size={13} className="text-muted-foreground/50" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground line-clamp-1">{ds.title}</p>
-                      <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{ds.description}</p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        {hasApi ? (
-                          <span className="text-[10px] text-emerald-400 font-bold">● Data API available</span>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground/50">Download only</span>
-                        )}
-                        {ds.modified && <span className="text-[10px] text-muted-foreground/40">Updated {ds.modified.slice(0, 10)}</span>}
-                      </div>
-                    </div>
-                    {hasApi && <ChevronRight size={14} className="text-muted-foreground/40 group-hover:text-emerald-400 transition-colors flex-shrink-0 mt-1" />}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {!catLoading && !catFetching && catalogItems.length === 0 && catalogSearch && (
-            <div className="py-10 text-center text-muted-foreground text-sm">
-              No datasets found for "{catalogSearch}". Try broader terms.
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -739,7 +690,7 @@ export function IntelligenceHub() {
           </div>
           <div>
             <h1 className="text-xl font-black text-foreground">Coverage & Guidelines</h1>
-            <p className="text-xs text-muted-foreground">Medicare LCD/NCD, payer policies, CMS open data & coding guidelines</p>
+            <p className="text-xs text-muted-foreground">Live Medicare LCD/NCD/article search, Supabase payer policies, and coding guidelines</p>
           </div>
           {statsData && (
             <div className="ml-auto hidden md:flex items-center gap-4 text-[10px] text-muted-foreground/70">
@@ -866,7 +817,6 @@ export function IntelligenceHub() {
 
             {activeTab === "medicare"   && <LiveMedicarePolicyList />}
             {activeTab === "commercial" && <CommercialPayerList />}
-            {activeTab === "cmsdata"    && <CmsOpenDataHub />}
 
             {/* Official Resources */}
             {activeTab === "resources" && (

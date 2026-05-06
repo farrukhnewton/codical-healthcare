@@ -8,7 +8,6 @@ import {
   Calculator,
   CheckCircle2,
   ClipboardList,
-  Database,
   FileSearch,
   LockKeyhole,
   MessageSquare,
@@ -164,7 +163,7 @@ const MARQUEE = [
   "NCCI edits",
   "RVU fee schedule modeling",
   "LCD and NCD coverage context",
-  "CMS Open Data",
+  "Commercial payer policy index",
   "NPI lookup",
   "Drug and NDC lookup",
   "Codical AI coding",
@@ -378,7 +377,7 @@ export function Landing() {
               </h1>
               <p>
                 Codical Health brings code search, Codical AI coding review, NCCI checks, RVU and anesthesia calculators,
-                payer policy context, CMS Open Data and Codical Chat into one calm RCM workspace.
+                payer policy context, Medicare coverage search and Codical Chat into one calm RCM workspace.
               </p>
               <div className="co-hero-actions">
                 <Link href="/signup" className="co-btn co-btn-primary">Launch workspace <ArrowRight size={16} /></Link>
@@ -386,7 +385,7 @@ export function Landing() {
               </div>
               <div className="co-trust-row">
                 <span className="co-trust-pill"><CheckCircle2 size={15} /> Human coder approval</span>
-                <span className="co-trust-pill"><Database size={15} /> CMS data lanes</span>
+                <span className="co-trust-pill"><ClipboardList size={15} /> Payer policy index</span>
                 <span className="co-trust-pill"><ShieldCheck size={15} /> Audit-ready history</span>
               </div>
             </div>
@@ -675,7 +674,7 @@ export function Landing() {
             </div>
             <div className="co-footer-col"><h4>Product</h4><a href="#tools">Code Search</a><a href="#ai">AI Coding</a><a href="#tools">Calculators</a><a href="#workflow">Codical Chat</a></div>
             <div className="co-footer-col"><h4>Tools</h4><a href="#tools">ICD Search</a><a href="#tools">CPT Search</a><a href="#tools">RVU Calculator</a><a href="#tools">NPI Lookup</a></div>
-            <div className="co-footer-col"><h4>Resources</h4><a href="https://www.cms.gov/medicare/coding-billing/icd-10-codes">CMS ICD-10</a><a href="https://www.cms.gov/national-correct-coding-initiative-ncci">CMS NCCI</a><a href="https://www.cms.gov/medicare/coverage/determination-process/local">LCD Process</a><a href="https://data.cms.gov/">CMS Open Data</a></div>
+            <div className="co-footer-col"><h4>Resources</h4><a href="https://www.cms.gov/medicare/coding-billing/icd-10-codes">CMS ICD-10</a><a href="https://www.cms.gov/national-correct-coding-initiative-ncci">CMS NCCI</a><a href="https://www.cms.gov/medicare/coverage/determination-process/local">LCD Process</a><a href="https://www.cms.gov/medicare-coverage-database/search.aspx">Medicare Coverage Database</a></div>
             <div className="co-footer-col"><h4>Access</h4><Link href="/login">Sign in</Link><Link href="/signup">Request access</Link><a href="#security">Security</a><a href="#pricing">Pricing</a></div>
           </div>
           <div className="co-footer-ticker">

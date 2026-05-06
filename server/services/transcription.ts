@@ -54,11 +54,15 @@ interface GeminiParsedResponse {
 
 const NOT_DETECTED = "Not detected";
 const MAX_GEMINI_ATTEMPTS = 4;
+const MAX_INLINE_AUDIO_BYTES = 14 * 1024 * 1024;
 const RETRYABLE_GEMINI_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
-const GEMINI_GENERATE_MODELS = [
+const MODEL_FALLBACK_STATUSES = new Set([400, 404]);
+const DEFAULT_GEMINI_GENERATE_MODELS = [
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
+  "gemini-3-flash-preview",
 ];
+const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com";
 
 const MEDICAL_PROMPT = `
 You are an expert medical transcriptionist with deep
@@ -108,16 +112,49 @@ CRITICAL RULES:
   notes field rather than truncating the JSON
 `;
 
-function getMimeType(filename: string): string {
+function getGeminiGenerateModels() {
+  const configuredModels =
+    process.env.GEMINI_TRANSCRIPTION_MODELS || process.env.GEMINI_MODEL || "";
+  const models = configuredModels
+    .split(",")
+    .map((model) => model.trim())
+    .filter(Boolean);
+
+  return models.length > 0 ? models : DEFAULT_GEMINI_GENERATE_MODELS;
+}
+
+function normalizeAudioMimeType(mimeType: string) {
+  const normalized = mimeType.toLowerCase().trim();
+
+  switch (normalized) {
+    case "audio/x-wav":
+    case "audio/wave":
+    case "audio/vnd.wave":
+      return "audio/wav";
+    case "audio/mpeg":
+      return "audio/mp3";
+    case "audio/x-flac":
+      return "audio/flac";
+    case "audio/x-aiff":
+      return "audio/aiff";
+    default:
+      return normalized;
+  }
+}
+
+function getMimeType(filename: string, providedMimeType = ""): string {
   const extension = filename.toLowerCase().slice(filename.lastIndexOf("."));
 
   switch (extension) {
     case ".wav":
       return "audio/wav";
     case ".mp3":
-      return "audio/mpeg";
+      return "audio/mp3";
     case ".flac":
       return "audio/flac";
+    case ".aif":
+    case ".aiff":
+      return "audio/aiff";
     case ".m4a":
       return "audio/mp4";
     case ".aac":
@@ -125,8 +162,13 @@ function getMimeType(filename: string): string {
     case ".ogg":
       return "audio/ogg";
     default:
-      return "audio/wav";
+      return normalizeAudioMimeType(providedMimeType) || "audio/wav";
   }
+}
+
+function getDisplayName(filename: string) {
+  const name = filename.split(/[\\/]/).pop()?.trim();
+  return name || "audio";
 }
 
 async function readJsonResponse<T>(response: Response): Promise<T | null> {
@@ -234,6 +276,27 @@ async function handleGeminiError(response: Response) {
   throw new Error(`Transcription service error: ${response.status}`);
 }
 
+async function getGeminiErrorMessage(response: Response) {
+  try {
+    const errorBody = await readJsonResponse<GeminiErrorBody>(response.clone());
+    return errorBody?.error?.message || "";
+  } catch {
+    return "";
+  }
+}
+
+function shouldTryFallbackModel(response: Response, errorMessage: string) {
+  if (!MODEL_FALLBACK_STATUSES.has(response.status)) {
+    return RETRYABLE_GEMINI_STATUSES.has(response.status);
+  }
+
+  if (response.status === 404) {
+    return true;
+  }
+
+  return /model|not found|not supported|unsupported/i.test(errorMessage);
+}
+
 function buildGenerateBody(part: { inline_data: { mime_type: string; data: string } } | { file_data: { mime_type: string; file_uri: string } }) {
   return {
     contents: [{
@@ -254,13 +317,17 @@ function buildGenerateBody(part: { inline_data: { mime_type: string; data: strin
 
 async function callGenerateContent(apiKey: string, requestBody: ReturnType<typeof buildGenerateBody>) {
   let lastResponse: Response | null = null;
+  const models = getGeminiGenerateModels();
 
-  for (const model of GEMINI_GENERATE_MODELS) {
+  for (const model of models) {
     const response = await fetchGeminiWithRetries(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      `${GEMINI_API_BASE_URL}/v1beta/models/${model}:generateContent`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
         body: JSON.stringify(requestBody),
       },
     );
@@ -270,8 +337,9 @@ async function callGenerateContent(apiKey: string, requestBody: ReturnType<typeo
     }
 
     lastResponse = response;
+    const errorMessage = await getGeminiErrorMessage(response);
 
-    if (!RETRYABLE_GEMINI_STATUSES.has(response.status)) {
+    if (!shouldTryFallbackModel(response, errorMessage)) {
       await handleGeminiError(response);
     }
 
@@ -289,20 +357,51 @@ async function callGenerateContent(apiKey: string, requestBody: ReturnType<typeo
   );
 }
 
-async function uploadGeminiFile(apiKey: string, buffer: Buffer, mimeType: string) {
-  const uploadResponse = await fetchGeminiWithRetries(
-    `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
+async function uploadGeminiFile(
+  apiKey: string,
+  buffer: Buffer,
+  mimeType: string,
+  filename: string,
+) {
+  const startResponse = await fetchGeminiWithRetries(
+    `${GEMINI_API_BASE_URL}/upload/v1beta/files`,
     {
       method: "POST",
       headers: {
-        "X-Goog-Upload-Command": "start, upload, finalize",
+        "x-goog-api-key": apiKey,
+        "X-Goog-Upload-Protocol": "resumable",
+        "X-Goog-Upload-Command": "start",
         "X-Goog-Upload-Header-Content-Type": mimeType,
         "X-Goog-Upload-Header-Content-Length": String(buffer.length),
-        "Content-Type": mimeType,
+        "Content-Type": "application/json",
       },
-      body: buffer,
+      body: JSON.stringify({
+        file: {
+          display_name: getDisplayName(filename),
+        },
+      }),
     },
   );
+
+  if (!startResponse.ok) {
+    await handleGeminiError(startResponse);
+  }
+
+  const uploadUrl = startResponse.headers.get("x-goog-upload-url");
+
+  if (!uploadUrl) {
+    throw new Error("Gemini file upload did not return an upload URL.");
+  }
+
+  const uploadResponse = await fetchGeminiWithRetries(uploadUrl, {
+    method: "POST",
+    headers: {
+      "Content-Length": String(buffer.length),
+      "X-Goog-Upload-Offset": "0",
+      "X-Goog-Upload-Command": "upload, finalize",
+    },
+    body: buffer,
+  });
 
   if (!uploadResponse.ok) {
     await handleGeminiError(uploadResponse);
@@ -321,6 +420,7 @@ async function uploadGeminiFile(apiKey: string, buffer: Buffer, mimeType: string
 export async function transcribeAudio(
   buffer: Buffer,
   filename: string,
+  providedMimeType = "",
 ): Promise<TranscriptionResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -329,11 +429,10 @@ export async function transcribeAudio(
     );
   }
 
-  const mimeType = getMimeType(filename);
-  const fileSizeMB = buffer.length / (1024 * 1024);
+  const mimeType = getMimeType(filename, providedMimeType);
   let response: Response;
 
-  if (fileSizeMB <= 15) {
+  if (buffer.length <= MAX_INLINE_AUDIO_BYTES) {
     const base64Audio = buffer.toString("base64");
     const requestBody = buildGenerateBody({
       inline_data: {
@@ -344,7 +443,7 @@ export async function transcribeAudio(
 
     response = await callGenerateContent(apiKey, requestBody);
   } else {
-    const fileUri = await uploadGeminiFile(apiKey, buffer, mimeType);
+    const fileUri = await uploadGeminiFile(apiKey, buffer, mimeType, filename);
     const requestBody = buildGenerateBody({
       file_data: {
         mime_type: mimeType,
@@ -360,8 +459,10 @@ export async function transcribeAudio(
     responseJson
       ?.candidates?.[0]
       ?.content
-      ?.parts?.[0]
-      ?.text;
+      ?.parts
+      ?.map((part) => part.text)
+      .filter(Boolean)
+      .join("\n");
 
   if (!rawText || rawText.trim().length === 0) {
     throw new Error(

@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { apiUrl } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 
 interface StructuredMedicalRecord {
@@ -49,8 +50,8 @@ interface ApiErrorResponse {
   message?: string;
 }
 
-const ACCEPTED_AUDIO_TYPES = ".wav,.mp3,.flac,.m4a,.ogg";
-const ACCEPTED_EXTENSIONS = [".wav", ".mp3", ".flac", ".m4a", ".ogg"];
+const ACCEPTED_AUDIO_TYPES = ".wav,.mp3,.flac,.m4a,.aac,.aif,.aiff,.ogg";
+const ACCEPTED_EXTENSIONS = [".wav", ".mp3", ".flac", ".m4a", ".aac", ".aif", ".aiff", ".ogg"];
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 const NOT_DETECTED = "Not detected";
 
@@ -100,7 +101,7 @@ export function VoiceTranscription() {
       const formData = new FormData();
       formData.append("audio", file);
 
-      const response = await fetch("/api/voice/transcribe", {
+      const response = await fetch(apiUrl("/api/voice/transcribe"), {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -152,7 +153,7 @@ export function VoiceTranscription() {
 
   const validateFile = (file: File) => {
     if (!ACCEPTED_EXTENSIONS.includes(getFileExtension(file.name))) {
-      return "Invalid file type. Please upload .wav, .mp3, .flac, .m4a, or .ogg";
+      return "Invalid file type. Please upload .wav, .mp3, .flac, .m4a, .aac, .aiff, or .ogg";
     }
 
     if (file.size > MAX_FILE_SIZE) {
@@ -234,7 +235,7 @@ export function VoiceTranscription() {
             <FileAudio className="size-5 text-primary" />
             Audio Upload
           </CardTitle>
-          <CardDescription>.wav, .mp3, .flac, .m4a, and .ogg files up to 25MB</CardDescription>
+          <CardDescription>.wav, .mp3, .flac, .m4a, .aac, .aiff, and .ogg files up to 25MB</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div
@@ -270,7 +271,7 @@ export function VoiceTranscription() {
             </div>
             <div className="flex flex-col gap-1">
               <p className="font-black text-foreground">Drop audio file here</p>
-              <p className="text-sm text-muted-foreground">Supported formats: WAV, MP3, FLAC, M4A, OGG</p>
+              <p className="text-sm text-muted-foreground">Supported formats: WAV, MP3, FLAC, M4A, AAC, AIFF, OGG</p>
             </div>
             <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
               <Upload data-icon="inline-start" />
@@ -295,7 +296,7 @@ export function VoiceTranscription() {
         </CardContent>
         <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs font-medium text-muted-foreground">
-            Audio is processed offline with VOSK after upload.
+            Audio is processed by the Codical AI transcription service after upload.
           </p>
           <Button
             type="button"
