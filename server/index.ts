@@ -8,15 +8,26 @@ import { setupSocketIO } from "./socket";
 import fs from "fs";
 import path from "path";
 
-const app = express();
-const httpServer = createServer(app);
-const uploadsDir = path.resolve(process.cwd(), "uploads");
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-app.use("/uploads", express.static(uploadsDir));
+const isVercel = process.env.VERCEL === "1";
+
+export const app = express();
+export const httpServer = createServer(app);
+const uploadsDir = isVercel
+  ? path.resolve("/tmp", "uploads")
+  : path.resolve(process.cwd(), "uploads");
+
+try {
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  app.use("/uploads", express.static(uploadsDir));
+} catch (error) {
+  console.warn("Uploads directory is unavailable:", error);
+}
 
 
 // Setup Socket.io
-const io = setupSocketIO(httpServer);
+if (!isVercel) {
+  setupSocketIO(httpServer);
+}
 
 declare module "http" {
   interface IncomingMessage {
@@ -83,7 +94,7 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
+export const ready = (async () => {
   await ensureDatabaseSchema();
   await registerRoutes(httpServer, app);
 
@@ -101,18 +112,31 @@ app.use((req, res, next) => {
   });
 
   if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
+    if (!isVercel) {
+      serveStatic(app);
+    }
   } else {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }
 
-  const argPortIndex = process.argv.indexOf("--port");
-  const cliPort = argPortIndex !== -1 ? parseInt(process.argv[argPortIndex + 1]) : undefined;
-  const envPort = process.env.PORT || process.env.port;
-  const PORT = cliPort || (envPort ? parseInt(envPort) : 8080);
-  httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server listening on port: ${PORT}`);
-    console.log(`🔌 Socket.io ready for connections`);
-  });
+  if (!isVercel) {
+    const argPortIndex = process.argv.indexOf("--port");
+    const cliPort = argPortIndex !== -1 ? parseInt(process.argv[argPortIndex + 1]) : undefined;
+    const envPort = process.env.PORT || process.env.port;
+    const PORT = cliPort || (envPort ? parseInt(envPort) : 8080);
+    httpServer.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server listening on port: ${PORT}`);
+      console.log(`🔌 Socket.io ready for connections`);
+    });
+  }
 })();
+
+if (!isVercel) {
+  ready.catch((error) => {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  });
+}
+
+export default app;
