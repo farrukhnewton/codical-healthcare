@@ -12,8 +12,10 @@ export type Conversation = {
     id: number;
     fullName?: string;
     username?: string;
+    email?: string;
     avatarUrl?: string;
     isOnline?: boolean;
+    lastSeen?: string;
   }>;
   lastMessage: {
     id: number;
@@ -100,6 +102,7 @@ export async function sendMessage(payload: {
  */
 export async function createConversation(payload: {
   userIds: number[];
+  creatorId?: number;
   name?: string;
   isGroup?: boolean;
 }): Promise<Conversation> {
@@ -115,6 +118,76 @@ export async function createConversation(payload: {
   }
 
   return response.json();
+}
+
+export async function markConversationRead(payload: {
+  conversationId: number;
+  userId: number;
+}): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/conversations/${payload.conversationId}/read`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: payload.userId }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: "Network error" }));
+    throw new Error(errorData.message || "Failed to mark conversation read");
+  }
+}
+
+export async function getFriends(userId: number) {
+  const response = await fetch(`${API_BASE_URL}/friends/${userId}`);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: "Network error" }));
+    throw new Error(errorData.message || "Failed to fetch friends");
+  }
+
+  return response.json();
+}
+
+export async function updateChatUserProfile(payload: {
+  userId: number;
+  fullName: string;
+  username?: string;
+  avatarUrl?: string;
+}) {
+  const response = await fetch(`${API_BASE_URL}/users/${payload.userId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fullName: payload.fullName,
+      username: payload.username,
+      avatarUrl: payload.avatarUrl,
+    }),
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || "Failed to update profile");
+  }
+
+  return data;
+}
+
+export async function uploadChatUserAvatar(payload: {
+  userId: number;
+  file: File;
+}) {
+  const formData = new FormData();
+  formData.append("avatar", payload.file);
+
+  const response = await fetch(`${API_BASE_URL}/users/${payload.userId}/avatar`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || "Failed to upload avatar");
+  }
+
+  return data;
 }
 
 /**

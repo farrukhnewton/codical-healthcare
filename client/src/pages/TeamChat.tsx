@@ -7,7 +7,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getConversations, getMessages, sendMessage, uploadChatAttachment, type Conversation } from '@/lib/chat';
+import { getConversations, getMessages, markConversationRead, sendMessage, uploadChatAttachment, type Conversation, type Message } from '@/lib/chat';
+import { mergeRealtimeMessage } from '@/lib/chat-realtime';
 import { cn } from "@/lib/utils";
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +19,13 @@ import { UserPlus, ChevronLeft, MessageSquare } from 'lucide-react';
 import { FriendsManager } from '@/components/chat/FriendsManager';
 import { Badge } from '@/components/ui/badge';
 import { NewConversationModal } from "./NewConversation";
+
+function formatPresence(user?: { isOnline?: boolean; lastSeen?: string }) {
+  if (user?.isOnline) return "Online";
+  if (!user?.lastSeen) return "Offline";
+
+  return `Away ${formatDistanceToNow(new Date(user.lastSeen), { addSuffix: true })}`;
+}
 
 export function TeamChat() {
   const { user, loading: authLoading, error: authError } = useAuth();
@@ -38,6 +46,9 @@ export function TeamChat() {
     conversation.name === 'Codical AI' ||
     conversation.participants?.some((participant) => participant?.username === 'codical.ai')
   );
+
+  const conversationRoomIds = conversations.map((conversation) => conversation.id);
+  const conversationRoomKey = [...conversationRoomIds].sort((a, b) => a - b).join(',');
 
   useEffect(() => {
     if (!user?.id) return;
@@ -73,6 +84,39 @@ export function TeamChat() {
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || conversationRoomIds.length === 0) return;
+
+    const refreshFromRealtime = (payload: any) => {
+      if (payload.new) {
+        mergeRealtimeMessage(payload.new as Message);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
+    };
+
+    const channel = supabase.channel(`chat-list-messages:${user.id}:${conversationRoomKey}`);
+
+    conversationRoomIds.forEach((conversationId) => {
+      channel.on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        refreshFromRealtime,
+      );
+    });
+
+    channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, conversationRoomKey]);
 
   useEffect(() => {
     if (!user?.id || isLoading || hasCodicalAiConversation) return;
@@ -207,6 +251,7 @@ function ConversationItem({
   const otherParticipants = conversation.participants?.filter(p => p?.id !== currentUserId) || [];
   const displayName = conversation.name || otherParticipants.map(p => p?.fullName || p?.username).join(', ') || 'Conversation';
   const initials = displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const primaryParticipant = otherParticipants[0];
 
   return (
     <div
@@ -217,12 +262,17 @@ function ConversationItem({
       onClick={onClick}
     >
       <div className="flex items-center gap-3">
-        <Avatar className="h-12 w-12">
-          <AvatarImage src={otherParticipants[0]?.avatarUrl} />
-          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar className="h-12 w-12">
+            <AvatarImage src={primaryParticipant?.avatarUrl} />
+            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          {primaryParticipant?.isOnline && (
+            <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-gray-900" />
+          )}
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-center">
             <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{displayName}</p>
@@ -235,6 +285,11 @@ function ConversationItem({
           <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
             {conversation.lastMessage?.content || 'No messages yet'}
           </p>
+          {primaryParticipant && (
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+              {formatPresence(primaryParticipant)}
+            </p>
+          )}
         </div>
         {(conversation.unread || 0) > 0 && (
           <span className="bg-blue-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
@@ -279,7 +334,7 @@ function ChatWindow({
 
     const refreshConversation = () => {
       queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['conversations', currentUser.id] });
     };
 
     const channel = supabase
@@ -308,13 +363,13 @@ function ChatWindow({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversation.id]);
+  }, [conversation.id, currentUser.id]);
 
   const sendMessageMutation = useMutation({
     mutationFn: sendMessage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['conversations', currentUser.id] });
     },
     onError: (err: Error) => {
       console.error("Failed to send message:", err);
@@ -326,7 +381,7 @@ function ChatWindow({
     mutationFn: uploadChatAttachment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['conversations', currentUser.id] });
       toast({ title: "Attachment uploaded", description: "File sent successfully." });
     },
     onError: (error: Error) => {
@@ -383,8 +438,22 @@ function ChatWindow({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    if (!conversation.id || !currentUser?.id || messages.length === 0) return;
+
+    markConversationRead({
+      conversationId: conversation.id,
+      userId: currentUser.id,
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', currentUser.id] });
+    }).catch((error) => {
+      console.error("Failed to mark conversation read:", error);
+    });
+  }, [conversation.id, currentUser?.id, messages.length]);
+
   const otherParticipants = conversation.participants?.filter((p: any) => p?.id !== currentUser.id) || [];
   const displayName = conversation.name || otherParticipants.map((p: any) => p?.fullName || p?.username).join(', ') || 'Conversation';
+  const primaryParticipant = otherParticipants[0];
 
   const openPopup = () => window.open(window.location.href, "_blank", "width=520,height=760");
 
@@ -465,11 +534,17 @@ function ChatWindow({
               <ChevronLeft className="w-6 h-6" />
             </Button>
           )}
-          <Avatar className="h-10 w-10">
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-              {displayName.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={primaryParticipant?.avatarUrl} />
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                {displayName.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            {primaryParticipant?.isOnline && (
+              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white dark:border-gray-900" />
+            )}
+          </div>
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-gray-900 dark:text-white truncate max-w-[150px] md:max-w-none">
@@ -480,7 +555,7 @@ function ChatWindow({
               )}
             </div>
             <p className="text-xs text-gray-500">
-              {conversation.participants?.length || 0} participants
+              {conversation.isGroup ? `${conversation.participants?.length || 0} participants` : formatPresence(primaryParticipant)}
             </p>
           </div>
         </div>
@@ -548,23 +623,27 @@ function ChatWindow({
         )}
 
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={handleAttachmentSelect}
-          />
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="shrink-0"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadAttachmentMutation.isPending}
-          >
-            <Paperclip className="w-5 h-5 text-gray-500" />
-          </Button>
+          <div className="relative h-10 w-10 shrink-0">
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+              onChange={handleAttachmentSelect}
+              disabled={uploadAttachmentMutation.isPending}
+              aria-label="Attach file"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="pointer-events-none h-full w-full peer-focus-visible:ring-2 peer-focus-visible:ring-ring/40"
+              disabled={uploadAttachmentMutation.isPending}
+              aria-hidden="true"
+              tabIndex={-1}
+            >
+              <Paperclip className="w-5 h-5 text-gray-500" />
+            </Button>
+          </div>
 
           <Input
             type="text"

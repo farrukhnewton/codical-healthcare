@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "./supabase-admin";
+import { isSupabaseAdminConfigured, supabaseAdmin } from "./supabase-admin";
 import { api } from "../shared";
 import type { Express } from "express";
 import type { Server } from "http";
@@ -20,7 +20,10 @@ import { discoverPayerPolicies } from "./services/payer-policy-ingestion";
 import { DrChronoService } from "./services/emr/drchrono";
 import { patients, encounters, assignments, clinicalNotes, auditLogs, commercialPayers, payerPolicies } from "@shared/schema";
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+} as any);
 const CODICAL_AI_USERNAME = "codical.ai";
 const CODICAL_AI_NAME = "Codical AI";
 
@@ -250,6 +253,84 @@ async function ensureCodicalAiConversation(userId: number) {
   ]);
 
   return { conversation, aiUser };
+}
+
+async function areUsersFriends(userAId: number, userBId: number) {
+  if (userAId === userBId) return true;
+
+  const aiUser = await ensureCodicalAiUser();
+  if (userAId === aiUser.id || userBId === aiUser.id) return true;
+
+  const [accepted] = await db.select({ id: friendRequests.id })
+    .from(friendRequests)
+    .where(
+      and(
+        eq(friendRequests.status, "accepted"),
+        or(
+          and(eq(friendRequests.senderId, userAId), eq(friendRequests.receiverId, userBId)),
+          and(eq(friendRequests.senderId, userBId), eq(friendRequests.receiverId, userAId)),
+        ),
+      ),
+    )
+    .limit(1);
+
+  return Boolean(accepted);
+}
+
+async function getDirectConversation(userAId: number, userBId: number) {
+  const userParticipations = await db.select({
+    conversationId: participants.conversationId,
+  }).from(participants).where(eq(participants.userId, userAId));
+
+  const conversationIds = userParticipations.map((participant) => participant.conversationId);
+  if (conversationIds.length === 0) return null;
+
+  const possibleConversations = await db.query.conversations.findMany({
+    where: inArray(conversations.id, conversationIds),
+    with: {
+      participants: true,
+    },
+  });
+
+  return possibleConversations.find((conversation) => {
+    const ids = conversation.participants.map((participant) => participant.userId).sort((a, b) => a - b);
+    return ids.length === 2 && ids[0] === Math.min(userAId, userBId) && ids[1] === Math.max(userAId, userBId);
+  }) || null;
+}
+
+async function getAcceptedFriends(userId: number) {
+  const rows = await db.query.friendRequests.findMany({
+    where: and(
+      eq(friendRequests.status, "accepted"),
+      or(eq(friendRequests.senderId, userId), eq(friendRequests.receiverId, userId)),
+    ),
+    with: {
+      sender: {
+        columns: { id: true, fullName: true, username: true, email: true, avatarUrl: true, isOnline: true, lastSeen: true },
+      },
+      receiver: {
+        columns: { id: true, fullName: true, username: true, email: true, avatarUrl: true, isOnline: true, lastSeen: true },
+      },
+    },
+  });
+
+  return rows.map((request) => request.senderId === userId ? request.receiver : request.sender).filter(Boolean);
+}
+
+async function getUnreadCount(conversationId: number, userId: number, lastReadAt: Date | null) {
+  const [row] = await db.select({
+    count: sql<number>`count(*)::int`,
+  })
+    .from(messages)
+    .where(
+      and(
+        eq(messages.conversationId, conversationId),
+        ne(messages.senderId, userId),
+        lastReadAt ? sql`${messages.createdAt} > ${lastReadAt}` : sql`true`,
+      ),
+    );
+
+  return Number(row?.count || 0);
 }
 
 let lcdToken: string | null = null;
@@ -1573,6 +1654,121 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
     }
   });
 
+  app.patch("/api/chat/users/:userId", async (req, res) => {
+    try {
+      const userId = await resolveChatUserId(req.params.userId);
+      if (!userId) return res.status(400).json({ message: "Valid userId is required" });
+
+      const fullName = String(req.body.fullName || "").trim();
+      const username = String(req.body.username || "").trim().toLowerCase();
+      const avatarUrl = String(req.body.avatarUrl || "").trim();
+
+      if (!fullName) {
+        return res.status(400).json({ message: "Display name is required" });
+      }
+
+      if (username && !/^[a-z0-9._-]{3,32}$/.test(username)) {
+        return res.status(400).json({ message: "Username must be 3-32 characters and use letters, numbers, dots, underscores, or hyphens." });
+      }
+
+      if (username) {
+        const [existingUsername] = await db.select({ id: users.id })
+          .from(users)
+          .where(eq(users.username, username))
+          .limit(1);
+
+        if (existingUsername && existingUsername.id !== userId) {
+          return res.status(409).json({ message: "Username is already taken" });
+        }
+      }
+
+      const [updatedUser] = await db.update(users)
+        .set({
+          fullName,
+          ...(username ? { username } : {}),
+          avatarUrl: avatarUrl || null,
+          lastSeen: new Date(),
+        })
+        .where(eq(users.id, userId))
+        .returning();
+
+      if ((global as any).io) {
+        (global as any).io.emit("user:profile_updated", updatedUser);
+      }
+
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: error.message || "Failed to update profile" });
+    }
+  });
+
+  app.post("/api/chat/users/:userId/avatar", upload.single("avatar"), async (req, res) => {
+    try {
+      const userId = await resolveChatUserId(req.params.userId);
+      const file = req.file;
+
+      if (!userId) return res.status(400).json({ message: "Valid userId is required" });
+      if (!file) return res.status(400).json({ message: "Avatar image is required" });
+      if (file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({ message: "Avatar image must be under 5MB" });
+      }
+
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (!allowedTypes.includes(file.mimetype)) {
+        return res.status(400).json({ message: "Please upload a JPG, PNG, WEBP, or GIF image" });
+      }
+
+      const extension = path.extname(file.originalname).toLowerCase() || ".png";
+      const safeFileName = `${userId}-${Date.now()}${extension}`;
+      const storagePath = `avatars/${safeFileName}`;
+      let avatarUrl = "";
+
+      if (isSupabaseAdminConfigured) {
+        try {
+          const { error: uploadError } = await supabaseAdmin.storage
+            .from("profile-avatars")
+            .upload(storagePath, file.buffer, {
+              contentType: file.mimetype,
+              upsert: true,
+            });
+
+          if (uploadError) {
+            console.warn("Supabase avatar upload failed, using local uploads fallback:", uploadError.message);
+          } else {
+            const { data: publicUrlData } = supabaseAdmin.storage
+              .from("profile-avatars")
+              .getPublicUrl(storagePath);
+            avatarUrl = publicUrlData.publicUrl;
+          }
+        } catch (uploadError: any) {
+          console.warn("Supabase avatar upload threw, using local uploads fallback:", uploadError?.message || uploadError);
+        }
+      }
+
+      if (!avatarUrl) {
+        const localDir = path.resolve(process.cwd(), "uploads", "avatars");
+        await fs.mkdir(localDir, { recursive: true });
+        await fs.writeFile(path.join(localDir, safeFileName), file.buffer);
+        avatarUrl = `/uploads/avatars/${safeFileName}`;
+      }
+
+      const [updatedUser] = await db.update(users)
+        .set({ avatarUrl, lastSeen: new Date() })
+        .where(eq(users.id, userId))
+        .returning();
+
+      if ((global as any).io) {
+        (global as any).io.emit("user:profile_updated", updatedUser);
+      }
+
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error("Error uploading avatar:", error);
+      res.status(500).json({ message: error.message || "Failed to upload avatar" });
+    }
+  });
+
   // Toggle user role (for testing/demo purposes)
   app.patch("/api/user/role", async (req, res) => {
     try {
@@ -1597,13 +1793,15 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
     try {
       const q = String(req.query.q || "").trim().toLowerCase();
       if (!q) return res.json([]);
+      const currentUserId = req.query.currentUserId ? await resolveChatUserId(req.query.currentUserId) : null;
 
       const searchResults = await db.select({
         id: users.id,
         username: users.username,
         fullName: users.fullName,
         avatarUrl: users.avatarUrl,
-        isOnline: users.isOnline
+        isOnline: users.isOnline,
+        lastSeen: users.lastSeen,
       })
       .from(users)
       .where(
@@ -1615,10 +1813,33 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
       )
       .limit(10);
 
-      res.json(searchResults);
+      if (!currentUserId) {
+        return res.json(searchResults);
+      }
+
+      const resultsWithStatus = await Promise.all(searchResults.map(async (candidate) => ({
+        ...candidate,
+        relationshipStatus: candidate.id === currentUserId
+          ? "self"
+          : (await areUsersFriends(currentUserId, candidate.id)) ? "accepted" : "none",
+      })));
+
+      res.json(resultsWithStatus);
     } catch (error: any) {
       console.error("Error searching users:", error);
       res.status(500).json({ message: "Failed to search users" });
+    }
+  });
+
+  app.get("/api/chat/friends/:userId", async (req, res) => {
+    try {
+      const userId = await resolveChatUserId(req.params.userId);
+      if (!userId) return res.status(400).json({ message: "Valid userId is required" });
+
+      res.json(await getAcceptedFriends(userId));
+    } catch (error: any) {
+      console.error("Error fetching friends:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch friends" });
     }
   });
   
@@ -1794,10 +2015,14 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
 
       // Get all conversation IDs where user is a participant
       const userParticipations = await db.select({
-        conversationId: participants.conversationId
+        conversationId: participants.conversationId,
+        lastReadAt: participants.lastReadAt,
       }).from(participants).where(eq(participants.userId, userId));
 
       const conversationIds = userParticipations.map(p => p.conversationId);
+      const participationByConversationId = new Map(
+        userParticipations.map((participant) => [participant.conversationId, participant]),
+      );
 
       if (conversationIds.length === 0) {
         return res.json([]);
@@ -1827,6 +2052,15 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
         orderBy: [desc(conversations.updatedAt)]
       });
 
+      const unreadCounts = new Map<number, number>();
+      await Promise.all(conversationIds.map(async (conversationId) => {
+        const participant = participationByConversationId.get(conversationId);
+        unreadCounts.set(
+          conversationId,
+          await getUnreadCount(conversationId, userId, participant?.lastReadAt || null),
+        );
+      }));
+
       // Format response
       const formattedConversations = conversationsData.map(convo => {
         let conversationName = convo.name;
@@ -1845,7 +2079,7 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
           updatedAt: convo.updatedAt,
           participants: convo.participants.map(p => p.user),
           lastMessage: convo.messages[0] || null,
-          unread: 0,
+          unread: unreadCounts.get(convo.id) || 0,
         };
       });
 
@@ -1889,10 +2123,42 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
     }
   });
 
+  app.post("/api/chat/conversations/:conversationId/read", async (req, res) => {
+    try {
+      const conversationId = parseInt(req.params.conversationId);
+      const userId = await resolveChatUserId(req.body.userId);
+
+      if (isNaN(conversationId) || !userId) {
+        return res.status(400).json({ message: "conversationId and userId are required" });
+      }
+
+      const [participant] = await db.select().from(participants).where(
+        and(
+          eq(participants.conversationId, conversationId),
+          eq(participants.userId, userId),
+        ),
+      );
+
+      if (!participant) {
+        return res.status(403).json({ message: "User is not a participant of this conversation" });
+      }
+
+      const [updatedParticipant] = await db.update(participants)
+        .set({ lastReadAt: new Date() })
+        .where(eq(participants.id, participant.id))
+        .returning();
+
+      res.json(updatedParticipant);
+    } catch (error: any) {
+      console.error("Error marking conversation read:", error);
+      res.status(500).json({ message: error.message || "Failed to mark conversation read" });
+    }
+  });
+
   // Create a new conversation
   app.post("/api/chat/conversations", async (req, res) => {
     try {
-      const { userIds, name, isGroup } = req.body;
+      const { userIds, name, isGroup, creatorId } = req.body;
 
       if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
         return res.status(400).json({ message: "At least one user ID is required" });
@@ -1911,6 +2177,32 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
         }
       }
 
+      const resolvedCreatorId = await resolveChatUserId(creatorId ?? resolvedUserIds[0]);
+      if (!resolvedCreatorId || !resolvedUserIds.includes(resolvedCreatorId)) {
+        return res.status(400).json({ message: "A valid creatorId is required" });
+      }
+
+      const blockedUserIds: number[] = [];
+      for (const participantUserId of resolvedUserIds) {
+        if (participantUserId !== resolvedCreatorId && !(await areUsersFriends(resolvedCreatorId, participantUserId))) {
+          blockedUserIds.push(participantUserId);
+        }
+      }
+
+      if (blockedUserIds.length > 0) {
+        return res.status(403).json({
+          message: "You can only start conversations with accepted friends. Send a friend request first.",
+          blockedUserIds,
+        });
+      }
+
+      if (resolvedUserIds.length === 2) {
+        const existingDirectConversation = await getDirectConversation(resolvedUserIds[0], resolvedUserIds[1]);
+        if (existingDirectConversation) {
+          return res.status(200).json(existingDirectConversation);
+        }
+      }
+
       // Create conversation
       const [newConversation] = await db.insert(conversations).values({
         name: name || null,
@@ -1925,6 +2217,12 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
       }));
 
       await db.insert(participants).values(participantValues);
+
+      if ((global as any).io) {
+        resolvedUserIds.forEach((userId) => {
+          (global as any).io.to(`user:${userId}`).emit("conversation:new", newConversation);
+        });
+      }
 
       res.status(201).json(newConversation);
     } catch (error: any) {
@@ -1976,6 +2274,15 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
       await db.update(conversations)
         .set({ updatedAt: new Date() })
         .where(eq(conversations.id, conversationId));
+
+      await db.update(participants)
+        .set({ lastReadAt: new Date() })
+        .where(
+          and(
+            eq(participants.conversationId, conversationId),
+            eq(participants.userId, resolvedSenderId),
+          ),
+        );
       
         const aiUser = await ensureCodicalAiUser();
 
@@ -2083,7 +2390,8 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
         with: {
           sender: {
             columns: { id: true, fullName: true, username: true, avatarUrl: true }
-          }
+          },
+          attachments: true,
         }
       });
 
@@ -2129,25 +2437,34 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
         const storagePath = `chat/${conversationId}/${safeFileName}`;
         let fileUrl = "";
 
-        const { error: uploadError } = await supabaseAdmin.storage
-          .from("chat-attachments")
-          .upload(storagePath, file.buffer, {
-            contentType: file.mimetype || "application/octet-stream",
-            upsert: false,
-          });
+        if (isSupabaseAdminConfigured) {
+          try {
+            const { error: uploadError } = await supabaseAdmin.storage
+              .from("chat-attachments")
+              .upload(storagePath, file.buffer, {
+                contentType: file.mimetype || "application/octet-stream",
+                upsert: false,
+              });
 
-        if (uploadError) {
-          console.warn("Supabase chat attachment upload failed, using local uploads fallback:", uploadError.message);
+            if (uploadError) {
+              console.warn("Supabase chat attachment upload failed, using local uploads fallback:", uploadError.message);
+            } else {
+              const { data: publicUrlData } = supabaseAdmin.storage
+                .from("chat-attachments")
+                .getPublicUrl(storagePath);
+
+              fileUrl = publicUrlData.publicUrl;
+            }
+          } catch (uploadError: any) {
+            console.warn("Supabase chat attachment upload threw, using local uploads fallback:", uploadError?.message || uploadError);
+          }
+        }
+
+        if (!fileUrl) {
           const localDir = path.resolve(process.cwd(), "uploads", "chat", String(conversationId));
           await fs.mkdir(localDir, { recursive: true });
           await fs.writeFile(path.join(localDir, safeFileName), file.buffer);
           fileUrl = `/uploads/chat/${conversationId}/${safeFileName}`;
-        } else {
-          const { data: publicUrlData } = supabaseAdmin.storage
-            .from("chat-attachments")
-            .getPublicUrl(storagePath);
-
-          fileUrl = publicUrlData.publicUrl;
         }
 
         // --- NEW: Extract text for AI reading ---
@@ -2186,6 +2503,15 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
         await db.update(conversations)
           .set({ updatedAt: new Date() })
           .where(eq(conversations.id, conversationId));
+
+        await db.update(participants)
+          .set({ lastReadAt: new Date() })
+          .where(
+            and(
+              eq(participants.conversationId, conversationId),
+              eq(participants.userId, senderId),
+            ),
+          );
   
         const fullMessage = await db.query.messages.findFirst({
           where: eq(messages.id, newMessage.id),
@@ -2338,13 +2664,47 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
 
   app.post("/api/chat/friend-requests", async (req, res) => {
     try {
-      const { senderId, receiverId } = req.body;
+      const senderId = await resolveChatUserId(req.body.senderId);
+      const receiverId = await resolveChatUserId(req.body.receiverId);
+
+      if (!senderId || !receiverId) {
+        return res.status(400).json({ message: "senderId and receiverId are required" });
+      }
+
+      if (senderId === receiverId) {
+        return res.status(400).json({ message: "You cannot send a friend request to yourself" });
+      }
+
+      if (await areUsersFriends(senderId, receiverId)) {
+        return res.status(409).json({ message: "You are already friends" });
+      }
+
+      const [existingRequest] = await db.select()
+        .from(friendRequests)
+        .where(
+          and(
+            or(
+              and(eq(friendRequests.senderId, senderId), eq(friendRequests.receiverId, receiverId)),
+              and(eq(friendRequests.senderId, receiverId), eq(friendRequests.receiverId, senderId)),
+            ),
+            eq(friendRequests.status, "pending"),
+          ),
+        )
+        .limit(1);
+
+      if (existingRequest) {
+        return res.status(200).json(existingRequest);
+      }
 
       const [request] = await db.insert(friendRequests).values({
         senderId,
         receiverId,
         status: 'pending',
       }).returning();
+
+      if ((global as any).io) {
+        (global as any).io.to(`user:${receiverId}`).emit("friend_request:new", request);
+      }
 
       res.status(201).json(request);
     } catch (error: any) {
@@ -2358,21 +2718,45 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
       const requestId = parseInt(req.params.requestId);
       const { status } = req.body; // 'accepted' or 'rejected'
 
+      if (!["accepted", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "status must be accepted or rejected" });
+      }
+
       const [updatedRequest] = await db.update(friendRequests)
         .set({ status, updatedAt: new Date() })
         .where(eq(friendRequests.id, requestId))
         .returning();
 
+      if (!updatedRequest) {
+        return res.status(404).json({ message: "Friend request not found" });
+      }
+
       // If accepted, create a conversation between the two users
       if (status === 'accepted') {
-        const [newConvo] = await db.insert(conversations).values({
-          isGroup: false,
-        }).returning();
+        let newConvo: any = await getDirectConversation(updatedRequest.senderId, updatedRequest.receiverId);
 
-        await db.insert(participants).values([
-          { conversationId: newConvo.id, userId: updatedRequest.senderId },
-          { conversationId: newConvo.id, userId: updatedRequest.receiverId },
-        ]);
+        if (!newConvo) {
+          const [insertedConvo] = await db.insert(conversations).values({
+            isGroup: false,
+          }).returning();
+
+          newConvo = insertedConvo;
+
+          await db.insert(participants).values([
+            { conversationId: newConvo.id, userId: updatedRequest.senderId },
+            { conversationId: newConvo.id, userId: updatedRequest.receiverId },
+          ]);
+        }
+
+        if ((global as any).io) {
+          [updatedRequest.senderId, updatedRequest.receiverId].forEach((userId) => {
+            (global as any).io.to(`user:${userId}`).emit("friend_request:updated", updatedRequest);
+            (global as any).io.to(`user:${userId}`).emit("conversation:new", newConvo);
+          });
+        }
+      } else if ((global as any).io) {
+        (global as any).io.to(`user:${updatedRequest.senderId}`).emit("friend_request:updated", updatedRequest);
+        (global as any).io.to(`user:${updatedRequest.receiverId}`).emit("friend_request:updated", updatedRequest);
       }
 
       res.json(updatedRequest);

@@ -9,7 +9,14 @@ export function setupSocketIO(httpServer: HttpServer) {
     cors: {
       origin: process.env.NODE_ENV === "production" 
         ? false 
-        : ["http://localhost:5173", "http://localhost:5000"],
+        : [
+            "http://localhost:5173",
+            "http://localhost:5000",
+            "http://localhost:8080",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:5000",
+            "http://127.0.0.1:8080",
+          ],
       methods: ["GET", "POST"],
       credentials: true,
     },

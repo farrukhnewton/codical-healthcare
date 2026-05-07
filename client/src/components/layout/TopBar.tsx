@@ -3,8 +3,8 @@ import { Bell, Command, Moon, Search, Sun } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { supabase } from "@/lib/supabase";
 import { useTheme } from "@/lib/theme";
+import { UserProfileMenu } from "@/components/chat/UserProfileMenu";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Command Center", subtitle: "Real-time coding, coverage and reimbursement overview" },
@@ -37,16 +37,9 @@ function getPageMeta(pathname: string) {
 export function TopBar() {
   const [location] = useLocation();
   const { theme, toggle: toggleTheme } = useTheme();
-  const [userEmail, setUserEmail] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
 
   const page = useMemo(() => getPageMeta(location), [location]);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) setUserEmail(data.user.email);
-    });
-  }, []);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -65,8 +58,6 @@ export function TopBar() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
-
-  const userInitials = userEmail ? userEmail.slice(0, 2).toUpperCase() : "CH";
 
   return (
     <motion.header
@@ -125,19 +116,7 @@ export function TopBar() {
           <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[var(--co-green)] rounded-full border border-white/40" />
         </button>
 
-        <div className="co-glow-capsule hidden sm:flex items-center gap-2 px-2 py-1.5 rounded-full border border-[var(--co-line)] bg-white/5">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black bg-gradient-to-br from-[var(--co-cyan)] to-[var(--co-blue)]">
-            {userInitials}
-          </div>
-          <div className="min-w-0 pr-2">
-            <p className="text-xs font-bold text-[var(--co-ink)] leading-none truncate max-w-[140px]">
-              {userEmail ? userEmail.split("@")[0] : "Account"}
-            </p>
-            <p className="text-[10px] text-[var(--co-muted)] leading-none mt-1">
-              Coder workspace
-            </p>
-          </div>
-        </div>
+        <UserProfileMenu />
       </div>
 
       <UnifiedSearch open={searchOpen} onClose={() => setSearchOpen(false)} />

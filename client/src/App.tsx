@@ -48,6 +48,7 @@ import { VoiceTranscription } from "@/pages/VoiceTranscription";
 import { supabase } from "./lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { AuroraScene } from "@/components/landing-next/AuroraScene";
+import { ChatRealtimeBridge } from "@/components/chat/ChatRealtimeBridge";
 
 // Auth loading screen (matches landing/auth aurora system)
 function AuthLoadingScreen() {
@@ -168,6 +169,7 @@ function Router() {
       ) : (
         <div className="landingAurora appShell flex h-screen overflow-hidden font-sans selection:bg-primary/20 relative">
           <AuroraScene />
+          <ChatRealtimeBridge />
           {/* Sidebar */}
           <IconRail />
 

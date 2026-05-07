@@ -23,7 +23,12 @@ export function FriendsManager({ open, onOpenChange, currentUserId }: FriendsMan
     queryKey: ["userSearch", searchQuery],
     queryFn: async () => {
       if (!searchQuery.trim()) return [];
-      const res = await fetch("/api/chat/users/search?q=" + encodeURIComponent(searchQuery));
+      const res = await fetch(
+        "/api/chat/users/search?q=" +
+          encodeURIComponent(searchQuery) +
+          "&currentUserId=" +
+          encodeURIComponent(String(currentUserId)),
+      );
       if (!res.ok) throw new Error("Search failed");
       return res.json();
     },
@@ -51,6 +56,8 @@ export function FriendsManager({ open, onOpenChange, currentUserId }: FriendsMan
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userSearch"] });
+      queryClient.invalidateQueries({ queryKey: ["friendRequests", currentUserId] });
       toast({ title: "Request Sent", description: "Friend request sent successfully." });
     },
     onError: (err: Error) => {
@@ -76,7 +83,8 @@ export function FriendsManager({ open, onOpenChange, currentUserId }: FriendsMan
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["friendRequests", currentUserId] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["friends", currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ["conversations", currentUserId] });
       toast({
         title: variables.status === "accepted" ? "Request Accepted" : "Request Rejected",
         description: variables.status === "accepted" ? "You are now friends!" : "Request dismissed.",
@@ -158,10 +166,10 @@ export function FriendsManager({ open, onOpenChange, currentUserId }: FriendsMan
                           variant="outline"
                           className="rounded-full gap-2"
                           onClick={() => sendRequestMutation.mutate(user.id)}
-                          disabled={sendRequestMutation.isPending}
+                          disabled={sendRequestMutation.isPending || user.relationshipStatus === "accepted"}
                         >
                           <UserPlus className="w-4 h-4" />
-                          Add
+                          {user.relationshipStatus === "accepted" ? "Friends" : "Add"}
                         </Button>
                       </div>
                     )

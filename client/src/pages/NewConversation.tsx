@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Command, CommandInput, CommandList, CommandItem, CommandGroup, CommandEmpty } from '@/components/ui/command';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { createConversation } from '@/lib/chat';
+import { createConversation, getFriends } from '@/lib/chat';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,21 +26,20 @@ export function NewConversationModal({ open, onOpenChange }: NewConversationProp
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // Fetch all users
+  // New conversations can only be started with accepted friends.
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const res = await fetch('/api/chat/users');
-      if (!res.ok) throw new Error('Failed to fetch users');
-      return res.json();
-    },
+    queryKey: ['friends', currentUser?.id],
+    queryFn: () => getFriends(currentUser!.id),
+    enabled: !!currentUser?.id,
   });
 
   const createConversationMutation = useMutation({
     mutationFn: createConversation,
     onSuccess: (data) => {
       toast({ title: 'Success', description: 'Conversation created.' });
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      if (currentUser?.id) {
+        queryClient.invalidateQueries({ queryKey: ['conversations', currentUser.id] });
+      }
       onOpenChange(false);
       setTitle('');
       setSelectedUsers([]);
@@ -86,6 +85,7 @@ export function NewConversationModal({ open, onOpenChange }: NewConversationProp
     const userIds = [currentUser.id, ...selectedUsers.map(u => u.id)];
     createConversationMutation.mutate({ 
       userIds, 
+      creatorId: currentUser.id,
       name: title || undefined,
       isGroup: selectedUsers.length > 1
     });
@@ -110,7 +110,7 @@ export function NewConversationModal({ open, onOpenChange }: NewConversationProp
 
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-              Add participants
+              Add accepted friends
             </label>
             <Command className="rounded-lg border bg-white dark:bg-gray-900">
               <CommandInput
@@ -120,9 +120,9 @@ export function NewConversationModal({ open, onOpenChange }: NewConversationProp
               />
               <CommandList>
                 <CommandEmpty>
-                  {isLoadingUsers ? 'Loading users...' : 'No users found.'}
+                  {isLoadingUsers ? 'Loading friends...' : 'No accepted friends found. Send a friend request first.'}
                 </CommandEmpty>
-                <CommandGroup heading="Users">
+                <CommandGroup heading="Friends">
                   {availableUsers.slice(0, 5).map((user: any) => (
                     <CommandItem
                       key={user.id}
