@@ -26,6 +26,69 @@ const upload = multer({
 } as any);
 const CODICAL_AI_USERNAME = "codical.ai";
 const CODICAL_AI_NAME = "Codical AI";
+const isVercel = process.env.VERCEL === "1";
+const uploadsRoot = isVercel
+  ? path.resolve("/tmp", "uploads")
+  : path.resolve(process.cwd(), "uploads");
+
+function getLocalUploadDir(...segments: string[]) {
+  return path.join(uploadsRoot, ...segments);
+}
+
+async function ensurePublicStorageBucket(bucketName: string) {
+  if (!isSupabaseAdminConfigured) return false;
+
+  try {
+    const { data, error } = await supabaseAdmin.storage.getBucket(bucketName);
+    if (data && !error) return true;
+
+    const { error: createError } = await supabaseAdmin.storage.createBucket(bucketName, {
+      public: true,
+    });
+
+    if (createError && !/already exists/i.test(createError.message || "")) {
+      console.warn(`Could not create Supabase storage bucket ${bucketName}:`, createError.message);
+      return false;
+    }
+
+    return true;
+  } catch (error: any) {
+    console.warn(`Could not ensure Supabase storage bucket ${bucketName}:`, error?.message || error);
+    return false;
+  }
+}
+
+async function uploadPublicStorageFile(
+  bucketName: string,
+  storagePath: string,
+  buffer: Buffer,
+  contentType: string,
+) {
+  if (!(await ensurePublicStorageBucket(bucketName))) return "";
+
+  try {
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(bucketName)
+      .upload(storagePath, buffer, {
+        contentType,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.warn(`Supabase ${bucketName} upload failed:`, uploadError.message);
+      return "";
+    }
+
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from(bucketName)
+      .getPublicUrl(storagePath);
+
+    return publicUrlData.publicUrl;
+  } catch (error: any) {
+    console.warn(`Supabase ${bucketName} upload threw:`, error?.message || error);
+    return "";
+  }
+}
 
 type ChatUserProfile = {
   supabaseId?: string;
@@ -1724,30 +1787,15 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
       const storagePath = `avatars/${safeFileName}`;
       let avatarUrl = "";
 
-      if (isSupabaseAdminConfigured) {
-        try {
-          const { error: uploadError } = await supabaseAdmin.storage
-            .from("profile-avatars")
-            .upload(storagePath, file.buffer, {
-              contentType: file.mimetype,
-              upsert: true,
-            });
-
-          if (uploadError) {
-            console.warn("Supabase avatar upload failed, using local uploads fallback:", uploadError.message);
-          } else {
-            const { data: publicUrlData } = supabaseAdmin.storage
-              .from("profile-avatars")
-              .getPublicUrl(storagePath);
-            avatarUrl = publicUrlData.publicUrl;
-          }
-        } catch (uploadError: any) {
-          console.warn("Supabase avatar upload threw, using local uploads fallback:", uploadError?.message || uploadError);
-        }
-      }
+      avatarUrl = await uploadPublicStorageFile(
+        "profile-avatars",
+        storagePath,
+        file.buffer,
+        file.mimetype,
+      );
 
       if (!avatarUrl) {
-        const localDir = path.resolve(process.cwd(), "uploads", "avatars");
+        const localDir = getLocalUploadDir("avatars");
         await fs.mkdir(localDir, { recursive: true });
         await fs.writeFile(path.join(localDir, safeFileName), file.buffer);
         avatarUrl = `/uploads/avatars/${safeFileName}`;
@@ -2437,31 +2485,15 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
         const storagePath = `chat/${conversationId}/${safeFileName}`;
         let fileUrl = "";
 
-        if (isSupabaseAdminConfigured) {
-          try {
-            const { error: uploadError } = await supabaseAdmin.storage
-              .from("chat-attachments")
-              .upload(storagePath, file.buffer, {
-                contentType: file.mimetype || "application/octet-stream",
-                upsert: false,
-              });
-
-            if (uploadError) {
-              console.warn("Supabase chat attachment upload failed, using local uploads fallback:", uploadError.message);
-            } else {
-              const { data: publicUrlData } = supabaseAdmin.storage
-                .from("chat-attachments")
-                .getPublicUrl(storagePath);
-
-              fileUrl = publicUrlData.publicUrl;
-            }
-          } catch (uploadError: any) {
-            console.warn("Supabase chat attachment upload threw, using local uploads fallback:", uploadError?.message || uploadError);
-          }
-        }
+        fileUrl = await uploadPublicStorageFile(
+          "chat-attachments",
+          storagePath,
+          file.buffer,
+          file.mimetype || "application/octet-stream",
+        );
 
         if (!fileUrl) {
-          const localDir = path.resolve(process.cwd(), "uploads", "chat", String(conversationId));
+          const localDir = getLocalUploadDir("chat", String(conversationId));
           await fs.mkdir(localDir, { recursive: true });
           await fs.writeFile(path.join(localDir, safeFileName), file.buffer);
           fileUrl = `/uploads/chat/${conversationId}/${safeFileName}`;
