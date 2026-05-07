@@ -190,6 +190,45 @@ export async function uploadChatUserAvatar(payload: {
   return data;
 }
 
+export async function removeChatUserAvatar(userId: number) {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/avatar`, {
+    method: "DELETE",
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || "Failed to remove avatar");
+  }
+
+  return data;
+}
+
+export function sendChatUserPresence(payload: {
+  userId: number;
+  isOnline: boolean;
+}) {
+  const body = JSON.stringify({ isOnline: payload.isOnline });
+  const url = `${API_BASE_URL}/users/${payload.userId}/presence`;
+
+  if (!payload.isOnline && typeof navigator !== "undefined" && navigator.sendBeacon) {
+    const blob = new Blob([body], { type: "application/json" });
+    navigator.sendBeacon(url, blob);
+    return Promise.resolve();
+  }
+
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    keepalive: true,
+  }).then(async (response) => {
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.message || "Failed to update presence");
+    }
+  });
+}
+
 /**
  * Edits a message.
  */

@@ -26,6 +26,7 @@ const upload = multer({
 } as any);
 const CODICAL_AI_USERNAME = "codical.ai";
 const CODICAL_AI_NAME = "Codical AI";
+const PRESENCE_ONLINE_WINDOW_MS = 75_000;
 const isVercel = process.env.VERCEL === "1";
 const uploadsRoot = isVercel
   ? path.resolve("/tmp", "uploads")
@@ -88,6 +89,38 @@ async function uploadPublicStorageFile(
     console.warn(`Supabase ${bucketName} upload threw:`, error?.message || error);
     return "";
   }
+}
+
+type PresenceUser = {
+  isOnline?: boolean | null;
+  lastSeen?: Date | string | null;
+};
+
+function withEffectivePresence<T extends PresenceUser>(user: T): T & { isOnline: boolean } {
+  const lastSeenMs = user.lastSeen ? new Date(user.lastSeen).getTime() : 0;
+  const isRecentlySeen = Number.isFinite(lastSeenMs) && Date.now() - lastSeenMs <= PRESENCE_ONLINE_WINDOW_MS;
+
+  return {
+    ...user,
+    isOnline: Boolean(user.isOnline && isRecentlySeen),
+  };
+}
+
+async function updateChatPresence(userId: number, isOnline: boolean) {
+  const [updatedUser] = await db.update(users)
+    .set({ isOnline, lastSeen: new Date() })
+    .where(eq(users.id, userId))
+    .returning();
+
+  if ((global as any).io && updatedUser) {
+    (global as any).io.emit("user:status", {
+      userId,
+      isOnline: withEffectivePresence(updatedUser).isOnline,
+      lastSeen: updatedUser.lastSeen,
+    });
+  }
+
+  return updatedUser;
 }
 
 type ChatUserProfile = {
@@ -183,8 +216,9 @@ async function ensureChatUser(profile: ChatUserProfile) {
       .set({
         supabaseId: existing.supabaseId || supabaseId || null,
         email: existing.email || email || null,
-        fullName: fullName || existing.fullName,
-        avatarUrl: avatarUrl || existing.avatarUrl,
+        fullName: existing.fullName || fullName,
+        avatarUrl: existing.avatarUrl,
+        isOnline: true,
         lastSeen: new Date(),
       })
       .where(eq(users.id, existing.id))
@@ -377,7 +411,10 @@ async function getAcceptedFriends(userId: number) {
     },
   });
 
-  return rows.map((request) => request.senderId === userId ? request.receiver : request.sender).filter(Boolean);
+  return rows
+    .map((request) => request.senderId === userId ? request.receiver : request.sender)
+    .filter(Boolean)
+    .map((user) => withEffectivePresence(user));
 }
 
 async function getUnreadCount(conversationId: number, userId: number, lastReadAt: Date | null) {
@@ -1682,6 +1719,8 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
         return res.status(401).json({ message: "Unable to resolve authenticated chat user" });
       }
 
+      const presentUser = withEffectivePresence(user);
+
       res.json({
         id: user.id,
         supabaseId: user.supabaseId,
@@ -1690,8 +1729,8 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
         email: user.email,
         avatarUrl: user.avatarUrl,
         role: user.role,
-        isOnline: user.isOnline,
-        lastSeen: user.lastSeen,
+        isOnline: presentUser.isOnline,
+        lastSeen: presentUser.lastSeen,
       });
     } catch (error: any) {
       console.error("Error resolving current chat user:", error);
@@ -1710,10 +1749,29 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
         isOnline: users.isOnline,
         lastSeen: users.lastSeen,
       }).from(users).where(ne(users.username, CODICAL_AI_USERNAME));
-      res.json(allUsers);
+      res.json(allUsers.map((user) => withEffectivePresence(user)));
     } catch (error: any) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: error.message || "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/chat/users/:userId/presence", async (req, res) => {
+    try {
+      const userId = await resolveChatUserId(req.params.userId);
+      if (!userId) return res.status(400).json({ message: "Valid userId is required" });
+
+      const isOnline = req.body?.isOnline !== false;
+      const updatedUser = await updateChatPresence(userId, isOnline);
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json(withEffectivePresence(updatedUser));
+    } catch (error: any) {
+      console.error("Error updating chat presence:", error);
+      res.status(500).json({ message: error.message || "Failed to update presence" });
     }
   });
 
@@ -1750,6 +1808,7 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
           fullName,
           ...(username ? { username } : {}),
           avatarUrl: avatarUrl || null,
+          isOnline: true,
           lastSeen: new Date(),
         })
         .where(eq(users.id, userId))
@@ -1759,7 +1818,7 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
         (global as any).io.emit("user:profile_updated", updatedUser);
       }
 
-      res.json(updatedUser);
+      res.json(withEffectivePresence(updatedUser));
     } catch (error: any) {
       console.error("Error updating user profile:", error);
       res.status(500).json({ message: error.message || "Failed to update profile" });
@@ -1802,7 +1861,7 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
       }
 
       const [updatedUser] = await db.update(users)
-        .set({ avatarUrl, lastSeen: new Date() })
+        .set({ avatarUrl, isOnline: true, lastSeen: new Date() })
         .where(eq(users.id, userId))
         .returning();
 
@@ -1810,10 +1869,35 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
         (global as any).io.emit("user:profile_updated", updatedUser);
       }
 
-      res.json(updatedUser);
+      res.json(withEffectivePresence(updatedUser));
     } catch (error: any) {
       console.error("Error uploading avatar:", error);
       res.status(500).json({ message: error.message || "Failed to upload avatar" });
+    }
+  });
+
+  app.delete("/api/chat/users/:userId/avatar", async (req, res) => {
+    try {
+      const userId = await resolveChatUserId(req.params.userId);
+      if (!userId) return res.status(400).json({ message: "Valid userId is required" });
+
+      const [updatedUser] = await db.update(users)
+        .set({ avatarUrl: null, isOnline: true, lastSeen: new Date() })
+        .where(eq(users.id, userId))
+        .returning();
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if ((global as any).io) {
+        (global as any).io.emit("user:profile_updated", updatedUser);
+      }
+
+      res.json(withEffectivePresence(updatedUser));
+    } catch (error: any) {
+      console.error("Error removing avatar:", error);
+      res.status(500).json({ message: error.message || "Failed to remove avatar" });
     }
   });
 
@@ -1862,11 +1946,11 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
       .limit(10);
 
       if (!currentUserId) {
-        return res.json(searchResults);
+        return res.json(searchResults.map((user) => withEffectivePresence(user)));
       }
 
       const resultsWithStatus = await Promise.all(searchResults.map(async (candidate) => ({
-        ...candidate,
+        ...withEffectivePresence(candidate),
         relationshipStatus: candidate.id === currentUserId
           ? "self"
           : (await areUsersFriends(currentUserId, candidate.id)) ? "accepted" : "none",
@@ -2083,7 +2167,7 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
           participants: {
             with: {
               user: {
-                columns: { id: true, fullName: true, username: true, avatarUrl: true, isOnline: true }
+                columns: { id: true, fullName: true, username: true, avatarUrl: true, isOnline: true, lastSeen: true }
               }
             }
           },
@@ -2125,7 +2209,7 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
           isGroup: convo.isGroup,
           createdAt: convo.createdAt,
           updatedAt: convo.updatedAt,
-          participants: convo.participants.map(p => p.user),
+          participants: convo.participants.map(p => p.user ? withEffectivePresence(p.user) : p.user),
           lastMessage: convo.messages[0] || null,
           unread: unreadCounts.get(convo.id) || 0,
         };
@@ -2682,12 +2766,15 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
         ),
         with: {
           sender: {
-            columns: { id: true, fullName: true, username: true, avatarUrl: true }
+            columns: { id: true, fullName: true, username: true, avatarUrl: true, isOnline: true, lastSeen: true }
           }
         }
       });
 
-      res.json(requests);
+      res.json(requests.map((request) => ({
+        ...request,
+        sender: request.sender ? withEffectivePresence(request.sender) : request.sender,
+      })));
     } catch (error: any) {
       console.error("Error fetching friend requests:", error);
       res.status(500).json({ message: error.message || "Failed to fetch friend requests" });

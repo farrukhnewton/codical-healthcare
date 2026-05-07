@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { io, type Socket } from "socket.io-client";
-import { getConversations, type Message } from "@/lib/chat";
+import { getConversations, sendChatUserPresence, type Message } from "@/lib/chat";
 import { getMessagePreview, mergeRealtimeMessage } from "@/lib/chat-realtime";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,6 +29,51 @@ export function ChatRealtimeBridge() {
 
   const conversationRoomIds = conversations.map((conversation) => conversation.id);
   const conversationRoomKey = [...conversationRoomIds].sort((a, b) => a - b).join(",");
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let disposed = false;
+
+    const markOnline = () => {
+      if (disposed || document.visibilityState !== "visible") return;
+
+      void sendChatUserPresence({ userId: user.id, isOnline: true }).catch(() => undefined);
+    };
+
+    const markOffline = () => {
+      void sendChatUserPresence({ userId: user.id, isOnline: false }).catch(() => undefined);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        markOnline();
+        queryClient.invalidateQueries({ queryKey: ["conversations", user.id] });
+        queryClient.invalidateQueries({ queryKey: ["friends", user.id] });
+        return;
+      }
+
+      markOffline();
+    };
+
+    handleVisibilityChange();
+
+    const heartbeatId = window.setInterval(markOnline, 25_000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleVisibilityChange);
+    window.addEventListener("pagehide", markOffline);
+    window.addEventListener("beforeunload", markOffline);
+
+    return () => {
+      disposed = true;
+      window.clearInterval(heartbeatId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleVisibilityChange);
+      window.removeEventListener("pagehide", markOffline);
+      window.removeEventListener("beforeunload", markOffline);
+      markOffline();
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;

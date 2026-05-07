@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, Camera, Save, UserRound } from "lucide-react";
+import { Bell, Camera, Save, Trash2, UserRound } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient } from "@/lib/queryClient";
-import { updateChatUserProfile, uploadChatUserAvatar } from "@/lib/chat";
+import { removeChatUserAvatar, updateChatUserProfile, uploadChatUserAvatar } from "@/lib/chat";
 
 export function UserProfileMenu() {
   const { user } = useAuth();
@@ -20,6 +20,7 @@ export function UserProfileMenu() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -79,6 +80,28 @@ export function UserProfileMenu() {
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const removeAvatar = async () => {
+    if (!user?.id) return;
+
+    try {
+      setIsRemoving(true);
+      const updatedUser = await removeChatUserAvatar(user.id);
+      setAvatarUrl(updatedUser.avatarUrl || "");
+      queryClient.invalidateQueries({ queryKey: ["conversations", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["friends", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast({ title: "Display picture removed", description: "Your avatar was cleared." });
+    } catch (error) {
+      toast({
+        title: "Remove picture failed",
+        description: error instanceof Error ? error.message : "Could not remove avatar.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -150,7 +173,7 @@ export function UserProfileMenu() {
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -172,6 +195,17 @@ export function UserProfileMenu() {
                 >
                   <Camera className="w-4 h-4" />
                   {isUploading ? "Uploading..." : "Change picture"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-red-600 hover:text-red-700"
+                  onClick={removeAvatar}
+                  disabled={isRemoving || isUploading || !avatarUrl}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {isRemoving ? "Removing..." : "Remove"}
                 </Button>
               </div>
             </div>
