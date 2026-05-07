@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, FileText, Sparkles, Copy, Check, Download,
@@ -7,6 +7,7 @@ import {
   Building2, ChevronRight
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { SavedAiFilesLibrary } from "@/components/saved-ai/SavedAiFilesLibrary";
 
 interface CodeResult {
   code: string; description: string; units?: number;
@@ -64,6 +65,42 @@ function Section({ title, icon: Icon, color, children, count }: any) {
   );
 }
 
+function formatCodingReport(result: AnalysisResult) {
+  const lines = [
+    "CODICAL HEALTH - AI OP REPORT CODING REPORT",
+    "Generated: " + new Date().toLocaleString(),
+    "",
+    "SUMMARY:",
+    result.summary,
+    "",
+    "CPT CODES:",
+    ...(result.cpt_codes || []).map(c => `${c.code} x${c.units || 1}${c.modifiers?.length ? " -" + c.modifiers.join("-") : ""} | ${c.description}${c.rationale ? ` | ${c.rationale}` : ""}`),
+    "",
+    "ICD-10 CODES:",
+    ...(result.icd10_codes || []).map(c => `${c.code}${c.type ? ` (${c.type})` : ""} | ${c.description}${c.rationale ? ` | ${c.rationale}` : ""}`),
+    "",
+    "HCPCS CODES:",
+    ...(result.hcpcs_codes || []).map(c => `${c.code} x${c.units || 1} | ${c.description}${c.rationale ? ` | ${c.rationale}` : ""}`),
+    "",
+    "PLACE OF SERVICE:",
+    `${result.pos_code?.code || ""} - ${result.pos_code?.description || ""}`,
+    "",
+    "REVENUE CODES:",
+    ...(result.revenue_codes || []).map(c => `${c.code} | ${c.description}${c.rationale ? ` | ${c.rationale}` : ""}`),
+    "",
+    "BILLING NOTES:",
+    result.billing_notes,
+    "",
+    "CONFIDENCE:",
+    result.confidence,
+    "",
+    "DISCLAIMER:",
+    result.disclaimer,
+  ];
+
+  return lines.join("\n");
+}
+
 export function Workspace() {
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -81,6 +118,31 @@ export function Workspace() {
       return res.json();
     }
   });
+
+  const selectedPayer = useMemo(
+    () => payers?.find((payer: any) => payer.id.toString() === selectedPayerId),
+    [payers, selectedPayerId],
+  );
+
+  const currentSavedFile = useMemo(() => {
+    if (!result) return null;
+
+    const datePart = new Date().toLocaleDateString();
+    const primaryProcedure = result.cpt_codes?.[0]?.description || result.summary?.slice(0, 60) || "OP report";
+    const payerPart = selectedPayer?.shortName ? ` - ${selectedPayer.shortName}` : "";
+
+    return {
+      fileName: `OP coding report - ${primaryProcedure}${payerPart} - ${datePart}`,
+      patientName: "",
+      content: formatCodingReport(result),
+      sourceText: text,
+      structuredData: {
+        result,
+        payerId: selectedPayerId || null,
+        payerName: selectedPayer?.name || null,
+      },
+    };
+  }, [result, selectedPayer, selectedPayerId, text]);
 
   const LOADING_MSGS = [
     "Reading clinical document...",
@@ -171,31 +233,7 @@ export function Workspace() {
 
   const exportCodes = () => {
     if (!result) return;
-    const lines = [
-      "CODICAL HEALTH - AI CODE ANALYSIS REPORT",
-      "Generated: " + new Date().toLocaleString(),
-      "",
-      "SUMMARY:",
-      result.summary,
-      "",
-      "CPT CODES:",
-      ...(result.cpt_codes || []).map(c => `${c.code} x${c.units || 1}${c.modifiers?.length ? " -" + c.modifiers.join("-") : ""} | ${c.description}`),
-      "",
-      "ICD-10 CODES:",
-      ...(result.icd10_codes || []).map(c => `${c.code} (${c.type}) | ${c.description}`),
-      "",
-      "HCPCS CODES:",
-      ...(result.hcpcs_codes || []).map(c => `${c.code} x${c.units || 1} | ${c.description}`),
-      "",
-      "POS: " + (result.pos_code?.code || "") + " - " + (result.pos_code?.description || ""),
-      "",
-      "BILLING NOTES:",
-      result.billing_notes,
-      "",
-      "DISCLAIMER:",
-      result.disclaimer,
-    ];
-    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+    const blob = new Blob([formatCodingReport(result)], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = "coding-report.txt"; a.click();
@@ -258,7 +296,7 @@ export function Workspace() {
           </div>
           {selectedPayerId && (
             <div style={{ fontSize: "11px", color: "#1B2F6E", fontWeight: 500, marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-               <AlertCircle size={10} /> AI will now apply {payers?.find((p: any) => p.id.toString() === selectedPayerId)?.shortName} specific medical policies.
+               <AlertCircle size={10} /> AI will now apply {selectedPayer?.shortName} specific medical policies.
             </div>
           )}
         </div>
@@ -586,6 +624,15 @@ FINDINGS: Distended, inflamed gallbladder with multiple stones..."
           </div>
         </motion.div>
       )}
+
+      <div style={{ marginTop: "20px" }}>
+        <SavedAiFilesLibrary
+          module="op_report_coding"
+          title="Saved OP Coding Reports"
+          description="Save generated OP report coding outputs for 30 days, rename them, edit report text, and download permanent PDFs."
+          currentFile={currentSavedFile}
+        />
+      </div>
 
       <style dangerouslySetInnerHTML={{ __html: "@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}" }} />
     </div>

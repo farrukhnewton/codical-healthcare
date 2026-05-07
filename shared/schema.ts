@@ -77,6 +77,23 @@ export const voiceTranscriptions = pgTable("voice_transcriptions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const savedAiFiles = pgTable("saved_ai_files", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  module: text("module").notNull(),
+  fileName: text("file_name").notNull(),
+  patientName: text("patient_name"),
+  content: text("content").notNull(),
+  sourceText: text("source_text"),
+  structuredData: jsonb("structured_data").$type<Record<string, any>>().notNull().default({}),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userModuleCreatedAtIdx: index("saved_ai_files_user_module_created_at_idx").on(table.userId, table.module, table.createdAt),
+  expiresAtIdx: index("saved_ai_files_expires_at_idx").on(table.expiresAt),
+}));
+
 export const assignments = pgTable("assignments", {
   id: serial("id").primaryKey(),
   encounterId: integer("encounter_id").notNull(),
@@ -292,6 +309,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   sentMessages: many(messages),
   reactions: many(messageReactions),
   assignments: many(assignments),
+  savedAiFiles: many(savedAiFiles),
 }));
 
 export const patientsRelations = relations(patients, ({ many }) => ({
@@ -352,6 +370,10 @@ export const commercialPayersRelations = relations(commercialPayers, ({ many }) 
   policies: many(payerPolicies),
 }));
 
+export const savedAiFilesRelations = relations(savedAiFiles, ({ one }) => ({
+  user: one(users, { fields: [savedAiFiles.userId], references: [users.id] }),
+}));
+
 // ============ ZOD SCHEMAS ============
 
 export const insertUserSchema = createInsertSchema(users);
@@ -383,6 +405,7 @@ export type Patient = typeof patients.$inferSelect;
 export type Encounter = typeof encounters.$inferSelect;
 export type ClinicalNote = typeof clinicalNotes.$inferSelect;
 export type VoiceTranscription = typeof voiceTranscriptions.$inferSelect;
+export type SavedAiFile = typeof savedAiFiles.$inferSelect;
 export type Assignment = typeof assignments.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type CommercialPayer = typeof commercialPayers.$inferSelect;

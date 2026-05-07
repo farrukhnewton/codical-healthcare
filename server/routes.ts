@@ -1,17 +1,18 @@
 import { isSupabaseAdminConfigured, supabaseAdmin } from "./supabase-admin";
 import { api } from "../shared";
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { z } from "zod";
-import { users, conversations, messages, participants, attachments, friendRequests, messageReactions } from "@shared/schema";
+import { users, conversations, messages, participants, attachments, friendRequests, messageReactions, savedAiFiles } from "@shared/schema";
 import { voiceTranscriptions } from "@shared/schema";
 import { eq, and, desc, asc, inArray, ne, or, ilike, sql } from "drizzle-orm";
 import multer from "multer";
 import path from "node:path";
 import fs from "node:fs/promises";
 import pdfParse from "pdf-parse";
+import PDFDocument from "pdfkit";
 import {
   enrichCodeFromNlm, searchNlmCodes
 } from "./cms-service";
@@ -27,6 +28,8 @@ const upload = multer({
 const CODICAL_AI_USERNAME = "codical.ai";
 const CODICAL_AI_NAME = "Codical AI";
 const PRESENCE_ONLINE_WINDOW_MS = 75_000;
+const SAVED_AI_FILE_RETENTION_DAYS = 30;
+const SAVED_AI_FILE_MODULES = new Set(["transcription", "op_report_coding"]);
 const isVercel = process.env.VERCEL === "1";
 const uploadsRoot = isVercel
   ? path.resolve("/tmp", "uploads")
@@ -165,6 +168,153 @@ function buildChatProfileFromSupabaseUser(user: SupabaseAuthUserLike): ChatUserP
     fullName,
     avatarUrl: avatarUrl || null,
   };
+}
+
+class RouteError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function sendRouteError(res: any, error: any, fallbackMessage: string) {
+  if (error instanceof RouteError) {
+    return res.status(error.status).json({ message: error.message });
+  }
+
+  return res.status(500).json({ message: error?.message || fallbackMessage });
+}
+
+function getBearerToken(req: Request) {
+  const header = req.headers.authorization || "";
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || "";
+}
+
+async function getAuthenticatedChatUser(req: Request) {
+  if (!isSupabaseAdminConfigured) {
+    throw new RouteError(503, "Authentication service is not configured.");
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    throw new RouteError(401, "Authentication required.");
+  }
+
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !data.user) {
+    throw new RouteError(401, "Invalid or expired session.");
+  }
+
+  const appUser = await ensureChatUser(buildChatProfileFromSupabaseUser(data.user));
+  if (!appUser) {
+    throw new RouteError(401, "Unable to resolve authenticated user.");
+  }
+
+  return appUser;
+}
+
+function normalizeSavedAiFileModule(value: unknown) {
+  const module = String(value || "").trim();
+  if (!SAVED_AI_FILE_MODULES.has(module)) {
+    throw new RouteError(400, "module must be transcription or op_report_coding");
+  }
+
+  return module;
+}
+
+function sanitizeSavedFileName(value: unknown, fallback: string) {
+  const name = String(value || "")
+    .replace(/[\u0000-\u001f<>:"/\\|?*]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 160);
+
+  return name || fallback;
+}
+
+function getSavedFileFallbackName(module: string) {
+  return module === "transcription" ? "Medical transcription" : "OP report coding";
+}
+
+function getSavedFileExpirationDate() {
+  return new Date(Date.now() + SAVED_AI_FILE_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+}
+
+function serializeSavedAiFile(file: typeof savedAiFiles.$inferSelect) {
+  const expiresAt = file.expiresAt ? new Date(file.expiresAt) : getSavedFileExpirationDate();
+  const createdAt = file.createdAt ? new Date(file.createdAt) : null;
+  const updatedAt = file.updatedAt ? new Date(file.updatedAt) : null;
+  const daysRemaining = Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+
+  return {
+    ...file,
+    createdAt: createdAt?.toISOString() || null,
+    updatedAt: updatedAt?.toISOString() || null,
+    expiresAt: expiresAt.toISOString(),
+    expirationDate: expiresAt.toISOString(),
+    daysRemaining,
+  };
+}
+
+async function cleanupExpiredSavedAiFiles() {
+  const deletedRows = await db.delete(savedAiFiles)
+    .where(sql`${savedAiFiles.expiresAt} <= now()`)
+    .returning({ id: savedAiFiles.id });
+
+  return deletedRows.length;
+}
+
+function getPdfSafeFileName(fileName: string) {
+  const base = sanitizeSavedFileName(fileName, "codical-report")
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9._-]/g, "")
+    .replace(/-+/g, "-")
+    .slice(0, 120) || "codical-report";
+
+  return base.toLowerCase().endsWith(".pdf") ? base : `${base}.pdf`;
+}
+
+function generateSavedAiFilePdf(file: typeof savedAiFiles.$inferSelect) {
+  return new Promise<Buffer>((resolve, reject) => {
+    const title = file.fileName || getSavedFileFallbackName(file.module);
+    const moduleLabel = file.module === "transcription" ? "AI Transcription" : "AI OP Report Coding";
+    const doc = new PDFDocument({
+      size: "LETTER",
+      margin: 54,
+      info: {
+        Title: title,
+        Subject: moduleLabel,
+        Author: "Codical Health",
+      },
+    });
+    const chunks: Buffer[] = [];
+
+    doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    doc.font("Helvetica-Bold").fontSize(18).text(title, { align: "left" });
+    doc.moveDown(0.4);
+    doc.font("Helvetica").fontSize(10).fillColor("#475569").text(moduleLabel);
+    if (file.patientName) doc.text(`Patient: ${file.patientName}`);
+    if (file.createdAt) doc.text(`Saved: ${new Date(file.createdAt).toLocaleString("en-US")}`);
+    doc.text(`Expires from app library: ${new Date(file.expiresAt).toLocaleDateString("en-US")}`);
+    doc.moveDown();
+    doc.strokeColor("#CBD5E1").moveTo(54, doc.y).lineTo(558, doc.y).stroke();
+    doc.moveDown();
+    doc.fillColor("#111827").font("Helvetica").fontSize(10).text(file.content || "", {
+      align: "left",
+      lineGap: 3,
+    });
+    doc.moveDown();
+    doc.fontSize(8).fillColor("#64748B").text(
+      "Downloaded PDFs are intended for permanent local storage. Reports saved inside Codical Health auto-delete after 30 days.",
+    );
+    doc.end();
+  });
 }
 
 function normalizeUsername(value: string) {
@@ -617,6 +767,200 @@ export async function registerRoutes(
   });
 
   // â”€â”€â”€ Codes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Shared saved-file library for AI Transcription and AI OP Report Coding.
+  app.get("/api/saved-ai-files", async (req, res) => {
+    try {
+      const appUser = await getAuthenticatedChatUser(req);
+      const module = normalizeSavedAiFileModule(req.query.module);
+
+      await cleanupExpiredSavedAiFiles();
+
+      const rows = await db.select()
+        .from(savedAiFiles)
+        .where(
+          and(
+            eq(savedAiFiles.userId, appUser.id),
+            eq(savedAiFiles.module, module),
+            sql`${savedAiFiles.expiresAt} > now()`,
+          ),
+        )
+        .orderBy(desc(savedAiFiles.createdAt));
+
+      res.json(rows.map(serializeSavedAiFile));
+    } catch (error: any) {
+      sendRouteError(res, error, "Failed to load saved files");
+    }
+  });
+
+  app.post("/api/saved-ai-files", async (req, res) => {
+    try {
+      const appUser = await getAuthenticatedChatUser(req);
+      const module = normalizeSavedAiFileModule(req.body.module);
+      const content = String(req.body.content || "").trim();
+
+      if (!content) {
+        return res.status(400).json({ message: "Report content is required." });
+      }
+
+      if (content.length > 500_000) {
+        return res.status(413).json({ message: "Report content is too large to save." });
+      }
+
+      const fileName = sanitizeSavedFileName(req.body.fileName, getSavedFileFallbackName(module));
+      const patientName = String(req.body.patientName || "").trim().slice(0, 160) || null;
+      const sourceText = String(req.body.sourceText || "").trim() || null;
+      const structuredData = req.body.structuredData && typeof req.body.structuredData === "object"
+        ? req.body.structuredData
+        : {};
+
+      const [created] = await db.insert(savedAiFiles)
+        .values({
+          userId: appUser.id,
+          module,
+          fileName,
+          patientName,
+          content,
+          sourceText,
+          structuredData,
+          expiresAt: getSavedFileExpirationDate(),
+        })
+        .returning();
+
+      res.status(201).json(serializeSavedAiFile(created));
+    } catch (error: any) {
+      sendRouteError(res, error, "Failed to save file");
+    }
+  });
+
+  app.get("/api/saved-ai-files/:id", async (req, res) => {
+    try {
+      const appUser = await getAuthenticatedChatUser(req);
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) return res.status(400).json({ message: "Invalid saved file ID." });
+
+      await cleanupExpiredSavedAiFiles();
+
+      const [file] = await db.select()
+        .from(savedAiFiles)
+        .where(and(eq(savedAiFiles.id, id), eq(savedAiFiles.userId, appUser.id), sql`${savedAiFiles.expiresAt} > now()`))
+        .limit(1);
+
+      if (!file) return res.status(404).json({ message: "Saved file not found." });
+      res.json(serializeSavedAiFile(file));
+    } catch (error: any) {
+      sendRouteError(res, error, "Failed to load saved file");
+    }
+  });
+
+  app.patch("/api/saved-ai-files/:id", async (req, res) => {
+    try {
+      const appUser = await getAuthenticatedChatUser(req);
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) return res.status(400).json({ message: "Invalid saved file ID." });
+
+      const updateValues: Partial<typeof savedAiFiles.$inferInsert> = {
+        updatedAt: new Date(),
+      };
+
+      if (Object.prototype.hasOwnProperty.call(req.body, "fileName")) {
+        updateValues.fileName = sanitizeSavedFileName(req.body.fileName, "Saved report");
+      }
+
+      if (Object.prototype.hasOwnProperty.call(req.body, "patientName")) {
+        updateValues.patientName = String(req.body.patientName || "").trim().slice(0, 160) || null;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(req.body, "content")) {
+        const content = String(req.body.content || "").trim();
+        if (!content) return res.status(400).json({ message: "Report content is required." });
+        if (content.length > 500_000) return res.status(413).json({ message: "Report content is too large to save." });
+        updateValues.content = content;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(req.body, "sourceText")) {
+        updateValues.sourceText = String(req.body.sourceText || "").trim() || null;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(req.body, "structuredData")) {
+        updateValues.structuredData = req.body.structuredData && typeof req.body.structuredData === "object"
+          ? req.body.structuredData
+          : {};
+      }
+
+      const [updated] = await db.update(savedAiFiles)
+        .set(updateValues)
+        .where(and(eq(savedAiFiles.id, id), eq(savedAiFiles.userId, appUser.id), sql`${savedAiFiles.expiresAt} > now()`))
+        .returning();
+
+      if (!updated) return res.status(404).json({ message: "Saved file not found." });
+      res.json(serializeSavedAiFile(updated));
+    } catch (error: any) {
+      sendRouteError(res, error, "Failed to update saved file");
+    }
+  });
+
+  app.delete("/api/saved-ai-files/:id", async (req, res) => {
+    try {
+      const appUser = await getAuthenticatedChatUser(req);
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) return res.status(400).json({ message: "Invalid saved file ID." });
+
+      const deleted = await db.delete(savedAiFiles)
+        .where(and(eq(savedAiFiles.id, id), eq(savedAiFiles.userId, appUser.id)))
+        .returning({ id: savedAiFiles.id });
+
+      if (!deleted[0]) return res.status(404).json({ message: "Saved file not found." });
+      res.status(204).end();
+    } catch (error: any) {
+      sendRouteError(res, error, "Failed to delete saved file");
+    }
+  });
+
+  app.get("/api/saved-ai-files/:id/pdf", async (req, res) => {
+    try {
+      const appUser = await getAuthenticatedChatUser(req);
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) return res.status(400).json({ message: "Invalid saved file ID." });
+
+      await cleanupExpiredSavedAiFiles();
+
+      const [file] = await db.select()
+        .from(savedAiFiles)
+        .where(and(eq(savedAiFiles.id, id), eq(savedAiFiles.userId, appUser.id), sql`${savedAiFiles.expiresAt} > now()`))
+        .limit(1);
+
+      if (!file) return res.status(404).json({ message: "Saved file not found." });
+
+      const pdf = await generateSavedAiFilePdf(file);
+      res
+        .status(200)
+        .set({
+          "Content-Type": "application/pdf",
+          "Content-Length": String(pdf.length),
+          "Content-Disposition": `attachment; filename="${getPdfSafeFileName(file.fileName)}"`,
+          "Cache-Control": "private, no-store",
+        })
+        .send(pdf);
+    } catch (error: any) {
+      sendRouteError(res, error, "Failed to generate PDF");
+    }
+  });
+
+  app.get("/api/cron/cleanup-saved-ai-files", async (req, res) => {
+    try {
+      const cronSecret = process.env.CRON_SECRET;
+      if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const deletedCount = await cleanupExpiredSavedAiFiles();
+      res.json({ success: true, deletedCount });
+    } catch (error: any) {
+      console.error("Saved AI files cleanup failed:", error);
+      res.status(500).json({ message: error.message || "Cleanup failed" });
+    }
+  });
+
   app.get(api.codes.search.path, async (req, res) => {
     try {
       const query = req.query.query as string || "";

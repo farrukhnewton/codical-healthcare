@@ -3,7 +3,7 @@ import pg from "pg";
 import * as schema from "@shared/schema";
 
 const { Pool } = pg;
-const BOOTSTRAP_SCHEMA_VERSION = "2026-05-06-performance-indexes-v2";
+const BOOTSTRAP_SCHEMA_VERSION = "2026-05-07-saved-ai-files";
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -103,6 +103,7 @@ const serialIdTables = [
   "participants",
   "patients",
   "payer_policies",
+  "saved_ai_files",
   "users",
   "voice_transcriptions",
 ];
@@ -271,6 +272,20 @@ async function createBaseTables() {
       "confidence_score" text,
       "audio_file_name" text,
       "created_at" timestamp default now()
+    );
+
+    create table if not exists "saved_ai_files" (
+      "id" serial primary key not null,
+      "user_id" integer not null,
+      "module" text not null,
+      "file_name" text not null,
+      "patient_name" text,
+      "content" text not null,
+      "source_text" text,
+      "structured_data" jsonb default '{}'::jsonb not null,
+      "expires_at" timestamp not null,
+      "created_at" timestamp default now(),
+      "updated_at" timestamp default now()
     );
 
     create table if not exists "favorites" (
@@ -599,6 +614,47 @@ export async function ensureDatabaseSchema() {
       "audio_file_name" text,
       "created_at" timestamp default now()
     )
+  `);
+
+  await pool.query(`
+    create table if not exists "saved_ai_files" (
+      "id" serial primary key not null,
+      "user_id" integer not null,
+      "module" text not null,
+      "file_name" text not null,
+      "patient_name" text,
+      "content" text not null,
+      "source_text" text,
+      "structured_data" jsonb default '{}'::jsonb not null,
+      "expires_at" timestamp not null,
+      "created_at" timestamp default now(),
+      "updated_at" timestamp default now()
+    );
+    alter table "saved_ai_files" add column if not exists "patient_name" text;
+    alter table "saved_ai_files" add column if not exists "source_text" text;
+    alter table "saved_ai_files" add column if not exists "structured_data" jsonb default '{}'::jsonb not null;
+    alter table "saved_ai_files" add column if not exists "expires_at" timestamp;
+    update "saved_ai_files" set "expires_at" = coalesce("created_at", now()) + interval '30 days' where "expires_at" is null;
+    alter table "saved_ai_files" alter column "expires_at" set not null;
+    create index if not exists "saved_ai_files_user_module_created_at_idx" on "saved_ai_files" ("user_id", "module", "created_at" desc);
+    create index if not exists "saved_ai_files_expires_at_idx" on "saved_ai_files" ("expires_at");
+  `);
+
+  await pool.query(`
+    alter table "saved_ai_files" enable row level security;
+    do $$
+    begin
+      if exists (select 1 from pg_namespace where nspname = 'auth') then
+        execute 'drop policy if exists "saved_ai_files_select_own" on "saved_ai_files"';
+        execute 'drop policy if exists "saved_ai_files_insert_own" on "saved_ai_files"';
+        execute 'drop policy if exists "saved_ai_files_update_own" on "saved_ai_files"';
+        execute 'drop policy if exists "saved_ai_files_delete_own" on "saved_ai_files"';
+        execute 'create policy "saved_ai_files_select_own" on "saved_ai_files" for select using (exists (select 1 from "users" u where u."id" = "saved_ai_files"."user_id" and u."supabase_id" = auth.uid()::text))';
+        execute 'create policy "saved_ai_files_insert_own" on "saved_ai_files" for insert with check (exists (select 1 from "users" u where u."id" = "saved_ai_files"."user_id" and u."supabase_id" = auth.uid()::text))';
+        execute 'create policy "saved_ai_files_update_own" on "saved_ai_files" for update using (exists (select 1 from "users" u where u."id" = "saved_ai_files"."user_id" and u."supabase_id" = auth.uid()::text)) with check (exists (select 1 from "users" u where u."id" = "saved_ai_files"."user_id" and u."supabase_id" = auth.uid()::text))';
+        execute 'create policy "saved_ai_files_delete_own" on "saved_ai_files" for delete using (exists (select 1 from "users" u where u."id" = "saved_ai_files"."user_id" and u."supabase_id" = auth.uid()::text))';
+      end if;
+    end $$;
   `);
 
   const { rows } = await pool.query<{ exists: boolean }>(`

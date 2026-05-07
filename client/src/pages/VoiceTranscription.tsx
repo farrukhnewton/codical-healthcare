@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
+import { SavedAiFilesLibrary } from "@/components/saved-ai/SavedAiFilesLibrary";
 import { useToast } from "@/hooks/use-toast";
 import { apiUrl } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
@@ -87,6 +88,19 @@ function formatStructuredRecord(result: TranscriptionResult) {
   ].join("\n");
 }
 
+function getTranscriptionFileName(result: TranscriptionResult, fileName?: string | null) {
+  const patientName = result.structured.patientName && result.structured.patientName !== NOT_DETECTED
+    ? result.structured.patientName
+    : "";
+  const visitDate = result.structured.dateOfVisit && result.structured.dateOfVisit !== NOT_DETECTED
+    ? result.structured.dateOfVisit
+    : "";
+
+  return [patientName || fileName?.replace(/\.[^.]+$/, "") || "Medical transcription", visitDate]
+    .filter(Boolean)
+    .join(" - ");
+}
+
 export function VoiceTranscription() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -150,6 +164,24 @@ export function VoiceTranscription() {
       { label: "Follow-Up Date", value: result.structured.followupDate, icon: Calendar },
     ];
   }, [result]);
+
+  const currentSavedFile = useMemo(() => {
+    if (!result) return null;
+
+    return {
+      fileName: getTranscriptionFileName(result, selectedFile?.name),
+      patientName: result.structured.patientName && result.structured.patientName !== NOT_DETECTED
+        ? result.structured.patientName
+        : null,
+      content: formatStructuredRecord(result),
+      sourceText: result.rawTranscript,
+      structuredData: {
+        transcriptionId: result.id,
+        structured: result.structured,
+        sourceAudioFileName: selectedFile?.name || null,
+      },
+    };
+  }, [result, selectedFile?.name]);
 
   const validateFile = (file: File) => {
     if (!ACCEPTED_EXTENSIONS.includes(getFileExtension(file.name))) {
@@ -398,6 +430,13 @@ export function VoiceTranscription() {
           </CardFooter>
         </Card>
       )}
+
+      <SavedAiFilesLibrary
+        module="transcription"
+        title="Saved Transcriptions"
+        description="Save generated medical transcription records for 30 days, rename them, edit the text, and download permanent PDFs."
+        currentFile={currentSavedFile}
+      />
     </div>
   );
 }
