@@ -214,6 +214,21 @@ function sampleCodes(rows: Array<Record<string, string>>, limit = 12) {
   }));
 }
 
+function normalizeUniqueCodes(values: string[], max = 8) {
+  const seen = new Set<string>();
+  const codes: string[] = [];
+
+  for (const value of values) {
+    const code = String(value || "").trim().toUpperCase();
+    if (!code || seen.has(code)) continue;
+    seen.add(code);
+    codes.push(code);
+    if (codes.length >= max) break;
+  }
+
+  return codes;
+}
+
 export async function getMcdCodeCoverageIntelligence(code: string, input: { limit?: unknown } = {}) {
   const normalizedCode = String(code || "").trim().toUpperCase();
   if (!normalizedCode) return null;
@@ -280,6 +295,184 @@ export async function getMcdCodeCoverageIntelligence(code: string, input: { limi
     coveredIcdCount: filteredDocuments.reduce((sum, doc: any) => sum + doc.coveredIcdCount, 0),
     noncoveredIcdCount: filteredDocuments.reduce((sum, doc: any) => sum + doc.noncoveredIcdCount, 0),
     documents: filteredDocuments,
+  };
+}
+
+export async function getMcdBatchPairEvidence(input: {
+  diagnosisCodes: string[];
+  procedureCodes: string[];
+  limit?: unknown;
+}) {
+  const diagnosisCodes = normalizeUniqueCodes(input.diagnosisCodes || [], 8);
+  const procedureCodes = normalizeUniqueCodes(input.procedureCodes || [], 8);
+  const articleLimit = normalizeLimit(input.limit, 8, 20);
+
+  const pairs: Array<{
+    icdCode: string;
+    procedureCode: string;
+    status: "covered" | "noncovered" | "mixed" | "not_found";
+    searchedDocumentCount: number;
+    evidenceCount: number;
+    coveredEvidenceCount: number;
+    noncoveredEvidenceCount: number;
+    topEvidence: {
+      documentUid: string;
+      displayId: string;
+      articleId: string;
+      title: string;
+      groupNumber: string;
+      effectiveDate: string | null;
+      endDate: string | null;
+    } | null;
+  }> = [];
+
+  for (const procedureCode of procedureCodes) {
+    const articleRows = await getMcdCodeCoverageRows(procedureCode, {
+      kind: "article",
+      limit: articleLimit,
+    });
+
+    if (!articleRows) return null;
+
+    const pairDocuments = new Map<
+      string,
+      Array<{
+        documentUid: string;
+        displayId: string;
+        articleId: string;
+        title: string;
+        effectiveDate: string | null;
+        endDate: string | null;
+        groups: Array<{
+          groupNumber: string;
+          coveredIcd: ReturnType<typeof sampleCodes>;
+          noncoveredIcd: ReturnType<typeof sampleCodes>;
+          coverageStatus: "covered" | "noncovered" | "mixed";
+        }>;
+      }>
+    >();
+
+    for (const diagnosisCode of diagnosisCodes) {
+      pairDocuments.set(diagnosisCode, []);
+    }
+
+    await Promise.all(
+      articleRows.map(async (row: any) => {
+        const shard = await getMcdArticleCoverage({
+          uid: row.document_uid,
+          articleId: row.article_id || row.cms_document_id,
+          version: row.article_version || row.cms_version_id,
+        });
+
+        if (!shard) return;
+
+        const hcpcsGroups = matchingHcpcsGroups(shard, procedureCode);
+        if (hcpcsGroups.length === 0) return;
+
+        for (const diagnosisCode of diagnosisCodes) {
+          const matchedGroups = hcpcsGroups
+            .map(({ groupNumber }) => {
+              const coveredMatches = matchingIcdRows(shard.coveredIcdGroups?.[groupNumber] || [], diagnosisCode);
+              const noncoveredMatches = matchingIcdRows(shard.noncoveredIcdGroups?.[groupNumber] || [], diagnosisCode);
+
+              if (coveredMatches.length === 0 && noncoveredMatches.length === 0) {
+                return null;
+              }
+
+              const coverageStatus: "covered" | "noncovered" | "mixed" =
+                coveredMatches.length > 0 && noncoveredMatches.length > 0
+                  ? "mixed"
+                  : coveredMatches.length > 0
+                    ? "covered"
+                    : "noncovered";
+
+              return {
+                groupNumber,
+                coveredIcd: sampleCodes(coveredMatches, 10),
+                noncoveredIcd: sampleCodes(noncoveredMatches, 10),
+                coverageStatus,
+              };
+            })
+            .filter(Boolean);
+
+          if (matchedGroups.length === 0) continue;
+
+          pairDocuments.get(diagnosisCode)?.push({
+            documentUid: shard.documentUid,
+            displayId: shard.displayId,
+            articleId: shard.articleId,
+            title: shard.title,
+            effectiveDate: shard.effectiveDate,
+            endDate: shard.endDate,
+            groups: matchedGroups as NonNullable<(typeof matchedGroups)[number]>[],
+          });
+        }
+      }),
+    );
+
+    for (const diagnosisCode of diagnosisCodes) {
+      const documents = pairDocuments.get(diagnosisCode) || [];
+      const coveredEvidenceCount = documents.reduce(
+        (sum, doc) => sum + doc.groups.reduce((groupSum, group) => groupSum + group.coveredIcd.length, 0),
+        0,
+      );
+      const noncoveredEvidenceCount = documents.reduce(
+        (sum, doc) => sum + doc.groups.reduce((groupSum, group) => groupSum + group.noncoveredIcd.length, 0),
+        0,
+      );
+      const status =
+        coveredEvidenceCount > 0 && noncoveredEvidenceCount > 0
+          ? "mixed"
+          : coveredEvidenceCount > 0
+            ? "covered"
+            : noncoveredEvidenceCount > 0
+              ? "noncovered"
+              : "not_found";
+      const firstDocument = documents[0];
+      const firstGroup = firstDocument?.groups[0];
+
+      pairs.push({
+        icdCode: diagnosisCode,
+        procedureCode,
+        status,
+        searchedDocumentCount: articleRows.length,
+        evidenceCount: coveredEvidenceCount + noncoveredEvidenceCount,
+        coveredEvidenceCount,
+        noncoveredEvidenceCount,
+        topEvidence: firstDocument && firstGroup
+          ? {
+              documentUid: firstDocument.documentUid,
+              displayId: firstDocument.displayId,
+              articleId: firstDocument.articleId,
+              title: firstDocument.title,
+              groupNumber: firstGroup.groupNumber,
+              effectiveDate: firstDocument.effectiveDate,
+              endDate: firstDocument.endDate,
+            }
+          : null,
+      });
+    }
+  }
+
+  const counts = pairs.reduce(
+    (summary, pair) => {
+      if (pair.status === "covered") summary.covered += 1;
+      if (pair.status === "noncovered") summary.noncovered += 1;
+      if (pair.status === "mixed") summary.mixed += 1;
+      if (pair.status === "not_found") summary.notFound += 1;
+      summary.evidence += pair.evidenceCount;
+      return summary;
+    },
+    { covered: 0, noncovered: 0, mixed: 0, notFound: 0, evidence: 0 },
+  );
+
+  return {
+    source: "cloudflare-mcd",
+    diagnosisCodes,
+    procedureCodes,
+    pairCount: pairs.length,
+    counts,
+    pairs,
   };
 }
 

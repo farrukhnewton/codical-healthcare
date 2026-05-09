@@ -19,6 +19,7 @@ import {
 import { getIcd10CodeNotes } from "./icd10-notes-service";
 import { checkNcciEdit } from "./ncci-service";
 import {
+  getMcdBatchPairEvidence,
   getMcdCodeCoverageRows,
   getMcdCodeCoverageIntelligence,
   getMcdCoverageDocument,
@@ -622,6 +623,28 @@ function limitList<T>(items: T[], limit: number) {
   return items.slice(0, safeLimit);
 }
 
+function readCoverageCodeList(...values: unknown[]) {
+  const codes: string[] = [];
+  const seen = new Set<string>();
+
+  for (const value of values) {
+    const candidates = Array.isArray(value)
+      ? value
+      : typeof value === "string"
+        ? value.split(/[\s,]+/)
+        : [];
+
+    for (const candidate of candidates) {
+      const code = String(candidate || "").trim().toUpperCase();
+      if (!code || seen.has(code)) continue;
+      seen.add(code);
+      codes.push(code);
+    }
+  }
+
+  return codes;
+}
+
 function apiPreview(text: string) {
   return String(text || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 240);
 }
@@ -1183,6 +1206,28 @@ export async function registerRoutes(
       }
 
       const result = await getMcdIcdProcedurePairEvidence({ icdCode, procedureCode, limit });
+      if (!result) {
+        return res.status(503).json({ message: "Cloudflare MCD coverage intelligence is not configured" });
+      }
+
+      return res.json(result);
+    } catch (error: any) {
+      res.status(502).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/coverage/pair/batch", async (req, res) => {
+    try {
+      const body = (req.body || {}) as Record<string, unknown>;
+      const diagnosisCodes = readCoverageCodeList(body.diagnosisCodes, body.icdCodes, body.icd10Codes);
+      const procedureCodes = readCoverageCodeList(body.procedureCodes, body.cptCodes, body.hcpcsCodes);
+      const limit = Number(body.limit || 8);
+
+      if (diagnosisCodes.length === 0 || procedureCodes.length === 0) {
+        return res.status(400).json({ message: "At least one diagnosis code and one procedure code are required" });
+      }
+
+      const result = await getMcdBatchPairEvidence({ diagnosisCodes, procedureCodes, limit });
       if (!result) {
         return res.status(503).json({ message: "Cloudflare MCD coverage intelligence is not configured" });
       }
@@ -2093,9 +2138,24 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
       if (!response.ok) { const err = await response.json(); return res.status(500).json({ message: "AI error: " + (err.error?.message || "Unknown") }); }
       const aiResponse = await response.json();
       const rawText = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      let result;
+      let result: any;
       try { const m = rawText.match(/\{[\s\S]*\}/); result = m ? JSON.parse(m[0]) : null; } catch { result = null; }
       if (!result) return res.status(500).json({ message: "Failed to parse AI response." });
+      const diagnosisCodes = readCoverageCodeList(
+        Array.isArray(result.icd10_codes) ? result.icd10_codes.map((code: any) => code?.code) : [],
+      );
+      const procedureCodes = readCoverageCodeList(
+        Array.isArray(result.cpt_codes) ? result.cpt_codes.map((code: any) => code?.code) : [],
+        Array.isArray(result.hcpcs_codes) ? result.hcpcs_codes.map((code: any) => code?.code) : [],
+      );
+      if (diagnosisCodes.length > 0 && procedureCodes.length > 0) {
+        try {
+          const coverageValidation = await getMcdBatchPairEvidence({ diagnosisCodes, procedureCodes, limit: 8 });
+          if (coverageValidation) result.coverage_validation = coverageValidation;
+        } catch (coverageError: any) {
+          console.warn("Workspace MCD coverage validation failed:", coverageError?.message || coverageError);
+        }
+      }
       res.json({ success: true, result });
     } catch (error: any) { res.status(500).json({ message: error.message }); }
   });

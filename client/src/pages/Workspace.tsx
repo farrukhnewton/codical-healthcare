@@ -14,6 +14,41 @@ interface CodeResult {
   modifiers?: string[]; rationale?: string; type?: string;
 }
 
+type CoverageStatus = "covered" | "noncovered" | "mixed" | "not_found";
+
+interface CoverageValidationPair {
+  icdCode: string;
+  procedureCode: string;
+  status: CoverageStatus;
+  searchedDocumentCount: number;
+  evidenceCount: number;
+  coveredEvidenceCount: number;
+  noncoveredEvidenceCount: number;
+  topEvidence: {
+    displayId: string;
+    articleId: string;
+    title: string;
+    groupNumber: string;
+    effectiveDate: string | null;
+    endDate: string | null;
+  } | null;
+}
+
+interface CoverageValidationResult {
+  source: string;
+  diagnosisCodes: string[];
+  procedureCodes: string[];
+  pairCount: number;
+  counts: {
+    covered: number;
+    noncovered: number;
+    mixed: number;
+    notFound: number;
+    evidence: number;
+  };
+  pairs: CoverageValidationPair[];
+}
+
 interface AnalysisResult {
   summary: string;
   cpt_codes: CodeResult[];
@@ -24,6 +59,7 @@ interface AnalysisResult {
   billing_notes: string;
   confidence: string;
   disclaimer: string;
+  coverage_validation?: CoverageValidationResult;
 }
 
 function CopyBtn({ text }: { text: string }) {
@@ -65,7 +101,15 @@ function Section({ title, icon: Icon, color, children, count }: any) {
   );
 }
 
+function coverageStatusMeta(status: CoverageStatus) {
+  if (status === "covered") return { label: "Covered", color: "#15803D", bg: "#F0FDF4", border: "#BBF7D0" };
+  if (status === "noncovered") return { label: "Noncovered", color: "#B91C1C", bg: "#FEF2F2", border: "#FECACA" };
+  if (status === "mixed") return { label: "Mixed", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" };
+  return { label: "No MCD evidence", color: "#475569", bg: "#F8FAFC", border: "#CBD5E1" };
+}
+
 function formatCodingReport(result: AnalysisResult) {
+  const coverageValidation = result.coverage_validation;
   const lines = [
     "CODICAL HEALTH - AI OP REPORT CODING REPORT",
     "Generated: " + new Date().toLocaleString(),
@@ -79,6 +123,19 @@ function formatCodingReport(result: AnalysisResult) {
     "ICD-10 CODES:",
     ...(result.icd10_codes || []).map(c => `${c.code}${c.type ? ` (${c.type})` : ""} | ${c.description}${c.rationale ? ` | ${c.rationale}` : ""}`),
     "",
+    ...(coverageValidation
+      ? [
+          "CMS COVERAGE EVIDENCE:",
+          `Pairs checked: ${coverageValidation.pairCount} | Covered: ${coverageValidation.counts.covered} | Noncovered: ${coverageValidation.counts.noncovered} | Mixed: ${coverageValidation.counts.mixed} | No MCD evidence: ${coverageValidation.counts.notFound}`,
+          ...coverageValidation.pairs.map(pair => {
+            const topEvidence = pair.topEvidence
+              ? ` | ${pair.topEvidence.displayId} group ${pair.topEvidence.groupNumber}: ${pair.topEvidence.title}`
+              : "";
+            return `${pair.procedureCode} + ${pair.icdCode}: ${coverageStatusMeta(pair.status).label} | evidence rows: ${pair.evidenceCount}${topEvidence}`;
+          }),
+          "",
+        ]
+      : []),
     "HCPCS CODES:",
     ...(result.hcpcs_codes || []).map(c => `${c.code} x${c.units || 1} | ${c.description}${c.rationale ? ` | ${c.rationale}` : ""}`),
     "",
@@ -565,6 +622,54 @@ FINDINGS: Distended, inflamed gallbladder with multiple stones..."
               ))}
             </div>
           </Section>
+
+          {/* CMS Coverage Evidence */}
+          {result.coverage_validation && (
+            <Section title="CMS Coverage Evidence" icon={AlertCircle} color="#B45309" count={result.coverage_validation.pairCount}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", paddingTop: "12px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))", gap: "8px" }}>
+                  {[
+                    { label: "Covered", value: result.coverage_validation.counts.covered, color: "#15803D", bg: "#F0FDF4" },
+                    { label: "Noncovered", value: result.coverage_validation.counts.noncovered, color: "#B91C1C", bg: "#FEF2F2" },
+                    { label: "Mixed", value: result.coverage_validation.counts.mixed, color: "#7C3AED", bg: "#F5F3FF" },
+                    { label: "No Evidence", value: result.coverage_validation.counts.notFound, color: "#475569", bg: "#F8FAFC" },
+                  ].map((item) => (
+                    <div key={item.label} style={{ padding: "10px 12px", background: item.bg, borderRadius: "10px", border: "1px solid rgba(15,23,42,0.08)" }}>
+                      <div style={{ fontSize: "18px", fontWeight: 900, color: item.color }}>{item.value}</div>
+                      <div style={{ fontSize: "10px", fontWeight: 800, color: item.color, textTransform: "uppercase", marginTop: "1px" }}>{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {result.coverage_validation.pairs.map((pair) => {
+                  const status = coverageStatusMeta(pair.status);
+                  return (
+                    <div key={`${pair.procedureCode}-${pair.icdCode}`} style={{ padding: "14px", background: "rgba(255,255,255,0.4)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.7)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "7px" }}>
+                        <CodeBadge code={pair.procedureCode} color="#16A34A" bg="#F0FDF4" />
+                        <ChevronRight size={13} color="#94A3B8" />
+                        <CodeBadge code={pair.icdCode} color="#0369A1" bg="#EFF6FF" />
+                        <span style={{ padding: "2px 8px", background: status.bg, color: status.color, border: `1px solid ${status.border}`, borderRadius: "999px", fontSize: "10px", fontWeight: 800, textTransform: "uppercase" }}>
+                          {status.label}
+                        </span>
+                        {pair.evidenceCount > 0 && (
+                          <span style={{ fontSize: "11px", color: "#475569", fontWeight: 700 }}>
+                            {pair.evidenceCount} evidence rows
+                          </span>
+                        )}
+                      </div>
+                      {pair.topEvidence && (
+                        <div style={{ fontSize: "12px", color: "var(--text-secondary, #4B5563)", lineHeight: 1.5 }}>
+                          <strong style={{ color: "#92400E" }}>{pair.topEvidence.displayId}</strong>
+                          {" group "}{pair.topEvidence.groupNumber} - {pair.topEvidence.title}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Section>
+          )}
 
           {/* HCPCS Codes */}
           <Section title="HCPCS Level II Codes" icon={Pill} color="#EA580C" count={result.hcpcs_codes?.length}>
