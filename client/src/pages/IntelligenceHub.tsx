@@ -74,6 +74,40 @@ const TYPE_COLORS: Record<string, { icon: string; bg: string }> = {
 };
 
 type CoverageMode = "lcd" | "ncd" | "article";
+type CoveragePairStatus = "covered" | "noncovered" | "mixed" | "not_found";
+
+interface CoveragePairEvidence {
+  icdCode: string;
+  procedureCode: string;
+  status: CoveragePairStatus;
+  searchedDocumentCount: number;
+  evidenceCount: number;
+  coveredEvidenceCount: number;
+  noncoveredEvidenceCount: number;
+  topEvidence: {
+    displayId: string;
+    articleId: string;
+    title: string;
+    groupNumber: string;
+    effectiveDate: string | null;
+    endDate: string | null;
+  } | null;
+}
+
+interface CoverageBatchResult {
+  source: string;
+  diagnosisCodes: string[];
+  procedureCodes: string[];
+  pairCount: number;
+  counts: {
+    covered: number;
+    noncovered: number;
+    mixed: number;
+    notFound: number;
+    evidence: number;
+  };
+  pairs: CoveragePairEvidence[];
+}
 
 function getCoverageId(item: any) {
   return String(item?.document_display_id || item?.lcd_id || item?.ncd_id || item?.article_id || item?.id || "Coverage");
@@ -138,6 +172,219 @@ function CoverageResultCard({ item, mode }: { item: any; mode: CoverageMode }) {
           </a>
         </Button>
       </div>
+    </div>
+  );
+}
+
+function splitCoverageCodes(value: string) {
+  return value
+    .split(/[\s,;]+/)
+    .map((code) => code.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+function coveragePairStatusStyle(status: CoveragePairStatus) {
+  if (status === "covered") {
+    return {
+      label: "Covered",
+      icon: CheckCircle2,
+      badge: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+      card: "border-emerald-500/25 bg-emerald-500/5",
+    };
+  }
+
+  if (status === "noncovered") {
+    return {
+      label: "Noncovered",
+      icon: ShieldAlert,
+      badge: "bg-red-500/15 text-red-300 border-red-500/30",
+      card: "border-red-500/25 bg-red-500/5",
+    };
+  }
+
+  if (status === "mixed") {
+    return {
+      label: "Mixed",
+      icon: AlertTriangle,
+      badge: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+      card: "border-amber-500/25 bg-amber-500/5",
+    };
+  }
+
+  return {
+    label: "No MCD evidence",
+    icon: Shield,
+    badge: "bg-slate-500/15 text-slate-300 border-slate-500/30",
+    card: "border-white/15 bg-white/[0.03]",
+  };
+}
+
+function CoveragePairChecker() {
+  const [procedureCode, setProcedureCode] = useState("");
+  const [diagnosisInput, setDiagnosisInput] = useState("");
+  const [result, setResult] = useState<CoverageBatchResult | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const diagnosisCodes = useMemo(() => splitCoverageCodes(diagnosisInput).slice(0, 8), [diagnosisInput]);
+  const normalizedProcedureCode = procedureCode.trim().toUpperCase();
+  const canCheck = normalizedProcedureCode.length > 0 && diagnosisCodes.length > 0 && !loading;
+
+  const checkPairs = async () => {
+    if (!canCheck) return;
+
+    setLoading(true);
+    setError("");
+    setResult(null);
+
+    try {
+      const response = await fetch("/api/coverage/pair/batch", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          procedureCodes: [normalizedProcedureCode],
+          diagnosisCodes,
+          limit: 8,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || "Coverage evidence check failed");
+      }
+
+      setResult(data);
+    } catch (err: any) {
+      setError(err?.message || "Coverage evidence check failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadExample = () => {
+    setProcedureCode("29877");
+    setDiagnosisInput("M17.0 E11.9");
+    setResult(null);
+    setError("");
+  };
+
+  return (
+    <div className="p-5 rounded-2xl appGlass appCard border border-amber-500/20 space-y-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex gap-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+            <ClipboardList className="w-5 h-5 text-amber-300" />
+          </div>
+          <div>
+            <h3 className="font-bold text-foreground mb-1">ICD-to-Procedure Coverage Evidence</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Check whether ICD-10 diagnoses appear in the same CMS article group as a CPT or HCPCS code.
+            </p>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" onClick={loadExample} className="rounded-full flex-shrink-0">
+          Load example
+        </Button>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-[180px_1fr_auto]">
+        <div>
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">CPT/HCPCS</label>
+          <Input
+            value={procedureCode}
+            onChange={(event) => setProcedureCode(event.target.value.toUpperCase())}
+            onKeyDown={(event) => event.key === "Enter" && checkPairs()}
+            placeholder="29877"
+            className="mt-1 font-mono"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">ICD-10 diagnoses</label>
+          <Input
+            value={diagnosisInput}
+            onChange={(event) => setDiagnosisInput(event.target.value.toUpperCase())}
+            onKeyDown={(event) => event.key === "Enter" && checkPairs()}
+            placeholder="M17.0, E11.9"
+            className="mt-1 font-mono"
+          />
+        </div>
+        <div className="flex items-end">
+          <Button onClick={checkPairs} disabled={!canCheck} className="w-full lg:w-auto gap-2">
+            {loading ? <Loader2 size={15} className="animate-spin" /> : <Shield size={15} />}
+            Check Evidence
+          </Button>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        This is coverage-derived intelligence from CMS article groups, not an official CMS crosswalk. Verify final billing decisions against the source article.
+      </p>
+
+      {error && (
+        <div className="p-3 rounded-xl border border-red-500/25 bg-red-500/10 text-sm text-red-200">
+          {error}
+        </div>
+      )}
+
+      {result && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+            {[
+              { label: "Covered", value: result.counts.covered, className: "text-emerald-300" },
+              { label: "Noncovered", value: result.counts.noncovered, className: "text-red-300" },
+              { label: "Mixed", value: result.counts.mixed, className: "text-amber-300" },
+              { label: "No Evidence", value: result.counts.notFound, className: "text-slate-300" },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                <div className={`text-xl font-black ${item.className}`}>{item.value}</div>
+                <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{item.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-2">
+            {result.pairs.map((pair) => {
+              const status = coveragePairStatusStyle(pair.status);
+              const StatusIcon = status.icon;
+
+              return (
+                <div key={`${pair.procedureCode}-${pair.icdCode}`} className={`rounded-xl border p-3 ${status.card}`}>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs font-black text-emerald-200">{pair.procedureCode}</span>
+                        <span className="text-muted-foreground">+</span>
+                        <span className="font-mono text-xs font-black text-sky-200">{pair.icdCode}</span>
+                        <Badge variant="outline" className={`${status.badge} gap-1`}>
+                          <StatusIcon size={11} />
+                          {status.label}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Searched {pair.searchedDocumentCount} article{pair.searchedDocumentCount === 1 ? "" : "s"}; {pair.evidenceCount} evidence row{pair.evidenceCount === 1 ? "" : "s"}.
+                      </div>
+                      {pair.topEvidence && (
+                        <div className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                          <span className="font-black text-foreground">{pair.topEvidence.displayId}</span>
+                          {" group "}{pair.topEvidence.groupNumber}: {pair.topEvidence.title}
+                        </div>
+                      )}
+                    </div>
+                    {pair.topEvidence && (
+                      <Button asChild size="sm" variant="outline" className="gap-1.5 flex-shrink-0">
+                        <a href={getCoverageUrl({ document_display_id: pair.topEvidence.displayId, article_version: "" }, "article")} target="_blank" rel="noreferrer noopener">
+                          <ExternalLink size={12} /> MCD
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -259,6 +506,8 @@ function LiveMedicarePolicyList() {
           ))}
         </div>
       </div>
+
+      <CoveragePairChecker />
 
       <div className="p-4 rounded-2xl appGlass appCard border border-white/15">
         <div className="relative">
