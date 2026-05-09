@@ -7,10 +7,13 @@ interface NcciResult {
   message: string;
   col1?: string;
   col2?: string;
+  col1_code?: string;
+  col2_code?: string;
   modifier_indicator?: string;
   effective_date?: string;
   deletion_date?: string;
   modifierAllowed?: boolean;
+  source?: string;
 }
 
 const EXAMPLE_PAIRS = [
@@ -47,6 +50,9 @@ export function NcciChecker() {
   const loadExample = (pair: typeof EXAMPLE_PAIRS[0]) => {
     setCol1(pair.col1); setCol2(pair.col2); setResult(null); setError("");
   };
+
+  const resultCol1 = result?.col1_code || result?.col1 || col1;
+  const resultCol2 = result?.col2_code || result?.col2 || col2;
 
   return (
     <div style={{ flex: 1, overflowY: "auto", background: "rgba(255,255,255,0.4)", minHeight: "100vh" }}>
@@ -169,7 +175,7 @@ export function NcciChecker() {
                     <div>
                       <div style={{ fontSize: "18px", fontWeight: 800, color: "white" }}>NCCI Edit Found</div>
                       <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginTop: "2px" }}>
-                        {result.col1 || col1} and {result.col2 || col2} cannot be billed together
+                        {resultCol1} and {resultCol2} cannot be billed together
                       </div>
                     </div>
                   </div>
@@ -178,11 +184,11 @@ export function NcciChecker() {
                     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                       <div style={{ flex: 1, padding: "14px", background: "#FEF2F2", borderRadius: "12px", minWidth: "120px" }}>
                         <div style={{ fontSize: "10px", fontWeight: 700, color: "#EF4444", textTransform: "uppercase", marginBottom: "4px" }}>Column 1</div>
-                        <div style={{ fontSize: "22px", fontWeight: 900, color: "#DC2626", fontFamily: "monospace" }}>{result.col1 || col1}</div>
+                        <div style={{ fontSize: "22px", fontWeight: 900, color: "#DC2626", fontFamily: "monospace" }}>{resultCol1}</div>
                       </div>
                       <div style={{ flex: 1, padding: "14px", background: "#FEF2F2", borderRadius: "12px", minWidth: "120px" }}>
                         <div style={{ fontSize: "10px", fontWeight: 700, color: "#EF4444", textTransform: "uppercase", marginBottom: "4px" }}>Column 2</div>
-                        <div style={{ fontSize: "22px", fontWeight: 900, color: "#DC2626", fontFamily: "monospace" }}>{result.col2 || col2}</div>
+                        <div style={{ fontSize: "22px", fontWeight: 900, color: "#DC2626", fontFamily: "monospace" }}>{resultCol2}</div>
                       </div>
                       <div style={{ flex: 1, padding: "14px", background: result.modifierAllowed ? "#F0FDF4" : "#FEF2F2", borderRadius: "12px", minWidth: "120px" }}>
                         <div style={{ fontSize: "10px", fontWeight: 700, color: result.modifierAllowed ? "#16A34A" : "#EF4444", textTransform: "uppercase", marginBottom: "4px" }}>Modifier</div>
@@ -215,13 +221,13 @@ export function NcciChecker() {
                     <div>
                       <div style={{ fontSize: "18px", fontWeight: 800, color: "white" }}>No NCCI Edit Found</div>
                       <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginTop: "2px" }}>
-                        {col1} and {col2} can be billed together
+                        {resultCol1} and {resultCol2} can be billed together
                       </div>
                     </div>
                   </div>
                   <div style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", padding: "20px" }}>
                     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "14px" }}>
-                      {[col1, col2].map((c, i) => (
+                      {[resultCol1, resultCol2].map((c, i) => (
                         <div key={i} style={{ flex: 1, padding: "14px", background: "#F0FDF4", borderRadius: "12px", textAlign: "center", minWidth: "100px" }}>
                           <div style={{ fontSize: "22px", fontWeight: 900, color: "#16A34A", fontFamily: "monospace" }}>{c}</div>
                           <div style={{ fontSize: "10px", color: "#4ADE80", fontWeight: 600, marginTop: "2px" }}>✓ BILLABLE</div>

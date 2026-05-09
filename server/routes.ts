@@ -17,6 +17,7 @@ import {
   enrichCodeFromNlm, searchNlmCodes
 } from "./cms-service";
 import { getIcd10CodeNotes } from "./icd10-notes-service";
+import { checkNcciEdit } from "./ncci-service";
 import { discoverPayerPolicies } from "./services/payer-policy-ingestion";
 import { DrChronoService } from "./services/emr/drchrono";
 import { patients, encounters, assignments, clinicalNotes, auditLogs, commercialPayers, payerPolicies } from "@shared/schema";
@@ -1040,42 +1041,9 @@ export async function registerRoutes(
   // â”€â”€â”€ NCCI Edit Checker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.get("/api/ncci/check", async (req, res) => {
     try {
-      const col1 = (req.query.col1 as string)?.toUpperCase().trim();
-      const col2 = (req.query.col2 as string)?.toUpperCase().trim();
-      const type = (req.query.type as string) || "practitioner";
-      if (!col1 || !col2) {
-        return res.status(400).json({ message: "Both CPT codes required" });
-      }
-      const table = type === "outpatient" ? "ncci_outpatient" : "ncci_practitioner";
-      const result = await db.execute(
-        `SELECT * FROM ${table} WHERE (col1_code = '${col1}' AND col2_code = '${col2}') OR (col1_code = '${col2}' AND col2_code = '${col1}') LIMIT 1`
-      );
-      if (result.rows.length === 0) {
-        return res.json({
-          hasEdit: false,
-          message: "No NCCI edit found - these codes can be billed together",
-          col1,
-          col2
-        });
-      }
-      const edit = result.rows[0];
-      return res.json({
-        hasEdit: true,
-        col1_code: edit.col1_code,
-        col2_code: edit.col2_code,
-        modifier_indicator: edit.modifier_indicator,
-        effective_date: edit.effective_date,
-        deletion_date: edit.deletion_date,
-        rationale: edit.rationale,
-        modifierAllowed: edit.modifier_indicator === "1",
-        message: edit.modifier_indicator === "0"
-          ? "Edit exists - modifier NOT allowed"
-          : edit.modifier_indicator === "1"
-          ? "Edit exists - modifier allowed"
-          : "Edit exists - not applicable"
-      });
+      return res.json(await checkNcciEdit(req.query.col1, req.query.col2, req.query.type));
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(error?.statusCode || 500).json({ message: error.message });
     }
   });
 

@@ -1,0 +1,10 @@
+scratch/
+uploads/
+.wrangler/
+.firebase/
+.idx/
+.local/
+attached_assets/
+*.tar.gz
+*.bak
+*.backup.ts

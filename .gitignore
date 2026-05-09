@@ -9,6 +9,9 @@ vite.config.ts.*
 server/.env
 uploads/
 model/
+scratch/cloudflare/
+scratch/supabase-cms-cleanup/
+scratch/ncci-r2-shards/
 *.bak
 *.backup.ts
 server/routes.ts.before_dedicated_ai_flow
@@ -36,3 +39,4 @@ client/.env.*
 *.bak_*
 *.bak*
 
+.vercel

@@ -84,6 +84,15 @@ export function CodeIntel() {
   const codeInfo = data?.codeInfo;
   const rvu = data?.rvu;
   const typeStyle = TYPE_COLORS[codeInfo?.type] || TYPE_COLORS["CPT"];
+  const ncciModifierAllowed =
+    ncciResult?.modifierAllowed === true ||
+    ncciResult?.modifierAllowed === "1" ||
+    ncciResult?.modifier_indicator === "1";
+  const ncciModifierBlocked =
+    ncciResult?.modifierAllowed === false ||
+    ncciResult?.modifierAllowed === "0" ||
+    ncciResult?.modifier_indicator === "0";
+  const ncciEffectiveDate = ncciResult?.effective_date || ncciResult?.effectiveDate;
 
   if (loading) return (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "400px" }}>
@@ -323,10 +332,10 @@ export function CodeIntel() {
                           <div style={{ fontSize: "14px", fontWeight: 700, color: "#DC2626", marginBottom: "8px" }}>Warning: NCCI Edit Found</div>
                           <div style={{ fontSize: "13px", color: "#7F1D1D" }}>
                             {code} and {ncciCode2} have an NCCI edit.
-                            {ncciResult.modifierAllowed === "1" && " Modifier may be allowed to bypass this edit."}
-                            {ncciResult.modifierAllowed === "0" && " No modifier allowed - these codes cannot be billed together."}
+                            {ncciModifierAllowed && " Modifier may be allowed to bypass this edit."}
+                            {ncciModifierBlocked && " No modifier allowed - these codes cannot be billed together."}
                           </div>
-                          {ncciResult.effectiveDate && <div style={{ fontSize: "11px", color: "#991B1B", marginTop: "6px" }}>Effective: {ncciResult.effectiveDate}</div>}
+                          {ncciEffectiveDate && <div style={{ fontSize: "11px", color: "#991B1B", marginTop: "6px" }}>Effective: {ncciEffectiveDate}</div>}
                         </div>
                       ) : (
                         <div style={{ padding: "16px", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: "12px" }}>

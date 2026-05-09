@@ -1,0 +1,9 @@
+name = "codical-ncci-api"
+account_id = "7dc964fd2f9e2385f0eca8850ddfc76e"
+main = "ncci-api.ts"
+compatibility_date = "2026-05-08"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "NCCI_BUCKET"
+bucket_name = "codical-mcd-raw"

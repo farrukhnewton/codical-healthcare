@@ -1,0 +1,18 @@
+name = "codical-healthcare"
+account_id = "7dc964fd2f9e2385f0eca8850ddfc76e"
+compatibility_date = "2026-05-08"
+pages_build_output_dir = "dist/public"
+
+[[d1_databases]]
+binding = "MCD_DB"
+database_name = "codical_mcd"
+database_id = "91b644d8-174f-485b-89ee-4a59464c2141"
+migrations_dir = "cloudflare/d1/migrations"
+
+[[r2_buckets]]
+binding = "MCD_RAW_BUCKET"
+bucket_name = "codical-mcd-raw"
+
+[[r2_buckets]]
+binding = "USER_FILES_BUCKET"
+bucket_name = "codical-user-files"

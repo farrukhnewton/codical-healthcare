@@ -9,9 +9,24 @@
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "sync:payer-policies": "tsx scripts/sync-payer-policies.ts"
+    "sync:payer-policies": "tsx scripts/sync-payer-policies.ts",
+    "cf:whoami": "wrangler whoami",
+    "cf:verify": "tsx scripts/verify-cloudflare.ts",
+    "cf:d1:info": "wrangler d1 info codical_mcd",
+    "cf:d1:migrate": "wrangler d1 migrations apply codical_mcd --remote",
+    "cf:d1:tables": "wrangler d1 execute codical_mcd --remote --command \"SELECT name, type FROM sqlite_schema WHERE type IN ('table','view') ORDER BY type, name\"",
+    "cf:r2:list": "wrangler r2 bucket list",
+    "cf:ncci:deploy": "wrangler deploy --config cloudflare/workers/wrangler.ncci.toml",
+    "cf:mcd:deploy": "wrangler deploy --config cloudflare/workers/wrangler.mcd.toml",
+    "r2:upload-mcd:dry": "tsx scripts/upload-mcd-raw-to-r2.ts",
+    "r2:upload-mcd": "tsx scripts/upload-mcd-raw-to-r2.ts --execute",
+    "r2:export-ncci:dry": "tsx scripts/export-ncci-to-r2-shards.ts --build-only",
+    "r2:export-ncci": "tsx scripts/export-ncci-to-r2-shards.ts --execute",
+    "cf:import-mcd-current:dry": "tsx scripts/import-mcd-current-to-cloudflare.ts",
+    "cf:import-mcd-current": "tsx scripts/import-mcd-current-to-cloudflare.ts --execute"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
     "@headlessui/react": "^2.2.10",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
@@ -87,6 +102,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260508.1",
     "@replit/vite-plugin-cartographer": "^0.4.4",
     "@replit/vite-plugin-dev-banner": "^0.1.1",
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
@@ -112,7 +128,8 @@
     "tsx": "^4.20.5",
     "typescript": "5.6.3",
     "vite": "^5.4.0",
-    "vite-tsconfig-paths": "^6.1.1"
+    "vite-tsconfig-paths": "^6.1.1",
+    "wrangler": "^4.90.0"
   },
   "overrides": {
     "drizzle-kit": {
