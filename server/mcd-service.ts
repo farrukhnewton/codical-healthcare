@@ -196,6 +196,15 @@ function matchingHcpcsGroups(shard: McdArticleCoverageShard, code: string) {
     }));
 }
 
+function normalizeIcdCode(value: string) {
+  return String(value || "").trim().toUpperCase().replace(/\./g, "");
+}
+
+function matchingIcdRows(rows: Array<Record<string, string>>, icdCode: string) {
+  const normalizedIcd = normalizeIcdCode(icdCode);
+  return rows.filter((row) => normalizeIcdCode(row.code || "") === normalizedIcd);
+}
+
 function sampleCodes(rows: Array<Record<string, string>>, limit = 12) {
   return rows.slice(0, limit).map((row) => ({
     code: row.code || "",
@@ -270,6 +279,104 @@ export async function getMcdCodeCoverageIntelligence(code: string, input: { limi
     documentCount: filteredDocuments.length,
     coveredIcdCount: filteredDocuments.reduce((sum, doc: any) => sum + doc.coveredIcdCount, 0),
     noncoveredIcdCount: filteredDocuments.reduce((sum, doc: any) => sum + doc.noncoveredIcdCount, 0),
+    documents: filteredDocuments,
+  };
+}
+
+export async function getMcdIcdProcedurePairEvidence(input: {
+  icdCode: string;
+  procedureCode: string;
+  limit?: unknown;
+}) {
+  const icdCode = String(input.icdCode || "").trim().toUpperCase();
+  const procedureCode = String(input.procedureCode || "").trim().toUpperCase();
+  if (!icdCode || !procedureCode) return null;
+
+  const articleRows = await getMcdCodeCoverageRows(procedureCode, {
+    kind: "article",
+    limit: normalizeLimit(input.limit, 12, 25),
+  });
+
+  if (!articleRows) return null;
+
+  const documents = await Promise.all(
+    articleRows.map(async (row: any) => {
+      const shard = await getMcdArticleCoverage({
+        uid: row.document_uid,
+        articleId: row.article_id || row.cms_document_id,
+        version: row.article_version || row.cms_version_id,
+      });
+
+      if (!shard) return null;
+
+      const matchedGroups = matchingHcpcsGroups(shard, procedureCode)
+        .map(({ groupNumber, hcpcs }) => {
+          const coveredMatches = matchingIcdRows(shard.coveredIcdGroups?.[groupNumber] || [], icdCode);
+          const noncoveredMatches = matchingIcdRows(shard.noncoveredIcdGroups?.[groupNumber] || [], icdCode);
+
+          if (coveredMatches.length === 0 && noncoveredMatches.length === 0) {
+            return null;
+          }
+
+          return {
+            groupNumber,
+            hcpcs,
+            coveredIcd: sampleCodes(coveredMatches, 10),
+            noncoveredIcd: sampleCodes(noncoveredMatches, 10),
+            coverageStatus:
+              coveredMatches.length > 0 && noncoveredMatches.length > 0
+                ? "mixed"
+                : coveredMatches.length > 0
+                  ? "covered"
+                  : "noncovered",
+          };
+        })
+        .filter(Boolean);
+
+      if (matchedGroups.length === 0) return null;
+
+      return {
+        documentUid: shard.documentUid,
+        displayId: shard.displayId,
+        articleId: shard.articleId,
+        articleVersion: shard.articleVersion,
+        title: shard.title,
+        effectiveDate: shard.effectiveDate,
+        endDate: shard.endDate,
+        groups: matchedGroups,
+        relatedLcd: shard.relatedLcd || [],
+        relatedNcd: shard.relatedNcd || [],
+      };
+    }),
+  );
+
+  const filteredDocuments = documents.filter(Boolean);
+  const coveredEvidenceCount = filteredDocuments.reduce(
+    (sum, doc: any) => sum + doc.groups.reduce((groupSum: number, group: any) => groupSum + group.coveredIcd.length, 0),
+    0,
+  );
+  const noncoveredEvidenceCount = filteredDocuments.reduce(
+    (sum, doc: any) => sum + doc.groups.reduce((groupSum: number, group: any) => groupSum + group.noncoveredIcd.length, 0),
+    0,
+  );
+  const status =
+    coveredEvidenceCount > 0 && noncoveredEvidenceCount > 0
+      ? "mixed"
+      : coveredEvidenceCount > 0
+        ? "covered"
+        : noncoveredEvidenceCount > 0
+          ? "noncovered"
+          : "not_found";
+
+  return {
+    source: "cloudflare-mcd",
+    icdCode,
+    procedureCode,
+    status,
+    searchedDocumentCount: articleRows.length,
+    evidenceCount: coveredEvidenceCount + noncoveredEvidenceCount,
+    coveredEvidenceCount,
+    noncoveredEvidenceCount,
     documents: filteredDocuments,
   };
 }

@@ -22,6 +22,7 @@ import {
   getMcdCodeCoverageRows,
   getMcdCodeCoverageIntelligence,
   getMcdCoverageDocument,
+  getMcdIcdProcedurePairEvidence,
   searchMcdCoverageRows,
 } from "./mcd-service";
 import { discoverPayerPolicies } from "./services/payer-policy-ingestion";
@@ -1171,6 +1172,27 @@ export async function registerRoutes(
   });
 
   // â”€â”€â”€ Smart LCD Search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  app.get("/api/coverage/pair/check", async (req, res) => {
+    try {
+      const icdCode = String(req.query.icd || req.query.icdCode || "").trim().toUpperCase();
+      const procedureCode = String(req.query.code || req.query.cpt || req.query.hcpcs || "").trim().toUpperCase();
+      const limit = Number(req.query.limit || 12);
+
+      if (!icdCode || !procedureCode) {
+        return res.status(400).json({ message: "Both icd and code are required" });
+      }
+
+      const result = await getMcdIcdProcedurePairEvidence({ icdCode, procedureCode, limit });
+      if (!result) {
+        return res.status(503).json({ message: "Cloudflare MCD coverage intelligence is not configured" });
+      }
+
+      return res.json(result);
+    } catch (error: any) {
+      res.status(502).json({ message: error.message });
+    }
+  });
+
   app.get("/api/coverage/lcd/search/smart", async (req, res) => {
     try {
       const query = (req.query.q as string)?.trim() || "";

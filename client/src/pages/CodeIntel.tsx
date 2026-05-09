@@ -56,6 +56,10 @@ export function CodeIntel() {
   const [ncciCode2, setNcciCode2] = useState("");
   const [ncciResult, setNcciResult] = useState<any>(null);
   const [ncciLoading, setNcciLoading] = useState(false);
+  const [coverageIcd, setCoverageIcd] = useState("");
+  const [coveragePairResult, setCoveragePairResult] = useState<any>(null);
+  const [coveragePairLoading, setCoveragePairLoading] = useState(false);
+  const [coveragePairError, setCoveragePairError] = useState("");
   const [favorited, setFavorited] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -64,6 +68,9 @@ export function CodeIntel() {
     setLoading(true);
     setError("");
     setData(null);
+    setCoverageIcd("");
+    setCoveragePairResult(null);
+    setCoveragePairError("");
     fetch(`/api/intel/${code}`, { credentials: "include" })
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
@@ -79,6 +86,22 @@ export function CodeIntel() {
       setNcciResult(d);
     } catch { setNcciResult({ error: true }); }
     setNcciLoading(false);
+  };
+
+  const checkCoveragePair = async () => {
+    if (!coverageIcd.trim()) return;
+    setCoveragePairLoading(true);
+    setCoveragePairResult(null);
+    setCoveragePairError("");
+    try {
+      const r = await fetch(`/api/coverage/pair/check?code=${encodeURIComponent(code)}&icd=${encodeURIComponent(coverageIcd.trim().toUpperCase())}`, { credentials: "include" });
+      const d = await r.json();
+      if (!r.ok) setCoveragePairError(d.message || "Coverage pair check failed");
+      else setCoveragePairResult(d);
+    } catch {
+      setCoveragePairError("Network error. Please try again.");
+    }
+    setCoveragePairLoading(false);
   };
 
   const codeInfo = data?.codeInfo;
@@ -356,6 +379,64 @@ export function CodeIntel() {
             {/* COVERAGE TAB */}
             {activeTab === "coverage" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ background: "var(--app-glass-strong-bg)", backdropFilter: "blur(12px)", borderRadius: "16px", padding: "18px", border: "1px solid var(--app-glass-border)" }}>
+                  <div style={{ fontSize: "11px", fontWeight: 700, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "10px" }}>ICD-to-Procedure Evidence Check</div>
+                  <div style={{ fontSize: "13px", color: "hsl(var(--muted-foreground))", marginBottom: "14px", lineHeight: 1.5 }}>
+                    Check whether a diagnosis appears in the same CMS article group as {code}.
+                  </div>
+                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+                    <div style={{ padding: "10px 14px", background: "hsl(var(--border) / 0.6)", borderRadius: "10px", fontSize: "15px", fontWeight: 700, fontFamily: "monospace", color: "hsl(var(--foreground))" }}>{code}</div>
+                    <div style={{ color: "#CBD5E1", fontWeight: 700 }}>+</div>
+                    <input
+                      value={coverageIcd}
+                      onChange={e => setCoverageIcd(e.target.value.toUpperCase())}
+                      onKeyDown={e => e.key === "Enter" && checkCoveragePair()}
+                      placeholder="ICD-10 diagnosis..."
+                      style={{ height: "42px", padding: "0 14px", border: "2px solid hsl(var(--border))", borderRadius: "10px", fontSize: "15px", fontFamily: "monospace", fontWeight: 600, outline: "none", width: "190px" }}
+                      onFocus={e => { e.target.style.borderColor = "#15803D"; }}
+                      onBlur={e => { e.target.style.borderColor = "hsl(var(--border))"; }}
+                    />
+                    <button onClick={checkCoveragePair} disabled={coveragePairLoading || !coverageIcd.trim()}
+                      style={{ height: "42px", padding: "0 18px", background: coverageIcd.trim() ? "#15803D" : "hsl(var(--border) / 0.6)", color: coverageIcd.trim() ? "white" : "#94A3B8", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 700, cursor: coverageIcd.trim() ? "pointer" : "default", display: "flex", alignItems: "center", gap: "8px" }}>
+                      {coveragePairLoading ? <div style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid white", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> : <Zap size={14} />}
+                      Check Evidence
+                    </button>
+                  </div>
+
+                  {coveragePairError && (
+                    <div style={{ marginTop: "12px", padding: "12px 14px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "10px", fontSize: "13px", color: "#DC2626" }}>{coveragePairError}</div>
+                  )}
+
+                  {coveragePairResult && (
+                    <div style={{ marginTop: "14px", padding: "14px", borderRadius: "12px", background: coveragePairResult.status === "covered" ? "#F0FDF4" : coveragePairResult.status === "noncovered" ? "#FEF2F2" : coveragePairResult.status === "mixed" ? "#FFFBEB" : "var(--app-glass-bg)", border: `1px solid ${coveragePairResult.status === "covered" ? "#BBF7D0" : coveragePairResult.status === "noncovered" ? "#FECACA" : coveragePairResult.status === "mixed" ? "#FDE68A" : "var(--app-glass-border)"}` }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                        <div>
+                          <div style={{ fontSize: "14px", fontWeight: 800, color: coveragePairResult.status === "covered" ? "#15803D" : coveragePairResult.status === "noncovered" ? "#B91C1C" : coveragePairResult.status === "mixed" ? "#B45309" : "hsl(var(--foreground))" }}>
+                            {coveragePairResult.status === "covered" ? "Covered Evidence Found" : coveragePairResult.status === "noncovered" ? "Non-covered Evidence Found" : coveragePairResult.status === "mixed" ? "Mixed Evidence Found" : "No Same-group Evidence Found"}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "hsl(var(--muted-foreground))", marginTop: "4px" }}>
+                            Searched {coveragePairResult.searchedDocumentCount} article document{coveragePairResult.searchedDocumentCount === 1 ? "" : "s"} for {coveragePairResult.icdCode} + {coveragePairResult.procedureCode}.
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: "8px", fontSize: "11px", fontWeight: 800 }}>
+                          <span style={{ padding: "4px 8px", borderRadius: "999px", background: "#DCFCE7", color: "#15803D" }}>{coveragePairResult.coveredEvidenceCount} covered</span>
+                          <span style={{ padding: "4px 8px", borderRadius: "999px", background: "#FEE2E2", color: "#B91C1C" }}>{coveragePairResult.noncoveredEvidenceCount} non-covered</span>
+                        </div>
+                      </div>
+                      {coveragePairResult.documents?.slice(0, 3).map((doc: any) => (
+                        <div key={doc.documentUid} style={{ marginTop: "10px", padding: "10px", borderRadius: "10px", background: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.7)" }}>
+                          <div style={{ fontSize: "12px", fontWeight: 800, color: "hsl(var(--foreground))" }}>{doc.displayId} · {doc.title}</div>
+                          {doc.groups?.map((group: any) => (
+                            <div key={group.groupNumber} style={{ fontSize: "12px", color: "hsl(var(--muted-foreground))", marginTop: "6px", lineHeight: 1.45 }}>
+                              Group {group.groupNumber}: {[...(group.coveredIcd || []), ...(group.noncoveredIcd || [])].map((icd: any) => `${icd.code} ${icd.description}`).join("; ")}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {coverageEvidenceDocs.length > 0 && (
                   <div style={{ background: "var(--app-glass-strong-bg)", backdropFilter: "blur(12px)", borderRadius: "16px", padding: "18px", border: "1px solid var(--app-glass-border)" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "14px" }}>
