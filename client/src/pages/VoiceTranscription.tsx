@@ -8,9 +8,11 @@ import {
   Copy,
   FileAudio,
   FileText,
+  Hash,
   Loader2,
   Mic,
   Pill,
+  ShieldCheck,
   Stethoscope,
   Upload,
   User,
@@ -39,11 +41,63 @@ interface StructuredMedicalRecord {
   followupDate: string;
 }
 
+interface CodingSuggestion {
+  code: string;
+  description: string;
+  rationale?: string;
+  confidence?: string;
+  type?: string;
+}
+
+interface TranscriptionCodingSuggestions {
+  cpt_codes: CodingSuggestion[];
+  icd10_codes: CodingSuggestion[];
+  hcpcs_codes: CodingSuggestion[];
+  coding_notes: string;
+}
+
+type CoverageStatus = "covered" | "noncovered" | "mixed" | "not_found";
+
+interface CoverageValidationPair {
+  icdCode: string;
+  procedureCode: string;
+  status: CoverageStatus;
+  searchedDocumentCount: number;
+  evidenceCount: number;
+  coveredEvidenceCount: number;
+  noncoveredEvidenceCount: number;
+  topEvidence: {
+    displayId: string;
+    articleId: string;
+    title: string;
+    groupNumber: string;
+    effectiveDate: string | null;
+    endDate: string | null;
+  } | null;
+}
+
+interface CoverageValidationResult {
+  source: string;
+  diagnosisCodes: string[];
+  procedureCodes: string[];
+  pairCount: number;
+  counts: {
+    covered: number;
+    noncovered: number;
+    mixed: number;
+    notFound: number;
+    evidence: number;
+  };
+  pairs: CoverageValidationPair[];
+}
+
 interface TranscriptionResult {
   success: boolean;
   id: number;
   rawTranscript: string;
   structured: StructuredMedicalRecord;
+  codingSuggestions?: TranscriptionCodingSuggestions;
+  coverageValidation?: CoverageValidationResult | null;
   createdAt: string | null;
 }
 
@@ -67,8 +121,34 @@ function getFileExtension(fileName: string) {
   return index >= 0 ? fileName.slice(index).toLowerCase() : "";
 }
 
+function hasCodingSuggestions(suggestions?: TranscriptionCodingSuggestions) {
+  return Boolean(
+    suggestions &&
+      ((suggestions.cpt_codes || []).length > 0 ||
+        (suggestions.icd10_codes || []).length > 0 ||
+        (suggestions.hcpcs_codes || []).length > 0 ||
+        (suggestions.coding_notes && suggestions.coding_notes !== NOT_DETECTED)),
+  );
+}
+
+function coverageStatusLabel(status: CoverageStatus) {
+  if (status === "covered") return "Covered";
+  if (status === "noncovered") return "Noncovered";
+  if (status === "mixed") return "Mixed";
+  return "No MCD evidence";
+}
+
+function coverageStatusClasses(status: CoverageStatus) {
+  if (status === "covered") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (status === "noncovered") return "border-red-200 bg-red-50 text-red-700";
+  if (status === "mixed") return "border-amber-200 bg-amber-50 text-amber-700";
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
 function formatStructuredRecord(result: TranscriptionResult) {
   const record = result.structured;
+  const suggestions = result.codingSuggestions;
+  const coverage = result.coverageValidation;
   return [
     "MEDICAL TRANSCRIPTION RECORD",
     "--------------------------------",
@@ -82,6 +162,32 @@ function formatStructuredRecord(result: TranscriptionResult) {
     `Doctor Name       : ${record.doctorName || NOT_DETECTED}`,
     `Doctor Notes      : ${record.doctorNotes || NOT_DETECTED}`,
     `Follow-Up Date    : ${record.followupDate || NOT_DETECTED}`,
+    ...(hasCodingSuggestions(suggestions)
+      ? [
+          "--------------------------------",
+          "Coding Suggestions:",
+          "CPT Codes:",
+          ...((suggestions?.cpt_codes || []).map((code) => `${code.code} | ${code.description}${code.rationale ? ` | ${code.rationale}` : ""}`)),
+          "ICD-10-CM Codes:",
+          ...((suggestions?.icd10_codes || []).map((code) => `${code.code}${code.type ? ` (${code.type})` : ""} | ${code.description}${code.rationale ? ` | ${code.rationale}` : ""}`)),
+          "HCPCS Codes:",
+          ...((suggestions?.hcpcs_codes || []).map((code) => `${code.code} | ${code.description}${code.rationale ? ` | ${code.rationale}` : ""}`)),
+          `Coding Notes      : ${suggestions?.coding_notes || NOT_DETECTED}`,
+        ]
+      : []),
+    ...(coverage
+      ? [
+          "--------------------------------",
+          "CMS Coverage Evidence:",
+          `Pairs checked: ${coverage.pairCount} | Covered: ${coverage.counts.covered} | Noncovered: ${coverage.counts.noncovered} | Mixed: ${coverage.counts.mixed} | No MCD evidence: ${coverage.counts.notFound}`,
+          ...coverage.pairs.map((pair) => {
+            const evidence = pair.topEvidence
+              ? ` | ${pair.topEvidence.displayId} group ${pair.topEvidence.groupNumber}: ${pair.topEvidence.title}`
+              : "";
+            return `${pair.procedureCode} + ${pair.icdCode}: ${coverageStatusLabel(pair.status)} | evidence rows: ${pair.evidenceCount}${evidence}`;
+          }),
+        ]
+      : []),
     "--------------------------------",
     "Raw Transcript:",
     result.rawTranscript,
@@ -165,6 +271,37 @@ export function VoiceTranscription() {
     ];
   }, [result]);
 
+  const codingSections = useMemo(() => {
+    if (!result?.codingSuggestions) return [];
+
+    return [
+      {
+        label: "CPT",
+        icon: Hash,
+        color: "text-emerald-700",
+        bg: "bg-emerald-50",
+        border: "border-emerald-100",
+        codes: result.codingSuggestions.cpt_codes || [],
+      },
+      {
+        label: "ICD-10-CM",
+        icon: Stethoscope,
+        color: "text-sky-700",
+        bg: "bg-sky-50",
+        border: "border-sky-100",
+        codes: result.codingSuggestions.icd10_codes || [],
+      },
+      {
+        label: "HCPCS",
+        icon: Pill,
+        color: "text-orange-700",
+        bg: "bg-orange-50",
+        border: "border-orange-100",
+        codes: result.codingSuggestions.hcpcs_codes || [],
+      },
+    ].filter((section) => section.codes.length > 0);
+  }, [result]);
+
   const currentSavedFile = useMemo(() => {
     if (!result) return null;
 
@@ -178,6 +315,8 @@ export function VoiceTranscription() {
       structuredData: {
         transcriptionId: result.id,
         structured: result.structured,
+        codingSuggestions: result.codingSuggestions || null,
+        coverageValidation: result.coverageValidation || null,
         sourceAudioFileName: selectedFile?.name || null,
       },
     };
@@ -400,6 +539,131 @@ export function VoiceTranscription() {
                 );
               })}
             </div>
+
+            {result.codingSuggestions && hasCodingSuggestions(result.codingSuggestions) && (
+              <div className="border-t border-border p-4">
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wide text-muted-foreground">Coding Suggestions</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Assistive candidates from the transcript, pending coder review.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                    <AlertCircle className="size-3.5" />
+                    Verify before billing
+                  </div>
+                </div>
+
+                {codingSections.length > 0 && (
+                  <div className="grid gap-3 lg:grid-cols-3">
+                    {codingSections.map((section) => {
+                      const Icon = section.icon;
+
+                      return (
+                        <div key={section.label} className={cn("rounded-2xl border p-4", section.bg, section.border)}>
+                          <div className={cn("mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-wide", section.color)}>
+                            <Icon className="size-4" />
+                            {section.label}
+                          </div>
+                          <div className="flex flex-col gap-3">
+                            {section.codes.map((code) => (
+                              <div key={code.code} className="rounded-xl bg-white/70 p-3">
+                                <div className="mb-1 flex flex-wrap items-center gap-2">
+                                  <span className={cn("font-mono text-sm font-black", section.color)}>{code.code}</span>
+                                  {code.confidence && (
+                                    <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase text-muted-foreground">
+                                      {code.confidence}
+                                    </span>
+                                  )}
+                                  {code.type && (
+                                    <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase text-muted-foreground">
+                                      {code.type}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm font-bold text-foreground">{code.description || NOT_DETECTED}</p>
+                                {code.rationale && (
+                                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{code.rationale}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {result.codingSuggestions.coding_notes && result.codingSuggestions.coding_notes !== NOT_DETECTED && (
+                  <div className="mt-3 rounded-2xl border border-border bg-background/50 p-4">
+                    <p className="text-xs font-black uppercase tracking-wide text-muted-foreground">Coding Notes</p>
+                    <p className="mt-1 text-sm leading-6 text-foreground">{result.codingSuggestions.coding_notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {result.coverageValidation && (
+              <div className="border-t border-border p-4">
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-muted-foreground">
+                      <ShieldCheck className="size-4 text-emerald-600" />
+                      CMS Coverage Evidence
+                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Coverage-derived intelligence from CMS article groups, not an official CMS crosswalk.
+                    </p>
+                  </div>
+                  <div className="text-xs font-bold text-muted-foreground">
+                    {result.coverageValidation.pairCount} pair{result.coverageValidation.pairCount === 1 ? "" : "s"} checked
+                  </div>
+                </div>
+
+                <div className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+                  {[
+                    { label: "Covered", value: result.coverageValidation.counts.covered, color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-100" },
+                    { label: "Noncovered", value: result.coverageValidation.counts.noncovered, color: "text-red-700", bg: "bg-red-50", border: "border-red-100" },
+                    { label: "Mixed", value: result.coverageValidation.counts.mixed, color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-100" },
+                    { label: "No Evidence", value: result.coverageValidation.counts.notFound, color: "text-slate-700", bg: "bg-slate-50", border: "border-slate-100" },
+                  ].map((item) => (
+                    <div key={item.label} className={cn("rounded-xl border p-3", item.bg, item.border)}>
+                      <div className={cn("text-xl font-black", item.color)}>{item.value}</div>
+                      <div className={cn("text-[10px] font-black uppercase tracking-wide", item.color)}>{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid gap-2">
+                  {result.coverageValidation.pairs.map((pair) => (
+                    <div key={`${pair.procedureCode}-${pair.icdCode}`} className={cn("rounded-xl border p-3", coverageStatusClasses(pair.status))}>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-sm font-black">{pair.procedureCode}</span>
+                            <span className="text-muted-foreground">+</span>
+                            <span className="font-mono text-sm font-black">{pair.icdCode}</span>
+                            <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-black uppercase">
+                              {coverageStatusLabel(pair.status)}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs">
+                            {pair.evidenceCount} evidence row{pair.evidenceCount === 1 ? "" : "s"} across {pair.searchedDocumentCount} article{pair.searchedDocumentCount === 1 ? "" : "s"}
+                          </p>
+                          {pair.topEvidence && (
+                            <p className="mt-2 text-xs leading-5">
+                              <span className="font-black">{pair.topEvidence.displayId}</span>
+                              {" group "}{pair.topEvidence.groupNumber}: {pair.topEvidence.title}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <Collapsible open={rawTranscriptOpen} onOpenChange={setRawTranscriptOpen}>
               <div className="p-4 flex flex-col gap-4">

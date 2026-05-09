@@ -763,6 +763,29 @@ export async function registerRoutes(
           });
         }
 
+        let coverageValidation = null;
+        const diagnosisCodes = readCoverageCodeList(
+          Array.isArray(result.codingSuggestions?.icd10_codes)
+            ? result.codingSuggestions.icd10_codes.map((code: any) => code?.code)
+            : [],
+        );
+        const procedureCodes = readCoverageCodeList(
+          Array.isArray(result.codingSuggestions?.cpt_codes)
+            ? result.codingSuggestions.cpt_codes.map((code: any) => code?.code)
+            : [],
+          Array.isArray(result.codingSuggestions?.hcpcs_codes)
+            ? result.codingSuggestions.hcpcs_codes.map((code: any) => code?.code)
+            : [],
+        );
+
+        if (diagnosisCodes.length > 0 && procedureCodes.length > 0) {
+          try {
+            coverageValidation = await getMcdBatchPairEvidence({ diagnosisCodes, procedureCodes, limit: 8 });
+          } catch (coverageError: any) {
+            console.warn("Voice transcription MCD coverage validation failed:", coverageError?.message || coverageError);
+          }
+        }
+
         const [saved] = await db
           .insert(voiceTranscriptions)
           .values({
@@ -797,6 +820,8 @@ export async function registerRoutes(
             doctorNotes: result.structured.doctorNotes,
             followupDate: result.structured.followupDate,
           },
+          codingSuggestions: result.codingSuggestions,
+          coverageValidation,
           createdAt: saved.createdAt,
         });
 

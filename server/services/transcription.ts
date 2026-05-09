@@ -11,9 +11,25 @@ interface StructuredMedicalRecord {
   followupDate: string;
 }
 
+interface CodingSuggestion {
+  code: string;
+  description: string;
+  rationale?: string;
+  confidence?: string;
+  type?: string;
+}
+
+interface TranscriptionCodingSuggestions {
+  cpt_codes: CodingSuggestion[];
+  icd10_codes: CodingSuggestion[];
+  hcpcs_codes: CodingSuggestion[];
+  coding_notes: string;
+}
+
 interface TranscriptionResult {
   rawTranscript: string;
   structured: StructuredMedicalRecord;
+  codingSuggestions: TranscriptionCodingSuggestions;
 }
 
 interface GeminiErrorBody {
@@ -50,6 +66,7 @@ interface GeminiParsedResponse {
   doctorName?: string;
   doctorNotes?: string;
   followupDate?: string;
+  codingSuggestions?: Partial<TranscriptionCodingSuggestions>;
 }
 
 const NOT_DETECTED = "Not detected";
@@ -84,6 +101,11 @@ Your task:
 3. After transcribing, extract these fields.
    If a field is not mentioned in the audio, use
    exactly the string "Not detected" for that field.
+4. If the transcript supports coding candidates, suggest
+   likely CPT, HCPCS, and ICD-10-CM codes. Only include
+   codes when the transcript contains enough clinical
+   context to support the suggestion. If no supported
+   candidates exist, return an empty array.
 
 Return ONLY a valid JSON object in this exact format.
 No markdown. No extra text. No code blocks:
@@ -98,7 +120,13 @@ No markdown. No extra text. No code blocks:
   "dosage": "extracted value or Not detected",
   "doctorName": "extracted value or Not detected",
   "doctorNotes": "extracted value or Not detected",
-  "followupDate": "extracted value or Not detected"
+  "followupDate": "extracted value or Not detected",
+  "codingSuggestions": {
+    "cpt_codes": [{"code": "XXXXX", "description": "short description", "rationale": "why transcript supports it", "confidence": "low|medium|high"}],
+    "icd10_codes": [{"code": "X00.0", "description": "short description", "type": "primary|secondary", "rationale": "why transcript supports it", "confidence": "low|medium|high"}],
+    "hcpcs_codes": [{"code": "A0000", "description": "short description", "rationale": "why transcript supports it", "confidence": "low|medium|high"}],
+    "coding_notes": "coding caveats, documentation gaps, or Not detected"
+  }
 }
 
 CRITICAL RULES:
@@ -110,7 +138,16 @@ CRITICAL RULES:
 - Every opened bracket and quote must be closed
 - If transcript is very long, summarize doctor
   notes field rather than truncating the JSON
+- Coding suggestions are assistive candidates only;
+  do not invent codes when documentation is unclear
 `;
+
+const EMPTY_CODING_SUGGESTIONS: TranscriptionCodingSuggestions = {
+  cpt_codes: [],
+  icd10_codes: [],
+  hcpcs_codes: [],
+  coding_notes: NOT_DETECTED,
+};
 
 function getGeminiGenerateModels() {
   const configuredModels =
@@ -315,6 +352,29 @@ function buildGenerateBody(part: { inline_data: { mime_type: string; data: strin
   };
 }
 
+function normalizeCodingSuggestions(input?: Partial<TranscriptionCodingSuggestions>): TranscriptionCodingSuggestions {
+  const normalizeList = (items: unknown): CodingSuggestion[] => {
+    if (!Array.isArray(items)) return [];
+
+    return items
+      .map((item: any) => ({
+        code: String(item?.code || "").trim().toUpperCase(),
+        description: String(item?.description || "").trim(),
+        rationale: item?.rationale ? String(item.rationale).trim() : "",
+        confidence: item?.confidence ? String(item.confidence).trim().toLowerCase() : "",
+        type: item?.type ? String(item.type).trim().toLowerCase() : "",
+      }))
+      .filter((item) => item.code);
+  };
+
+  return {
+    cpt_codes: normalizeList(input?.cpt_codes),
+    icd10_codes: normalizeList(input?.icd10_codes),
+    hcpcs_codes: normalizeList(input?.hcpcs_codes),
+    coding_notes: String(input?.coding_notes || NOT_DETECTED).trim() || NOT_DETECTED,
+  };
+}
+
 async function callGenerateContent(apiKey: string, requestBody: ReturnType<typeof buildGenerateBody>) {
   let lastResponse: Response | null = null;
   const models = getGeminiGenerateModels();
@@ -494,6 +554,7 @@ export async function transcribeAudio(
       rawTranscript: transcriptMatch[1]
         .replace(/\\n/g, "\n")
         .replace(/\\"/g, '"'),
+      codingSuggestions: EMPTY_CODING_SUGGESTIONS,
       structured: {
         patientName: NOT_DETECTED,
         patientAge: NOT_DETECTED,
@@ -591,6 +652,7 @@ export async function transcribeAudio(
 
   return {
     rawTranscript: parsed.rawTranscript,
+    codingSuggestions: normalizeCodingSuggestions(parsed.codingSuggestions),
     structured: {
       patientName: parsed.patientName || NOT_DETECTED,
       patientAge: parsed.patientAge || NOT_DETECTED,
