@@ -133,4 +133,4 @@ The large Supabase NCCI tables were migrated to R2 shards served by a Worker:
 - R2 prefix: `ncci/v1`
 - Source tables removed from Supabase: `ncci_practitioner`, `ncci_outpatient`
 
-The application route `/api/ncci/check` calls the Worker first through `CLOUDFLARE_NCCI_API_URL`. Supabase is only a temporary fallback path in code for local recovery.
+The application route `/api/ncci/check` calls the Worker first through `CLOUDFLARE_NCCI_API_URL`. `/api/ncci/batch` checks all unique CPT/HCPCS pairs in an AI suggestion set and is attached to AI OP Report Coding and AI Transcription when two or more procedure candidates are available. Supabase is only a temporary fallback path in code for local recovery.

@@ -91,6 +91,34 @@ interface CoverageValidationResult {
   pairs: CoverageValidationPair[];
 }
 
+interface NcciValidationPair {
+  inputCol1: string;
+  inputCol2: string;
+  hasEdit: boolean;
+  message: string;
+  modifier_indicator?: string | null;
+  modifierAllowed?: boolean;
+  effective_date?: string | null;
+  deletion_date?: string | null;
+  rationale?: string | null;
+  source?: string;
+  type: string;
+}
+
+interface NcciValidationResult {
+  source: string;
+  type: string;
+  codes: string[];
+  pairCount: number;
+  counts: {
+    edits: number;
+    modifierAllowed: number;
+    modifierNotAllowed: number;
+    noEdit: number;
+  };
+  pairs: NcciValidationPair[];
+}
+
 interface TranscriptionResult {
   success: boolean;
   id: number;
@@ -98,6 +126,7 @@ interface TranscriptionResult {
   structured: StructuredMedicalRecord;
   codingSuggestions?: TranscriptionCodingSuggestions;
   coverageValidation?: CoverageValidationResult | null;
+  ncciValidation?: NcciValidationResult | null;
   createdAt: string | null;
 }
 
@@ -145,10 +174,21 @@ function coverageStatusClasses(status: CoverageStatus) {
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
+function ncciStatusLabel(pair: NcciValidationPair) {
+  if (!pair.hasEdit) return "No edit";
+  return pair.modifierAllowed ? "Edit - modifier allowed" : "Edit - modifier not allowed";
+}
+
+function ncciStatusClasses(pair: NcciValidationPair) {
+  if (!pair.hasEdit) return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  return pair.modifierAllowed ? "border-amber-200 bg-amber-50 text-amber-700" : "border-red-200 bg-red-50 text-red-700";
+}
+
 function formatStructuredRecord(result: TranscriptionResult) {
   const record = result.structured;
   const suggestions = result.codingSuggestions;
   const coverage = result.coverageValidation;
+  const ncci = result.ncciValidation;
   return [
     "MEDICAL TRANSCRIPTION RECORD",
     "--------------------------------",
@@ -173,6 +213,14 @@ function formatStructuredRecord(result: TranscriptionResult) {
           "HCPCS Codes:",
           ...((suggestions?.hcpcs_codes || []).map((code) => `${code.code} | ${code.description}${code.rationale ? ` | ${code.rationale}` : ""}`)),
           `Coding Notes      : ${suggestions?.coding_notes || NOT_DETECTED}`,
+        ]
+      : []),
+    ...(ncci
+      ? [
+          "--------------------------------",
+          "NCCI Procedure Edits:",
+          `Pairs checked: ${ncci.pairCount} | Edits: ${ncci.counts.edits} | Modifier allowed: ${ncci.counts.modifierAllowed} | Modifier not allowed: ${ncci.counts.modifierNotAllowed} | No edit: ${ncci.counts.noEdit}`,
+          ...ncci.pairs.map((pair) => `${pair.inputCol1} + ${pair.inputCol2}: ${ncciStatusLabel(pair)}${pair.rationale ? ` | ${pair.rationale}` : ""}`),
         ]
       : []),
     ...(coverage
@@ -317,6 +365,7 @@ export function VoiceTranscription() {
         structured: result.structured,
         codingSuggestions: result.codingSuggestions || null,
         coverageValidation: result.coverageValidation || null,
+        ncciValidation: result.ncciValidation || null,
         sourceAudioFileName: selectedFile?.name || null,
       },
     };
@@ -601,6 +650,56 @@ export function VoiceTranscription() {
                     <p className="mt-1 text-sm leading-6 text-foreground">{result.codingSuggestions.coding_notes}</p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {result.ncciValidation && (
+              <div className="border-t border-border p-4">
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-muted-foreground">
+                      <AlertCircle className="size-4 text-red-600" />
+                      NCCI Procedure Edits
+                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Procedure-to-procedure edit checks from the NCCI practitioner table.
+                    </p>
+                  </div>
+                  <div className="text-xs font-bold text-muted-foreground">
+                    {result.ncciValidation.pairCount} pair{result.ncciValidation.pairCount === 1 ? "" : "s"} checked
+                  </div>
+                </div>
+
+                <div className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+                  {[
+                    { label: "Edits", value: result.ncciValidation.counts.edits, color: "text-red-700", bg: "bg-red-50", border: "border-red-100" },
+                    { label: "Modifier OK", value: result.ncciValidation.counts.modifierAllowed, color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-100" },
+                    { label: "No Modifier", value: result.ncciValidation.counts.modifierNotAllowed, color: "text-red-700", bg: "bg-red-50", border: "border-red-100" },
+                    { label: "No Edit", value: result.ncciValidation.counts.noEdit, color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-100" },
+                  ].map((item) => (
+                    <div key={item.label} className={cn("rounded-xl border p-3", item.bg, item.border)}>
+                      <div className={cn("text-xl font-black", item.color)}>{item.value}</div>
+                      <div className={cn("text-[10px] font-black uppercase tracking-wide", item.color)}>{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid gap-2">
+                  {result.ncciValidation.pairs.map((pair) => (
+                    <div key={`${pair.inputCol1}-${pair.inputCol2}`} className={cn("rounded-xl border p-3", ncciStatusClasses(pair))}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-sm font-black">{pair.inputCol1}</span>
+                        <span className="text-muted-foreground">+</span>
+                        <span className="font-mono text-sm font-black">{pair.inputCol2}</span>
+                        <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-black uppercase">
+                          {ncciStatusLabel(pair)}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs">{pair.message}</p>
+                      {pair.rationale && <p className="mt-2 text-xs leading-5">{pair.rationale}</p>}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

@@ -18,12 +18,50 @@ export type NcciCheckResult = {
   lookupDirection?: string;
 };
 
+export type NcciBatchCheckResult = {
+  source: "cloudflare-ncci";
+  type: NcciCheckType;
+  codes: string[];
+  pairCount: number;
+  counts: {
+    edits: number;
+    modifierAllowed: number;
+    modifierNotAllowed: number;
+    noEdit: number;
+  };
+  pairs: Array<NcciCheckResult & {
+    inputCol1: string;
+    inputCol2: string;
+    type: NcciCheckType;
+  }>;
+};
+
 function normalizeCode(value: unknown) {
   return String(value || "").trim().toUpperCase();
 }
 
 function normalizeType(value: unknown): NcciCheckType {
   return value === "outpatient" ? "outpatient" : "practitioner";
+}
+
+function normalizeUniqueCodes(values: unknown, max = 8) {
+  const input = Array.isArray(values)
+    ? values
+    : typeof values === "string"
+      ? values.split(/[\s,;]+/)
+      : [];
+  const seen = new Set<string>();
+  const codes: string[] = [];
+
+  for (const value of input) {
+    const code = normalizeCode(value);
+    if (!code || seen.has(code)) continue;
+    seen.add(code);
+    codes.push(code);
+    if (codes.length >= max) break;
+  }
+
+  return codes;
 }
 
 function noEditResult(col1: string, col2: string, source: string): NcciCheckResult {
@@ -111,4 +149,59 @@ export async function checkNcciEdit(rawCol1: unknown, rawCol2: unknown, rawType:
   }
 
   return checkSupabaseNcci(col1, col2, type);
+}
+
+export async function checkNcciBatchEdits(rawCodes: unknown, rawType: unknown): Promise<NcciBatchCheckResult> {
+  const type = normalizeType(rawType);
+  const codes = normalizeUniqueCodes(rawCodes, 8);
+
+  if (codes.length < 2) {
+    const error = new Error("At least two CPT/HCPCS codes required");
+    (error as any).statusCode = 400;
+    throw error;
+  }
+
+  const pairs: NcciBatchCheckResult["pairs"] = [];
+
+  for (let i = 0; i < codes.length; i += 1) {
+    for (let j = i + 1; j < codes.length; j += 1) {
+      const inputCol1 = codes[i];
+      const inputCol2 = codes[j];
+      const result = await checkNcciEdit(inputCol1, inputCol2, type);
+
+      pairs.push({
+        ...result,
+        inputCol1,
+        inputCol2,
+        type,
+      });
+    }
+  }
+
+  const counts = pairs.reduce(
+    (summary, pair) => {
+      if (!pair.hasEdit) {
+        summary.noEdit += 1;
+        return summary;
+      }
+
+      summary.edits += 1;
+      if (pair.modifierAllowed) {
+        summary.modifierAllowed += 1;
+      } else {
+        summary.modifierNotAllowed += 1;
+      }
+      return summary;
+    },
+    { edits: 0, modifierAllowed: 0, modifierNotAllowed: 0, noEdit: 0 },
+  );
+
+  return {
+    source: "cloudflare-ncci",
+    type,
+    codes,
+    pairCount: pairs.length,
+    counts,
+    pairs,
+  };
 }

@@ -49,6 +49,34 @@ interface CoverageValidationResult {
   pairs: CoverageValidationPair[];
 }
 
+interface NcciValidationPair {
+  inputCol1: string;
+  inputCol2: string;
+  hasEdit: boolean;
+  message: string;
+  modifier_indicator?: string | null;
+  modifierAllowed?: boolean;
+  effective_date?: string | null;
+  deletion_date?: string | null;
+  rationale?: string | null;
+  source?: string;
+  type: string;
+}
+
+interface NcciValidationResult {
+  source: string;
+  type: string;
+  codes: string[];
+  pairCount: number;
+  counts: {
+    edits: number;
+    modifierAllowed: number;
+    modifierNotAllowed: number;
+    noEdit: number;
+  };
+  pairs: NcciValidationPair[];
+}
+
 interface AnalysisResult {
   summary: string;
   cpt_codes: CodeResult[];
@@ -60,6 +88,7 @@ interface AnalysisResult {
   confidence: string;
   disclaimer: string;
   coverage_validation?: CoverageValidationResult;
+  ncci_validation?: NcciValidationResult;
 }
 
 function CopyBtn({ text }: { text: string }) {
@@ -108,8 +137,15 @@ function coverageStatusMeta(status: CoverageStatus) {
   return { label: "No MCD evidence", color: "#475569", bg: "#F8FAFC", border: "#CBD5E1" };
 }
 
+function ncciStatusMeta(pair: NcciValidationPair) {
+  if (!pair.hasEdit) return { label: "No edit", color: "#15803D", bg: "#F0FDF4", border: "#BBF7D0" };
+  if (pair.modifierAllowed) return { label: "Edit - modifier allowed", color: "#B45309", bg: "#FFFBEB", border: "#FDE68A" };
+  return { label: "Edit - modifier not allowed", color: "#B91C1C", bg: "#FEF2F2", border: "#FECACA" };
+}
+
 function formatCodingReport(result: AnalysisResult) {
   const coverageValidation = result.coverage_validation;
+  const ncciValidation = result.ncci_validation;
   const lines = [
     "CODICAL HEALTH - AI OP REPORT CODING REPORT",
     "Generated: " + new Date().toLocaleString(),
@@ -120,6 +156,14 @@ function formatCodingReport(result: AnalysisResult) {
     "CPT CODES:",
     ...(result.cpt_codes || []).map(c => `${c.code} x${c.units || 1}${c.modifiers?.length ? " -" + c.modifiers.join("-") : ""} | ${c.description}${c.rationale ? ` | ${c.rationale}` : ""}`),
     "",
+    ...(ncciValidation
+      ? [
+          "NCCI PROCEDURE EDITS:",
+          `Pairs checked: ${ncciValidation.pairCount} | Edits: ${ncciValidation.counts.edits} | Modifier allowed: ${ncciValidation.counts.modifierAllowed} | Modifier not allowed: ${ncciValidation.counts.modifierNotAllowed} | No edit: ${ncciValidation.counts.noEdit}`,
+          ...ncciValidation.pairs.map(pair => `${pair.inputCol1} + ${pair.inputCol2}: ${ncciStatusMeta(pair).label}${pair.rationale ? ` | ${pair.rationale}` : ""}`),
+          "",
+        ]
+      : []),
     "ICD-10 CODES:",
     ...(result.icd10_codes || []).map(c => `${c.code}${c.type ? ` (${c.type})` : ""} | ${c.description}${c.rationale ? ` | ${c.rationale}` : ""}`),
     "",
@@ -605,6 +649,47 @@ FINDINGS: Distended, inflamed gallbladder with multiple stones..."
               ))}
             </div>
           </Section>
+
+          {/* NCCI Procedure Edits */}
+          {result.ncci_validation && (
+            <Section title="NCCI Procedure Edits" icon={AlertCircle} color="#B91C1C" count={result.ncci_validation.pairCount}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", paddingTop: "12px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))", gap: "8px" }}>
+                  {[
+                    { label: "Edits", value: result.ncci_validation.counts.edits, color: "#B91C1C", bg: "#FEF2F2" },
+                    { label: "Modifier OK", value: result.ncci_validation.counts.modifierAllowed, color: "#B45309", bg: "#FFFBEB" },
+                    { label: "No Modifier", value: result.ncci_validation.counts.modifierNotAllowed, color: "#B91C1C", bg: "#FEF2F2" },
+                    { label: "No Edit", value: result.ncci_validation.counts.noEdit, color: "#15803D", bg: "#F0FDF4" },
+                  ].map((item) => (
+                    <div key={item.label} style={{ padding: "10px 12px", background: item.bg, borderRadius: "10px", border: "1px solid rgba(15,23,42,0.08)" }}>
+                      <div style={{ fontSize: "18px", fontWeight: 900, color: item.color }}>{item.value}</div>
+                      <div style={{ fontSize: "10px", fontWeight: 800, color: item.color, textTransform: "uppercase", marginTop: "1px" }}>{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {result.ncci_validation.pairs.map((pair) => {
+                  const status = ncciStatusMeta(pair);
+                  return (
+                    <div key={`${pair.inputCol1}-${pair.inputCol2}`} style={{ padding: "14px", background: "rgba(255,255,255,0.4)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.7)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "7px" }}>
+                        <CodeBadge code={pair.inputCol1} color="#16A34A" bg="#F0FDF4" />
+                        <ChevronRight size={13} color="#94A3B8" />
+                        <CodeBadge code={pair.inputCol2} color="#16A34A" bg="#F0FDF4" />
+                        <span style={{ padding: "2px 8px", background: status.bg, color: status.color, border: `1px solid ${status.border}`, borderRadius: "999px", fontSize: "10px", fontWeight: 800, textTransform: "uppercase" }}>
+                          {status.label}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--text-secondary, #4B5563)", lineHeight: 1.5 }}>
+                        {pair.message}
+                        {pair.rationale ? ` ${pair.rationale}` : ""}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Section>
+          )}
 
           {/* ICD-10 Codes */}
           <Section title="ICD-10-CM Diagnosis Codes" icon={Activity} color="#0369A1" count={result.icd10_codes?.length}>
