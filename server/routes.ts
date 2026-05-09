@@ -18,6 +18,11 @@ import {
 } from "./cms-service";
 import { getIcd10CodeNotes } from "./icd10-notes-service";
 import { checkNcciEdit } from "./ncci-service";
+import {
+  getMcdCodeCoverageRows,
+  getMcdCoverageDocument,
+  searchMcdCoverageRows,
+} from "./mcd-service";
 import { discoverPayerPolicies } from "./services/payer-policy-ingestion";
 import { DrChronoService } from "./services/emr/drchrono";
 import { patients, encounters, assignments, clinicalNotes, auditLogs, commercialPayers, payerPolicies } from "@shared/schema";
@@ -644,6 +649,31 @@ function getCoverageRows(data: any): any[] {
   return Array.isArray(data?.data) ? data.data : [];
 }
 
+async function tryMcdCoverageRows(
+  kind: "article" | "lcd" | "ncd",
+  input: { search?: string; cpt?: string; limit?: number },
+) {
+  try {
+    const rows = input.cpt
+      ? await getMcdCodeCoverageRows(input.cpt, { kind, limit: input.limit })
+      : await searchMcdCoverageRows({ query: input.search, kind, limit: input.limit });
+
+    return rows;
+  } catch (error: any) {
+    console.warn("Cloudflare MCD lookup failed; falling back to CMS Coverage API:", error?.message || error);
+    return null;
+  }
+}
+
+async function tryMcdCoverageDocument(candidates: string[]) {
+  try {
+    return await getMcdCoverageDocument(candidates);
+  } catch (error: any) {
+    console.warn("Cloudflare MCD document lookup failed; falling back to CMS Coverage API:", error?.message || error);
+    return null;
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -1052,6 +1082,9 @@ export async function registerRoutes(
     try {
       const search = (req.query.search as string) || "";
       const limit = Number(req.query.limit || 50);
+      const mcdRows = await tryMcdCoverageRows("ncd", { search, limit });
+      if (mcdRows) return res.json(limitList(mcdRows, limit));
+
       const url = `https://api.coverage.cms.gov/v1/reports/national-coverage-ncd`;
       const data = await fetchCoverageJson(url);
       let results = getCoverageRows(data);
@@ -1070,6 +1103,9 @@ export async function registerRoutes(
   app.get("/api/coverage/ncd/:id/:version", async (req, res) => {
     try {
       const { id, version } = req.params;
+      const mcdDocument = await tryMcdCoverageDocument([id, `NCD ${id}`, `NCD ${id.replace(/^NCD\s*/i, "")}`]);
+      if (mcdDocument) return res.json(mcdDocument);
+
       const url = `https://api.coverage.cms.gov/v1/data/ncd?ncdid=${id}&ncdver=${version}`;
       const data = await fetchCoverageJson(url);
       res.json(data.data?.[0] || null);
@@ -1084,6 +1120,9 @@ export async function registerRoutes(
       const search = (req.query.search as string) || "";
       const cpt = (req.query.cpt as string) || "";
       const limit = Number(req.query.limit || 50);
+      const mcdRows = await tryMcdCoverageRows("lcd", { search, cpt, limit });
+      if (mcdRows) return res.json(limitList(mcdRows, limit));
+
       let url = `https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds`;
       if (cpt) url += `?cpt=${cpt}`;
       const data = await fetchCoverageJson(url);
@@ -1106,6 +1145,9 @@ export async function registerRoutes(
       const search = (req.query.search as string) || "";
       const cpt = (req.query.cpt as string) || "";
       const limit = Number(req.query.limit || 50);
+      const mcdRows = await tryMcdCoverageRows("article", { search, cpt, limit });
+      if (mcdRows) return res.json(limitList(mcdRows, limit));
+
       let url = `https://api.coverage.cms.gov/v1/reports/local-coverage-articles`;
       if (cpt) url += `?cpt=${encodeURIComponent(cpt)}`;
       const data = await fetchCoverageJson(url);
@@ -1152,6 +1194,15 @@ export async function registerRoutes(
       } else {
         searchTerms = [query];
       }
+
+      const mcdRows = isCptCode
+        ? await tryMcdCoverageRows("lcd", { cpt: query, limit: 50 })
+        : await tryMcdCoverageRows("lcd", { search: searchTerms.join(" "), limit: 50 });
+
+      if (mcdRows && (mcdRows.length > 0 || !isCptCode)) {
+        return res.json({ searchTerms, isCptCode, results: mcdRows.slice(0, 50) });
+      }
+
       const url = `https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds`;
       const data = await fetchCoverageJson(url);
       const allLcds = getCoverageRows(data);
@@ -1173,6 +1224,10 @@ export async function registerRoutes(
   app.get("/api/coverage/lcd/:id/:version", async (req, res) => {
     try {
       const { id, version } = req.params;
+      const normalizedId = id.replace(/^L/i, "");
+      const mcdDocument = await tryMcdCoverageDocument([id, `L${normalizedId}`]);
+      if (mcdDocument) return res.json(mcdDocument);
+
       const url = `https://api.coverage.cms.gov/v1/data/lcd?lcdid=${id}&ver=${version}`;
       const data = await fetchCoverageJson(url);
       res.json(data.data?.[0] || null);
@@ -1623,6 +1678,23 @@ export async function registerRoutes(
       const coverageSearch = async () => {
         if (q.length < 3 || isNpi || looksLikeNdc) return [];
         try {
+          const [mcdLcdRows, mcdNcdRows] = await Promise.all([
+            searchMcdCoverageRows({ query: q, kind: "lcd", limit: 2 }),
+            searchMcdCoverageRows({ query: q, kind: "ncd", limit: 2 }),
+          ]);
+
+          if (mcdLcdRows && mcdNcdRows) {
+            return [...mcdLcdRows, ...mcdNcdRows].map((item: any) => ({
+              id: "coverage-" + (item.id || item.document_display_id || item.title),
+              type: item.coverageType || "Coverage",
+              category: "coverage",
+              title: item.document_display_id || item.title,
+              subtitle: [item.title, item.contractor_name_type].filter(Boolean).join(" | "),
+              action: "coverage",
+              data: { ...item, search: q },
+            }));
+          }
+
           const [lcdData, ncdData] = await Promise.all([
             fetchCoverageJson("https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds"),
             fetchCoverageJson("https://api.coverage.cms.gov/v1/reports/national-coverage-ncd"),
@@ -1712,14 +1784,32 @@ export async function registerRoutes(
         };
       } else { results.rvu = null; }
 
-      // LCD from CMS API
+      let loadedCoverageFromMcd = false;
       try {
-        const lcdData = await fetchCoverageJson(`https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds?cpt=${encodeURIComponent(code)}`);
-        const allLcds = getCoverageRows(lcdData);
-        const lcdMatches = allLcds.slice(0, 5);
-        results.lcds = lcdMatches;
-        results.lcdCount = lcdMatches.length;
-      } catch { results.lcds = []; results.lcdCount = 0; }
+        const mcdRows = await getMcdCodeCoverageRows(code, { limit: 25 });
+        if (mcdRows) {
+          const coverageMatches = mcdRows.slice(0, 8);
+          results.coverageDocuments = coverageMatches;
+          results.lcds = coverageMatches;
+          results.coverageCount = coverageMatches.length;
+          results.lcdCount = coverageMatches.length;
+          results.articleCount = coverageMatches.filter((item: any) => item.document_kind === "article").length;
+          results.ncdCount = coverageMatches.filter((item: any) => item.document_kind === "ncd").length;
+          loadedCoverageFromMcd = true;
+        }
+      } catch (error: any) {
+        console.warn("Cloudflare MCD code lookup failed; falling back to CMS Coverage API:", error?.message || error);
+      }
+
+      if (!loadedCoverageFromMcd) {
+        try {
+          const lcdData = await fetchCoverageJson(`https://api.coverage.cms.gov/v1/reports/local-coverage-final-lcds?cpt=${encodeURIComponent(code)}`);
+          const allLcds = getCoverageRows(lcdData);
+          const lcdMatches = allLcds.slice(0, 5);
+          results.lcds = lcdMatches;
+          results.lcdCount = lcdMatches.length;
+        } catch { results.lcds = []; results.lcdCount = 0; }
+      }
 
       // Modifiers applicable to this code type
       const codeType = results.codeInfo?.type || "";

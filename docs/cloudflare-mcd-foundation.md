@@ -106,6 +106,12 @@ MCD Worker endpoints:
 /api/mcd/article-coverage?articleId=52369&version=16
 ```
 
+App integration:
+
+- `/api/coverage/lcd`, `/api/coverage/ncd`, and `/api/coverage/articles` read from the MCD Worker first.
+- `/api/coverage/lcd/search/smart`, `/api/unified/search`, and `/api/intel/:code` use the Cloudflare read model for coverage evidence.
+- The live CMS Coverage API remains as a fallback when `CLOUDFLARE_MCD_API_URL` is missing or the Worker is unavailable.
+
 ## NCCI Migration
 
 The large Supabase NCCI tables were migrated to R2 shards served by a Worker:

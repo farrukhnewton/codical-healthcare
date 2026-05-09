@@ -84,6 +84,8 @@ export function CodeIntel() {
   const codeInfo = data?.codeInfo;
   const rvu = data?.rvu;
   const typeStyle = TYPE_COLORS[codeInfo?.type] || TYPE_COLORS["CPT"];
+  const coverageDocs = Array.isArray(data?.coverageDocuments) ? data.coverageDocuments : (data?.lcds || []);
+  const coverageCount = Number(data?.coverageCount ?? data?.lcdCount ?? coverageDocs.length) || 0;
   const ncciModifierAllowed =
     ncciResult?.modifierAllowed === true ||
     ncciResult?.modifierAllowed === "1" ||
@@ -168,14 +170,14 @@ export function CodeIntel() {
           {codeInfo.version && <span style={{ padding: "3px 10px", background: "hsl(var(--border) / 0.6)", color: "hsl(var(--muted-foreground))", borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>{codeInfo.version?.toUpperCase()}</span>}
           {codeInfo.category && <span style={{ padding: "3px 10px", background: "#FFF7ED", color: "#EA580C", borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>{codeInfo.category}</span>}
           {rvu?.globalPeriod && <span style={{ padding: "3px 10px", background: "#F5F3FF", color: "#7C3AED", borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>Global: {rvu.globalPeriod}</span>}
-          {data?.lcdCount > 0 && <span style={{ padding: "3px 10px", background: "#ECFEFF", color: "#0891B2", borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>{data.lcdCount} LCD Policies</span>}
+          {coverageCount > 0 && <span style={{ padding: "3px 10px", background: "#ECFEFF", color: "#0891B2", borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>{coverageCount} Coverage Docs</span>}
         </div>
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: "0", borderTop: "1px solid hsl(var(--border) / 0.6)", marginTop: "4px" }}>
           {TABS.map(tab => {
             const isActive = activeTab === tab.id;
-            const isDisabled = (tab.id === "rvu" && !rvu) || (tab.id === "modifiers" && codeInfo?.type !== "CPT") || (tab.id === "coverage" && data?.lcdCount === 0);
+            const isDisabled = (tab.id === "rvu" && !rvu) || (tab.id === "modifiers" && codeInfo?.type !== "CPT") || (tab.id === "coverage" && coverageCount === 0);
             return (
               <button key={tab.id} onClick={() => !isDisabled && setActiveTab(tab.id)}
                 style={{
@@ -352,12 +354,12 @@ export function CodeIntel() {
             {/* COVERAGE TAB */}
             {activeTab === "coverage" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {data?.lcds?.length > 0 ? data.lcds.map((lcd: any, i: number) => (
+                {coverageDocs.length > 0 ? coverageDocs.map((lcd: any, i: number) => (
                   <div key={i} style={{ background: "var(--app-glass-strong-bg)", backdropFilter: "blur(12px)", borderRadius: "16px", padding: "18px", border: "1px solid var(--app-glass-border)" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                          <span style={{ padding: "2px 8px", background: "#ECFEFF", color: "#0891B2", borderRadius: "6px", fontSize: "11px", fontWeight: 700 }}>LCD</span>
+                          <span style={{ padding: "2px 8px", background: "#ECFEFF", color: "#0891B2", borderRadius: "6px", fontSize: "11px", fontWeight: 700 }}>{lcd.coverageType || "Coverage"}</span>
                           <span style={{ fontSize: "11px", color: "hsl(var(--muted-foreground))", fontFamily: "monospace" }}>{lcd.document_id}</span>
                         </div>
                         <div style={{ fontSize: "14px", fontWeight: 600, color: "hsl(var(--foreground))", lineHeight: 1.4 }}>{lcd.title}</div>
@@ -371,8 +373,8 @@ export function CodeIntel() {
                 )) : (
                   <div style={{ background: "var(--app-glass-strong-bg)", backdropFilter: "blur(12px)", borderRadius: "16px", padding: "32px", border: "1px solid var(--app-glass-border)", textAlign: "center" }}>
                     <FileText size={32} color="#CBD5E1" style={{ margin: "0 auto 12px" }} />
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: "hsl(var(--foreground))" }}>No LCD Policies Found</div>
-                    <div style={{ fontSize: "13px", color: "hsl(var(--muted-foreground))", marginTop: "4px" }}>No local coverage determinations found for {code}</div>
+                    <div style={{ fontSize: "14px", fontWeight: 600, color: "hsl(var(--foreground))" }}>No Coverage Documents Found</div>
+                    <div style={{ fontSize: "13px", color: "hsl(var(--muted-foreground))", marginTop: "4px" }}>No local Medicare coverage documents found for {code}</div>
                   </div>
                 )}
               </div>

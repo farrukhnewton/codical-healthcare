@@ -241,7 +241,7 @@ function LiveMedicarePolicyList() {
           <div>
             <h3 className="font-bold text-foreground mb-1">Live Medicare Coverage</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Search LCDs, NCDs, and related coverage articles from the CMS Coverage API inside Codical.
+              Search LCDs, NCDs, and related coverage articles from the Cloudflare MCD read model inside Codical.
             </p>
           </div>
         </div>
@@ -313,7 +313,7 @@ function LiveMedicarePolicyList() {
               {(activeQuery.error as Error)?.message || "The CMS Coverage API did not return JSON."}
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              The in-app LCD/NCD/article workflow is still wired to the live CMS Coverage API. If CMS blocks this network route, use the MCD link while the API is unreachable.
+              The in-app LCD/NCD/article workflow uses Codical's Cloudflare MCD cache first, with the live CMS Coverage API as fallback when needed.
             </p>
             <Button asChild size="sm" variant="outline" className="mt-4 gap-1.5">
               <a href="https://www.cms.gov/medicare-coverage-database/search/search-criteria.aspx" target="_blank" rel="noreferrer noopener">
@@ -330,7 +330,7 @@ function LiveMedicarePolicyList() {
       ) : (
         <div className="grid gap-3">
           <p className="text-xs text-muted-foreground">
-            Showing {rows.length} live {mode === "article" ? "article" : mode.toUpperCase()} result{rows.length === 1 ? "" : "s"} from CMS Coverage API
+            Showing {rows.length} {mode === "article" ? "article" : mode.toUpperCase()} result{rows.length === 1 ? "" : "s"} from Cloudflare MCD
           </p>
           {rows.map((item, index) => (
             <CoverageResultCard key={`${getCoverageId(item)}-${index}`} item={item} mode={mode} />
