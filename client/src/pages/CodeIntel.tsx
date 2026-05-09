@@ -86,6 +86,8 @@ export function CodeIntel() {
   const typeStyle = TYPE_COLORS[codeInfo?.type] || TYPE_COLORS["CPT"];
   const coverageDocs = Array.isArray(data?.coverageDocuments) ? data.coverageDocuments : (data?.lcds || []);
   const coverageCount = Number(data?.coverageCount ?? data?.lcdCount ?? coverageDocs.length) || 0;
+  const coverageIntel = data?.coverageIntelligence;
+  const coverageEvidenceDocs = Array.isArray(coverageIntel?.documents) ? coverageIntel.documents : [];
   const ncciModifierAllowed =
     ncciResult?.modifierAllowed === true ||
     ncciResult?.modifierAllowed === "1" ||
@@ -354,6 +356,83 @@ export function CodeIntel() {
             {/* COVERAGE TAB */}
             {activeTab === "coverage" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {coverageEvidenceDocs.length > 0 && (
+                  <div style={{ background: "var(--app-glass-strong-bg)", backdropFilter: "blur(12px)", borderRadius: "16px", padding: "18px", border: "1px solid var(--app-glass-border)" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "14px" }}>
+                      <div>
+                        <div style={{ fontSize: "11px", fontWeight: 700, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" }}>CMS Article ICD Evidence</div>
+                        <div style={{ fontSize: "13px", color: "hsl(var(--muted-foreground))", lineHeight: 1.5 }}>
+                          Same article and group matches for {code}. This is coverage-derived intelligence, not an official CMS crosswalk.
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        <div style={{ padding: "8px 10px", borderRadius: "10px", background: "#F0FDF4", border: "1px solid #BBF7D0", minWidth: "92px" }}>
+                          <div style={{ fontSize: "10px", fontWeight: 700, color: "#16A34A", textTransform: "uppercase" }}>Covered ICD</div>
+                          <div style={{ fontSize: "18px", fontWeight: 900, color: "#15803D" }}>{coverageIntel.coveredIcdCount || 0}</div>
+                        </div>
+                        <div style={{ padding: "8px 10px", borderRadius: "10px", background: "#FEF2F2", border: "1px solid #FECACA", minWidth: "112px" }}>
+                          <div style={{ fontSize: "10px", fontWeight: 700, color: "#DC2626", textTransform: "uppercase" }}>Non-covered ICD</div>
+                          <div style={{ fontSize: "18px", fontWeight: 900, color: "#B91C1C" }}>{coverageIntel.noncoveredIcdCount || 0}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {coverageEvidenceDocs.slice(0, 4).map((doc: any) => (
+                        <div key={doc.documentUid} style={{ padding: "14px", borderRadius: "12px", background: "var(--app-glass-bg)", border: "1px solid var(--app-glass-border)" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "10px" }}>
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                                <span style={{ padding: "2px 8px", background: "#F5F3FF", color: "#7C3AED", borderRadius: "6px", fontSize: "11px", fontWeight: 700 }}>Article</span>
+                                <span style={{ fontSize: "11px", fontFamily: "monospace", color: "hsl(var(--muted-foreground))" }}>{doc.displayId}</span>
+                              </div>
+                              <div style={{ fontSize: "13px", fontWeight: 700, color: "hsl(var(--foreground))", lineHeight: 1.35 }}>{doc.title}</div>
+                            </div>
+                            <div style={{ fontSize: "11px", color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>
+                              {doc.groupCount} group{doc.groupCount === 1 ? "" : "s"}
+                            </div>
+                          </div>
+
+                          {doc.groups?.slice(0, 2).map((group: any) => (
+                            <div key={group.groupNumber} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px", marginTop: "10px" }}>
+                              <div style={{ padding: "10px", borderRadius: "10px", background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
+                                <div style={{ fontSize: "10px", fontWeight: 800, color: "#15803D", textTransform: "uppercase", marginBottom: "8px" }}>Covered ICD-10, Group {group.groupNumber}</div>
+                                {group.coveredIcdCount > 0 ? (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                    {group.coveredIcd.slice(0, 6).map((icd: any) => (
+                                      <div key={icd.code} style={{ fontSize: "12px", color: "#166534", lineHeight: 1.35 }}>
+                                        <strong style={{ fontFamily: "monospace" }}>{icd.code}</strong> {icd.description}
+                                      </div>
+                                    ))}
+                                    {group.coveredIcdCount > 6 && <div style={{ fontSize: "11px", color: "#15803D", fontWeight: 700 }}>+{group.coveredIcdCount - 6} more covered ICD codes</div>}
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: "12px", color: "#166534" }}>No covered ICD rows in this matched group.</div>
+                                )}
+                              </div>
+                              <div style={{ padding: "10px", borderRadius: "10px", background: "#FEF2F2", border: "1px solid #FECACA" }}>
+                                <div style={{ fontSize: "10px", fontWeight: 800, color: "#B91C1C", textTransform: "uppercase", marginBottom: "8px" }}>Non-covered ICD-10, Group {group.groupNumber}</div>
+                                {group.noncoveredIcdCount > 0 ? (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                    {group.noncoveredIcd.slice(0, 6).map((icd: any) => (
+                                      <div key={icd.code} style={{ fontSize: "12px", color: "#7F1D1D", lineHeight: 1.35 }}>
+                                        <strong style={{ fontFamily: "monospace" }}>{icd.code}</strong> {icd.description}
+                                      </div>
+                                    ))}
+                                    {group.noncoveredIcdCount > 6 && <div style={{ fontSize: "11px", color: "#B91C1C", fontWeight: 700 }}>+{group.noncoveredIcdCount - 6} more non-covered ICD codes</div>}
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: "12px", color: "#7F1D1D" }}>No non-covered ICD rows in this matched group.</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {coverageDocs.length > 0 ? coverageDocs.map((lcd: any, i: number) => (
                   <div key={i} style={{ background: "var(--app-glass-strong-bg)", backdropFilter: "blur(12px)", borderRadius: "16px", padding: "18px", border: "1px solid var(--app-glass-border)" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>

@@ -112,6 +112,15 @@ App integration:
 - `/api/coverage/lcd/search/smart`, `/api/unified/search`, and `/api/intel/:code` use the Cloudflare read model for coverage evidence.
 - The live CMS Coverage API remains as a fallback when `CLOUDFLARE_MCD_API_URL` is missing or the Worker is unavailable.
 
+## Phase 2 Coverage Intelligence
+
+First slice:
+
+- `/api/intel/:code` enriches Cloudflare MCD article matches with the article coverage shard from R2.
+- Matching is based on the same article/version/group relationship between the requested CPT/HCPCS code and CMS ICD-10 groups.
+- Code Intel displays covered and non-covered ICD-10 counts plus capped sample diagnosis codes for the matched group.
+- Product language should remain "coverage-derived intelligence"; this is not an official CMS crosswalk.
+
 ## NCCI Migration
 
 The large Supabase NCCI tables were migrated to R2 shards served by a Worker:

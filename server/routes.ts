@@ -20,6 +20,7 @@ import { getIcd10CodeNotes } from "./icd10-notes-service";
 import { checkNcciEdit } from "./ncci-service";
 import {
   getMcdCodeCoverageRows,
+  getMcdCodeCoverageIntelligence,
   getMcdCoverageDocument,
   searchMcdCoverageRows,
 } from "./mcd-service";
@@ -1799,6 +1800,14 @@ export async function registerRoutes(
         }
       } catch (error: any) {
         console.warn("Cloudflare MCD code lookup failed; falling back to CMS Coverage API:", error?.message || error);
+      }
+
+      if (loadedCoverageFromMcd) {
+        try {
+          results.coverageIntelligence = await getMcdCodeCoverageIntelligence(code, { limit: 8 });
+        } catch (error: any) {
+          console.warn("Cloudflare MCD coverage intelligence lookup failed:", error?.message || error);
+        }
       }
 
       if (!loadedCoverageFromMcd) {

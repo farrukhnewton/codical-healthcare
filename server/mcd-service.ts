@@ -34,6 +34,22 @@ type McdDocumentResponse = {
   urls: Array<Record<string, any>>;
 };
 
+type McdArticleCoverageShard = {
+  documentUid: string;
+  documentKind: "article";
+  articleId: string;
+  articleVersion: string;
+  displayId: string;
+  title: string;
+  effectiveDate: string | null;
+  endDate: string | null;
+  hcpcsGroups: Record<string, Array<Record<string, string>>>;
+  coveredIcdGroups: Record<string, Array<Record<string, string>>>;
+  noncoveredIcdGroups: Record<string, Array<Record<string, string>>>;
+  relatedLcd: Array<Record<string, string>>;
+  relatedNcd: Array<Record<string, string>>;
+};
+
 function mcdBaseUrl() {
   return process.env.CLOUDFLARE_MCD_API_URL?.replace(/\/+$/, "") || "";
 }
@@ -167,5 +183,93 @@ export async function getMcdArticleCoverage(input: {
   articleId?: string;
   version?: string;
 }) {
-  return fetchMcdJson<Record<string, any>>("/api/mcd/article-coverage", input, true);
+  return fetchMcdJson<McdArticleCoverageShard>("/api/mcd/article-coverage", input, true);
+}
+
+function matchingHcpcsGroups(shard: McdArticleCoverageShard, code: string) {
+  const normalizedCode = code.trim().toUpperCase();
+  return Object.entries(shard.hcpcsGroups || {})
+    .filter(([, codes]) => codes.some((item) => String(item.code || "").trim().toUpperCase() === normalizedCode))
+    .map(([groupNumber, codes]) => ({
+      groupNumber,
+      hcpcs: codes.filter((item) => String(item.code || "").trim().toUpperCase() === normalizedCode),
+    }));
+}
+
+function sampleCodes(rows: Array<Record<string, string>>, limit = 12) {
+  return rows.slice(0, limit).map((row) => ({
+    code: row.code || "",
+    description: row.description || "",
+    range: row.range || "",
+    sortOrder: row.sortOrder || "",
+  }));
+}
+
+export async function getMcdCodeCoverageIntelligence(code: string, input: { limit?: unknown } = {}) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  if (!normalizedCode) return null;
+
+  const coverageRows = await getMcdCodeCoverageRows(normalizedCode, {
+    kind: "article",
+    limit: normalizeLimit(input.limit, 8, 20),
+  });
+
+  if (!coverageRows) return null;
+
+  const articleRows = coverageRows.filter((row: any) => row.document_kind === "article").slice(0, normalizeLimit(input.limit, 8, 20));
+  const documents = await Promise.all(
+    articleRows.map(async (row: any) => {
+      const shard = await getMcdArticleCoverage({
+        uid: row.document_uid,
+        articleId: row.article_id || row.cms_document_id,
+        version: row.article_version || row.cms_version_id,
+      });
+
+      if (!shard) return null;
+
+      const groups = matchingHcpcsGroups(shard, normalizedCode).map(({ groupNumber, hcpcs }) => {
+        const covered = shard.coveredIcdGroups?.[groupNumber] || [];
+        const noncovered = shard.noncoveredIcdGroups?.[groupNumber] || [];
+
+        return {
+          groupNumber,
+          hcpcs,
+          coveredIcdCount: covered.length,
+          noncoveredIcdCount: noncovered.length,
+          coveredIcd: sampleCodes(covered),
+          noncoveredIcd: sampleCodes(noncovered),
+        };
+      });
+
+      const coveredIcdCount = groups.reduce((sum, group) => sum + group.coveredIcdCount, 0);
+      const noncoveredIcdCount = groups.reduce((sum, group) => sum + group.noncoveredIcdCount, 0);
+
+      return {
+        documentUid: shard.documentUid,
+        displayId: shard.displayId,
+        articleId: shard.articleId,
+        articleVersion: shard.articleVersion,
+        title: shard.title,
+        effectiveDate: shard.effectiveDate,
+        endDate: shard.endDate,
+        coveredIcdCount,
+        noncoveredIcdCount,
+        groupCount: groups.length,
+        groups,
+        relatedLcd: shard.relatedLcd || [],
+        relatedNcd: shard.relatedNcd || [],
+      };
+    }),
+  );
+
+  const filteredDocuments = documents.filter(Boolean);
+
+  return {
+    source: "cloudflare-mcd",
+    code: normalizedCode,
+    documentCount: filteredDocuments.length,
+    coveredIcdCount: filteredDocuments.reduce((sum, doc: any) => sum + doc.coveredIcdCount, 0),
+    noncoveredIcdCount: filteredDocuments.reduce((sum, doc: any) => sum + doc.noncoveredIcdCount, 0),
+    documents: filteredDocuments,
+  };
 }
