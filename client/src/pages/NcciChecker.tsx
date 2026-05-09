@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Search, CheckCircle, XCircle, AlertTriangle, ArrowRight, RotateCcw, Info } from "lucide-react";
+import { Shield, Search, CheckCircle, XCircle, AlertTriangle, ArrowRight, RotateCcw, Info, ClipboardList } from "lucide-react";
 
 interface NcciResult {
   hasEdit: boolean;
@@ -12,8 +12,29 @@ interface NcciResult {
   modifier_indicator?: string;
   effective_date?: string;
   deletion_date?: string;
-  modifierAllowed?: boolean;
+  modifierAllowed?: boolean | string;
   source?: string;
+}
+
+interface NcciBatchPair extends NcciResult {
+  inputCol1: string;
+  inputCol2: string;
+  type: "practitioner" | "outpatient";
+  rationale?: string | null;
+}
+
+interface NcciBatchResult {
+  source: string;
+  type: "practitioner" | "outpatient";
+  codes: string[];
+  pairCount: number;
+  counts: {
+    edits: number;
+    modifierAllowed: number;
+    modifierNotAllowed: number;
+    noEdit: number;
+  };
+  pairs: NcciBatchPair[];
 }
 
 const EXAMPLE_PAIRS = [
@@ -23,6 +44,33 @@ const EXAMPLE_PAIRS = [
   { col1: "99213", col2: "99214", label: "Duplicate E/M" },
 ];
 
+const BATCH_EXAMPLE = "99213 99214 93000";
+
+function splitCodes(value: string) {
+  const seen = new Set<string>();
+  const codes: string[] = [];
+
+  for (const item of value.split(/[\s,;]+/)) {
+    const code = item.trim().toUpperCase();
+    if (!code || seen.has(code)) continue;
+    seen.add(code);
+    codes.push(code);
+    if (codes.length >= 8) break;
+  }
+
+  return codes;
+}
+
+function isModifierAllowed(result: NcciResult) {
+  return result.modifierAllowed === true || result.modifierAllowed === "1" || result.modifier_indicator === "1";
+}
+
+function batchPairStyle(pair: NcciBatchPair) {
+  if (!pair.hasEdit) return { label: "No edit", bg: "#F0FDF4", border: "#BBF7D0", color: "#15803D" };
+  if (isModifierAllowed(pair)) return { label: "Edit - modifier allowed", bg: "#FFFBEB", border: "#FDE68A", color: "#B45309" };
+  return { label: "Edit - modifier not allowed", bg: "#FEF2F2", border: "#FECACA", color: "#B91C1C" };
+}
+
 export function NcciChecker() {
   const [col1, setCol1] = useState("");
   const [col2, setCol2] = useState("");
@@ -30,6 +78,12 @@ export function NcciChecker() {
   const [result, setResult] = useState<NcciResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [batchCodes, setBatchCodes] = useState("");
+  const [batchResult, setBatchResult] = useState<NcciBatchResult | null>(null);
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [batchError, setBatchError] = useState("");
+
+  const parsedBatchCodes = useMemo(() => splitCodes(batchCodes), [batchCodes]);
 
   const check = async () => {
     if (!col1.trim() || !col2.trim()) return;
@@ -51,8 +105,42 @@ export function NcciChecker() {
     setCol1(pair.col1); setCol2(pair.col2); setResult(null); setError("");
   };
 
+  const checkBatch = async () => {
+    if (parsedBatchCodes.length < 2) return;
+    setBatchLoading(true);
+    setBatchResult(null);
+    setBatchError("");
+    try {
+      const res = await fetch("/api/ncci/batch", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codes: parsedBatchCodes, type }),
+      });
+      const data = await res.json();
+      if (!res.ok) setBatchError(data.message || "Batch check failed");
+      else setBatchResult(data);
+    } catch {
+      setBatchError("Network error. Please try again.");
+    }
+    setBatchLoading(false);
+  };
+
+  const resetBatch = () => {
+    setBatchCodes("");
+    setBatchResult(null);
+    setBatchError("");
+  };
+
+  const loadBatchExample = () => {
+    setBatchCodes(BATCH_EXAMPLE);
+    setBatchResult(null);
+    setBatchError("");
+  };
+
   const resultCol1 = result?.col1_code || result?.col1 || col1;
   const resultCol2 = result?.col2_code || result?.col2 || col2;
+  const singleModifierAllowed = result ? isModifierAllowed(result) : false;
 
   return (
     <div style={{ flex: 1, overflowY: "auto", background: "rgba(255,255,255,0.4)", minHeight: "100vh" }}>
@@ -71,7 +159,7 @@ export function NcciChecker() {
         </div>
       </div>
 
-      <div style={{ maxWidth: "700px", margin: "0 auto", padding: "24px" }}>
+      <div style={{ maxWidth: "900px", margin: "0 auto", padding: "24px" }}>
         {/* Search card */}
         <div style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", borderRadius: "20px", padding: "24px", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", marginBottom: "20px" }}>
           <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-muted, #6B7280)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "16px" }}>Enter Two CPT Codes</div>
@@ -153,6 +241,113 @@ export function NcciChecker() {
           </div>
         )}
 
+        {/* Batch checker */}
+        <div style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", borderRadius: "20px", padding: "24px", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", marginBottom: "20px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-muted, #6B7280)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <ClipboardList size={13} /> Batch Procedure Set
+              </div>
+              <div style={{ fontSize: "13px", color: "var(--text-secondary, #4B5563)", lineHeight: 1.5 }}>
+                Enter up to eight CPT/HCPCS codes. Codical checks every unique pair for NCCI edits.
+              </div>
+            </div>
+            <button onClick={loadBatchExample} style={{ padding: "8px 12px", borderRadius: "999px", border: "1px solid #E2E8F0", background: "white", color: "#475569", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
+              Load batch example
+            </button>
+          </div>
+
+          <textarea
+            value={batchCodes}
+            onChange={(e) => setBatchCodes(e.target.value.toUpperCase())}
+            placeholder="99213 99214 93000"
+            style={{ width: "100%", minHeight: "82px", resize: "vertical", padding: "14px", border: "2px solid #E2E8F0", borderRadius: "12px", outline: "none", boxSizing: "border-box", fontSize: "16px", fontWeight: 800, fontFamily: "monospace", color: "var(--text-primary, #111827)", lineHeight: 1.5 }}
+            onFocus={e => { e.target.style.borderColor = "#15803D"; }}
+            onBlur={e => { e.target.style.borderColor = "#E2E8F0"; }}
+          />
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", marginTop: "12px" }}>
+            <div style={{ fontSize: "12px", color: "var(--text-muted, #6B7280)", fontWeight: 700 }}>
+              {parsedBatchCodes.length} code{parsedBatchCodes.length === 1 ? "" : "s"} parsed
+              {parsedBatchCodes.length > 1 ? `, ${(parsedBatchCodes.length * (parsedBatchCodes.length - 1)) / 2} pair${parsedBatchCodes.length === 2 ? "" : "s"} to check` : ""}
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              {(batchCodes || batchResult) && (
+                <button onClick={resetBatch} style={{ height: "42px", padding: "0 14px", border: "2px solid #E2E8F0", borderRadius: "12px", background: "rgba(255,255,255,0.6)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", color: "var(--text-muted, #6B7280)", fontSize: "13px", fontWeight: 700 }}>
+                  <RotateCcw size={14} /> Clear
+                </button>
+              )}
+              <motion.button onClick={checkBatch} disabled={batchLoading || parsedBatchCodes.length < 2} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                style={{ height: "42px", padding: "0 18px", background: parsedBatchCodes.length > 1 ? "linear-gradient(135deg, #15803D, #1B2F6E)" : "#F1F5F9", color: parsedBatchCodes.length > 1 ? "white" : "#94A3B8", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 700, cursor: parsedBatchCodes.length > 1 ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", boxShadow: parsedBatchCodes.length > 1 ? "0 4px 16px rgba(14,165,233,0.25)" : "none" }}>
+                {batchLoading ? <div style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid white", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> : <Search size={15} />}
+                {batchLoading ? "Checking..." : "Check All Pairs"}
+              </motion.button>
+            </div>
+          </div>
+        </div>
+
+        {batchError && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            style={{ padding: "14px 18px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "16px", fontSize: "13px", color: "#DC2626", display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+            <AlertTriangle size={16} /> {batchError}
+          </motion.div>
+        )}
+
+        {batchResult && (
+          <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.3 }}
+            style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", borderRadius: "20px", padding: "20px", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", marginBottom: "20px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "14px" }}>
+              <div>
+                <div style={{ fontSize: "16px", fontWeight: 900, color: "var(--text-primary, #111827)" }}>Batch NCCI Results</div>
+                <div style={{ fontSize: "12px", color: "var(--text-muted, #6B7280)", marginTop: "3px" }}>
+                  {batchResult.pairCount} pair{batchResult.pairCount === 1 ? "" : "s"} checked for {batchResult.type} claims
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {[
+                  { label: "Edits", value: batchResult.counts.edits, color: "#B91C1C", bg: "#FEF2F2" },
+                  { label: "Modifier OK", value: batchResult.counts.modifierAllowed, color: "#B45309", bg: "#FFFBEB" },
+                  { label: "No Modifier", value: batchResult.counts.modifierNotAllowed, color: "#B91C1C", bg: "#FEF2F2" },
+                  { label: "No Edit", value: batchResult.counts.noEdit, color: "#15803D", bg: "#F0FDF4" },
+                ].map((item) => (
+                  <div key={item.label} style={{ minWidth: "82px", padding: "8px 10px", background: item.bg, borderRadius: "10px", border: "1px solid rgba(15,23,42,0.08)" }}>
+                    <div style={{ fontSize: "18px", fontWeight: 900, color: item.color }}>{item.value}</div>
+                    <div style={{ fontSize: "9px", fontWeight: 800, color: item.color, textTransform: "uppercase", marginTop: "1px" }}>{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {batchResult.pairs.map((pair) => {
+                const style = batchPairStyle(pair);
+                return (
+                  <div key={`${pair.inputCol1}-${pair.inputCol2}`} style={{ padding: "14px", background: style.bg, border: `1px solid ${style.border}`, borderRadius: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "6px" }}>
+                      <span style={{ fontFamily: "monospace", fontWeight: 900, fontSize: "14px", color: style.color }}>{pair.inputCol1}</span>
+                      <span style={{ color: "#94A3B8" }}>+</span>
+                      <span style={{ fontFamily: "monospace", fontWeight: 900, fontSize: "14px", color: style.color }}>{pair.inputCol2}</span>
+                      <span style={{ padding: "2px 8px", background: "rgba(255,255,255,0.7)", color: style.color, borderRadius: "999px", fontSize: "10px", fontWeight: 900, textTransform: "uppercase" }}>
+                        {style.label}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "12px", color: style.color, lineHeight: 1.5 }}>
+                      {pair.message}
+                      {pair.rationale ? ` ${pair.rationale}` : ""}
+                    </div>
+                    {pair.effective_date && (
+                      <div style={{ fontSize: "11px", color: "var(--text-muted, #6B7280)", marginTop: "6px" }}>
+                        Effective: <strong>{pair.effective_date}</strong>
+                        {pair.deletion_date && pair.deletion_date !== "20991231" ? ` · Deletion: ${pair.deletion_date}` : ""}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
         {/* Error */}
         {error && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -190,14 +385,14 @@ export function NcciChecker() {
                         <div style={{ fontSize: "10px", fontWeight: 700, color: "#EF4444", textTransform: "uppercase", marginBottom: "4px" }}>Column 2</div>
                         <div style={{ fontSize: "22px", fontWeight: 900, color: "#DC2626", fontFamily: "monospace" }}>{resultCol2}</div>
                       </div>
-                      <div style={{ flex: 1, padding: "14px", background: result.modifierAllowed ? "#F0FDF4" : "#FEF2F2", borderRadius: "12px", minWidth: "120px" }}>
-                        <div style={{ fontSize: "10px", fontWeight: 700, color: result.modifierAllowed ? "#16A34A" : "#EF4444", textTransform: "uppercase", marginBottom: "4px" }}>Modifier</div>
-                        <div style={{ fontSize: "16px", fontWeight: 800, color: result.modifierAllowed ? "#15803D" : "#DC2626" }}>
-                          {result.modifierAllowed ? "✓ Allowed" : "✗ Not Allowed"}
+                      <div style={{ flex: 1, padding: "14px", background: singleModifierAllowed ? "#F0FDF4" : "#FEF2F2", borderRadius: "12px", minWidth: "120px" }}>
+                        <div style={{ fontSize: "10px", fontWeight: 700, color: singleModifierAllowed ? "#16A34A" : "#EF4444", textTransform: "uppercase", marginBottom: "4px" }}>Modifier</div>
+                        <div style={{ fontSize: "16px", fontWeight: 800, color: singleModifierAllowed ? "#15803D" : "#DC2626" }}>
+                          {singleModifierAllowed ? "Allowed" : "Not Allowed"}
                         </div>
                       </div>
                     </div>
-                    {result.modifierAllowed && (
+                    {singleModifierAllowed && (
                       <div style={{ padding: "12px 16px", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: "10px", fontSize: "13px", color: "#166534", display: "flex", alignItems: "center", gap: "8px" }}>
                         <Info size={14} color="#16A34A" />
                         A modifier may be appended to bypass this edit if the services were truly separate and distinct.
