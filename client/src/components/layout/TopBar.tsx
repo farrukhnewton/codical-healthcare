@@ -16,6 +16,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/compliance": { title: "Compliance", subtitle: "Risk signals, audit readiness and guidance" },
   "/reports": { title: "Reports Center", subtitle: "Generate, export and audit coding reports" },
   "/ncci": { title: "NCCI Checker", subtitle: "National Correct Coding Initiative edit review" },
+  "/claim-validator": { title: "Claim Validator", subtitle: "Combined CMS coverage and NCCI code-set validation" },
   "/rvu": { title: "RVU Calculator", subtitle: "Medicare Physician Fee Schedule modeling" },
   "/anesthesia": { title: "Anesthesia Calculator", subtitle: "Base, time and modifier unit modeling" },
   "/npi": { title: "NPI Lookup", subtitle: "NPPES provider registry search" },

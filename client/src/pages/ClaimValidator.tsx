@@ -1,0 +1,490 @@
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardCheck,
+  FileText,
+  RotateCcw,
+  Search,
+  Shield,
+  ShieldAlert,
+} from "lucide-react";
+
+type NcciType = "practitioner" | "outpatient";
+type CoverageStatus = "covered" | "noncovered" | "mixed" | "not_found";
+
+interface CoverageEvidence {
+  displayId: string;
+  articleId?: string;
+  title: string;
+  groupNumber: string;
+  effectiveDate?: string | null;
+  endDate?: string | null;
+}
+
+interface CoverageValidationPair {
+  icdCode: string;
+  procedureCode: string;
+  status: CoverageStatus;
+  searchedDocumentCount: number;
+  evidenceCount: number;
+  coveredEvidenceCount: number;
+  noncoveredEvidenceCount: number;
+  topEvidence: CoverageEvidence | null;
+}
+
+interface CoverageValidationResult {
+  source: string;
+  diagnosisCodes: string[];
+  procedureCodes: string[];
+  pairCount: number;
+  counts: {
+    covered: number;
+    noncovered: number;
+    mixed: number;
+    notFound: number;
+    evidence: number;
+  };
+  pairs: CoverageValidationPair[];
+}
+
+interface NcciValidationPair {
+  inputCol1: string;
+  inputCol2: string;
+  hasEdit: boolean;
+  message: string;
+  modifier_indicator?: string | null;
+  modifierAllowed?: boolean | string;
+  effective_date?: string | null;
+  deletion_date?: string | null;
+  rationale?: string | null;
+  source?: string;
+  type: string;
+}
+
+interface NcciValidationResult {
+  source: string;
+  type: NcciType;
+  codes: string[];
+  pairCount: number;
+  counts: {
+    edits: number;
+    modifierAllowed: number;
+    modifierNotAllowed: number;
+    noEdit: number;
+  };
+  pairs: NcciValidationPair[];
+}
+
+interface ClaimValidationResult {
+  source: string;
+  diagnosisCodes: string[];
+  procedureCodes: string[];
+  ncciType: NcciType;
+  coverageValidation: CoverageValidationResult | null;
+  ncciValidation: NcciValidationResult | null;
+  warnings: string[];
+  summary: {
+    diagnosisCodeCount: number;
+    procedureCodeCount: number;
+    coveragePairCount: number;
+    coverageEvidenceCount: number;
+    noncoveredPairCount: number;
+    ncciPairCount: number;
+    ncciEditCount: number;
+    ncciModifierNotAllowedCount: number;
+  };
+}
+
+const EXAMPLE = {
+  diagnosisCodes: "M17.0 E11.9",
+  procedureCodes: "29877 99214 99213",
+};
+
+function splitCodes(value: string) {
+  const seen = new Set<string>();
+  const codes: string[] = [];
+
+  for (const item of value.split(/[\s,;]+/)) {
+    const code = item.trim().toUpperCase();
+    if (!code || seen.has(code)) continue;
+    seen.add(code);
+    codes.push(code);
+    if (codes.length >= 8) break;
+  }
+
+  return codes;
+}
+
+function isModifierAllowed(pair: NcciValidationPair) {
+  return pair.modifierAllowed === true || pair.modifierAllowed === "1" || pair.modifier_indicator === "1";
+}
+
+function coverageStatusMeta(status: CoverageStatus) {
+  if (status === "covered") return { label: "Covered", color: "#15803D", bg: "#F0FDF4", border: "#BBF7D0" };
+  if (status === "noncovered") return { label: "Noncovered", color: "#B91C1C", bg: "#FEF2F2", border: "#FECACA" };
+  if (status === "mixed") return { label: "Mixed", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" };
+  return { label: "No MCD evidence", color: "#475569", bg: "#F8FAFC", border: "#CBD5E1" };
+}
+
+function ncciStatusMeta(pair: NcciValidationPair) {
+  if (!pair.hasEdit) return { label: "No edit", color: "#15803D", bg: "#F0FDF4", border: "#BBF7D0" };
+  if (isModifierAllowed(pair)) return { label: "Edit - modifier allowed", color: "#B45309", bg: "#FFFBEB", border: "#FDE68A" };
+  return { label: "Edit - modifier not allowed", color: "#B91C1C", bg: "#FEF2F2", border: "#FECACA" };
+}
+
+function CodePill({ code, tone = "procedure" }: { code: string; tone?: "procedure" | "diagnosis" }) {
+  const styles = tone === "procedure"
+    ? { color: "#15803D", bg: "#F0FDF4" }
+    : { color: "#0369A1", bg: "#EFF6FF" };
+
+  return (
+    <span
+      className="inline-flex min-h-7 items-center rounded-md px-2.5 text-xs font-black"
+      style={{ color: styles.color, background: styles.bg, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
+    >
+      {code}
+    </span>
+  );
+}
+
+function StatusBadge({ label, color, bg, border }: { label: string; color: string; bg: string; border: string }) {
+  return (
+    <span
+      className="inline-flex min-h-6 items-center rounded-full border px-2.5 text-[10px] font-black uppercase"
+      style={{ color, background: bg, borderColor: border }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function StatTile({ label, value, color, bg }: { label: string; value: number | string; color: string; bg: string }) {
+  return (
+    <div className="rounded-lg border border-[rgba(15,23,42,0.08)] p-3" style={{ background: bg }}>
+      <div className="text-xl font-black leading-none" style={{ color }}>{value}</div>
+      <div className="mt-1 text-[10px] font-black uppercase" style={{ color }}>{label}</div>
+    </div>
+  );
+}
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  detail,
+}: {
+  icon: typeof ClipboardCheck;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--co-line)] bg-white/10 text-[var(--co-cyan)]">
+          <Icon size={18} />
+        </div>
+        <div>
+          <h2 className="text-base font-black text-[var(--co-ink)]">{title}</h2>
+          <p className="mt-1 text-xs leading-5 text-[var(--co-muted)]">{detail}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ClaimValidator() {
+  const [diagnosisInput, setDiagnosisInput] = useState("");
+  const [procedureInput, setProcedureInput] = useState("");
+  const [ncciType, setNcciType] = useState<NcciType>("practitioner");
+  const [result, setResult] = useState<ClaimValidationResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const diagnosisCodes = useMemo(() => splitCodes(diagnosisInput), [diagnosisInput]);
+  const procedureCodes = useMemo(() => splitCodes(procedureInput), [procedureInput]);
+
+  const coveragePairCount = diagnosisCodes.length * procedureCodes.length;
+  const ncciPairCount = procedureCodes.length > 1 ? (procedureCodes.length * (procedureCodes.length - 1)) / 2 : 0;
+  const canValidate = diagnosisCodes.length > 0 || procedureCodes.length > 0;
+
+  const validate = async () => {
+    if (!canValidate) return;
+    setLoading(true);
+    setResult(null);
+    setError("");
+
+    try {
+      const res = await fetch("/api/claim/validate", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          diagnosisCodes,
+          procedureCodes,
+          ncciType,
+          coverageLimit: 8,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) setError(data.message || "Claim validation failed");
+      else setResult(data);
+    } catch {
+      setError("Network error. Please try again.");
+    }
+
+    setLoading(false);
+  };
+
+  const reset = () => {
+    setDiagnosisInput("");
+    setProcedureInput("");
+    setResult(null);
+    setError("");
+  };
+
+  const loadExample = () => {
+    setDiagnosisInput(EXAMPLE.diagnosisCodes);
+    setProcedureInput(EXAMPLE.procedureCodes);
+    setResult(null);
+    setError("");
+  };
+
+  return (
+    <div className="co-dashboard">
+      <div className="co-dashboard-grid">
+        <section className="co-dashboard-card">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-3xl">
+              <div className="co-eyebrow">
+                <span className="co-live-dot" /> Claim validation
+              </div>
+              <h1 className="co-heading mt-3 text-3xl font-black text-[var(--co-ink)] sm:text-4xl">
+                Coverage and NCCI review for a claim code set
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--co-muted)]">
+                Validate diagnosis and procedure combinations against CMS coverage evidence and NCCI edits in one pass.
+              </p>
+            </div>
+            <button className="co-btn co-btn-ghost" onClick={loadExample} type="button">
+              <FileText size={16} /> Load example
+            </button>
+          </div>
+        </section>
+
+        <section className="co-dashboard-card">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="grid gap-2">
+                <span className="text-xs font-black uppercase text-[var(--co-muted)]">Diagnosis codes</span>
+                <textarea
+                  value={diagnosisInput}
+                  onChange={(event) => setDiagnosisInput(event.target.value.toUpperCase())}
+                  placeholder="M17.0 E11.9"
+                  className="min-h-32 w-full resize-y rounded-lg border border-[var(--co-line)] bg-white/10 p-4 font-mono text-base font-black text-[var(--co-ink)] outline-none transition focus:border-[var(--co-cyan)]"
+                />
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-xs font-black uppercase text-[var(--co-muted)]">Procedure codes</span>
+                <textarea
+                  value={procedureInput}
+                  onChange={(event) => setProcedureInput(event.target.value.toUpperCase())}
+                  placeholder="29877 99214 99213"
+                  className="min-h-32 w-full resize-y rounded-lg border border-[var(--co-line)] bg-white/10 p-4 font-mono text-base font-black text-[var(--co-ink)] outline-none transition focus:border-[var(--co-cyan)]"
+                />
+              </label>
+            </div>
+
+            <aside className="grid content-start gap-4">
+              <div>
+                <div className="mb-2 text-xs font-black uppercase text-[var(--co-muted)]">NCCI type</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["practitioner", "outpatient"] as const).map((type) => (
+                    <button
+                      key={type}
+                      className={
+                        "min-h-11 rounded-lg border px-3 text-sm font-black capitalize transition " +
+                        (ncciType === type
+                          ? "border-[var(--co-cyan)] bg-[rgba(55,208,198,0.12)] text-[var(--co-ink)]"
+                          : "border-[var(--co-line)] bg-white/5 text-[var(--co-muted)] hover:text-[var(--co-ink)]")
+                      }
+                      onClick={() => setNcciType(type)}
+                      type="button"
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <StatTile label="DX" value={diagnosisCodes.length} color="#0369A1" bg="#EFF6FF" />
+                <StatTile label="PROC" value={procedureCodes.length} color="#15803D" bg="#F0FDF4" />
+                <StatTile label="Coverage pairs" value={coveragePairCount} color="#B45309" bg="#FFFBEB" />
+                <StatTile label="NCCI pairs" value={ncciPairCount} color="#7C3AED" bg="#F5F3FF" />
+              </div>
+
+              <div className="flex gap-2">
+                <motion.button
+                  whileHover={{ scale: canValidate ? 1.01 : 1 }}
+                  whileTap={{ scale: canValidate ? 0.99 : 1 }}
+                  onClick={validate}
+                  disabled={loading || !canValidate}
+                  className="co-btn co-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-50"
+                  type="button"
+                >
+                  {loading ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  ) : (
+                    <Search size={16} />
+                  )}
+                  {loading ? "Validating" : "Validate"}
+                </motion.button>
+                {(diagnosisInput || procedureInput || result) && (
+                  <button className="co-btn co-btn-ghost !px-4" onClick={reset} type="button" aria-label="Clear claim validator">
+                    <RotateCcw size={16} />
+                  </button>
+                )}
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700"
+          >
+            <AlertTriangle size={18} /> {error}
+          </motion.div>
+        )}
+
+        {result && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="grid gap-5">
+            <section className="co-dashboard-card">
+              <SectionHeader
+                icon={ClipboardCheck}
+                title="Validation Summary"
+                detail={`${result.summary.diagnosisCodeCount} diagnosis code(s), ${result.summary.procedureCodeCount} procedure code(s)`}
+              />
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <StatTile label="Coverage pairs" value={result.summary.coveragePairCount} color="#B45309" bg="#FFFBEB" />
+                <StatTile label="Evidence rows" value={result.summary.coverageEvidenceCount} color="#0369A1" bg="#EFF6FF" />
+                <StatTile label="NCCI edits" value={result.summary.ncciEditCount} color="#B91C1C" bg="#FEF2F2" />
+                <StatTile label="No modifier" value={result.summary.ncciModifierNotAllowedCount} color="#7C2D12" bg="#FFF7ED" />
+              </div>
+              {result.warnings.length > 0 && (
+                <div className="mt-5 grid gap-2">
+                  {result.warnings.map((warning) => (
+                    <div key={warning} className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+                      <AlertTriangle size={15} className="mt-0.5 shrink-0" /> {warning}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {result.coverageValidation && (
+              <section className="co-dashboard-card">
+                <SectionHeader
+                  icon={Shield}
+                  title="CMS Coverage Evidence"
+                  detail={`${result.coverageValidation.pairCount} diagnosis-to-procedure pair(s) checked`}
+                />
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  <StatTile label="Covered" value={result.coverageValidation.counts.covered} color="#15803D" bg="#F0FDF4" />
+                  <StatTile label="Noncovered" value={result.coverageValidation.counts.noncovered} color="#B91C1C" bg="#FEF2F2" />
+                  <StatTile label="Mixed" value={result.coverageValidation.counts.mixed} color="#7C3AED" bg="#F5F3FF" />
+                  <StatTile label="No evidence" value={result.coverageValidation.counts.notFound} color="#475569" bg="#F8FAFC" />
+                  <StatTile label="Evidence" value={result.coverageValidation.counts.evidence} color="#0369A1" bg="#EFF6FF" />
+                </div>
+
+                <div className="mt-5 grid gap-3">
+                  {result.coverageValidation.pairs.map((pair) => {
+                    const status = coverageStatusMeta(pair.status);
+                    return (
+                      <div key={`${pair.procedureCode}-${pair.icdCode}`} className="rounded-lg border border-[var(--co-line)] bg-white/10 p-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <CodePill code={pair.procedureCode} />
+                          <ChevronRight size={14} className="text-[var(--co-muted)]" />
+                          <CodePill code={pair.icdCode} tone="diagnosis" />
+                          <StatusBadge {...status} />
+                          {pair.evidenceCount > 0 && (
+                            <span className="text-xs font-black text-[var(--co-muted)]">
+                              {pair.evidenceCount} evidence row{pair.evidenceCount === 1 ? "" : "s"}
+                            </span>
+                          )}
+                        </div>
+                        {pair.topEvidence ? (
+                          <div className="mt-3 text-sm leading-6 text-[var(--co-soft)]">
+                            <strong className="text-[var(--co-ink)]">{pair.topEvidence.displayId}</strong>
+                            {" group "}{pair.topEvidence.groupNumber} - {pair.topEvidence.title}
+                          </div>
+                        ) : (
+                          <div className="mt-3 text-sm text-[var(--co-muted)]">No matching MCD evidence returned for this pair.</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {result.ncciValidation && (
+              <section className="co-dashboard-card">
+                <SectionHeader
+                  icon={ShieldAlert}
+                  title="NCCI Procedure Edits"
+                  detail={`${result.ncciValidation.pairCount} procedure pair(s) checked for ${result.ncciValidation.type} claims`}
+                />
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <StatTile label="Edits" value={result.ncciValidation.counts.edits} color="#B91C1C" bg="#FEF2F2" />
+                  <StatTile label="Modifier OK" value={result.ncciValidation.counts.modifierAllowed} color="#B45309" bg="#FFFBEB" />
+                  <StatTile label="No modifier" value={result.ncciValidation.counts.modifierNotAllowed} color="#B91C1C" bg="#FEF2F2" />
+                  <StatTile label="No edit" value={result.ncciValidation.counts.noEdit} color="#15803D" bg="#F0FDF4" />
+                </div>
+
+                <div className="mt-5 grid gap-3">
+                  {result.ncciValidation.pairs.map((pair) => {
+                    const status = ncciStatusMeta(pair);
+                    return (
+                      <div key={`${pair.inputCol1}-${pair.inputCol2}`} className="rounded-lg border border-[var(--co-line)] bg-white/10 p-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <CodePill code={pair.inputCol1} />
+                          <ChevronRight size={14} className="text-[var(--co-muted)]" />
+                          <CodePill code={pair.inputCol2} />
+                          <StatusBadge {...status} />
+                        </div>
+                        <div className="mt-3 text-sm leading-6 text-[var(--co-soft)]">
+                          {pair.message}
+                          {pair.rationale ? ` ${pair.rationale}` : ""}
+                        </div>
+                        {pair.effective_date && (
+                          <div className="mt-2 text-xs font-bold text-[var(--co-muted)]">
+                            Effective: {pair.effective_date}
+                            {pair.deletion_date && pair.deletion_date !== "20991231" ? ` | Deletion: ${pair.deletion_date}` : ""}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {!result.coverageValidation && !result.ncciValidation && (
+              <section className="co-dashboard-card">
+                <div className="flex items-center gap-3 text-sm font-bold text-[var(--co-muted)]">
+                  <CheckCircle2 size={18} /> Validation completed with no pair-based result sections.
+                </div>
+              </section>
+            )}
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}

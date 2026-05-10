@@ -42,6 +42,7 @@ import { NpiChecker } from "@/pages/NpiChecker";
 import { CodeLookup } from "@/pages/CodeLookup";
 import { DrugLookup } from "@/pages/DrugLookup";
 import { NcciChecker } from "@/pages/NcciChecker";
+import { ClaimValidator } from "@/pages/ClaimValidator";
 import { TeamChat } from "@/pages/TeamChat";
 import { Workbench } from "@/pages/Workbench";
 import { VoiceTranscription } from "@/pages/VoiceTranscription";
@@ -274,6 +275,13 @@ function Router() {
                     {() => (
                       <PageTransition>
                         <NcciChecker />
+                      </PageTransition>
+                    )}
+                  </Route>
+                  <Route path="/claim-validator">
+                    {() => (
+                      <PageTransition>
+                        <ClaimValidator />
                       </PageTransition>
                     )}
                   </Route>
