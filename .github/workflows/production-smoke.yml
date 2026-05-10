@@ -1,0 +1,52 @@
+name: Production Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      require_mcd:
+        description: "Fail if Cloudflare MCD coverage evidence is unavailable"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      include_ai:
+        description: "Exercise Gemini-backed AI Coder analysis"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROD_BASE_URL: https://codical-healthcare.vercel.app
+      PROD_SMOKE_EMAIL: ${{ secrets.PROD_SMOKE_EMAIL }}
+      PROD_SMOKE_PASSWORD: ${{ secrets.PROD_SMOKE_PASSWORD }}
+      PROD_SMOKE_REQUIRE_MCD: ${{ inputs.require_mcd }}
+      PROD_SMOKE_INCLUDE_AI: ${{ inputs.include_ai }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run check
+
+      - name: Production smoke
+        run: npm run smoke:prod

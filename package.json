@@ -8,6 +8,7 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+    "smoke:prod": "tsx scripts/smoke-production.ts",
     "db:push": "drizzle-kit push",
     "sync:payer-policies": "tsx scripts/sync-payer-policies.ts",
     "cf:whoami": "wrangler whoami",
