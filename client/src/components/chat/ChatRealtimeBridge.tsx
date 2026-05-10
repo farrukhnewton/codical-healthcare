@@ -8,6 +8,17 @@ import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
+function isSocketRealtimeEnabled() {
+  if (import.meta.env.DEV) return true;
+  if (typeof window === "undefined") return false;
+
+  const runtimeFlag = (window as any).__CODICAL_ENV__?.VITE_SOCKET_IO_ENABLED;
+  if (runtimeFlag === "true") return true;
+  if (runtimeFlag === "false") return false;
+
+  return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+}
+
 export function ChatRealtimeBridge() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -77,6 +88,7 @@ export function ChatRealtimeBridge() {
 
   useEffect(() => {
     if (!user?.id) return;
+    if (!isSocketRealtimeEnabled()) return;
 
     const socket = io({
       transports: ["websocket", "polling"],
