@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CalendarClock, Download, FileText, FolderOpen, Loader2, Pencil, Save, Trash2 } from "lucide-react";
+import { CalendarClock, Download, FileText, FolderOpen, Loader2, Pencil, RotateCcw, Save, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,7 @@ type SavedAiFilesLibraryProps = {
   title: string;
   description: string;
   currentFile?: CurrentFileDraft | null;
+  onUseFile?: (file: SavedAiFile) => void;
 };
 
 function formatDate(value: string) {
@@ -48,6 +49,7 @@ export function SavedAiFilesLibrary({
   title,
   description,
   currentFile,
+  onUseFile,
 }: SavedAiFilesLibraryProps) {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<SavedAiFile | null>(null);
@@ -181,6 +183,12 @@ export function SavedAiFilesLibrary({
                     <span>Deletes {formatDate(file.expiresAt)}</span>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
+                    {onUseFile && (
+                      <Button type="button" size="sm" variant="outline" onClick={() => onUseFile(file)} className="gap-2">
+                        <RotateCcw className="size-4" />
+                        Use
+                      </Button>
+                    )}
                     <Button type="button" size="sm" variant="outline" onClick={() => setSelectedFile(file)} className="gap-2">
                       <Pencil className="size-4" />
                       Open
@@ -250,6 +258,20 @@ export function SavedAiFilesLibrary({
                 />
               </ScrollArea>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                {onUseFile && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      onUseFile(selectedFile);
+                      setSelectedFile(null);
+                    }}
+                    className="gap-2"
+                  >
+                    <RotateCcw className="size-4" />
+                    Use this file
+                  </Button>
+                )}
                 <Button type="button" variant="outline" onClick={() => downloadMutation.mutate(selectedFile)} className="gap-2">
                   <Download className="size-4" />
                   Download PDF

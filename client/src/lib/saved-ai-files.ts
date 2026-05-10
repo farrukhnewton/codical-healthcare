@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 
-export type SavedAiModule = "transcription" | "op_report_coding";
+export type SavedAiModule = "transcription" | "op_report_coding" | "claim_validation";
 
 export type SavedAiFile = {
   id: number;

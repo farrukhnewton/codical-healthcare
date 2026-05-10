@@ -5,12 +5,17 @@ import {
   CheckCircle2,
   ChevronRight,
   ClipboardCheck,
+  Copy,
+  Download,
   FileText,
   RotateCcw,
   Search,
   Shield,
   ShieldAlert,
 } from "lucide-react";
+import { SavedAiFilesLibrary } from "@/components/saved-ai/SavedAiFilesLibrary";
+import type { SavedAiFile } from "@/lib/saved-ai-files";
+import { useToast } from "@/hooks/use-toast";
 
 type NcciType = "practitioner" | "outpatient";
 type CoverageStatus = "covered" | "noncovered" | "mixed" | "not_found";
@@ -135,6 +140,98 @@ function ncciStatusMeta(pair: NcciValidationPair) {
   return { label: "Edit - modifier not allowed", color: "#B91C1C", bg: "#FEF2F2", border: "#FECACA" };
 }
 
+function formatDateTime(value?: string | null) {
+  const date = value ? new Date(value) : new Date();
+  const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
+  return safeDate.toLocaleString();
+}
+
+function getReportFileName(result: ClaimValidationResult, extension: "txt" | "json") {
+  const codePart = [
+    ...result.procedureCodes.slice(0, 3),
+    ...result.diagnosisCodes.slice(0, 2),
+  ].join("-");
+  const safeCodePart = (codePart || "claim-validation").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/-+/g, "-");
+  return `claim-validation-${safeCodePart}.${extension}`;
+}
+
+function formatClaimValidationReport(result: ClaimValidationResult, generatedAt?: string | null) {
+  const lines = [
+    "CODICAL HEALTH - CLAIM VALIDATION REPORT",
+    `Generated: ${formatDateTime(generatedAt)}`,
+    `Source: ${result.source}`,
+    `NCCI type: ${result.ncciType}`,
+    "",
+    "CODE SET",
+    `Diagnosis codes: ${result.diagnosisCodes.length ? result.diagnosisCodes.join(", ") : "None"}`,
+    `Procedure codes: ${result.procedureCodes.length ? result.procedureCodes.join(", ") : "None"}`,
+    "",
+    "SUMMARY",
+    `Diagnosis code count: ${result.summary.diagnosisCodeCount}`,
+    `Procedure code count: ${result.summary.procedureCodeCount}`,
+    `Coverage pairs checked: ${result.summary.coveragePairCount}`,
+    `Coverage evidence rows: ${result.summary.coverageEvidenceCount}`,
+    `Noncovered coverage pairs: ${result.summary.noncoveredPairCount}`,
+    `NCCI pairs checked: ${result.summary.ncciPairCount}`,
+    `NCCI edits: ${result.summary.ncciEditCount}`,
+    `NCCI edits with modifier not allowed: ${result.summary.ncciModifierNotAllowedCount}`,
+  ];
+
+  if (result.warnings.length > 0) {
+    lines.push("", "WARNINGS", ...result.warnings.map((warning) => `- ${warning}`));
+  }
+
+  if (result.coverageValidation) {
+    const coverage = result.coverageValidation;
+    lines.push(
+      "",
+      "CMS COVERAGE EVIDENCE",
+      `Pairs checked: ${coverage.pairCount}`,
+      `Covered: ${coverage.counts.covered}`,
+      `Noncovered: ${coverage.counts.noncovered}`,
+      `Mixed: ${coverage.counts.mixed}`,
+      `No MCD evidence: ${coverage.counts.notFound}`,
+      `Evidence rows: ${coverage.counts.evidence}`,
+    );
+
+    for (const pair of coverage.pairs) {
+      const status = coverageStatusMeta(pair.status);
+      const evidence = pair.topEvidence
+        ? ` | ${pair.topEvidence.displayId} group ${pair.topEvidence.groupNumber}: ${pair.topEvidence.title}`
+        : "";
+      lines.push(`- ${pair.procedureCode} + ${pair.icdCode}: ${status.label} | evidence rows: ${pair.evidenceCount}${evidence}`);
+    }
+  }
+
+  if (result.ncciValidation) {
+    const ncci = result.ncciValidation;
+    lines.push(
+      "",
+      "NCCI PROCEDURE EDITS",
+      `Pairs checked: ${ncci.pairCount}`,
+      `Edits: ${ncci.counts.edits}`,
+      `Modifier allowed: ${ncci.counts.modifierAllowed}`,
+      `Modifier not allowed: ${ncci.counts.modifierNotAllowed}`,
+      `No edit: ${ncci.counts.noEdit}`,
+    );
+
+    for (const pair of ncci.pairs) {
+      const status = ncciStatusMeta(pair);
+      const rationale = pair.rationale ? ` | ${pair.rationale}` : "";
+      const effective = pair.effective_date ? ` | effective ${pair.effective_date}` : "";
+      lines.push(`- ${pair.inputCol1} + ${pair.inputCol2}: ${status.label} | ${pair.message}${rationale}${effective}`);
+    }
+  }
+
+  lines.push(
+    "",
+    "REVIEW NOTE",
+    "This report summarizes automated coverage and NCCI evidence for coder review. It does not replace payer-specific policy review or final professional judgment.",
+  );
+
+  return lines.join("\n");
+}
+
 function CodePill({ code, tone = "procedure" }: { code: string; tone?: "procedure" | "diagnosis" }) {
   const styles = tone === "procedure"
     ? { color: "#15803D", bg: "#F0FDF4" }
@@ -174,10 +271,12 @@ function SectionHeader({
   icon: Icon,
   title,
   detail,
+  actions,
 }: {
   icon: typeof ClipboardCheck;
   title: string;
   detail: string;
+  actions?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -190,15 +289,18 @@ function SectionHeader({
           <p className="mt-1 text-xs leading-5 text-[var(--co-muted)]">{detail}</p>
         </div>
       </div>
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   );
 }
 
 export function ClaimValidator() {
+  const { toast } = useToast();
   const [diagnosisInput, setDiagnosisInput] = useState("");
   const [procedureInput, setProcedureInput] = useState("");
   const [ncciType, setNcciType] = useState<NcciType>("practitioner");
   const [result, setResult] = useState<ClaimValidationResult | null>(null);
+  const [resultGeneratedAt, setResultGeneratedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -208,6 +310,36 @@ export function ClaimValidator() {
   const coveragePairCount = diagnosisCodes.length * procedureCodes.length;
   const ncciPairCount = procedureCodes.length > 1 ? (procedureCodes.length * (procedureCodes.length - 1)) / 2 : 0;
   const canValidate = diagnosisCodes.length > 0 || procedureCodes.length > 0;
+  const reportText = useMemo(
+    () => (result ? formatClaimValidationReport(result, resultGeneratedAt) : ""),
+    [result, resultGeneratedAt],
+  );
+
+  const currentSavedFile = useMemo(() => {
+    if (!result || !reportText) return null;
+
+    const generatedDate = resultGeneratedAt ? new Date(resultGeneratedAt) : new Date();
+    const dateLabel = Number.isNaN(generatedDate.getTime()) ? new Date().toLocaleDateString() : generatedDate.toLocaleDateString();
+    const codeLabel = result.procedureCodes.slice(0, 3).join(", ") || result.diagnosisCodes.slice(0, 3).join(", ") || "code set";
+
+    return {
+      fileName: `Claim validation - ${codeLabel} - ${dateLabel}`,
+      patientName: "",
+      content: reportText,
+      sourceText: [
+        `Diagnosis codes: ${result.diagnosisCodes.join(" ") || "None"}`,
+        `Procedure codes: ${result.procedureCodes.join(" ") || "None"}`,
+        `NCCI type: ${result.ncciType}`,
+      ].join("\n"),
+      structuredData: {
+        result,
+        generatedAt: resultGeneratedAt,
+        diagnosisCodes: result.diagnosisCodes,
+        procedureCodes: result.procedureCodes,
+        ncciType: result.ncciType,
+      },
+    };
+  }, [reportText, result, resultGeneratedAt]);
 
   const validate = async () => {
     if (!canValidate) return;
@@ -229,7 +361,10 @@ export function ClaimValidator() {
       });
       const data = await res.json();
       if (!res.ok) setError(data.message || "Claim validation failed");
-      else setResult(data);
+      else {
+        setResult(data);
+        setResultGeneratedAt(new Date().toISOString());
+      }
     } catch {
       setError("Network error. Please try again.");
     }
@@ -241,6 +376,7 @@ export function ClaimValidator() {
     setDiagnosisInput("");
     setProcedureInput("");
     setResult(null);
+    setResultGeneratedAt(null);
     setError("");
   };
 
@@ -248,7 +384,61 @@ export function ClaimValidator() {
     setDiagnosisInput(EXAMPLE.diagnosisCodes);
     setProcedureInput(EXAMPLE.procedureCodes);
     setResult(null);
+    setResultGeneratedAt(null);
     setError("");
+  };
+
+  const copyReport = async () => {
+    if (!reportText) return;
+
+    try {
+      await navigator.clipboard.writeText(reportText);
+      toast({ title: "Copied", description: "Claim validation report copied to clipboard." });
+    } catch {
+      toast({ title: "Copy failed", description: "Clipboard access was not available.", variant: "destructive" });
+    }
+  };
+
+  const downloadReport = () => {
+    if (!result || !reportText) return;
+
+    const blob = new Blob([reportText], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+
+    anchor.href = url;
+    anchor.download = getReportFileName(result, "txt");
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const restoreSavedValidation = (file: SavedAiFile) => {
+    const structuredData = file.structuredData || {};
+    const savedResult = structuredData.result as ClaimValidationResult | undefined;
+    const savedDiagnosisCodes = Array.isArray(structuredData.diagnosisCodes)
+      ? structuredData.diagnosisCodes.map(String)
+      : savedResult?.diagnosisCodes || [];
+    const savedProcedureCodes = Array.isArray(structuredData.procedureCodes)
+      ? structuredData.procedureCodes.map(String)
+      : savedResult?.procedureCodes || [];
+    const savedNcciType: NcciType = structuredData.ncciType === "outpatient" || savedResult?.ncciType === "outpatient"
+      ? "outpatient"
+      : "practitioner";
+
+    if (!savedResult && savedDiagnosisCodes.length === 0 && savedProcedureCodes.length === 0) {
+      toast({ title: "Cannot reuse file", description: "This saved file does not include reusable claim validation data.", variant: "destructive" });
+      return;
+    }
+
+    setDiagnosisInput(savedDiagnosisCodes.join(" "));
+    setProcedureInput(savedProcedureCodes.join(" "));
+    setNcciType(savedNcciType);
+    setResult(savedResult || null);
+    setResultGeneratedAt(typeof structuredData.generatedAt === "string" ? structuredData.generatedAt : file.createdAt || new Date().toISOString());
+    setError("");
+    toast({ title: "Loaded", description: "Saved claim validation restored to the form." });
   };
 
   return (
@@ -369,6 +559,16 @@ export function ClaimValidator() {
                 icon={ClipboardCheck}
                 title="Validation Summary"
                 detail={`${result.summary.diagnosisCodeCount} diagnosis code(s), ${result.summary.procedureCodeCount} procedure code(s)`}
+                actions={
+                  <>
+                    <button className="co-btn co-btn-ghost !min-h-10 !px-4 text-xs" onClick={copyReport} type="button">
+                      <Copy size={15} /> Copy report
+                    </button>
+                    <button className="co-btn co-btn-ghost !min-h-10 !px-4 text-xs" onClick={downloadReport} type="button">
+                      <Download size={15} /> TXT
+                    </button>
+                  </>
+                }
               />
               <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <StatTile label="Coverage pairs" value={result.summary.coveragePairCount} color="#B45309" bg="#FFFBEB" />
@@ -484,6 +684,14 @@ export function ClaimValidator() {
             )}
           </motion.div>
         )}
+
+        <SavedAiFilesLibrary
+          module="claim_validation"
+          title="Saved Claim Validations"
+          description="Save claim validation reports for 30 days, reopen prior code sets, edit report text, and download permanent PDFs."
+          currentFile={currentSavedFile}
+          onUseFile={restoreSavedValidation}
+        />
       </div>
     </div>
   );

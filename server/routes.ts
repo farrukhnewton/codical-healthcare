@@ -39,7 +39,12 @@ const CODICAL_AI_USERNAME = "codical.ai";
 const CODICAL_AI_NAME = "Codical AI";
 const PRESENCE_ONLINE_WINDOW_MS = 75_000;
 const SAVED_AI_FILE_RETENTION_DAYS = 30;
-const SAVED_AI_FILE_MODULES = new Set(["transcription", "op_report_coding"]);
+const SAVED_AI_FILE_MODULE_LABELS: Record<string, string> = {
+  transcription: "AI Transcription",
+  op_report_coding: "AI OP Report Coding",
+  claim_validation: "Claim Validation",
+};
+const SAVED_AI_FILE_MODULES = new Set(Object.keys(SAVED_AI_FILE_MODULE_LABELS));
 const isVercel = process.env.VERCEL === "1";
 const uploadsRoot = isVercel
   ? path.resolve("/tmp", "uploads")
@@ -229,7 +234,7 @@ async function getAuthenticatedChatUser(req: Request) {
 function normalizeSavedAiFileModule(value: unknown) {
   const module = String(value || "").trim();
   if (!SAVED_AI_FILE_MODULES.has(module)) {
-    throw new RouteError(400, "module must be transcription or op_report_coding");
+    throw new RouteError(400, "module must be transcription, op_report_coding, or claim_validation");
   }
 
   return module;
@@ -246,7 +251,9 @@ function sanitizeSavedFileName(value: unknown, fallback: string) {
 }
 
 function getSavedFileFallbackName(module: string) {
-  return module === "transcription" ? "Medical transcription" : "OP report coding";
+  if (module === "transcription") return "Medical transcription";
+  if (module === "claim_validation") return "Claim validation";
+  return "OP report coding";
 }
 
 function getSavedFileExpirationDate() {
@@ -290,7 +297,7 @@ function getPdfSafeFileName(fileName: string) {
 function generateSavedAiFilePdf(file: typeof savedAiFiles.$inferSelect) {
   return new Promise<Buffer>((resolve, reject) => {
     const title = file.fileName || getSavedFileFallbackName(file.module);
-    const moduleLabel = file.module === "transcription" ? "AI Transcription" : "AI OP Report Coding";
+    const moduleLabel = SAVED_AI_FILE_MODULE_LABELS[file.module] || "Codical Report";
     const doc = new PDFDocument({
       size: "LETTER",
       margin: 54,
