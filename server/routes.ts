@@ -360,6 +360,11 @@ async function getUniqueUsername(base: string) {
   return `${usernameBase}.${Date.now()}`;
 }
 
+function isUniqueConstraintError(error: unknown) {
+  const candidate = error as { code?: string; message?: string };
+  return candidate?.code === "23505" || /duplicate key value violates unique constraint/i.test(candidate?.message || "");
+}
+
 async function ensureChatUser(profile: ChatUserProfile) {
   const supabaseId = String(profile.supabaseId || "").trim();
   const email = String(profile.email || "").trim().toLowerCase();
@@ -396,7 +401,7 @@ async function ensureChatUser(profile: ChatUserProfile) {
 
   const baseUsername = email ? email.split("@")[0] : fullName || supabaseId.slice(0, 8);
   const username = await getUniqueUsername(baseUsername);
-  const [created] = await db.insert(users).values({
+  const insertValues = {
     supabaseId: supabaseId || null,
     username,
     email: email || null,
@@ -405,9 +410,45 @@ async function ensureChatUser(profile: ChatUserProfile) {
     role: "coder",
     isOnline: true,
     lastSeen: new Date(),
-  }).returning();
+  };
 
-  return created;
+  try {
+    const [created] = await db.insert(users).values(insertValues).returning();
+    return created;
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) throw error;
+
+    const [conflictedUser] = await db.select()
+      .from(users)
+      .where(sql`
+        (${supabaseId} <> '' and ${users.supabaseId} = ${supabaseId})
+        or (${email} <> '' and ${users.email} = ${email})
+      `)
+      .limit(1);
+
+    if (conflictedUser) {
+      const [updated] = await db.update(users)
+        .set({
+          supabaseId: conflictedUser.supabaseId || supabaseId || null,
+          email: conflictedUser.email || email || null,
+          fullName: conflictedUser.fullName || fullName || username,
+          avatarUrl: conflictedUser.avatarUrl,
+          isOnline: true,
+          lastSeen: new Date(),
+        })
+        .where(eq(users.id, conflictedUser.id))
+        .returning();
+
+      return updated;
+    }
+
+    const fallbackUsername = await getUniqueUsername(`${baseUsername}.${Date.now()}`);
+    const [createdWithFallback] = await db.insert(users)
+      .values({ ...insertValues, username: fallbackUsername })
+      .returning();
+
+    return createdWithFallback;
+  }
 }
 
 async function ensureChatUserFromSupabaseId(supabaseId: string) {
