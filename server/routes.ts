@@ -2310,6 +2310,10 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
         avatarUrl: req.body.avatarUrl,
       };
 
+      if (!requestedProfile.supabaseId && !requestedProfile.email) {
+        return res.status(400).json({ message: "Supabase user id or email is required" });
+      }
+
       const user = requestedProfile.supabaseId && !requestedProfile.email
         ? await ensureChatUserFromSupabaseId(requestedProfile.supabaseId)
         : await ensureChatUser(requestedProfile);
