@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -16,6 +16,7 @@ import {
 import { SavedAiFilesLibrary } from "@/components/saved-ai/SavedAiFilesLibrary";
 import type { SavedAiFile } from "@/lib/saved-ai-files";
 import { useToast } from "@/hooks/use-toast";
+import { consumeClaimValidatorHandoff } from "@/lib/claim-validator-handoff";
 
 type NcciType = "practitioner" | "outpatient";
 type CoverageStatus = "covered" | "noncovered" | "mixed" | "not_found";
@@ -232,6 +233,17 @@ function formatClaimValidationReport(result: ClaimValidationResult, generatedAt?
   return lines.join("\n");
 }
 
+function isClaimValidationResult(value: unknown): value is ClaimValidationResult {
+  const candidate = value as ClaimValidationResult | null;
+  return Boolean(
+    candidate &&
+      Array.isArray(candidate.diagnosisCodes) &&
+      Array.isArray(candidate.procedureCodes) &&
+      candidate.summary &&
+      typeof candidate.summary === "object",
+  );
+}
+
 function CodePill({ code, tone = "procedure" }: { code: string; tone?: "procedure" | "diagnosis" }) {
   const styles = tone === "procedure"
     ? { color: "#15803D", bg: "#F0FDF4" }
@@ -301,6 +313,7 @@ export function ClaimValidator() {
   const [ncciType, setNcciType] = useState<NcciType>("practitioner");
   const [result, setResult] = useState<ClaimValidationResult | null>(null);
   const [resultGeneratedAt, setResultGeneratedAt] = useState<string | null>(null);
+  const [handoffSourceLabel, setHandoffSourceLabel] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -341,6 +354,25 @@ export function ClaimValidator() {
     };
   }, [reportText, result, resultGeneratedAt]);
 
+  useEffect(() => {
+    const handoff = consumeClaimValidatorHandoff();
+    if (!handoff) return;
+
+    const handoffResult = isClaimValidationResult(handoff.result) ? handoff.result : null;
+
+    setDiagnosisInput(handoff.diagnosisCodes.join(" "));
+    setProcedureInput(handoff.procedureCodes.join(" "));
+    setNcciType(handoff.ncciType);
+    setResult(handoffResult);
+    setResultGeneratedAt(handoffResult ? handoff.createdAt : null);
+    setHandoffSourceLabel(handoff.sourceLabel);
+    setError("");
+    toast({
+      title: "Claim codes loaded",
+      description: `${handoff.sourceLabel} sent this code set to Claim Validator.`,
+    });
+  }, [toast]);
+
   const validate = async () => {
     if (!canValidate) return;
     setLoading(true);
@@ -364,6 +396,7 @@ export function ClaimValidator() {
       else {
         setResult(data);
         setResultGeneratedAt(new Date().toISOString());
+        setHandoffSourceLabel("");
       }
     } catch {
       setError("Network error. Please try again.");
@@ -377,6 +410,7 @@ export function ClaimValidator() {
     setProcedureInput("");
     setResult(null);
     setResultGeneratedAt(null);
+    setHandoffSourceLabel("");
     setError("");
   };
 
@@ -385,6 +419,7 @@ export function ClaimValidator() {
     setProcedureInput(EXAMPLE.procedureCodes);
     setResult(null);
     setResultGeneratedAt(null);
+    setHandoffSourceLabel("");
     setError("");
   };
 
@@ -437,6 +472,7 @@ export function ClaimValidator() {
     setNcciType(savedNcciType);
     setResult(savedResult || null);
     setResultGeneratedAt(typeof structuredData.generatedAt === "string" ? structuredData.generatedAt : file.createdAt || new Date().toISOString());
+    setHandoffSourceLabel("");
     setError("");
     toast({ title: "Loaded", description: "Saved claim validation restored to the form." });
   };
@@ -541,6 +577,22 @@ export function ClaimValidator() {
             </aside>
           </div>
         </section>
+
+        {handoffSourceLabel && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--co-line)] bg-[rgba(55,208,198,0.10)] p-4 text-sm font-bold text-[var(--co-ink)]"
+          >
+            <span className="flex items-center gap-2">
+              <ClipboardCheck size={18} className="text-[var(--co-cyan)]" />
+              Loaded from {handoffSourceLabel}. Review the imported codes or rerun validation.
+            </span>
+            <button className="co-btn co-btn-ghost !min-h-9 !px-4 text-xs" onClick={() => setHandoffSourceLabel("")} type="button">
+              Dismiss
+            </button>
+          </motion.div>
+        )}
 
         {error && (
           <motion.div

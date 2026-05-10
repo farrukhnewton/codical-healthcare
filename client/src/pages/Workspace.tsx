@@ -1,13 +1,15 @@
 import { useMemo, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Upload, FileText, Sparkles, Copy, Check, Download,
+  Upload, FileText, Sparkles, Copy, Check, ClipboardCheck, Download,
   AlertCircle, ChevronDown, ChevronUp, Zap, Brain,
   Hash, Activity, Pill, MapPin, DollarSign, BookOpen, X,
   Building2, ChevronRight
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { SavedAiFilesLibrary } from "@/components/saved-ai/SavedAiFilesLibrary";
+import { writeClaimValidatorHandoff } from "@/lib/claim-validator-handoff";
 
 interface CodeResult {
   code: string; description: string; units?: number;
@@ -89,6 +91,7 @@ interface AnalysisResult {
   disclaimer: string;
   coverage_validation?: CoverageValidationResult;
   ncci_validation?: NcciValidationResult;
+  claim_validation?: unknown | null;
 }
 
 function CopyBtn({ text }: { text: string }) {
@@ -202,7 +205,12 @@ function formatCodingReport(result: AnalysisResult) {
   return lines.join("\n");
 }
 
+function getCodeValues(codes?: CodeResult[]) {
+  return (codes || []).map((code) => code.code).filter(Boolean);
+}
+
 export function Workspace() {
+  const [, setLocation] = useLocation();
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -244,6 +252,20 @@ export function Workspace() {
       },
     };
   }, [result, selectedPayer, selectedPayerId, text]);
+
+  const claimValidatorCodeSet = useMemo(() => {
+    if (!result) return { diagnosisCodes: [], procedureCodes: [] };
+
+    return {
+      diagnosisCodes: getCodeValues(result.icd10_codes),
+      procedureCodes: [
+        ...getCodeValues(result.cpt_codes),
+        ...getCodeValues(result.hcpcs_codes),
+      ],
+    };
+  }, [result]);
+
+  const canOpenClaimValidator = claimValidatorCodeSet.diagnosisCodes.length > 0 || claimValidatorCodeSet.procedureCodes.length > 0;
 
   const LOADING_MSGS = [
     "Reading clinical document...",
@@ -338,6 +360,21 @@ export function Workspace() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = "coding-report.txt"; a.click();
+  };
+
+  const openClaimValidator = () => {
+    if (!result || !canOpenClaimValidator) return;
+
+    const written = writeClaimValidatorHandoff({
+      source: "workspace",
+      sourceLabel: "AI Coder",
+      diagnosisCodes: claimValidatorCodeSet.diagnosisCodes,
+      procedureCodes: claimValidatorCodeSet.procedureCodes,
+      ncciType: "practitioner",
+      result: result.claim_validation || null,
+    });
+
+    if (written) setLocation("/claim-validator");
   };
 
   return (
@@ -598,10 +635,18 @@ FINDINGS: Distended, inflamed gallbladder with multiple stones..."
                 </div>
                 <div style={{ fontSize: "14px", color: "rgba(255,255,255,0.9)", lineHeight: 1.5 }}>{result.summary}</div>
               </div>
-              <button onClick={exportCodes}
-                style={{ padding: "8px 16px", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "10px", color: "white", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-                <Download size={14} /> Export
-              </button>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {canOpenClaimValidator && (
+                  <button onClick={openClaimValidator}
+                    style={{ padding: "8px 16px", background: "rgba(55,208,198,0.20)", border: "1px solid rgba(125,211,252,0.38)", borderRadius: "10px", color: "white", fontSize: "13px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+                    <ClipboardCheck size={14} /> Claim Validator
+                  </button>
+                )}
+                <button onClick={exportCodes}
+                  style={{ padding: "8px 16px", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "10px", color: "white", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+                  <Download size={14} /> Export
+                </button>
+              </div>
             </div>
 
             {/* Quick stats */}

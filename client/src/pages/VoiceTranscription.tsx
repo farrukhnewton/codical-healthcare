@@ -4,6 +4,7 @@ import {
   AlertCircle,
   Calendar,
   CheckCircle,
+  ClipboardCheck,
   ClipboardList,
   Copy,
   FileAudio,
@@ -25,8 +26,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Separator } from "@/components/ui/separator";
 import { SavedAiFilesLibrary } from "@/components/saved-ai/SavedAiFilesLibrary";
 import { useToast } from "@/hooks/use-toast";
+import { writeClaimValidatorHandoff } from "@/lib/claim-validator-handoff";
 import { apiUrl } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 interface StructuredMedicalRecord {
   patientName: string;
@@ -127,6 +130,7 @@ interface TranscriptionResult {
   codingSuggestions?: TranscriptionCodingSuggestions;
   coverageValidation?: CoverageValidationResult | null;
   ncciValidation?: NcciValidationResult | null;
+  claimValidation?: unknown | null;
   createdAt: string | null;
 }
 
@@ -255,8 +259,13 @@ function getTranscriptionFileName(result: TranscriptionResult, fileName?: string
     .join(" - ");
 }
 
+function getSuggestionCodes(codes?: CodingSuggestion[]) {
+  return (codes || []).map((code) => code.code).filter(Boolean);
+}
+
 export function VoiceTranscription() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [result, setResult] = useState<TranscriptionResult | null>(null);
@@ -350,6 +359,20 @@ export function VoiceTranscription() {
     ].filter((section) => section.codes.length > 0);
   }, [result]);
 
+  const claimValidatorCodeSet = useMemo(() => {
+    if (!result?.codingSuggestions) return { diagnosisCodes: [], procedureCodes: [] };
+
+    return {
+      diagnosisCodes: getSuggestionCodes(result.codingSuggestions.icd10_codes),
+      procedureCodes: [
+        ...getSuggestionCodes(result.codingSuggestions.cpt_codes),
+        ...getSuggestionCodes(result.codingSuggestions.hcpcs_codes),
+      ],
+    };
+  }, [result]);
+
+  const canOpenClaimValidator = claimValidatorCodeSet.diagnosisCodes.length > 0 || claimValidatorCodeSet.procedureCodes.length > 0;
+
   const currentSavedFile = useMemo(() => {
     if (!result) return null;
 
@@ -366,6 +389,7 @@ export function VoiceTranscription() {
         codingSuggestions: result.codingSuggestions || null,
         coverageValidation: result.coverageValidation || null,
         ncciValidation: result.ncciValidation || null,
+        claimValidation: result.claimValidation || null,
         sourceAudioFileName: selectedFile?.name || null,
       },
     };
@@ -424,6 +448,21 @@ export function VoiceTranscription() {
       title: "Copied",
       description: "Structured medical record copied to clipboard.",
     });
+  };
+
+  const openClaimValidator = () => {
+    if (!result || !canOpenClaimValidator) return;
+
+    const written = writeClaimValidatorHandoff({
+      source: "transcription",
+      sourceLabel: "AI Transcription",
+      diagnosisCodes: claimValidatorCodeSet.diagnosisCodes,
+      procedureCodes: claimValidatorCodeSet.procedureCodes,
+      ncciType: "practitioner",
+      result: result.claimValidation || null,
+    });
+
+    if (written) setLocation("/claim-validator");
   };
 
   const handleNewTranscription = () => {
@@ -782,6 +821,12 @@ export function VoiceTranscription() {
             </Collapsible>
           </CardContent>
           <CardFooter className="flex flex-col gap-3 border-t border-border bg-background/40 p-4 sm:flex-row sm:justify-end">
+            {canOpenClaimValidator && (
+              <Button type="button" variant="outline" onClick={openClaimValidator} className="w-full sm:w-auto">
+                <ClipboardCheck data-icon="inline-start" />
+                Claim Validator
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={handleCopy} className="w-full sm:w-auto">
               <Copy data-icon="inline-start" />
               Copy to Clipboard
