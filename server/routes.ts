@@ -16,6 +16,7 @@ import PDFDocument from "pdfkit";
 import {
   enrichCodeFromNlm, searchNlmCodes
 } from "./cms-service";
+import { validateClaimCodeSet } from "./claim-validation-service";
 import { getIcd10CodeNotes } from "./icd10-notes-service";
 import { checkNcciBatchEdits, checkNcciEdit } from "./ncci-service";
 import {
@@ -763,8 +764,6 @@ export async function registerRoutes(
           });
         }
 
-        let coverageValidation = null;
-        let ncciValidation = null;
         const diagnosisCodes = readCoverageCodeList(
           Array.isArray(result.codingSuggestions?.icd10_codes)
             ? result.codingSuggestions.icd10_codes.map((code: any) => code?.code)
@@ -778,21 +777,14 @@ export async function registerRoutes(
             ? result.codingSuggestions.hcpcs_codes.map((code: any) => code?.code)
             : [],
         );
-
-        if (diagnosisCodes.length > 0 && procedureCodes.length > 0) {
-          try {
-            coverageValidation = await getMcdBatchPairEvidence({ diagnosisCodes, procedureCodes, limit: 8 });
-          } catch (coverageError: any) {
-            console.warn("Voice transcription MCD coverage validation failed:", coverageError?.message || coverageError);
-          }
-        }
-        if (procedureCodes.length > 1) {
-          try {
-            ncciValidation = await checkNcciBatchEdits(procedureCodes, "practitioner");
-          } catch (ncciError: any) {
-            console.warn("Voice transcription NCCI validation failed:", ncciError?.message || ncciError);
-          }
-        }
+        const claimValidation = diagnosisCodes.length > 0 || procedureCodes.length > 0
+          ? await validateClaimCodeSet({
+              diagnosisCodes,
+              procedureCodes,
+              ncciType: "practitioner",
+              coverageLimit: 8,
+            })
+          : null;
 
         const [saved] = await db
           .insert(voiceTranscriptions)
@@ -829,8 +821,9 @@ export async function registerRoutes(
             followupDate: result.structured.followupDate,
           },
           codingSuggestions: result.codingSuggestions,
-          coverageValidation,
-          ncciValidation,
+          coverageValidation: claimValidation?.coverageValidation || null,
+          ncciValidation: claimValidation?.ncciValidation || null,
+          claimValidation,
           createdAt: saved.createdAt,
         });
 
@@ -1147,6 +1140,24 @@ export async function registerRoutes(
   });
 
   // â”€â”€â”€ CMS Coverage â€” NCD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Claim code set validation
+  app.post("/api/claim/validate", async (req, res) => {
+    try {
+      const body = (req.body || {}) as Record<string, unknown>;
+      const diagnosisCodes = readCoverageCodeList(body.diagnosisCodes, body.icdCodes, body.icd10Codes);
+      const procedureCodes = readCoverageCodeList(body.procedureCodes, body.cptCodes, body.hcpcsCodes);
+
+      return res.json(await validateClaimCodeSet({
+        diagnosisCodes,
+        procedureCodes,
+        ncciType: body.ncciType || body.type,
+        coverageLimit: body.coverageLimit || body.limit,
+      }));
+    } catch (error: any) {
+      res.status(error?.statusCode || 500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/coverage/ncd", async (req, res) => {
     try {
       const search = (req.query.search as string) || "";
@@ -2192,20 +2203,16 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
         Array.isArray(result.cpt_codes) ? result.cpt_codes.map((code: any) => code?.code) : [],
         Array.isArray(result.hcpcs_codes) ? result.hcpcs_codes.map((code: any) => code?.code) : [],
       );
-      if (diagnosisCodes.length > 0 && procedureCodes.length > 0) {
-        try {
-          const coverageValidation = await getMcdBatchPairEvidence({ diagnosisCodes, procedureCodes, limit: 8 });
-          if (coverageValidation) result.coverage_validation = coverageValidation;
-        } catch (coverageError: any) {
-          console.warn("Workspace MCD coverage validation failed:", coverageError?.message || coverageError);
-        }
-      }
-      if (procedureCodes.length > 1) {
-        try {
-          result.ncci_validation = await checkNcciBatchEdits(procedureCodes, "practitioner");
-        } catch (ncciError: any) {
-          console.warn("Workspace NCCI validation failed:", ncciError?.message || ncciError);
-        }
+      if (diagnosisCodes.length > 0 || procedureCodes.length > 0) {
+        const claimValidation = await validateClaimCodeSet({
+          diagnosisCodes,
+          procedureCodes,
+          ncciType: "practitioner",
+          coverageLimit: 8,
+        });
+        if (claimValidation.coverageValidation) result.coverage_validation = claimValidation.coverageValidation;
+        if (claimValidation.ncciValidation) result.ncci_validation = claimValidation.ncciValidation;
+        result.claim_validation = claimValidation;
       }
       res.json({ success: true, result });
     } catch (error: any) { res.status(500).json({ message: error.message }); }

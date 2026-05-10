@@ -121,6 +121,7 @@ First slice:
 - Code Intel displays covered and non-covered ICD-10 counts plus capped sample diagnosis codes for the matched group.
 - `/api/coverage/pair/check?code=29877&icd=M17.0` performs an on-demand pair check and returns covered, non-covered, mixed, or not-found evidence.
 - `/api/coverage/pair/batch` validates multiple ICD-to-procedure pairs for AI workflows and Coverage Hub.
+- `/api/claim/validate` returns a unified claim code-set validation payload with CMS coverage evidence, NCCI edit results, warnings, and summary counts.
 - AI OP Report Coding and AI Transcription attach `coverage_validation` / `coverageValidation` payloads when suggested CPT/HCPCS and ICD-10 codes are available.
 - Coverage Hub includes an interactive ICD-to-procedure evidence checker backed by the batch endpoint.
 - Product language should remain "coverage-derived intelligence"; this is not an official CMS crosswalk.
