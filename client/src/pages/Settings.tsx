@@ -1,19 +1,17 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { User, Mail, Shield, Moon, Sun, LogOut, Bell, Palette } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bell, Lock, LogOut, Mail, Moon, Palette, Shield, Sun, User } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useTheme } from "@/lib/theme";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient } from "@/lib/queryClient";
 
-
 export function Settings() {
   const [email, setEmail] = useState("");
   const { theme, toggle } = useTheme();
   const { toast } = useToast();
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -23,110 +21,114 @@ export function Settings() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    toast({ title: "Signed out", description: "See you next time!" });
+    toast({ title: "Signed out", description: "Session closed securely." });
   };
 
   const toggleAdminMode = async () => {
     if (!user) return;
-    const newRole = isAdmin ? 'coder' : 'admin';
+    const newRole = isAdmin ? "coder" : "admin";
     try {
       const res = await fetch("/api/user/role", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, role: newRole })
+        body: JSON.stringify({ userId: user.id, role: newRole }),
       });
-      
+
       if (!res.ok) throw new Error("Failed to update role");
-      
+
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      toast({ 
-        title: isAdmin ? "Admin Mode Disabled" : "Admin Mode Enabled", 
-        description: isAdmin ? "Compliance features hidden." : "Access to Compliance and Audit logs unlocked." 
+      toast({
+        title: isAdmin ? "Admin mode disabled" : "Admin mode enabled",
+        description: isAdmin ? "Compliance features hidden." : "Compliance and audit access enabled.",
       });
-      // Force refresh for simplicity in this demo environment
-      setTimeout(() => window.location.reload(), 1000);
-    } catch (err) {
-      toast({ title: "Error", description: "Could not toggle admin mode", variant: "destructive" });
+      window.setTimeout(() => window.location.reload(), 1000);
+    } catch {
+      toast({ title: "Error", description: "Could not update access mode.", variant: "destructive" });
     }
   };
 
+  const displayName = email ? email.split("@")[0] : "Codical user";
+  const initials = email ? email.slice(0, 2).toUpperCase() : "CH";
+
   return (
-    <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-black text-gray-900 mb-1">Settings</h1>
-        <p className="text-sm text-gray-500">Manage your account and preferences</p>
-      </motion.div>
-
-      {/* Profile */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-        className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)" }}>
-        <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><User className="w-4 h-4 text-emerald-500" /> Profile</h2>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: "linear-gradient(135deg, #15803D, #0369A1)" }}>
-              {email ? email.slice(0, 2).toUpperCase() : "CH"}
-            </div>
-            <div>
-              <p className="font-bold text-gray-900">{email ? email.split("@")[0] : "User"}</p>
-              <p className="text-sm text-gray-500 flex items-center gap-1"><Mail className="w-3 h-3" /> {email}</p>
-            </div>
-          </div>
+    <div className="tool-page secondary-page settings-page">
+      <section className="tool-panel tool-page-header">
+        <div>
+          <h1>Settings</h1>
+          <p>Manage account access, preferences, and workspace security.</p>
         </div>
-      </motion.div>
+        <div className="search-header-meta">
+          <span>{isAdmin ? "Admin access" : "Coder access"}</span>
+          <span>{theme === "dark" ? "Dark theme" : "Light theme"}</span>
+        </div>
+      </section>
 
-      {/* Appearance */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-        className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)" }}>
-        <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><Palette className="w-4 h-4 text-emerald-500" /> Appearance</h2>
-        <div className="flex items-center justify-between">
+      <section className="settings-layout">
+        <div className="tool-panel settings-profile-panel">
+          <div className="settings-avatar">{initials}</div>
           <div>
-            <p className="font-semibold text-gray-900 text-sm">Dark Mode</p>
-            <p className="text-xs text-gray-500 mt-0.5">Toggle between light and dark theme</p>
+            <h2>Profile</h2>
+            <strong>{displayName}</strong>
+            <span>
+              <Mail size={14} />
+              {email || "Email loading"}
+            </span>
           </div>
-          <button onClick={toggle} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all" style={{ background: theme === "dark" ? "rgba(74,222,128,0.15)" : "rgba(0,0,0,0.05)" }}>
-            {theme === "dark" ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-gray-600" />}
-            {theme === "dark" ? "Light Mode" : "Dark Mode"}
-          </button>
         </div>
-      </motion.div>
 
-      {/* Security */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-        className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)" }}>
-        <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-500" /> Administrative Access</h2>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <p className="font-semibold text-gray-900 text-sm">Developer Admin Mode</p>
-              <p className="text-xs text-gray-500">Toggle Compliance and Audit features</p>
-            </div>
-            <button 
-              onClick={toggleAdminMode}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                isAdmin 
-                  ? "bg-emerald-100 text-emerald-700 border border-emerald-200" 
-                  : "bg-gray-100 text-gray-700 border border-gray-200"
-              }`}
-            >
+        <div className="tool-panel settings-card">
+          <div className="settings-card-head">
+            <span><Palette size={17} /> Appearance</span>
+            <button type="button" onClick={toggle} className="tool-secondary-button">
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+              {theme === "dark" ? "Light Mode" : "Dark Mode"}
+            </button>
+          </div>
+          <p>Switch the authenticated workspace between light and dark theme.</p>
+        </div>
+
+        <div className="tool-panel settings-card">
+          <div className="settings-card-head">
+            <span><Shield size={17} /> Administrative Access</span>
+            <button type="button" onClick={toggleAdminMode} className={isAdmin ? "settings-mode-button is-active" : "settings-mode-button"}>
               {isAdmin ? "Admin Enabled" : "Enable Admin"}
             </button>
           </div>
-          <div className="border-t border-gray-100 pt-3">
-            <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors">
-              <LogOut className="w-4 h-4" />
+          <p>Control access to compliance and audit workflows for this account.</p>
+        </div>
+
+        <div className="tool-panel settings-card">
+          <div className="settings-card-head">
+            <span><Bell size={17} /> Notifications</span>
+            <span className="secondary-status-pill" data-tone="info">Configured</span>
+          </div>
+          <p>Account, collaboration, and report notifications use the workspace defaults.</p>
+        </div>
+
+        <div className="tool-panel settings-card">
+          <div className="settings-card-head">
+            <span><Lock size={17} /> Security</span>
+            <span className="secondary-status-pill" data-tone="success">HIPAA Ready</span>
+          </div>
+          <p>Session controls, audit logging, and encrypted transport remain active.</p>
+        </div>
+
+        <div className="tool-panel settings-card settings-danger-card">
+          <div className="settings-card-head">
+            <span><User size={17} /> Session</span>
+            <button type="button" onClick={handleLogout} className="settings-signout-button">
+              <LogOut size={16} />
               Sign Out
             </button>
           </div>
+          <p>Sign out when you are finished using this workstation.</p>
         </div>
-      </motion.div>
+      </section>
 
-      {/* App Info */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="text-center text-xs text-gray-400 pt-4 space-y-1">
-        <p className="font-semibold">Codical Health v2.0</p>
-        <p>Healthcare Intelligence Platform</p>
-        <p>CY 2026 Data · FY 2026 ICD-10-CM · HIPAA Compliant</p>
-      </motion.div>
+      <div className="tool-callout compact" data-tone="info">
+        <Shield size={15} />
+        Codical Health v2.0 | CY 2026 data | FY 2026 ICD-10-CM | HIPAA compliant workspace.
+      </div>
     </div>
   );
 }

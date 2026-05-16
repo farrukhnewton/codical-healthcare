@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -132,7 +132,7 @@ function coverageStatusMeta(status: CoverageStatus) {
   if (status === "covered") return { label: "Covered", color: "#15803D", bg: "#F0FDF4", border: "#BBF7D0" };
   if (status === "noncovered") return { label: "Noncovered", color: "#B91C1C", bg: "#FEF2F2", border: "#FECACA" };
   if (status === "mixed") return { label: "Mixed", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" };
-  return { label: "No MCD evidence", color: "#475569", bg: "#F8FAFC", border: "#CBD5E1" };
+  return { label: "No coverage evidence", color: "#475569", bg: "#F8FAFC", border: "#CBD5E1" };
 }
 
 function ncciStatusMeta(pair: NcciValidationPair) {
@@ -191,7 +191,7 @@ function formatClaimValidationReport(result: ClaimValidationResult, generatedAt?
       `Covered: ${coverage.counts.covered}`,
       `Noncovered: ${coverage.counts.noncovered}`,
       `Mixed: ${coverage.counts.mixed}`,
-      `No MCD evidence: ${coverage.counts.notFound}`,
+      `No coverage evidence: ${coverage.counts.notFound}`,
       `Evidence rows: ${coverage.counts.evidence}`,
     );
 
@@ -245,15 +245,8 @@ function isClaimValidationResult(value: unknown): value is ClaimValidationResult
 }
 
 function CodePill({ code, tone = "procedure" }: { code: string; tone?: "procedure" | "diagnosis" }) {
-  const styles = tone === "procedure"
-    ? { color: "#15803D", bg: "#F0FDF4" }
-    : { color: "#0369A1", bg: "#EFF6FF" };
-
   return (
-    <span
-      className="inline-flex min-h-7 items-center rounded-md px-2.5 text-xs font-black"
-      style={{ color: styles.color, background: styles.bg, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
-    >
+    <span className="tool-code-chip" data-type={tone === "procedure" ? "CPT" : "ICD"}>
       {code}
     </span>
   );
@@ -272,9 +265,9 @@ function StatusBadge({ label, color, bg, border }: { label: string; color: strin
 
 function StatTile({ label, value, color, bg }: { label: string; value: number | string; color: string; bg: string }) {
   return (
-    <div className="rounded-lg border border-[rgba(15,23,42,0.08)] p-3" style={{ background: bg }}>
-      <div className="text-xl font-black leading-none" style={{ color }}>{value}</div>
-      <div className="mt-1 text-[10px] font-black uppercase" style={{ color }}>{label}</div>
+    <div className="tool-metric-card claim-stat-tile" style={{ background: bg }}>
+      <strong style={{ color }}>{value}</strong>
+      <span style={{ color }}>{label}</span>
     </div>
   );
 }
@@ -288,20 +281,20 @@ function SectionHeader({
   icon: typeof ClipboardCheck;
   title: string;
   detail: string;
-  actions?: React.ReactNode;
+  actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--co-line)] bg-white/10 text-[var(--co-cyan)]">
+    <div className="tool-section-head claim-section-head">
+      <div className="claim-section-title">
+        <div className="claim-section-icon">
           <Icon size={18} />
         </div>
         <div>
-          <h2 className="text-base font-black text-[var(--co-ink)]">{title}</h2>
-          <p className="mt-1 text-xs leading-5 text-[var(--co-muted)]">{detail}</p>
+          <h2>{title}</h2>
+          <p>{detail}</p>
         </div>
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {actions && <div className="claim-section-actions">{actions}</div>}
     </div>
   );
 }
@@ -478,64 +471,56 @@ export function ClaimValidator() {
   };
 
   return (
-    <div className="co-dashboard">
-      <div className="co-dashboard-grid">
-        <section className="co-dashboard-card">
+    <div className="tool-page validation-tool-page claim-validator-page">
+      <div className="claim-validator-grid">
+        <section className="tool-panel tool-page-header claim-validator-header">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="max-w-3xl">
-              <div className="co-eyebrow">
-                <span className="co-live-dot" /> Claim validation
-              </div>
-              <h1 className="co-heading mt-3 text-3xl font-black text-[var(--co-ink)] sm:text-4xl">
+              <h1>
                 Coverage and NCCI review for a claim code set
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--co-muted)]">
+              <p>
                 Validate diagnosis and procedure combinations against CMS coverage evidence and NCCI edits in one pass.
               </p>
             </div>
-            <button className="co-btn co-btn-ghost" onClick={loadExample} type="button">
+            <button className="tool-secondary-button" onClick={loadExample} type="button">
               <FileText size={16} /> Load example
             </button>
           </div>
         </section>
 
-        <section className="co-dashboard-card">
+        <section className="tool-panel validation-input-panel claim-entry-panel">
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2">
-                <span className="text-xs font-black uppercase text-[var(--co-muted)]">Diagnosis codes</span>
+              <label className="tool-field">
+                <span>Diagnosis codes</span>
                 <textarea
                   value={diagnosisInput}
                   onChange={(event) => setDiagnosisInput(event.target.value.toUpperCase())}
                   placeholder="M17.0 E11.9"
-                  className="min-h-32 w-full resize-y rounded-lg border border-[var(--co-line)] bg-white/10 p-4 font-mono text-base font-black text-[var(--co-ink)] outline-none transition focus:border-[var(--co-cyan)]"
+                  className="tool-textarea tool-code-textarea"
                 />
               </label>
 
-              <label className="grid gap-2">
-                <span className="text-xs font-black uppercase text-[var(--co-muted)]">Procedure codes</span>
+              <label className="tool-field">
+                <span>Procedure codes</span>
                 <textarea
                   value={procedureInput}
                   onChange={(event) => setProcedureInput(event.target.value.toUpperCase())}
                   placeholder="29877 99214 99213"
-                  className="min-h-32 w-full resize-y rounded-lg border border-[var(--co-line)] bg-white/10 p-4 font-mono text-base font-black text-[var(--co-ink)] outline-none transition focus:border-[var(--co-cyan)]"
+                  className="tool-textarea tool-code-textarea"
                 />
               </label>
             </div>
 
-            <aside className="grid content-start gap-4">
+            <aside className="claim-control-panel">
               <div>
-                <div className="mb-2 text-xs font-black uppercase text-[var(--co-muted)]">NCCI type</div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="claim-control-label">NCCI type</div>
+                <div className="tool-segmented-control claim-type-toggle">
                   {(["practitioner", "outpatient"] as const).map((type) => (
                     <button
                       key={type}
-                      className={
-                        "min-h-11 rounded-lg border px-3 text-sm font-black capitalize transition " +
-                        (ncciType === type
-                          ? "border-[var(--co-cyan)] bg-[rgba(55,208,198,0.12)] text-[var(--co-ink)]"
-                          : "border-[var(--co-line)] bg-white/5 text-[var(--co-muted)] hover:text-[var(--co-ink)]")
-                      }
+                      className={ncciType === type ? "is-active" : ""}
                       onClick={() => setNcciType(type)}
                       type="button"
                     >
@@ -552,24 +537,24 @@ export function ClaimValidator() {
                 <StatTile label="NCCI pairs" value={ncciPairCount} color="#7C3AED" bg="#F5F3FF" />
               </div>
 
-              <div className="flex gap-2">
+              <div className="tool-action-row">
                 <motion.button
                   whileHover={{ scale: canValidate ? 1.01 : 1 }}
                   whileTap={{ scale: canValidate ? 0.99 : 1 }}
                   onClick={validate}
                   disabled={loading || !canValidate}
-                  className="co-btn co-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="tool-primary-button"
                   type="button"
                 >
                   {loading ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span className="tool-spinner" />
                   ) : (
                     <Search size={16} />
                   )}
                   {loading ? "Validating" : "Validate"}
                 </motion.button>
                 {(diagnosisInput || procedureInput || result) && (
-                  <button className="co-btn co-btn-ghost !px-4" onClick={reset} type="button" aria-label="Clear claim validator">
+                  <button className="tool-secondary-button icon-only" onClick={reset} type="button" aria-label="Clear claim validator">
                     <RotateCcw size={16} />
                   </button>
                 )}
@@ -582,13 +567,14 @@ export function ClaimValidator() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--co-line)] bg-[rgba(55,208,198,0.10)] p-4 text-sm font-bold text-[var(--co-ink)]"
+            className="tool-callout claim-handoff-callout"
+            data-tone="info"
           >
             <span className="flex items-center gap-2">
-              <ClipboardCheck size={18} className="text-[var(--co-cyan)]" />
+              <ClipboardCheck size={18} />
               Loaded from {handoffSourceLabel}. Review the imported codes or rerun validation.
             </span>
-            <button className="co-btn co-btn-ghost !min-h-9 !px-4 text-xs" onClick={() => setHandoffSourceLabel("")} type="button">
+            <button className="tool-secondary-button" onClick={() => setHandoffSourceLabel("")} type="button">
               Dismiss
             </button>
           </motion.div>
@@ -598,7 +584,8 @@ export function ClaimValidator() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700"
+            className="tool-callout"
+            data-tone="danger"
           >
             <AlertTriangle size={18} /> {error}
           </motion.div>
@@ -606,17 +593,17 @@ export function ClaimValidator() {
 
         {result && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="grid gap-5">
-            <section className="co-dashboard-card">
+            <section className="tool-panel claim-result-panel">
               <SectionHeader
                 icon={ClipboardCheck}
                 title="Validation Summary"
                 detail={`${result.summary.diagnosisCodeCount} diagnosis code(s), ${result.summary.procedureCodeCount} procedure code(s)`}
                 actions={
                   <>
-                    <button className="co-btn co-btn-ghost !min-h-10 !px-4 text-xs" onClick={copyReport} type="button">
+                    <button className="tool-secondary-button" onClick={copyReport} type="button">
                       <Copy size={15} /> Copy report
                     </button>
-                    <button className="co-btn co-btn-ghost !min-h-10 !px-4 text-xs" onClick={downloadReport} type="button">
+                    <button className="tool-secondary-button" onClick={downloadReport} type="button">
                       <Download size={15} /> TXT
                     </button>
                   </>
@@ -640,7 +627,7 @@ export function ClaimValidator() {
             </section>
 
             {result.coverageValidation && (
-              <section className="co-dashboard-card">
+              <section className="tool-panel claim-result-panel">
                 <SectionHeader
                   icon={Shield}
                   title="CMS Coverage Evidence"
@@ -676,7 +663,7 @@ export function ClaimValidator() {
                             {" group "}{pair.topEvidence.groupNumber} - {pair.topEvidence.title}
                           </div>
                         ) : (
-                          <div className="mt-3 text-sm text-[var(--co-muted)]">No matching MCD evidence returned for this pair.</div>
+                          <div className="mt-3 text-sm text-[var(--co-muted)]">No matching Medicare coverage evidence returned for this pair.</div>
                         )}
                       </div>
                     );
@@ -686,7 +673,7 @@ export function ClaimValidator() {
             )}
 
             {result.ncciValidation && (
-              <section className="co-dashboard-card">
+              <section className="tool-panel claim-result-panel">
                 <SectionHeader
                   icon={ShieldAlert}
                   title="NCCI Procedure Edits"
@@ -728,7 +715,7 @@ export function ClaimValidator() {
             )}
 
             {!result.coverageValidation && !result.ncciValidation && (
-              <section className="co-dashboard-card">
+              <section className="tool-panel claim-result-panel">
                 <div className="flex items-center gap-3 text-sm font-bold text-[var(--co-muted)]">
                   <CheckCircle2 size={18} /> Validation completed with no pair-based result sections.
                 </div>

@@ -1,323 +1,303 @@
-import { useEffect, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
-import { 
-  Plus, 
-  RefreshCcw, 
-  ClipboardList, 
-  ChevronRight, 
-  Search, 
-  Filter,
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import {
   Activity,
-  User,
   Calendar,
+  ChevronRight,
+  ClipboardList,
   Clock,
-  ExternalLink,
-  ShieldCheck
+  Filter,
+  Plus,
+  RefreshCcw,
+  Search,
+  ShieldCheck,
+  Users,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
+
+type Encounter = {
+  id: number;
+  mrn?: string | null;
+  patientName: string;
+  date: string;
+  type?: string | null;
+  status: string;
+};
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString();
+}
+
+function getInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function getStatusTone(status: string) {
+  if (status === "coded" || status === "finalized") return "success";
+  if (status === "pending") return "warning";
+  return "info";
+}
+
+function formatStatus(status: string) {
+  return status
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
 
 export function Workbench() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedEncounterId, setSelectedEncounterId] = useState<number | null>(null);
-
-  // Fetch Supabase session to get UID for API headers
   const [userId, setUserId] = useState<string | null>(null);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUserId(session?.user.id || null);
     });
   }, []);
 
-  const { data: encounters, isLoading, refetch } = useQuery({
-    queryKey: ["/api/workbench/encounters"],
+  const { data: encounters = [], isLoading, error, refetch } = useQuery<Encounter[]>({
+    queryKey: ["/api/workbench/encounters", userId],
     enabled: !!userId,
     queryFn: async () => {
       const res = await fetch("/api/workbench/encounters", {
-        headers: { "x-supabase-uid": userId! }
+        headers: { "x-supabase-uid": userId! },
       });
-      if (!res.ok) throw new Error("Failed to fetch encounters");
+      if (!res.ok) throw new Error("Failed to fetch encounters.");
       return res.json();
-    }
+    },
   });
 
   const syncMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/emr/drchrono/auth-url");
       const data = await res.json();
+      if (!res.ok || !data?.url) throw new Error(data?.message || "Could not start EMR sync.");
       window.location.href = data.url;
-    }
+    },
+    onError: (syncError: Error) => {
+      toast({ title: "Sync failed", description: syncError.message, variant: "destructive" });
+    },
   });
 
-  const filteredEncounters = encounters?.filter((e: any) => 
-    e.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.mrn?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEncounters = useMemo(() => {
+    const normalized = searchTerm.trim().toLowerCase();
+    if (!normalized) return encounters;
+
+    return encounters.filter((encounter) =>
+      encounter.patientName.toLowerCase().includes(normalized) ||
+      encounter.mrn?.toLowerCase().includes(normalized) ||
+      encounter.type?.toLowerCase().includes(normalized),
+    );
+  }, [encounters, searchTerm]);
+
+  const pendingCount = encounters.filter((encounter) => encounter.status === "pending").length;
+  const finalizedCount = encounters.filter((encounter) => encounter.status === "coded" || encounter.status === "finalized").length;
+  const queueHealth = pendingCount > finalizedCount ? "Review" : "Good";
+
+  const openEncounter = (encounterId: number) => {
+    setLocation(`/workspace?encounter=${encounterId}`);
+  };
 
   return (
-    <div className="flex flex-col gap-6 p-8">
-      <div className="flex items-center justify-between">
+    <div className="tool-page assistant-workspace-page workbench-page">
+      <section className="tool-panel tool-page-header workbench-hero">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 drop-shadow-sm flex items-center gap-3">
-            <ClipboardList className="h-8 w-8 text-primary" />
-            Coder Workbench
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your assigned patient encounters and clinical documentation.
-          </p>
+          <h1>Workbench</h1>
+          <p>Manage assigned patient encounters and coding workload.</p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            className="gap-2 bg-white/50 backdrop-blur-sm border-blue-100 hover:border-blue-200"
-            onClick={() => refetch()}
-          >
-            <RefreshCcw className="h-4 w-4" />
+        <div className="workbench-hero-actions">
+          <button type="button" onClick={() => refetch()} className="tool-secondary-button">
+            <RefreshCcw size={16} />
             Refresh
-          </Button>
-          <Button 
-            className="gap-2 shadow-lg shadow-primary/20"
-            onClick={() => syncMutation.mutate()}
-          >
-            <Plus className="h-4 w-4" />
-            Sync EMR (DrChrono)
-          </Button>
+          </button>
+          <button type="button" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} className="tool-primary-button">
+            {syncMutation.isPending ? <span className="tool-spinner" /> : <Plus size={16} />}
+            Sync EMR
+          </button>
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-emerald-50/50 border-emerald-100">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-emerald-900">Total Assigned</p>
-              <Activity className="h-4 w-4 text-emerald-600" />
-            </div>
-            <p className="text-2xl font-bold text-emerald-950 mt-1">{encounters?.length || 0}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-amber-50/50 border-amber-100">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-amber-900">Pending Code</p>
-              <Clock className="h-4 w-4 text-amber-600" />
-            </div>
-            <p className="text-2xl font-bold text-amber-950 mt-1">
-              {encounters?.filter((e: any) => e.status === 'pending').length || 0}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-blue-50/50 border-blue-100">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-blue-900">Coded / Finalized</p>
-              <ShieldCheck className="h-4 w-4 text-blue-600" />
-            </div>
-            <p className="text-2xl font-bold text-blue-950 mt-1">
-              {encounters?.filter((e: any) => e.status === 'coded').length || 0}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-50 border-slate-200">
-          <CardContent className="pt-6 text-center flex flex-col items-center justify-center">
-             <div className="flex gap-1 mb-2">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="w-2 h-4 rounded-sm bg-primary/20" />
-                ))}
-             </div>
-             <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Productivity Level</p>
-          </CardContent>
-        </Card>
-      </div>
+      <section className="workbench-metric-grid" aria-label="Workbench metrics">
+        <div className="tool-panel workbench-metric-card" data-tone="info">
+          <span><Users size={17} /> Total Assigned</span>
+          <strong>{encounters.length}</strong>
+          <small>All encounters</small>
+        </div>
+        <div className="tool-panel workbench-metric-card" data-tone="warning">
+          <span><Clock size={17} /> Pending Code</span>
+          <strong>{pendingCount}</strong>
+          <small>Awaiting review</small>
+        </div>
+        <div className="tool-panel workbench-metric-card" data-tone="success">
+          <span><ShieldCheck size={17} /> Finalized</span>
+          <strong>{finalizedCount}</strong>
+          <small>Ready for submission</small>
+        </div>
+        <div className="tool-panel workbench-metric-card" data-tone="neutral">
+          <span><Activity size={17} /> Queue Health</span>
+          <strong>{queueHealth}</strong>
+          <small>Updated live</small>
+        </div>
+      </section>
 
-      <Card className="border-slate-200 shadow-sm overflow-hidden">
-        <CardHeader className="bg-slate-50/50 border-b">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <CardTitle className="text-lg">Assignment Queue</CardTitle>
-            <div className="flex items-center gap-2 w-full md:w-72">
-              <div className="relative w-full">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  type="search" 
-                  placeholder="Search MRN or Patient..." 
-                  className="pl-9 bg-white"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
-            </div>
+      {error ? (
+        <div className="tool-callout" data-tone="danger">
+          <ClipboardList size={17} />
+          <span>{error instanceof Error ? error.message : "Could not load workbench encounters."}</span>
+        </div>
+      ) : null}
+
+      <section className="tool-panel workbench-queue-panel">
+        <div className="workbench-queue-head">
+          <div>
+            <h2>
+              <ClipboardList size={18} />
+              Assignment Queue
+            </h2>
+            <p>View and open assigned encounters for coding review.</p>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto">
-            <Table>
-            <TableHeader className="bg-slate-100/50">
-              <TableRow>
-                <TableHead className="w-[100px]">MRN</TableHead>
-                <TableHead>Patient Name</TableHead>
-                <TableHead>Service Date</TableHead>
-                <TableHead>Encounter Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [...Array(5)].map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><div className="h-4 w-12 bg-slate-100 rounded animate-pulse" /></TableCell>
-                    <TableCell><div className="h-4 w-32 bg-slate-100 rounded animate-pulse" /></TableCell>
-                    <TableCell><div className="h-4 w-24 bg-slate-100 rounded animate-pulse" /></TableCell>
-                    <TableCell><div className="h-4 w-24 bg-slate-100 rounded animate-pulse" /></TableCell>
-                    <TableCell><div className="h-4 w-16 bg-slate-100 rounded animate-pulse" /></TableCell>
-                    <TableCell className="text-right"><div className="h-4 w-8 bg-slate-100 rounded ml-auto animate-pulse" /></TableCell>
-                  </TableRow>
+          <div className="workbench-queue-tools">
+            <label className="tool-search-field">
+              <Search size={17} />
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search by patient, MRN, or type"
+              />
+            </label>
+            <button type="button" className="tool-icon-action" aria-label="Filter encounters">
+              <Filter size={17} />
+            </button>
+          </div>
+        </div>
+
+        <div className="workbench-table-wrap">
+          <table className="workbench-table">
+            <thead>
+              <tr>
+                <th>MRN</th>
+                <th>Patient</th>
+                <th>Service Date</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading || !userId ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <tr key={index}>
+                    <td><span className="workbench-skeleton short" /></td>
+                    <td><span className="workbench-skeleton" /></td>
+                    <td><span className="workbench-skeleton short" /></td>
+                    <td><span className="workbench-skeleton short" /></td>
+                    <td><span className="workbench-skeleton tiny" /></td>
+                    <td><span className="workbench-skeleton action" /></td>
+                  </tr>
                 ))
-              ) : filteredEncounters?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <div className="bg-slate-100 p-4 rounded-full">
-                         <ClipboardList className="h-8 w-8 text-slate-400" />
-                      </div>
-                      <p className="text-slate-500 font-medium">No active assignments found.</p>
-                      <p className="text-slate-400 text-sm">Sync with DrChrono to fetch new patient data.</p>
+              ) : filteredEncounters.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="tool-empty-state compact">
+                      <ClipboardList size={30} />
+                      <strong>No active assignments found</strong>
+                      <span>Sync EMR data or adjust the search filter.</span>
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ) : (
-                filteredEncounters?.map((e: any) => (
-                  <TableRow key={e.id} className="hover:bg-slate-50/80 group">
-                    <TableCell className="font-mono text-xs">{e.mrn || 'N/A'}</TableCell>
-                    <TableCell className="font-medium text-slate-900">
-                      <div className="flex items-center gap-2">
-                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                            {e.patientName.charAt(0)}
-                         </div>
-                         {e.patientName}
+                filteredEncounters.map((encounter) => (
+                  <tr key={encounter.id}>
+                    <td className="workbench-mrn">{encounter.mrn || "N/A"}</td>
+                    <td>
+                      <div className="workbench-patient">
+                        <span>{getInitials(encounter.patientName)}</span>
+                        <div>
+                          <strong>{encounter.patientName}</strong>
+                          <small>Encounter #{encounter.id}</small>
+                        </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {new Date(e.date).toLocaleDateString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">
-                        {e.type || 'Generic'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline" 
-                        className={
-                          e.status === 'pending' 
-                            ? "bg-amber-50 text-amber-700 border-amber-200" 
-                            : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        }
-                      >
-                        {e.status.charAt(0).toUpperCase() + e.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="group-hover:bg-white group-hover:shadow-sm" onClick={() => window.location.href = `/workspace?encounter=${e.id}`}>
+                    </td>
+                    <td>
+                      <span className="workbench-date">
+                        <Calendar size={14} />
+                        {formatDate(encounter.date)}
+                      </span>
+                    </td>
+                    <td>{encounter.type || "Generic"}</td>
+                    <td>
+                      <span className="workbench-status-pill" data-tone={getStatusTone(encounter.status)}>
+                        {formatStatus(encounter.status)}
+                      </span>
+                    </td>
+                    <td>
+                      <button type="button" onClick={() => openEncounter(encounter.id)} className="workbench-open-button">
                         Open Chart
-                        <ChevronRight className="h-4 w-4 ml-1 ml-1" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                        <ChevronRight size={15} />
+                      </button>
+                    </td>
+                  </tr>
                 ))
               )}
-            </TableBody>
-            </Table>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="flex flex-col md:hidden divide-y divide-slate-100">
-            {isLoading ? (
-               [...Array(3)].map((_, i) => (
-                  <div key={i} className="p-4 h-32 bg-slate-50 animate-pulse" />
-               ))
-            ) : filteredEncounters?.length === 0 ? (
-               <div className="p-12 text-center text-slate-400">
-                  <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                  <p className="text-sm">No assignments found.</p>
-               </div>
-            ) : (
-              filteredEncounters?.map((e: any) => (
-                <div key={e.id} className="p-4 flex flex-col gap-3 active:bg-slate-50 transition-colors" onClick={() => window.location.href = `/workspace?encounter=${e.id}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                        {e.patientName.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900">{e.patientName}</p>
-                        <p className="text-[10px] text-slate-500 font-mono tracking-tighter">MRN: {e.mrn || 'N/A'}</p>
-                      </div>
-                    </div>
-                    <Badge 
-                      variant="outline" 
-                      className={e.status === 'pending' ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}
-                    >
-                      {e.status}
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-[11px] text-slate-500">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(e.date).toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Activity className="h-3 w-3" />
-                        {e.type || 'Generic'}
-                      </div>
-                    </div>
-                    <div className="flex items-center text-primary font-bold gap-0.5">
-                      Open <ChevronRight className="h-3 w-3" />
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="mt-auto pt-8 border-t flex items-center justify-between text-xs text-muted-foreground">
-        <div className="flex items-center gap-4">
-           <div className="flex items-center gap-1.5">
-             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-             EMR Gateway: Online
-           </div>
-           <div className="flex items-center gap-1.5">
-             <ShieldCheck className="h-3.5 w-3.5" />
-             HIPAA Audit Enabled
-           </div>
+            </tbody>
+          </table>
         </div>
-        <p>© 2026 Codical Health - Practice Intelligence</p>
+
+        <div className="workbench-mobile-list">
+          {isLoading || !userId ? (
+            Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="workbench-mobile-card is-loading">
+                <span className="workbench-skeleton" />
+                <span className="workbench-skeleton short" />
+              </div>
+            ))
+          ) : filteredEncounters.length === 0 ? (
+            <div className="tool-empty-state compact">
+              <ClipboardList size={30} />
+              <strong>No active assignments found</strong>
+              <span>Sync EMR data or adjust the search filter.</span>
+            </div>
+          ) : (
+            filteredEncounters.map((encounter) => (
+              <button type="button" key={encounter.id} className="workbench-mobile-card" onClick={() => openEncounter(encounter.id)}>
+                <div>
+                  <span className="workbench-avatar">{getInitials(encounter.patientName)}</span>
+                  <div>
+                    <strong>{encounter.patientName}</strong>
+                    <small>MRN {encounter.mrn || "N/A"}</small>
+                  </div>
+                  <span className="workbench-status-pill" data-tone={getStatusTone(encounter.status)}>
+                    {formatStatus(encounter.status)}
+                  </span>
+                </div>
+                <div>
+                  <span><Calendar size={13} /> {formatDate(encounter.date)}</span>
+                  <span><Activity size={13} /> {encounter.type || "Generic"}</span>
+                  <strong>Open <ChevronRight size={13} /></strong>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </section>
+
+      <div className="tool-callout compact" data-tone="success">
+        <ShieldCheck size={15} />
+        HIPAA audit logging remains enabled across workbench actions.
       </div>
     </div>
   );

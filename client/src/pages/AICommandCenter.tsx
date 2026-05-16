@@ -34,7 +34,7 @@ export function AICommandCenter() {
       <div className="p-6 border-b bg-white/80 backdrop-blur">
         <h1 className="text-xl font-bold">Ask Codical</h1>
         <p className="text-sm text-gray-500">
-          AI-powered medical coding intelligence
+          Medical coding guidance for claim review workflows
         </p>
       </div>
 

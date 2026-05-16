@@ -734,7 +734,7 @@ async function tryMcdCoverageRows(
 
     return rows;
   } catch (error: any) {
-    console.warn("Cloudflare MCD lookup failed; falling back to CMS Coverage API:", error?.message || error);
+    console.warn("Coverage cache lookup failed; falling back to CMS Coverage API:", error?.message || error);
     return null;
   }
 }
@@ -743,7 +743,7 @@ async function tryMcdCoverageDocument(candidates: string[]) {
   try {
     return await getMcdCoverageDocument(candidates);
   } catch (error: any) {
-    console.warn("Cloudflare MCD document lookup failed; falling back to CMS Coverage API:", error?.message || error);
+    console.warn("Coverage cache document lookup failed; falling back to CMS Coverage API:", error?.message || error);
     return null;
   }
 }
@@ -1310,7 +1310,7 @@ export async function registerRoutes(
 
       const result = await getMcdIcdProcedurePairEvidence({ icdCode, procedureCode, limit });
       if (!result) {
-        return res.status(503).json({ message: "Cloudflare MCD coverage intelligence is not configured" });
+        return res.status(503).json({ message: "Medicare coverage evidence is temporarily unavailable." });
       }
 
       return res.json(result);
@@ -1332,7 +1332,7 @@ export async function registerRoutes(
 
       const result = await getMcdBatchPairEvidence({ diagnosisCodes, procedureCodes, limit });
       if (!result) {
-        return res.status(503).json({ message: "Cloudflare MCD coverage intelligence is not configured" });
+        return res.status(503).json({ message: "Medicare coverage evidence is temporarily unavailable." });
       }
 
       return res.json(result);
@@ -1926,7 +1926,7 @@ export async function registerRoutes(
     } catch (error: any) { res.status(500).json({ message: error.message }); }
   });
 
-  // Code Intelligence Hub - single endpoint for all code data
+  // Code details hub - single endpoint for all code data
   app.get("/api/intel/:code", async (req, res) => {
     try {
       const code = (req.params.code || "").toUpperCase().trim();
@@ -1969,14 +1969,14 @@ export async function registerRoutes(
           loadedCoverageFromMcd = true;
         }
       } catch (error: any) {
-        console.warn("Cloudflare MCD code lookup failed; falling back to CMS Coverage API:", error?.message || error);
+        console.warn("Coverage cache code lookup failed; falling back to CMS Coverage API:", error?.message || error);
       }
 
       if (loadedCoverageFromMcd) {
         try {
           results.coverageIntelligence = await getMcdCodeCoverageIntelligence(code, { limit: 8 });
         } catch (error: any) {
-          console.warn("Cloudflare MCD coverage intelligence lookup failed:", error?.message || error);
+          console.warn("Coverage cache lookup failed:", error?.message || error);
         }
       }
 
@@ -2111,8 +2111,8 @@ export async function registerRoutes(
           ? "Analyze the conversation and list clear next steps."
           : "Suggest a concise, professional reply the current user can send next.";
   
-        const prompt = `You are an AI assistant inside Codical Chat, a professional healthcare team chat. 
-  GUARDRAIL: You are designed to assist with medical coding, healthcare billing, and clinical documentation. 
+        const prompt = `You are an assistant inside Codical Health Team Chat, a professional healthcare team chat.
+  GUARDRAIL: You are designed to assist with medical coding, healthcare billing, and clinical documentation.
   If any provided document or conversation is entirely unrelated to these fields, politely state: "I am designed to assist with medical coding and healthcare billing. I cannot process this specific request as it appears to be unrelated to these professional fields."
   
   TASK: ${actionInstructions}
@@ -2236,7 +2236,7 @@ DOCUMENT:
 ${text.slice(0, 6000)}
 
 Respond ONLY with valid JSON (no markdown) in this exact format:
-{"summary":"brief summary","cpt_codes":[{"code":"XXXXX","description":"desc","units":1,"modifiers":[],"rationale":"why"}],"icd10_codes":[{"code":"X00.0","description":"desc","type":"primary","rationale":"why"}],"hcpcs_codes":[],"pos_code":{"code":"11","description":"Office"},"revenue_codes":[],"billing_notes":"notes","confidence":"high","disclaimer":"AI-generated. Always verify with certified coder."}`;
+{"summary":"brief summary","cpt_codes":[{"code":"XXXXX","description":"desc","units":1,"modifiers":[],"rationale":"why"}],"icd10_codes":[{"code":"X00.0","description":"desc","type":"primary","rationale":"why"}],"hcpcs_codes":[],"pos_code":{"code":"11","description":"Office"},"revenue_codes":[],"billing_notes":"notes","confidence":"high","disclaimer":"Draft coding suggestions. Verify with a certified coder before billing."}`;
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + apiKey, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4000, temperature: 0.1 } }) });
       if (!response.ok) { const err = await response.json(); return res.status(500).json({ message: "AI error: " + (err.error?.message || "Unknown") }); }
       const aiResponse = await response.json();
@@ -2660,10 +2660,10 @@ Respond ONLY with valid JSON (no markdown) in this exact format:
         .join("\n");
 
       const apiKey = process.env.GEMINI_API_KEY;
-      let aiText = "I'm Codical AI. How can I help you today?";
+      let aiText = "I'm your coding assistant. How can I help you today?";
 
       if (apiKey) {
-        const prompt = `You are Codical AI, an AI assistant inside Codical Chat.
+        const prompt = `You are a coding assistant inside Codical Health Team Chat.
 Respond conversationally, helpfully, and professionally.
 Keep responses concise unless the user asks for more detail.
 
@@ -2674,7 +2674,7 @@ If the conversation or any shared files are entirely unrelated to healthcare, cl
 Conversation transcript (with file contents):
 ${transcript.slice(0, 16000)}
 
-Reply as Codical AI to the latest user message only. No markdown fencing.`;
+Reply as the coding assistant to the latest user message only. No markdown fencing.`;
 
         const aiResponse = await fetch(
           "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + apiKey,
@@ -3058,7 +3058,7 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
   
           const apiKey = process.env.GEMINI_API_KEY;
           if (apiKey) {
-            const prompt = `You are Codical AI, an AI assistant inside Codical Chat.
+            const prompt = `You are a coding assistant inside Codical Health Team Chat.
   Respond conversationally, helpfully, and professionally.
   Keep responses concise unless the user asks for more detail.
   
@@ -3069,7 +3069,7 @@ Reply as Codical AI to the latest user message only. No markdown fencing.`;
   Conversation transcript (with file contents):
   ${transcript.slice(0, 16000)}
   
-  Reply as Codical AI to the latest user message only. No markdown fencing.`;
+  Reply as the coding assistant to the latest user message only. No markdown fencing.`;
   
             const aiResponse = await fetch(
               "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + apiKey,

@@ -74,7 +74,7 @@ export function consumeClaimValidatorHandoff(): ClaimValidatorHandoff | null {
     return {
       version: 1 as const,
       source: parsed.source === "transcription" ? "transcription" : "workspace",
-      sourceLabel: String(parsed.sourceLabel || "AI source"),
+      sourceLabel: String(parsed.sourceLabel || "Imported code set"),
       createdAt: typeof parsed.createdAt === "string" ? parsed.createdAt : new Date().toISOString(),
       diagnosisCodes: normalizeCodes(parsed.diagnosisCodes),
       procedureCodes: normalizeCodes(parsed.procedureCodes),

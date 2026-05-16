@@ -81,7 +81,7 @@ async function fetchMcdJson<T>(path: string, params: Record<string, string | num
   }
 
   if (!response.ok) {
-    throw new Error(`Cloudflare MCD lookup failed with HTTP ${response.status}`);
+    throw new Error(`Medicare coverage lookup failed with HTTP ${response.status}`);
   }
 
   return (await response.json()) as T;
@@ -121,7 +121,7 @@ export function mapMcdCoverageRow(row: McdSearchRow & Record<string, any>) {
     article_version: row.document_kind === "article" ? version : undefined,
     effective_date: row.effective_date || null,
     last_updated: row.last_updated_date || row.publication_date || null,
-    contractor_name_type: "Cloudflare MCD",
+    contractor_name_type: "Medicare Coverage Database",
   };
 }
 

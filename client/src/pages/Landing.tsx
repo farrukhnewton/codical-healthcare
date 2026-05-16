@@ -1,114 +1,69 @@
 import "@/styles/codical-os.css";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import {
   ArrowRight,
-  Bot,
+  BookOpen,
+  Brain,
   Calculator,
   CheckCircle2,
-  ClipboardList,
+  ClipboardCheck,
+  FileCheck2,
   FileSearch,
+  FileText,
   LockKeyhole,
   MessageSquare,
-  Moon,
   Pill,
   Search,
   ShieldCheck,
-  Sparkles,
   Stethoscope,
-  Sun,
   UserRoundSearch,
+  UsersRound,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
-import { useTheme } from "@/lib/theme";
 
-const HERO_TOOLS = [
-  ["ICD", "ICD-10-CM Search"],
-  ["CPT", "CPT Search"],
-  ["H", "HCPCS Search"],
-  ["RVU", "RVU Calculator"],
-  ["AN", "Anesthesia Calculator"],
-  ["ID", "NPI Lookup"],
-  ["Rx", "Drug Lookup"],
-  ["AI", "Op Report to Codes"],
-  ["CH", "Codical Chat"],
-  ["LCD", "Coverage Rules"],
-  ["NCCI", "Claim Edit Check"],
-  ["PQ", "Provider Query"],
+type ToolPreview = {
+  icon: LucideIcon;
+  title: string;
+  text: string;
+  rows: [string, string, string][];
+};
+
+const WORKFLOW = [
+  { icon: FileText, title: "Ingest", text: "Add notes or upload clinical documents." },
+  { icon: Search, title: "Search and suggest", text: "Find codes and get relevant suggestions." },
+  { icon: ClipboardCheck, title: "Validate", text: "Run NCCI edits, coverage checks and payer context." },
+  { icon: UsersRound, title: "Human review", text: "Collaborate with auditors and final reviewers." },
+  { icon: FileCheck2, title: "Finalize", text: "Generate clean, audit-ready coding reports." },
 ];
 
-const TYPE_PHRASES = [
-  "Search ICD, CPT, HCPCS, NPI, drug and RVU data...",
-  "Paste an op report and suggest codes...",
-  "Check NCCI edits before submission...",
-  "Review LCD, NCD and payer policy context...",
-  "Route provider queries to Codical Chat...",
-];
-
-const CODE_CHIPS = [
-  "99214",
-  "E11.9",
-  "G2211",
-  "J1100",
-  "M54.50",
-  "29881",
-  "NCCI",
-  "RVU26B",
-  "LCD",
-  "NPI",
-  "NDC",
-  "POS 11",
-  "Modifier 25",
-  "HCPCS",
-];
-
-const PLATFORM_CARDS = [
-  {
-    className: "wide",
-    icon: Search,
-    title: "One search layer for coding work.",
-    text: "Search ICD-10-CM, CPT, HCPCS, modifiers, POS, NPI, drug records and related coding context without jumping between disconnected portals.",
-    data: ["E11.9 -> ICD-10-CM", "99214 -> CPT", "J1100 -> HCPCS", "POS 11 -> Office"],
-  },
-  {
-    className: "tall",
-    icon: Bot,
-    title: "AI assists. Coders approve.",
-    text: "Paste a clinical note, scan for procedures and diagnoses, surface documentation gaps, then keep final decisions under human review.",
-    data: ["Read note", "Suggest codes", "Flag gaps", "Coder approves"],
-  },
-  {
-    className: "",
-    icon: Calculator,
-    title: "Payment math in context.",
-    text: "RVU, anesthesia units, fee schedule signals and specialty workflow details stay attached to the case.",
-    data: ["wRVU", "PE RVU", "Base units", "Locality"],
-  },
-  {
-    className: "",
-    icon: MessageSquare,
-    title: "Team memory for every case.",
-    text: "Discuss denials, payer rules, provider queries and coding rationale with case context attached.",
-    data: ["Coding review", "Provider query", "Denial risk", "Audit notes"],
-  },
-];
-
-const TOOL_PREVIEWS = [
+const TOOLS: ToolPreview[] = [
   {
     icon: Search,
-    title: "ICD / CPT / HCPCS Search",
-    desc: "Search codes with specialty filters, descriptions, modifier hints and related billing logic.",
+    title: "Code search",
+    text: "Search ICD, CPT, HCPCS, NPI, NDC and related coding references.",
     rows: [
       ["99214", "Office/outpatient established patient visit", "CPT"],
       ["E11.9", "Type 2 diabetes without complications", "ICD"],
-      ["J1100", "Injection, dexamethasone sodium phosphate", "HCPCS"],
+      ["J1100", "Dexamethasone sodium phosphate", "HCPCS"],
+    ],
+  },
+  {
+    icon: Brain,
+    title: "Coding assistance",
+    text: "Review suggested codes, gaps and rationale while keeping final control with coders.",
+    rows: [
+      ["29881", "Arthroscopic meniscectomy suggested", "Review"],
+      ["M23.221", "Posterior horn medial meniscus derangement", "ICD"],
+      ["Gap", "Confirm laterality and approach", "Query"],
     ],
   },
   {
     icon: Calculator,
-    title: "RVU Calculator",
-    desc: "Estimate work RVU, practice expense, malpractice RVU, total RVU and projected reimbursement by locality.",
+    title: "RVU calculator",
+    text: "Estimate work RVU, practice expense, malpractice RVU and reimbursement.",
     rows: [
       ["wRVU", "Work value from selected procedure", "1.92"],
       ["PE RVU", "Practice expense estimate", "0.70"],
@@ -116,9 +71,19 @@ const TOOL_PREVIEWS = [
     ],
   },
   {
+    icon: ShieldCheck,
+    title: "Claim validator",
+    text: "Validate diagnosis and procedure sets with coverage and edit context.",
+    rows: [
+      ["NCCI", "Mutually exclusive edit review", "Pass"],
+      ["LCD", "Policy context available", "Covered"],
+      ["Risk", "Modifier support needs review", "Medium"],
+    ],
+  },
+  {
     icon: Stethoscope,
-    title: "Anesthesia Calculator",
-    desc: "Calculate base units, time units, modifying units and estimated reimbursement in one visual workflow.",
+    title: "Anesthesia calculator",
+    text: "Calculate base units, time units, modifiers and estimated reimbursement.",
     rows: [
       ["00731", "Upper GI endoscopic anesthesia", "Base 5"],
       ["Time", "62 minutes documented", "4.1"],
@@ -126,9 +91,29 @@ const TOOL_PREVIEWS = [
     ],
   },
   {
+    icon: MessageSquare,
+    title: "Team Chat",
+    text: "Keep provider queries, denial review and team decisions attached to the case.",
+    rows: [
+      ["Room", "coding-review", "Live"],
+      ["Case", "99214-25 + 20610", "Open"],
+      ["Action", "Provider query drafted", "Ready"],
+    ],
+  },
+  {
+    icon: BookOpen,
+    title: "Coverage context",
+    text: "Review Medicare coverage and payer policy context beside the code set.",
+    rows: [
+      ["LCD", "Medical necessity context", "Covered"],
+      ["NCD", "National coverage signal", "Review"],
+      ["Payer", "Policy note attached", "Ready"],
+    ],
+  },
+  {
     icon: UserRoundSearch,
-    title: "NPI Lookup",
-    desc: "Search provider NPI, taxonomy, address, organization, credentials and billing provider details quickly.",
+    title: "NPI lookup",
+    text: "Verify provider identifiers, taxonomy and billing provider details.",
     rows: [
       ["NPI", "1750384806", "Active"],
       ["Taxonomy", "Internal Medicine", "Primary"],
@@ -136,194 +121,138 @@ const TOOL_PREVIEWS = [
     ],
   },
   {
-    icon: Bot,
-    title: "Codical AI Coder",
-    desc: "Paste an operative report and receive suggested CPT, ICD-10, modifier considerations and documentation gaps.",
+    icon: Pill,
+    title: "Drug lookup",
+    text: "Search NDC drug records and related product details quickly.",
     rows: [
-      ["29881", "Arthroscopic meniscectomy suggested", "92%"],
-      ["Gap", "Confirm laterality and approach", "Review"],
-      ["Query", "Provider clarification recommended", "Draft"],
-    ],
-  },
-  {
-    icon: MessageSquare,
-    title: "Codical Chat + Case Cards",
-    desc: "Discuss coding questions, denials, provider queries and claim risks with the relevant case context attached.",
-    rows: [
-      ["Room", "coding-review", "Live"],
-      ["Case", "99214-25 + 20610", "Open"],
-      ["Action", "Provider query drafted", "Ready"],
+      ["NDC", "0002-8215", "Active"],
+      ["Route", "Injection", "Drug"],
+      ["Package", "Single-dose vial", "Verified"],
     ],
   },
 ];
 
-const MARQUEE = [
-  "ICD-10-CM 2026",
-  "CPT and HCPCS lookup",
-  "NCCI edits",
-  "RVU fee schedule modeling",
-  "LCD and NCD coverage context",
-  "Commercial payer policy index",
-  "NPI lookup",
-  "Drug and NDC lookup",
-  "Codical AI coding",
-  "Team chat",
-  "Audit-ready history",
+const PROOF_POINTS = [
+  { icon: ShieldCheck, title: "Human review at every step" },
+  { icon: BookOpen, title: "Payer policy aware" },
+  { icon: LockKeyhole, title: "Secure and compliant" },
+  { icon: UsersRound, title: "Built for teams, not silos" },
 ];
 
-function CodeRain() {
+const CAPABILITIES = [
+  { icon: Search, title: "Code search", text: "Search ICD, CPT, HCPCS, NPI, NDC and more." },
+  { icon: Brain, title: "Coding assistance", text: "Suggestions based on clinical documentation and context." },
+  { icon: Calculator, title: "Anesthesia calculator", text: "Calculate anesthesia time, units and base units." },
+  { icon: ShieldCheck, title: "Claim validator", text: "Validate codes, modifiers and place of service." },
+  { icon: ClipboardCheck, title: "NCCI edits", text: "Instant NCCI checks with clear edit explanations." },
+  { icon: FileCheck2, title: "Audit-ready reports", text: "Generate clean reports with rationale and references." },
+  { icon: BookOpen, title: "Coverage context", text: "View coverage and payer policy requirements." },
+  { icon: UserRoundSearch, title: "NPI lookup", text: "Verify provider NPIs and taxonomy details." },
+];
+
+const REVIEW_ITEMS = [
+  "Certified coder review for complex or high-risk cases",
+  "Payer policy and Medicare coverage context",
+  "Rationale, references and reviewer notes",
+  "Clear status at every step",
+];
+
+const SECURITY_ITEMS = [
+  "Role-based workspace access",
+  "256-bit encryption in transit and at rest",
+  "SOC 2 Type II ready controls",
+  "Detailed audit logs and activity tracking",
+];
+
+function ProductPreview() {
   return (
-    <div className="co-code-rain" aria-hidden="true">
-      {CODE_CHIPS.map((chip, index) => (
-        <span
-          key={chip}
-          className="co-code-chip"
-          style={{
-            left: `${(index * 17) % 96}%`,
-            top: `${80 + ((index * 11) % 55)}%`,
-            animationDuration: `${9 + (index % 6) * 2.2}s`,
-            animationDelay: `${-index * 0.8}s`,
-            opacity: 0.35 + (index % 5) * 0.1,
-          }}
-        >
-          {chip}
-        </span>
-      ))}
-    </div>
-  );
-}
+    <div className="lp-product" aria-label="Codical Health product preview">
+      <aside className="lp-product-sidebar">
+        <BrandMark compact className="lp-product-brand" />
+        <nav aria-label="Preview navigation">
+          {["Dashboard", "Coverage & Guidelines", "Code Search", "Coding Assistant", "Clinical Transcription", "Team Chat"].map((item) => (
+            <span className={item === "Coding Assistant" ? "is-active" : ""} key={item}>
+              {item}
+            </span>
+          ))}
+        </nav>
+      </aside>
 
-function useTypingText(items: string[]) {
-  const [text, setText] = useState("");
+      <div className="lp-product-main">
+        <header className="lp-product-top">
+          <div>
+            <strong>Coding Assistant</strong>
+            <span>Assistive clinical coding workflows</span>
+          </div>
+          <div className="lp-product-search">
+            <Search size={14} />
+            <span>Search ICD, CPT, HCPCS, RVU, NPI, NDC and coverage policies...</span>
+          </div>
+        </header>
 
-  useEffect(() => {
-    let phraseIndex = 0;
-    let charIndex = 0;
-    let deleting = false;
-    let timer: number;
-
-    const tick = () => {
-      const current = items[phraseIndex];
-      setText(current.slice(0, charIndex));
-
-      if (!deleting && charIndex < current.length) {
-        charIndex += 1;
-      } else if (!deleting && charIndex === current.length) {
-        deleting = true;
-      } else if (deleting && charIndex > 0) {
-        charIndex -= 1;
-      } else {
-        deleting = false;
-        phraseIndex = (phraseIndex + 1) % items.length;
-      }
-
-      timer = window.setTimeout(tick, deleting ? 28 : 48);
-    };
-
-    tick();
-    return () => window.clearTimeout(timer);
-  }, [items]);
-
-  return text;
-}
-
-function HeroCommandCenter() {
-  const typed = useTypingText(TYPE_PHRASES);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const centerRef = useRef<HTMLDivElement>(null);
-
-  const carousel = useMemo(() => [...HERO_TOOLS, ...HERO_TOOLS], []);
-
-  const onMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    const area = stageRef.current;
-    const center = centerRef.current;
-    if (!area || !center) return;
-
-    const rect = area.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width - 0.5;
-    const y = (event.clientY - rect.top) / rect.height - 0.5;
-    center.style.transform = `rotateX(${7 - y * 7}deg) rotateY(${-9 + x * 9}deg) translateY(-4px)`;
-  };
-
-  return (
-    <div className="co-stage" ref={stageRef} onMouseMove={onMove} onMouseLeave={() => {
-      if (centerRef.current) centerRef.current.style.transform = "rotateX(7deg) rotateY(-9deg) translateY(0)";
-    }}>
-      <div className="co-orbit" />
-      <div className="co-orbit" />
-      <div className="co-orb one" />
-      <div className="co-orb two" />
-
-      <div className="co-command-center" ref={centerRef}>
-        <div className="co-dash-top">
-          <div className="co-window-dots"><span /><span /><span /></div>
-          <div className="co-status-chip"><span className="co-live-dot" /> Live code intelligence</div>
-        </div>
-
-        <div className="co-universal-search">
-          <Search size={16} />
-          <span>{typed || TYPE_PHRASES[0]}</span>
-          <span className="co-mono">99214</span>
-        </div>
-
-        <div className="co-dash-grid">
-          <div className="co-glass-card co-coding-panel">
-            <div className="co-panel-title">
-              <h4>AI Coding Console</h4>
-              <span className="co-badge">Human review required</span>
+        <div className="lp-review-grid">
+          <section className="lp-review-console">
+            <div className="lp-preview-title">
+              <span>Coding Review Console</span>
+              <em>Human review required</em>
             </div>
-            <div className="co-code-table">
-              {[
-                ["99214", "Office/outpatient established patient visit", "92%"],
-                ["E11.9", "Type 2 diabetes without complications", "ICD"],
-                ["25", "Separately identifiable E/M modifier", "Review"],
-                ["G2211", "Longitudinal care complexity indicator", "Payer?"],
-              ].map((row) => (
-                <div className="co-code-row" key={row[0]}>
-                  <span className="co-mono">{row[0]}</span>
-                  <span>{row[1]}</span>
-                  <span className={`co-mono ${row[2] === "Review" ? "co-amber" : row[2] === "Payer?" ? "co-rose" : "co-green"}`}>{row[2]}</span>
+            <div className="lp-mini-search">
+              <Search size={13} />
+              <span>Search ICD, CPT, HCPCS, NPI, NDC</span>
+              <strong>99214</strong>
+            </div>
+            {[
+              ["99214", "Office/outpatient established patient visit", "92%"],
+              ["E11.9", "Type 2 diabetes without complications", "ICD"],
+              ["25", "Separately identifiable E/M modifier", "Review"],
+              ["G2211", "Longitudinal care complexity indicator", "Payer?"],
+            ].map(([code, text, status]) => (
+              <div className="lp-code-line" key={code}>
+                <strong>{code}</strong>
+                <span>{text}</span>
+                <em>{status}</em>
+              </div>
+            ))}
+            <div className="lp-metric-grid">
+              <div><span>RVU estimate</span><strong>2.80</strong></div>
+              <div><span>Anesthesia units</span><strong>8.4</strong></div>
+              <div><span>Claim risk</span><strong>Medium</strong></div>
+              <div><span>NCCI edits</span><strong>0</strong></div>
+            </div>
+            <div className="lp-note-input">
+              <span>Clinical note input</span>
+              <p>Example: Laparoscopic cholecystectomy. Diagnosis: acute cholecystitis with cholelithiasis...</p>
+              <button type="button">Analyze & Code</button>
+            </div>
+          </section>
+
+          <aside className="lp-policy-panel">
+            <div className="lp-policy-card">
+              <span>Coverage signal</span>
+              <strong>Covered</strong>
+              <p>LCD/NCD and payer policy context should be reviewed before final claim submission.</p>
+              <a href="#workflow">View workflow <ArrowRight size={13} /></a>
+            </div>
+            <div className="lp-policy-card">
+              <span>Team review status</span>
+              {["Coder - Completed", "Auditor - In review", "Final reviewer - Pending"].map((item, index) => (
+                <div className="lp-status-row" key={item}>
+                  <b>{index + 1}</b>
+                  <p>{item}</p>
                 </div>
               ))}
             </div>
-            <div className="co-mini-grid">
-              <div className="co-metric-card"><small>RVU estimate</small><strong>2.80</strong></div>
-              <div className="co-metric-card"><small>Anesthesia units</small><strong>8.4</strong></div>
-              <div className="co-metric-card"><small>Claim risk</small><strong className="co-amber">Medium</strong></div>
-            </div>
-          </div>
-
-          <div className="co-glass-card co-carousel">
-            <div className="co-panel-title">
-              <h4>Tool Stack</h4>
-              <span className="co-badge">20+</span>
-            </div>
-            <div className="co-carousel-window">
-              <div className="co-carousel-track">
-                {carousel.map(([icon, label], index) => (
-                  <div className={`co-tool-pill ${index % 5 === 0 ? "hot" : ""}`} key={`${label}-${index}`}>
-                    <span className="co-tool-icon">{icon}</span>
-                    {label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="co-floating-alert">
-          <div className="co-badge">Coverage signal</div>
-          <p>LCD/NCD and payer policy context should be reviewed before final claim submission.</p>
+          </aside>
         </div>
       </div>
     </div>
   );
 }
 
-function SectionHead({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
+function SectionHead({ label, title, text }: { label: string; title: string; text: string }) {
   return (
-    <div className="co-section-head">
-      <div className="co-eyebrow"><span className="co-live-dot" /> {eyebrow}</div>
+    <div className="lp-section-head">
+      <span>{label}</span>
       <h2>{title}</h2>
       <p>{text}</p>
     </div>
@@ -331,90 +260,67 @@ function SectionHead({ eyebrow, title, text }: { eyebrow: string; title: string;
 }
 
 export function Landing() {
-  const { theme, toggle } = useTheme();
   const [activeTool, setActiveTool] = useState(0);
-  const tool = TOOL_PREVIEWS[activeTool];
+  const active = TOOLS[activeTool];
 
   return (
-    <div className="landingAurora co-page">
-      <div className="co-cursor-glow" aria-hidden="true" />
-      <div className="co-grain" aria-hidden="true" />
-
-      <header className="co-nav-wrap">
-        <nav className="co-navbar" aria-label="Primary navigation">
-          <a className="co-brand-link" href="#top" aria-label="Codical Health home">
+    <div className="lp-page">
+      <header className="lp-nav-wrap">
+        <nav className="lp-navbar" aria-label="Primary navigation">
+          <a className="lp-brand-link" href="#top" aria-label="Codical Health home">
             <BrandMark />
           </a>
-          <div className="co-nav-links">
+          <div className="lp-nav-links">
             <a href="#platform">Platform</a>
             <a href="#tools">Tools</a>
-            <a href="#ai">AI Coding</a>
+            <a href="#assistant">Coding Assistance</a>
             <a href="#workflow">Workflow</a>
             <a href="#pricing">Pricing</a>
           </div>
-          <div className="co-nav-actions">
-            <button className="co-theme-toggle" onClick={toggle} aria-label="Toggle light and dark mode">
-              <span>{theme === "dark" ? <Moon size={14} /> : <Sun size={14} />}</span>
-            </button>
-            <Link className="co-btn co-btn-ghost" href="/login">Sign in</Link>
-            <Link className="co-btn co-btn-primary" href="/signup">Request access <ArrowRight size={16} /></Link>
+          <div className="lp-nav-actions">
+            <Link className="lp-link-button" href="/login">Sign in</Link>
+            <Link className="lp-button lp-button-primary" href="/signup">Request access</Link>
           </div>
         </nav>
       </header>
 
       <main id="top">
-        <section className="co-hero">
-          <CodeRain />
-          <div className="co-container co-hero-grid">
-            <div className="co-hero-copy">
-              <div className="co-eyebrow"><span className="co-live-dot" /> 2026 coding, coverage and reimbursement command center</div>
-              <h1>
-                <span className="co-hero-word" style={{ "--d": 1 } as React.CSSProperties}>Find</span>{" "}
-                <span className="co-hero-word" style={{ "--d": 2 } as React.CSSProperties}>codes.</span><br />
-                <span className="co-hero-word" style={{ "--d": 3 } as React.CSSProperties}>Calculate</span>{" "}
-                <span className="co-hero-word" style={{ "--d": 4 } as React.CSSProperties}>RVUs.</span><br />
-                <span className="co-hero-word co-gradient-text" style={{ "--d": 5 } as React.CSSProperties}>Audit claims.</span>
-              </h1>
+        <section className="lp-hero" id="platform">
+          <div className="lp-container lp-hero-grid">
+            <div className="lp-hero-copy">
+              <h1>Healthcare coding work, organized in one workspace.</h1>
               <p>
-                Codical Health brings code search, Codical AI coding review, NCCI checks, RVU and anesthesia calculators,
-                payer policy context, Medicare coverage search and Codical Chat into one calm RCM workspace.
+                Search codes, get coding assistance, run NCCI checks, calculate RVUs and anesthesia units,
+                review payer coverage context, and collaborate in Team Chat - all in one workspace built
+                for coders and RCM teams.
               </p>
-              <div className="co-hero-actions">
-                <Link href="/signup" className="co-btn co-btn-primary">Launch workspace <ArrowRight size={16} /></Link>
-                <a href="#ai" className="co-btn co-btn-ghost">Watch AI coding flow</a>
+              <div className="lp-hero-actions">
+                <Link className="lp-button lp-button-primary" href="/signup">Request access <ArrowRight size={17} /></Link>
+                <a className="lp-button lp-button-secondary" href="#workflow">View workflow</a>
               </div>
-              <div className="co-trust-row">
-                <span className="co-trust-pill"><CheckCircle2 size={15} /> Human coder approval</span>
-                <span className="co-trust-pill"><ClipboardList size={15} /> Payer policy index</span>
-                <span className="co-trust-pill"><ShieldCheck size={15} /> Audit-ready history</span>
+              <div className="lp-proof-row">
+                {PROOF_POINTS.map((item) => (
+                  <span key={item.title}>
+                    <item.icon size={16} />
+                    {item.title}
+                  </span>
+                ))}
               </div>
             </div>
-
-            <HeroCommandCenter />
+            <ProductPreview />
           </div>
         </section>
 
-        <div className="co-marquee" aria-label="Platform capabilities">
-          <div className="co-marquee-track">
-            {[...MARQUEE, ...MARQUEE].map((item, index) => <span key={`${item}-${index}`}>{item}</span>)}
-          </div>
-        </div>
-
-        <section className="co-section" id="platform">
-          <div className="co-container">
-            <SectionHead
-              eyebrow="One intelligent platform"
-              title="Every step of the coding workflow belongs in one place."
-              text="Official coding references, medical necessity context, reimbursement math and team review are most useful when they live beside the same case."
-            />
-            <div className="co-bento">
-              {PLATFORM_CARDS.map((card) => (
-                <article className={`co-bento-card ${card.className}`} key={card.title}>
-                  <div className="co-big-icon"><card.icon size={28} /></div>
-                  <h3>{card.title}</h3>
-                  <p>{card.text}</p>
-                  <div className="co-bento-visual">
-                    {card.data.map((item) => <div className="co-tiny-data co-mono" key={item}>{item}</div>)}
+        <section className="lp-workflow-strip" id="workflow">
+          <div className="lp-container">
+            <h2>One workspace. End-to-end coding workflow.</h2>
+            <div className="lp-workflow-steps">
+              {WORKFLOW.map((step, index) => (
+                <article key={step.title}>
+                  <div className="lp-step-icon"><step.icon size={22} /></div>
+                  <div>
+                    <span>{index + 1}. {step.title}</span>
+                    <p>{step.text}</p>
                   </div>
                 </article>
               ))}
@@ -422,226 +328,156 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="co-section" id="tools">
-          <div className="co-container">
+        <section className="lp-section" id="tools">
+          <div className="lp-container">
             <SectionHead
-              eyebrow="Operational tool stack"
-              title="A product-dense workspace for coders, billers and RCM teams."
-              text="The app keeps lookup, calculation, coverage review, AI suggestions and collaboration close enough for repeated daily use."
+              label="Tools"
+              title="Tools and capabilities built for coding teams."
+              text="Keep search, calculators, coverage checks, validation and review notes together so each case keeps its context."
             />
-            <div className="co-tools-layout">
-              <aside className="co-panel co-tool-list">
-                {TOOL_PREVIEWS.map((item, index) => (
+            <div className="lp-capability-grid">
+              {CAPABILITIES.map((item) => (
+                <article key={item.title}>
+                  <div><item.icon size={20} /></div>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </article>
+              ))}
+            </div>
+
+            <div className="lp-tool-demo">
+              <aside className="lp-tool-tabs" aria-label="Tool preview selector">
+                {TOOLS.map((tool, index) => (
                   <button
-                    key={item.title}
-                    className={`co-tool-btn ${activeTool === index ? "is-active" : ""}`}
+                    type="button"
+                    className={activeTool === index ? "is-active" : ""}
                     onClick={() => setActiveTool(index)}
+                    key={tool.title}
                   >
-                    <span className="co-tool-icon"><item.icon size={15} /></span>
-                    <span>{item.title}</span>
+                    <tool.icon size={17} />
+                    <span>{tool.title}</span>
                   </button>
                 ))}
               </aside>
-              <div className="co-panel co-tool-preview">
-                <div className="co-preview-header">
+              <section className="lp-tool-panel">
+                <div className="lp-tool-panel-head">
                   <div>
-                    <h3>{tool.title}</h3>
-                    <p>{tool.desc}</p>
+                    <h3>{active.title}</h3>
+                    <p>{active.text}</p>
                   </div>
-                  <span className="co-badge">Interactive preview</span>
+                  <span>Interactive preview</span>
                 </div>
-                <div className="co-preview-screen">
-                  <div className="co-universal-search">
-                    <Search size={16} />
-                    <span>Search, calculate or review case context...</span>
-                    <span className="co-mono">Live</span>
-                  </div>
-                  {tool.rows.map((row) => (
-                    <div className="co-result-line" key={row[0]}>
-                      <span className="co-mono">{row[0]}</span>
-                      <span>{row[1]}</span>
-                      <span className="co-confidence">{row[2]}</span>
+                <div className="lp-tool-screen">
+                  {active.rows.map(([code, text, status]) => (
+                    <div className="lp-result-row" key={`${active.title}-${code}`}>
+                      <strong>{code}</strong>
+                      <span>{text}</span>
+                      <em>{status}</em>
                     </div>
                   ))}
-                  <div className="co-mini-grid">
-                    <div className="co-metric-card"><small>Connected workflow</small><strong>Claim Review</strong></div>
-                    <div className="co-metric-card"><small>Next action</small><strong>Save Case</strong></div>
-                    <div className="co-metric-card"><small>Team status</small><strong>Synced</strong></div>
-                  </div>
                 </div>
-              </div>
-              <aside className="co-panel co-benefit-stack">
-                <div className="co-benefit"><strong>Faster lookup</strong><p>Reduce switching between coding sites, spreadsheets, payer PDFs, calculators and chat apps.</p></div>
-                <div className="co-benefit"><strong>Cleaner claims</strong><p>Surface documentation gaps, modifiers, medical necessity issues and payer review needs earlier.</p></div>
-                <div className="co-benefit"><strong>Team memory</strong><p>Save decisions, payer rules, provider preferences and specialty workflows for future cases.</p></div>
-                <div className="co-benefit"><strong>Data-aware</strong><p>Bring CMS, NPI, drug, fee schedule and coverage references into a single workflow.</p></div>
-              </aside>
+              </section>
             </div>
           </div>
         </section>
 
-        <section className="co-section" id="ai">
-          <div className="co-container">
-            <SectionHead
-              eyebrow="AI coding with guardrails"
-              title="Scan the note, surface the rationale, keep the coder in control."
-              text="Codical Health is designed for assistive AI: suggested codes, documentation gaps and payer considerations should move faster without replacing professional review."
-            />
-            <div className="co-ai-demo">
-              <div className="co-panel co-doc-panel">
-                <div className="co-scan-line" />
-                <div className="co-doc-text">
-                  OPERATIVE NOTE<br /><br />
-                  PROCEDURE PERFORMED: <span className="co-highlight">Arthroscopic partial medial meniscectomy</span> with diagnostic arthroscopy.<br /><br />
-                  FINDINGS: Complex tear posterior horn medial meniscus, chondromalacia and synovitis.<br /><br />
-                  ANESTHESIA: <span className="co-highlight">General anesthesia</span>.<br /><br />
-                  CODER NOTE: Laterality, approach and separately identifiable E/M support should be reviewed before final billing.
-                </div>
-              </div>
-              <div className="co-panel co-output-panel">
-                <div className="co-output-list">
-                  <div className="co-output-item"><small>Suggested CPT</small><strong className="co-mono">29881</strong> - Knee arthroscopy with meniscectomy</div>
-                  <div className="co-output-item"><small>Possible ICD-10</small><strong className="co-mono">M23.221</strong> - Derangement of posterior horn of medial meniscus</div>
-                  <div className="co-output-item"><small>Modifier / payer logic</small>Review whether additional work supports separate reporting.</div>
-                  <div className="co-output-item"><small>Coder control</small>Final coding requires certified coder validation and payer-specific review.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="co-section" id="workflow">
-          <div className="co-container">
-            <SectionHead
-              eyebrow="Workflow"
-              title="From clinical note to claim-ready coding trail."
-              text="A case should carry the note, suggested codes, coverage context, team discussion and audit rationale from the first review through final approval."
-            />
-            <div className="co-workflow">
-              {[
-                ["1", "Paste note", "Upload or paste an op report, progress note, procedure note or claim scenario."],
-                ["2", "AI scans", "Key diagnoses, procedures, timings, units and documentation gaps are highlighted."],
-                ["3", "Tools calculate", "RVU, anesthesia, code relationships and reimbursement logic become part of the case."],
-                ["4", "Team reviews", "Coders, billers, managers and providers discuss the same case inside chat."],
-                ["5", "Claim-ready", "Final codes, rationale, query history and audit notes stay attached to the workflow."],
-              ].map(([number, title, text]) => (
-                <article className="co-workflow-step" key={number}>
-                  <div className="co-step-number">{number}</div>
-                  <h3>{title}</h3>
-                  <p>{text}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="co-section">
-          <div className="co-container">
-            <SectionHead
-              eyebrow="Collaboration"
-              title="Chat is useful when it knows the case."
-              text="Provider queries, denial questions and modifier review should not get separated from the actual code set and account context."
-            />
-            <div className="co-panel co-chat-layout">
-              <aside className="co-chat-sidebar">
-                {["# coding-review", "# provider-queries", "# denials", "# anesthesia", "# credentialing", "# ar-follow-up"].map((channel, index) => (
-                  <div className={`co-channel ${index === 0 ? "active" : ""}`} key={channel}>{channel}</div>
+        <section className="lp-section lp-section-tint" id="assistant">
+          <div className="lp-container lp-review-layout">
+            <div>
+              <SectionHead
+                label="Coding assistance"
+                title="Human review stays at the center."
+                text="Every suggestion is reviewed by a certified coder. Keep your team in control with built-in review steps, notes and audit trails."
+              />
+              <ul className="lp-check-list">
+                {REVIEW_ITEMS.map((item) => (
+                  <li key={item}><CheckCircle2 size={16} /> {item}</li>
                 ))}
-              </aside>
-              <main className="co-chat-main">
-                {[
-                  ["Ayesha, CPC", "Can someone review whether modifier 25 is supported with this E/M and procedure?"],
-                  ["Codical AI", "Possible support found, but documentation should show separately identifiable E/M decision-making."],
-                  ["Provider Query", "Drafted: Please confirm whether evaluation was performed beyond consent and pre-op assessment."],
-                  ["Claim Card", "99214-25 + 20610 - Status: Ready for senior coder review"],
-                ].map(([name, body]) => (
-                  <div className="co-message" key={name}>
-                    <div className="co-avatar" />
-                    <div className="co-bubble"><strong>{name}</strong><br />{body}</div>
-                  </div>
-                ))}
-              </main>
-              <aside className="co-chat-context">
-                <div className="co-context-card"><small>Patient Account</small><strong>Orthopedic follow-up</strong></div>
-                <div className="co-context-card"><small>Suggested Codes</small><strong className="co-mono">99214, 20610, M25.561</strong></div>
-                <div className="co-context-card"><small>Risk</small><strong>Modifier support needs review</strong></div>
-                <div className="co-context-card"><small>Assigned</small><strong>Ayesha - Senior Coder</strong></div>
-              </aside>
+              </ul>
+            </div>
+
+            <div className="lp-review-card">
+              <div className="lp-example-bar">
+                <span>Example: 99214</span>
+                <em>Human review required</em>
+              </div>
+              <div className="lp-review-card-grid">
+                <div>
+                  <span>Coding suggestion</span>
+                  <strong>99214</strong>
+                  <p>Office/outpatient established patient visit</p>
+                </div>
+                <div>
+                  <span>Payer context</span>
+                  <strong>Covered</strong>
+                  <p>Medical necessity context should be reviewed.</p>
+                </div>
+                <div>
+                  <span>Reviewer note</span>
+                  <strong>In review</strong>
+                  <p>MDM is moderate based on data, risk and complexity documented.</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="co-section" id="security">
-          <div className="co-container">
-            <SectionHead
-              eyebrow="Controls"
-              title="Compliance work should feel calm, traceable and reviewable."
-              text="Security and compliance sections need less flash and more confidence: roles, review controls, logs and clear decision history."
-            />
-            <div className="co-bento">
-              {[
-                [LockKeyhole, "Role-based access", "Separate permissions for coders, billers, managers, providers, admins and client users."],
-                [ClipboardList, "Audit activity logs", "Track coding suggestions, edits, approvals, provider queries, chat decisions and case history."],
-                [Sparkles, "Human review controls", "AI remains assistive until reviewed, edited and approved by the coding team."],
-              ].map(([Icon, title, text]) => {
-                const IconComp = Icon as typeof LockKeyhole;
-                return (
-                  <article className="co-bento-card" key={String(title)}>
-                    <div className="co-big-icon"><IconComp size={28} /></div>
-                    <h3>{String(title)}</h3>
-                    <p>{String(text)}</p>
-                  </article>
-                );
-              })}
-            </div>
+        <section className="lp-section">
+          <div className="lp-container lp-two-up">
+            <section>
+              <SectionHead
+                label="Collaboration"
+                title="Built for collaboration around the case."
+                text="Work together across roles with Team Chat, mentions, tasks and real-time updates tied to the code set."
+              />
+              <div className="lp-chat-card">
+                <div><strong>Aisha K.</strong><span>10:32 AM</span><p>Please review the anesthesia units.</p></div>
+                <div><strong>Samir P.</strong><span>10:38 AM</span><p>On it. Reviewing now.</p></div>
+              </div>
+              <ul className="lp-check-list">
+                <li><CheckCircle2 size={16} /> Context stays with the case</li>
+                <li><CheckCircle2 size={16} /> Role-based permissions</li>
+                <li><CheckCircle2 size={16} /> Actionable notifications</li>
+              </ul>
+            </section>
+
+            <section>
+              <SectionHead
+                label="Security"
+                title="Compliance and controls without clutter."
+                text="Enterprise-grade security, access controls and audit activity tracking are built into the workspace."
+              />
+              <div className="lp-security-visual">
+                <ShieldCheck size={80} />
+                <div>
+                  {SECURITY_ITEMS.map((item) => <span key={item}>{item}</span>)}
+                </div>
+              </div>
+            </section>
           </div>
         </section>
 
-        <section className="co-section">
-          <div className="co-container">
+        <section className="lp-section" id="pricing">
+          <div className="lp-container">
             <SectionHead
-              eyebrow="Use cases"
-              title="Built for the pressure points in revenue cycle teams."
-              text="The product story is anchored in daily workflows: reducing lost context, surfacing gaps earlier and improving review discipline."
-            />
-            <div className="co-testimonials">
-              {[
-                ["RCM director", "Unify coding, calculators, coverage signals and conversations so teams can move faster without losing context.", "Multi-specialty RCM"],
-                ["Certified coder", "Use AI review and documentation gap prompts before a claim reaches denial stage.", "Surgical coding"],
-                ["Practice manager", "Keep Codical Chat connected to the account, code discussion and provider query history.", "Primary care practice"],
-              ].map(([role, quote, person]) => (
-                <article className="co-testimonial" key={role}>
-                  <span className="co-badge">{role}</span>
-                  <p className="co-quote">{quote}</p>
-                  <div className="co-person"><div className="co-avatar" /><div><strong>{person}</strong><br /><span>Workflow perspective</span></div></div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="co-section" id="pricing">
-          <div className="co-container">
-            <SectionHead
-              eyebrow="Pricing"
+              label="Access"
               title="Simple packages for growing coding operations."
-              text="Use Codical Health for individual coding work, small practice teams or enterprise RCM operations that need deeper controls."
+              text="Start with search and calculators, then bring coding assistance, validation, coverage review and team collaboration into the same workflow."
             />
-            <div className="co-pricing-grid">
+            <div className="lp-pricing-grid">
               {[
                 ["Starter", "Pilot", "For solo coders and small practices.", ["Code search", "RVU and anesthesia calculators", "NPI and drug lookup", "Saved workspace"]],
-                ["Professional", "Team", "For billing companies and RCM teams.", ["Everything in Starter", "Codical AI coding", "Codical Chat and case cards", "Coverage and payer policy hub"]],
+                ["Professional", "Team", "For billing companies and RCM teams.", ["Everything in Starter", "Coding assistance", "Team Chat and case cards", "Coverage and payer policy hub"]],
                 ["Enterprise", "Custom", "For MSOs, hospitals and larger teams.", ["Role controls", "Audit activity logs", "Admin reporting", "Implementation support"]],
               ].map(([name, price, text, features], index) => (
-                <article className={`co-price-card ${index === 1 ? "popular" : ""}`} key={String(name)}>
-                  {index === 1 && <span className="co-badge">Most popular</span>}
+                <article className={index === 1 ? "is-featured" : ""} key={String(name)}>
                   <h3>{String(name)}</h3>
-                  <div className="co-price">{String(price)}{index !== 2 && <span> access</span>}</div>
-                  <p style={{ color: "var(--co-muted)" }}>{String(text)}</p>
-                  <ul className="co-feature-list">
-                    {(features as string[]).map((item) => <li key={item}>{item}</li>)}
+                  <strong>{String(price)}</strong>
+                  <p>{String(text)}</p>
+                  <ul>
+                    {(features as string[]).map((feature) => <li key={feature}>{feature}</li>)}
                   </ul>
-                  <Link className={`co-btn ${index === 1 ? "co-btn-primary" : "co-btn-ghost"}`} href="/signup">
+                  <Link className={index === 1 ? "lp-button lp-button-primary" : "lp-button lp-button-secondary"} href="/signup">
                     {index === 2 ? "Contact sales" : "Request access"}
                   </Link>
                 </article>
@@ -650,43 +486,30 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="co-section">
-          <div className="co-container">
-            <div className="co-final-cta">
-              <h2>Turn coding work into a connected command center.</h2>
-              <p>Start with search and calculators, then bring AI coding, coverage review, payer context and team collaboration into the same workspace.</p>
-              <div className="co-hero-actions" style={{ justifyContent: "center", marginBottom: 0 }}>
-                <Link className="co-btn co-btn-primary" href="/signup">Request access <ArrowRight size={16} /></Link>
-                <a className="co-btn co-btn-ghost" href="#tools">Explore tools</a>
-              </div>
+        <section className="lp-final">
+          <div className="lp-container">
+            <h2>Ready to streamline your coding workflow?</h2>
+            <p>Join coding and RCM teams who work smarter and close faster with Codical Health.</p>
+            <div>
+              <Link className="lp-button lp-button-primary" href="/signup">Request access <ArrowRight size={17} /></Link>
+              <a className="lp-button lp-button-secondary" href="#workflow">View workflow</a>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="co-footer">
-        <div className="co-footer-aurora" />
-        <div className="co-container">
-          <div className="co-footer-grid">
-            <div className="co-footer-brand">
-              <BrandMark />
-              <p>Codical Health is a healthcare coding intelligence workspace for search, AI coding review, reimbursement tools, coverage context and team collaboration.</p>
-            </div>
-            <div className="co-footer-col"><h4>Product</h4><a href="#tools">Code Search</a><a href="#ai">AI Coding</a><a href="#tools">Calculators</a><a href="#workflow">Codical Chat</a></div>
-            <div className="co-footer-col"><h4>Tools</h4><a href="#tools">ICD Search</a><a href="#tools">CPT Search</a><a href="#tools">RVU Calculator</a><a href="#tools">NPI Lookup</a></div>
-            <div className="co-footer-col"><h4>Resources</h4><a href="https://www.cms.gov/medicare/coding-billing/icd-10-codes">CMS ICD-10</a><a href="https://www.cms.gov/national-correct-coding-initiative-ncci">CMS NCCI</a><a href="https://www.cms.gov/medicare/coverage/determination-process/local">LCD Process</a><a href="https://www.cms.gov/medicare-coverage-database/search.aspx">Medicare Coverage Database</a></div>
-            <div className="co-footer-col"><h4>Access</h4><Link href="/login">Sign in</Link><Link href="/signup">Request access</Link><a href="#security">Security</a><a href="#pricing">Pricing</a></div>
+      <footer className="lp-footer">
+        <div className="lp-container">
+          <BrandMark />
+          <div className="lp-footer-links">
+            <a href="#platform">Platform</a>
+            <a href="#tools">Tools</a>
+            <a href="#assistant">Coding Assistance</a>
+            <a href="#workflow">Workflow</a>
+            <a href="#pricing">Pricing</a>
+            <Link href="/login">Sign in</Link>
           </div>
-          <div className="co-footer-ticker">
-            <div>
-              <span>CODICAL_HEALTH</span><span>ICD10</span><span>CPT</span><span>HCPCS</span><span>NCCI</span><span>RVU</span><span>LCD_NCD</span><span>TEAM_REVIEW</span>
-              <span>CODICAL_HEALTH</span><span>ICD10</span><span>CPT</span><span>HCPCS</span><span>NCCI</span><span>RVU</span><span>LCD_NCD</span><span>TEAM_REVIEW</span>
-            </div>
-          </div>
-          <div className="co-footer-bottom">
-            <span>(c) {new Date().getFullYear()} Codical Health. Coding intelligence reimagined.</span>
-            <span>Assistive tooling only. Final coding decisions require professional review.</span>
-          </div>
+          <p>(c) {new Date().getFullYear()} Codical Health. Assistive tooling only. Final coding decisions require professional review.</p>
         </div>
       </footer>
     </div>

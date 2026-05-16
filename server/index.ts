@@ -127,8 +127,8 @@ export const ready = (async () => {
     const envPort = process.env.PORT || process.env.port;
     const PORT = cliPort || (envPort ? parseInt(envPort) : 8080);
     httpServer.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server listening on port: ${PORT}`);
-      console.log(`🔌 Socket.io ready for connections`);
+      console.log(`Server listening on port: ${PORT}`);
+      console.log(`Socket.io ready for connections`);
     });
   }
 })();

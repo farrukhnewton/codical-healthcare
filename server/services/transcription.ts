@@ -278,7 +278,7 @@ async function fetchGeminiWithRetries(url: string, init: RequestInit): Promise<R
   const errorMessage =
     lastFetchError instanceof Error ? lastFetchError.message : "Unknown network error";
   throw new Error(
-    `Could not reach Gemini transcription service after several attempts. ${errorMessage}`,
+    `Could not reach the transcription service after several attempts. ${errorMessage}`,
   );
 }
 
@@ -294,19 +294,19 @@ async function handleGeminiError(response: Response) {
 
   if (response.status === 403 || errorMessage.includes("API key")) {
     throw new Error(
-      "Invalid or expired Gemini API key. Please update GEMINI_API_KEY.",
+      "Transcription service credentials are invalid or expired. Please update the configured API key.",
     );
   }
 
   if (response.status === 429) {
     throw new Error(
-      "Gemini API rate limit reached. Please try again in a moment.",
+      "Transcription service rate limit reached. Please try again in a moment.",
     );
   }
 
   if ([500, 502, 503, 504].includes(response.status)) {
     throw new Error(
-      "Gemini transcription service is temporarily unavailable after several attempts. Please try again in a few minutes.",
+      "The transcription service is temporarily unavailable after several attempts. Please try again in a few minutes.",
     );
   }
 
@@ -413,7 +413,7 @@ async function callGenerateContent(apiKey: string, requestBody: ReturnType<typeo
   }
 
   throw new Error(
-    "Gemini transcription service is temporarily unavailable. Please try again in a few minutes.",
+    "The transcription service is temporarily unavailable. Please try again in a few minutes.",
   );
 }
 
@@ -450,7 +450,7 @@ async function uploadGeminiFile(
   const uploadUrl = startResponse.headers.get("x-goog-upload-url");
 
   if (!uploadUrl) {
-    throw new Error("Gemini file upload did not return an upload URL.");
+    throw new Error("The transcription service did not return an upload URL.");
   }
 
   const uploadResponse = await fetchGeminiWithRetries(uploadUrl, {
@@ -471,7 +471,7 @@ async function uploadGeminiFile(
   const fileUri = uploadJson?.file?.uri;
 
   if (!fileUri) {
-    throw new Error("Gemini file upload did not return a file URI.");
+    throw new Error("The transcription service did not return a file URI.");
   }
 
   return fileUri;
@@ -526,7 +526,7 @@ export async function transcribeAudio(
 
   if (!rawText || rawText.trim().length === 0) {
     throw new Error(
-      "No transcription returned from Gemini API. Please try again.",
+      "No transcription was returned. Please try again.",
     );
   }
 
@@ -638,7 +638,7 @@ export async function transcribeAudio(
       }
 
       throw new Error(
-        "Gemini did not return structured data. Audio may be unclear or in an unsupported language. Please try again.",
+        "The transcription service did not return structured data. Audio may be unclear or in an unsupported language. Please try again.",
       );
     }
   }

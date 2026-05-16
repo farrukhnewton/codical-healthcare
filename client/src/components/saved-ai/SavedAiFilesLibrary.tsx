@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CalendarClock, Download, FileText, FolderOpen, Loader2, Pencil, RotateCcw, Save, Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,6 +40,12 @@ function getCountdownLabel(daysRemaining: number) {
   if (daysRemaining <= 0) return "Expires today";
   if (daysRemaining === 1) return "1 day left";
   return `${daysRemaining} days left`;
+}
+
+function getCountdownTone(daysRemaining: number) {
+  if (daysRemaining <= 3) return "danger";
+  if (daysRemaining <= 7) return "warning";
+  return "success";
 }
 
 export function SavedAiFilesLibrary({
@@ -130,67 +134,80 @@ export function SavedAiFilesLibrary({
 
   return (
     <>
-      <Card className="border-2">
-        <CardHeader>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <section className="tool-panel saved-library-panel" aria-label={title}>
+        <div className="saved-library-head">
+          <div className="saved-library-title-block">
+            <span className="saved-library-icon">
+              <FolderOpen size={20} />
+            </span>
             <div>
-              <CardTitle className="flex items-center gap-2 text-xl font-black">
-                <FolderOpen className="size-5 text-primary" />
-                {title}
-              </CardTitle>
-              <CardDescription>{description}</CardDescription>
+              <h2>{title}</h2>
+              <p>{description}</p>
             </div>
-            <Button
-              type="button"
-              onClick={() => saveCurrentMutation.mutate()}
-              disabled={!canSaveCurrent || saveCurrentMutation.isPending}
-              className="w-full gap-2 sm:w-auto"
-            >
-              {saveCurrentMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-              Save current
-            </Button>
           </div>
-        </CardHeader>
-        <CardContent>
+          <Button
+            type="button"
+            onClick={() => saveCurrentMutation.mutate()}
+            disabled={!canSaveCurrent || saveCurrentMutation.isPending}
+            className="tool-primary-button saved-library-save-button"
+          >
+            {saveCurrentMutation.isPending ? <Loader2 className="is-spinning" size={16} /> : <Save size={16} />}
+            Save current
+          </Button>
+        </div>
+
+        <div className="saved-library-body">
           {isLoading ? (
-            <div className="flex items-center justify-center gap-2 rounded-xl border border-border p-6 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              Loading saved files...
+            <div className="saved-library-state">
+              <Loader2 className="is-spinning" size={17} />
+              <span>Loading saved files...</span>
             </div>
           ) : sortedFiles.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border p-6 text-center">
-              <FileText className="mx-auto size-8 text-muted-foreground/70" />
-              <p className="mt-3 text-sm font-bold text-foreground">No saved files yet</p>
-              <p className="mt-1 text-xs text-muted-foreground">Generated files you save here stay available for 30 days.</p>
+            <div className="tool-empty-state compact saved-library-empty">
+              <FileText size={34} />
+              <strong>No saved files yet</strong>
+              <span>Generated files you save here stay available for 30 days.</span>
             </div>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="saved-library-grid">
               {sortedFiles.map((file) => (
-                <div key={file.id} className="rounded-xl border border-border bg-background/60 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-foreground">{file.fileName}</p>
-                      {file.patientName && (
-                        <p className="mt-1 truncate text-xs font-semibold text-muted-foreground">{file.patientName}</p>
-                      )}
+                <article key={file.id} className="saved-library-card">
+                  <div className="saved-library-card-head">
+                    <div>
+                      <h3>{file.fileName}</h3>
+                      {file.patientName && <p>{file.patientName}</p>}
                     </div>
-                    <Badge variant={file.daysRemaining <= 3 ? "destructive" : "secondary"} className="shrink-0">
+                    <span className="saved-library-countdown" data-tone={getCountdownTone(file.daysRemaining)}>
                       {getCountdownLabel(file.daysRemaining)}
-                    </Badge>
+                    </span>
                   </div>
-                  <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                    <CalendarClock className="size-3.5" />
+
+                  <div className="saved-library-meta">
+                    <CalendarClock size={15} />
                     <span>Deletes {formatDate(file.expiresAt)}</span>
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
+
+                  <div className="saved-library-actions">
                     {onUseFile && (
-                      <Button type="button" size="sm" variant="outline" onClick={() => onUseFile(file)} className="gap-2">
-                        <RotateCcw className="size-4" />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onUseFile(file)}
+                        className="tool-secondary-button saved-library-action"
+                      >
+                        <RotateCcw size={15} />
                         Use
                       </Button>
                     )}
-                    <Button type="button" size="sm" variant="outline" onClick={() => setSelectedFile(file)} className="gap-2">
-                      <Pencil className="size-4" />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedFile(file)}
+                      className="tool-secondary-button saved-library-action"
+                    >
+                      <Pencil size={15} />
                       Open
                     </Button>
                     <Button
@@ -199,9 +216,9 @@ export function SavedAiFilesLibrary({
                       variant="outline"
                       onClick={() => downloadMutation.mutate(file)}
                       disabled={downloadMutation.isPending}
-                      className="gap-2"
+                      className="tool-secondary-button saved-library-action"
                     >
-                      <Download className="size-4" />
+                      <Download size={15} />
                       PDF
                     </Button>
                     <Button
@@ -214,50 +231,53 @@ export function SavedAiFilesLibrary({
                         }
                       }}
                       disabled={deleteMutation.isPending}
-                      className="gap-2 text-destructive hover:text-destructive"
+                      className="tool-secondary-button saved-library-action is-danger"
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 size={15} />
                       Delete
                     </Button>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       <Dialog open={Boolean(selectedFile)} onOpenChange={(open) => !open && setSelectedFile(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
+        <DialogContent className="saved-library-dialog">
+          <DialogHeader className="saved-library-dialog-head">
             <DialogTitle>Edit Saved File</DialogTitle>
           </DialogHeader>
           {selectedFile && (
-            <div className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-[1fr_220px]">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">File name</label>
+            <div className="saved-library-edit-form">
+              <div className="saved-library-field-grid">
+                <label>
+                  <span>File name</span>
                   <Input value={fileName} onChange={(event) => setFileName(event.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Patient / identifier</label>
+                </label>
+                <label>
+                  <span>Patient / identifier</span>
                   <Input value={patientName} onChange={(event) => setPatientName(event.target.value)} />
-                </div>
+                </label>
               </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <Badge variant={selectedFile.daysRemaining <= 3 ? "destructive" : "secondary"}>
+
+              <div className="saved-library-dialog-meta">
+                <span className="saved-library-countdown" data-tone={getCountdownTone(selectedFile.daysRemaining)}>
                   {getCountdownLabel(selectedFile.daysRemaining)}
-                </Badge>
+                </span>
                 <span>Expires {formatDate(selectedFile.expiresAt)}</span>
               </div>
-              <ScrollArea className="max-h-[52vh]">
+
+              <ScrollArea className="saved-library-scroll">
                 <Textarea
                   value={content}
                   onChange={(event) => setContent(event.target.value)}
-                  className="min-h-[360px] resize-y font-mono text-sm leading-6"
+                  className="saved-library-textarea"
                 />
               </ScrollArea>
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+
+              <div className="saved-library-dialog-actions">
                 {onUseFile && (
                   <Button
                     type="button"
@@ -266,18 +286,28 @@ export function SavedAiFilesLibrary({
                       onUseFile(selectedFile);
                       setSelectedFile(null);
                     }}
-                    className="gap-2"
+                    className="tool-secondary-button"
                   >
-                    <RotateCcw className="size-4" />
+                    <RotateCcw size={16} />
                     Use this file
                   </Button>
                 )}
-                <Button type="button" variant="outline" onClick={() => downloadMutation.mutate(selectedFile)} className="gap-2">
-                  <Download className="size-4" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => downloadMutation.mutate(selectedFile)}
+                  className="tool-secondary-button"
+                >
+                  <Download size={16} />
                   Download PDF
                 </Button>
-                <Button type="button" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending || !fileName.trim() || !content.trim()} className="gap-2">
-                  {updateMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                <Button
+                  type="button"
+                  onClick={() => updateMutation.mutate()}
+                  disabled={updateMutation.isPending || !fileName.trim() || !content.trim()}
+                  className="tool-primary-button"
+                >
+                  {updateMutation.isPending ? <Loader2 className="is-spinning" size={16} /> : <Save size={16} />}
                   Save changes
                 </Button>
               </div>

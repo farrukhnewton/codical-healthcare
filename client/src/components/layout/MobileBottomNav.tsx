@@ -1,60 +1,28 @@
-﻿import { Link, useLocation } from "wouter";
-import { 
-  LayoutDashboard, 
-  Search, 
-  ClipboardList, 
-  Bookmark, 
-  MoreHorizontal,
-  ShieldCheck,
-  MessageSquare
-} from "lucide-react";
-import { motion } from "framer-motion";
+import { Link, useLocation } from "wouter";
+import { Brain, LayoutDashboard, MessageSquare, MoreHorizontal, Search } from "lucide-react";
 
 const MOBILE_NAV_ITEMS = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/workbench", label: "Workbench", icon: ClipboardList },
-  { href: "/workspace", label: "AI Coder", icon: Bookmark },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/search", label: "Search", icon: Search },
-  { href: "/compliance", label: "Audit", icon: ShieldCheck }, // Admin focused
+  { href: "/workspace", label: "Assistant", icon: Brain },
+  { href: "/chat", label: "Chat", icon: MessageSquare },
+  { href: "/reports", label: "More", icon: MoreHorizontal },
 ];
 
 export function MobileBottomNav() {
   const [location] = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 appGlassStrong appCard border-t border-border/60 px-6 flex items-center justify-between pb-safe z-50 lg:hidden">
+    <nav className="app-mobile-bottom-nav" aria-label="Mobile navigation">
       {MOBILE_NAV_ITEMS.map((item) => {
-        const isActive = location === item.href;
+        const active = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
         return (
-          <Link key={item.href} href={item.href}>
-            <div className="flex flex-col items-center gap-1 cursor-pointer">
-              <div className="relative">
-                <item.icon 
-                  className={`w-6 h-6 transition-all ${
-                    isActive 
-                      ? "text-emerald-600 dark:text-emerald-400" 
-                      : "text-muted-foreground/70"
-                  }`} 
-                />
-                {isActive && (
-                  <motion.div 
-                    layoutId="activeNav"
-                    className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full"
-                  />
-                )}
-              </div>
-              <span className={`text-[10px] font-bold ${
-                isActive 
-                  ? "text-emerald-600 dark:text-emerald-400" 
-                  : "text-muted-foreground/70"
-              }`}>
-                {item.label}
-              </span>
-            </div>
+          <Link key={item.href} href={item.href} className={`app-mobile-bottom-item${active ? " is-active" : ""}`}>
+            <item.icon size={21} />
+            <span>{item.label}</span>
           </Link>
         );
       })}
     </nav>
   );
 }
-

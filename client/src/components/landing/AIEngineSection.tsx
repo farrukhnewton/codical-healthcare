@@ -3,7 +3,7 @@ import { HoloBadge } from "@/components/ui/HoloBadge";
 
 const PIPELINE_STEPS = [
   { step: "01", title: "Input", desc: "Clinical notes, encounter data, or code queries", color: "#4ADE80" },
-  { step: "02", title: "AI Analysis", desc: "Gemini processes against 114,000+ codes & CMS rules", color: "#38BDF8" },
+  { step: "02", title: "Coding Review", desc: "Clinical details are checked against code and CMS rule context", color: "#38BDF8" },
   { step: "03", title: "Validation", desc: "NCCI edits, LCD/NCD checks, modifier validation", color: "#A78BFA" },
   { step: "04", title: "Output", desc: "Verified codes with confidence scores & documentation", color: "#FBBF24" },
 ];
@@ -17,9 +17,9 @@ export function AIEngineSection() {
             <span className="text-sm font-semibold text-violet-700">AI Engine</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-gray-900 mb-6">
-            Powered by{" "}
+            Built for{" "}
             <span className="text-transparent bg-clip-text" style={{ backgroundImage: "linear-gradient(135deg, #7C3AED, #0369A1)" }}>
-              Gemini AI
+              assisted coding review
             </span>
           </h2>
           <p className="text-lg text-gray-600 leading-relaxed">
@@ -53,7 +53,7 @@ export function AIEngineSection() {
         <OrganicCard className="p-8 sm:p-10">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Multi-Code Intelligence</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Multi-Code Review</h3>
               <p className="text-gray-600 mb-6">
                 Our AI understands relationships between ICD-10, CPT, and HCPCS codes.
                 It validates combinations, checks bundling rules, and suggests optimal code sets.

@@ -72,7 +72,7 @@ export function LandingFooter() {
             &copy; {new Date().getFullYear()} Codical Health Solutions. All rights reserved.
           </p>
           <p className="text-xs text-gray-400">
-            Built with AI &middot; Powered by Gemini &middot; 114,000+ Medical Codes
+            Healthcare coding workflow platform &middot; 114,000+ medical codes
           </p>
         </div>
       </div>

@@ -168,7 +168,7 @@ function coverageStatusLabel(status: CoverageStatus) {
   if (status === "covered") return "Covered";
   if (status === "noncovered") return "Noncovered";
   if (status === "mixed") return "Mixed";
-  return "No MCD evidence";
+  return "No coverage evidence";
 }
 
 function coverageStatusClasses(status: CoverageStatus) {
@@ -231,7 +231,7 @@ function formatStructuredRecord(result: TranscriptionResult) {
       ? [
           "--------------------------------",
           "CMS Coverage Evidence:",
-          `Pairs checked: ${coverage.pairCount} | Covered: ${coverage.counts.covered} | Noncovered: ${coverage.counts.noncovered} | Mixed: ${coverage.counts.mixed} | No MCD evidence: ${coverage.counts.notFound}`,
+          `Pairs checked: ${coverage.pairCount} | Covered: ${coverage.counts.covered} | Noncovered: ${coverage.counts.noncovered} | Mixed: ${coverage.counts.mixed} | No coverage evidence: ${coverage.counts.notFound}`,
           ...coverage.pairs.map((pair) => {
             const evidence = pair.topEvidence
               ? ` | ${pair.topEvidence.displayId} group ${pair.topEvidence.groupNumber}: ${pair.topEvidence.title}`
@@ -455,7 +455,7 @@ export function VoiceTranscription() {
 
     const written = writeClaimValidatorHandoff({
       source: "transcription",
-      sourceLabel: "AI Transcription",
+      sourceLabel: "Clinical Transcription",
       diagnosisCodes: claimValidatorCodeSet.diagnosisCodes,
       procedureCodes: claimValidatorCodeSet.procedureCodes,
       ncciType: "practitioner",
@@ -473,35 +473,31 @@ export function VoiceTranscription() {
   const isLoading = mutation.isPending;
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto flex flex-col gap-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4">
-          <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <Mic className="size-6 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-3xl font-black text-foreground tracking-tight">Codical AI Transcription</h1>
-            <p className="text-muted-foreground font-medium">
-              Upload a medical consultation audio file and get a structured medical record instantly
-            </p>
-          </div>
+    <div className="tool-page collaboration-page transcription-page">
+      <section className="tool-panel tool-page-header">
+        <div>
+          <h1>Clinical Transcription</h1>
+          <p>Upload consultation audio, review the structured record, and send suggested codes to claim validation.</p>
         </div>
-      </div>
+        <div className="search-header-meta">
+          <span>Audio to record</span>
+          <span>25MB max</span>
+        </div>
+      </section>
 
-      <Card className="border-2">
+      <Card className="tool-panel transcription-upload-panel">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl font-black">
+          <CardTitle className="transcription-card-title">
             <FileAudio className="size-5 text-primary" />
             Audio Upload
           </CardTitle>
-          <CardDescription>.wav, .mp3, .flac, .m4a, .aac, .aiff, and .ogg files up to 25MB</CardDescription>
+          <CardDescription>WAV, MP3, FLAC, M4A, AAC, AIFF, and OGG files up to 25MB.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="transcription-upload-content">
           <div
             className={cn(
-              "rounded-2xl border-2 border-dashed p-8 transition-colors",
-              "bg-background/40 flex flex-col items-center justify-center gap-4 text-center",
-              isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50",
+              "transcription-dropzone",
+              isDragging && "is-dragging",
             )}
             onDragEnter={(event) => {
               event.preventDefault();
@@ -525,43 +521,43 @@ export function VoiceTranscription() {
               }}
             />
 
-            <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <div className="transcription-dropzone-icon">
               <Upload className="size-7 text-primary" />
             </div>
-            <div className="flex flex-col gap-1">
-              <p className="font-black text-foreground">Drop audio file here</p>
-              <p className="text-sm text-muted-foreground">Supported formats: WAV, MP3, FLAC, M4A, AAC, AIFF, OGG</p>
+            <div>
+              <strong>Drop audio file here</strong>
+              <span>Supported formats: WAV, MP3, FLAC, M4A, AAC, AIFF, OGG</span>
             </div>
-            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="tool-secondary-button">
               <Upload data-icon="inline-start" />
-              Click to Browse
+              Browse files
             </Button>
           </div>
 
           {selectedFile && (
-            <div className="rounded-2xl border border-border bg-background/50 p-4 flex items-center gap-3">
-              <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div className="transcription-file-card">
+              <div>
                 <FileAudio className="size-5 text-primary" />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-foreground truncate">{selectedFile.name}</p>
-                <p className="text-sm text-muted-foreground">{formatBytes(selectedFile.size)}</p>
+              <div>
+                <strong>{selectedFile.name}</strong>
+                <span>{formatBytes(selectedFile.size)}</span>
               </div>
-              <Button type="button" variant="ghost" size="icon" onClick={clearFile} aria-label="Remove selected file">
+              <Button type="button" variant="ghost" size="icon" onClick={clearFile} aria-label="Remove selected file" className="tool-icon-action">
                 <X />
               </Button>
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs font-medium text-muted-foreground">
-            Audio is processed by the Codical AI transcription service after upload.
+        <CardFooter className="transcription-upload-footer">
+          <p>
+            Audio is processed after upload and returned as a structured medical record.
           </p>
           <Button
             type="button"
             disabled={!selectedFile || isLoading}
             onClick={() => selectedFile && mutation.mutate(selectedFile)}
-            className="w-full sm:w-auto font-bold"
+            className="tool-primary-button"
           >
             {isLoading ? (
               <>
@@ -579,7 +575,7 @@ export function VoiceTranscription() {
       </Card>
 
       {error && (
-        <Alert className="border-destructive/30 bg-destructive/10 text-destructive">
+        <Alert className="tool-callout" data-tone="danger">
           <AlertCircle className="size-4" />
           <AlertTitle>Transcription failed</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
@@ -587,39 +583,39 @@ export function VoiceTranscription() {
       )}
 
       {result && (
-        <Card className="border-2 overflow-hidden">
-          <CardHeader className="bg-primary/5 border-b border-border">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <Card className="tool-panel transcription-result-panel">
+          <CardHeader className="transcription-result-head">
+            <div>
               <div>
-                <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-wide">
+                <CardTitle className="transcription-card-title">
                   <ClipboardList className="size-5 text-primary" />
                   Medical Transcription Record
                 </CardTitle>
                 <CardDescription>
                   Saved record #{result.id}
-                  {result.createdAt ? ` · ${new Date(result.createdAt).toLocaleString()}` : ""}
+                  {result.createdAt ? ` | ${new Date(result.createdAt).toLocaleString()}` : ""}
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2 text-sm font-bold text-primary">
+              <div className="tool-status-pill" data-tone="success">
                 <CheckCircle className="size-4" />
                 Complete
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="grid md:grid-cols-2">
+          <CardContent className="transcription-result-content">
+            <div className="transcription-field-grid">
               {fields.map((field) => {
                 const Icon = field.icon;
                 const isMissing = !field.value || field.value === NOT_DETECTED;
 
                 return (
-                  <div key={field.label} className="flex gap-3 border-b border-border p-4 md:odd:border-r">
-                    <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <div key={field.label} className="transcription-field-card">
+                    <div>
                       <Icon className="size-4 text-primary" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-black uppercase tracking-wide text-muted-foreground">{field.label}</p>
-                      <p className={cn("mt-1 text-sm font-bold text-foreground leading-6", isMissing && "text-muted-foreground font-medium")}>
+                    <div>
+                      <span>{field.label}</span>
+                      <p className={cn(isMissing && "is-missing")}>
                         {field.value || NOT_DETECTED}
                       </p>
                     </div>
@@ -820,18 +816,18 @@ export function VoiceTranscription() {
               </div>
             </Collapsible>
           </CardContent>
-          <CardFooter className="flex flex-col gap-3 border-t border-border bg-background/40 p-4 sm:flex-row sm:justify-end">
+          <CardFooter className="transcription-result-actions">
             {canOpenClaimValidator && (
-              <Button type="button" variant="outline" onClick={openClaimValidator} className="w-full sm:w-auto">
+              <Button type="button" variant="outline" onClick={openClaimValidator} className="tool-secondary-button">
                 <ClipboardCheck data-icon="inline-start" />
                 Claim Validator
               </Button>
             )}
-            <Button type="button" variant="outline" onClick={handleCopy} className="w-full sm:w-auto">
+            <Button type="button" variant="outline" onClick={handleCopy} className="tool-secondary-button">
               <Copy data-icon="inline-start" />
               Copy to Clipboard
             </Button>
-            <Button type="button" onClick={handleNewTranscription} className="w-full sm:w-auto">
+            <Button type="button" onClick={handleNewTranscription} className="tool-primary-button">
               <Mic data-icon="inline-start" />
               New Transcription
             </Button>

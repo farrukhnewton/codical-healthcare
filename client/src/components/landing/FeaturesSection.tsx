@@ -12,7 +12,7 @@ import {
 const FEATURES = [
   {
     title: "AI Medical Coding",
-    desc: "Gemini-powered code suggestions with 99.2% accuracy across ICD-10, CPT, HCPCS.",
+    desc: "Assistive code suggestions across ICD-10, CPT, and HCPCS with certified coder review.",
     variant: "forest" as const,
     Icon: Brain,
   },
@@ -63,7 +63,7 @@ export function FeaturesSection() {
           </h2>
 
           <p className="text-lg text-gray-600 leading-relaxed">
-            50+ tools for medical coders, billers, and revenue cycle teams. Powered by AI, backed by real CMS data.
+            Tools for medical coders, billers, and revenue cycle teams, backed by real CMS data.
           </p>
         </div>
 

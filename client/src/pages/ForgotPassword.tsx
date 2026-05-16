@@ -1,21 +1,19 @@
-﻿import { useState } from "react";
-import { Mail, ArrowRight } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { ArrowRight, CheckCircle2, Mail } from "lucide-react";
+import { Link } from "wouter";
+import { AuthCard, AuthField, AuthNotice, AuthShell } from "@/components/auth/AuthShell";
+import { getPasswordResetUrl } from "@/lib/authRedirect";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
-import { AuthCard, AuthShell } from "@/components/auth/AuthShell";
-import { getPasswordResetUrl } from "@/lib/authRedirect";
 
 export function ForgotPassword() {
   const { toast } = useToast();
-
   const [email, setEmail] = useState("");
-  const [focused, setFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const sendReset = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const sendReset = async (event: FormEvent) => {
+    event.preventDefault();
     if (isLoading) return;
 
     setIsLoading(true);
@@ -36,73 +34,43 @@ export function ForgotPassword() {
     }
   };
 
-  const fieldWrap =
-    "flex items-center gap-3 h-12 px-4 rounded-xl border transition-all duration-300 " +
-    "bg-[rgba(255,255,255,0.10)] border-[rgba(255,255,255,0.26)] backdrop-blur-[14px]";
-  const fieldActive =
-    "border-[rgba(74,222,128,0.42)] shadow-[0_0_0_4px_rgba(74,222,128,0.10)]";
-
   return (
     <AuthShell>
       <AuthCard
         title="Reset your password"
-        subtitle="We’ll email you a secure link to create a new password."
+        subtitle="Enter your email and we will send you a secure reset link."
         footer={
-          <div className="text-center text-[13px] font-black tracking-[-0.01em] text-[hsl(var(--muted-foreground))]">
-            Remembered it?{" "}
-            <Link href="/login" className="underline underline-offset-4 text-[hsl(var(--foreground))]">
-              Back to sign in
-            </Link>
+          <div className="auth-switch-copy">
+            Remembered it? <Link href="/login">Back to sign in</Link>
           </div>
         }
       >
         {sent ? (
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.26)] bg-[rgba(255,255,255,0.10)] p-5 text-center">
-            <div className="mx-auto w-12 h-12 rounded-2xl grid place-items-center border border-[rgba(74,222,128,0.25)] bg-[rgba(74,222,128,0.12)]">
-              <Mail className="w-5 h-5 text-[rgba(16,185,129,0.95)]" />
-            </div>
-            <div className="mt-4 text-[16px] font-black text-[hsl(var(--foreground))]">Email sent</div>
-            <p className="mt-2 text-[13px] leading-[1.7] text-[hsl(var(--muted-foreground))]">
-              If an account exists for <span className="font-black text-[hsl(var(--foreground))]">{email}</span>, you’ll receive a reset link shortly.
-            </p>
-          </div>
+          <AuthNotice icon={<CheckCircle2 size={20} />} title="Email sent" tone="success">
+            If an account exists for <strong>{email}</strong>, you will receive a reset link shortly.
+          </AuthNotice>
         ) : (
-          <form onSubmit={sendReset} className="grid gap-4">
-            <div>
-              <label className="block text-[11px] font-black tracking-[0.16em] uppercase text-[hsl(var(--muted-foreground))] mb-2">
-                Email address
-              </label>
-              <div className={fieldWrap + (focused ? " " + fieldActive : "")}>
-                <Mail className={"w-4 h-4 flex-shrink-0 " + (focused ? "text-[rgba(74,222,128,0.95)]" : "text-[hsl(var(--muted-foreground))]")} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="you@company.com"
-                  onFocus={() => setFocused(true)}
-                  onBlur={() => setFocused(false)}
-                  className="flex-1 border-none outline-none text-[14px] font-black tracking-[-0.01em] text-[hsl(var(--foreground))] bg-transparent placeholder:text-[hsl(var(--muted-foreground))]"
-                />
-              </div>
-            </div>
+          <form onSubmit={sendReset} className="auth-form">
+            <AuthField
+              id="forgot-email"
+              label="Email address"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              required
+              autoComplete="email"
+              placeholder="you@organization.com"
+              icon={<Mail size={18} />}
+            />
 
-            <button type="submit" disabled={isLoading} className="ln-btn ln-btnPrimary ln-magnetic w-full">
-              {isLoading ? (
-                <span>Sending…</span>
-              ) : (
-                <>
-                  <span>Send reset link</span>
-                  <ArrowRight size={18} />
-                </>
-              )}
+            <button type="submit" disabled={isLoading} className="auth-submit-button">
+              <span>{isLoading ? "Sending..." : "Send reset link"}</span>
+              {!isLoading ? <ArrowRight size={18} /> : null}
             </button>
 
-            <div className="text-center">
-              <Link href="/login" className="text-[13px] font-black text-[hsl(var(--foreground))] underline underline-offset-4">
-                Cancel
-              </Link>
-            </div>
+            <Link href="/login" className="auth-cancel-link">
+              Cancel
+            </Link>
           </form>
         )}
       </AuthCard>

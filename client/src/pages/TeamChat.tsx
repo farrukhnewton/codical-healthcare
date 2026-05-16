@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
-import { UserPlus, ChevronLeft, MessageSquare } from 'lucide-react';
+import { UserPlus, ChevronLeft, MessageSquare, Info, ShieldCheck } from 'lucide-react';
 import { FriendsManager } from '@/components/chat/FriendsManager';
 import { Badge } from '@/components/ui/badge';
 import { NewConversationModal } from "./NewConversation";
@@ -25,6 +25,12 @@ function formatPresence(user?: { isOnline?: boolean; lastSeen?: string }) {
   if (!user?.lastSeen) return "Offline";
 
   return `Away ${formatDistanceToNow(new Date(user.lastSeen), { addSuffix: true })}`;
+}
+
+function getConversationDisplayName(conversation: Conversation, currentUserId: number) {
+  const otherParticipants = conversation.participants?.filter((participant) => participant?.id !== currentUserId) || [];
+  const rawName = conversation.name || otherParticipants.map((participant) => participant?.fullName || participant?.username).join(', ') || 'Conversation';
+  return rawName === 'Codical AI' ? 'Coding Assistant' : rawName;
 }
 
 export function TeamChat() {
@@ -128,11 +134,11 @@ export function TeamChat() {
     }).then(() => {
       queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
     }).catch((err) => {
-      console.error('Failed to ensure AI conversation:', err);
+      console.error('Failed to ensure assistant conversation:', err);
     });
   }, [user?.id, isLoading, hasCodicalAiConversation]);
-  const filteredConversations = conversations.filter(c =>
-    c.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredConversations = conversations.filter((conversation) =>
+    getConversationDisplayName(conversation, user?.id || 0).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   useEffect(() => {
@@ -151,49 +157,62 @@ export function TeamChat() {
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
   if (authLoading) return <ChatLoadingSkeleton />;
-  if (authError) return <div className="p-4 text-red-500">Error: {authError}</div>;
-  if (!user) return <div className="p-4">Please log in to access chat.</div>;
+  if (authError) return <div className="tool-page collaboration-page"><div className="tool-callout" data-tone="danger">Error: {authError}</div></div>;
+  if (!user) return <div className="tool-page collaboration-page"><div className="tool-callout" data-tone="warning">Please log in to access chat.</div></div>;
   if (isLoading) return <ChatLoadingSkeleton />;
-  if (error) return <div className="p-4 text-red-500">Error: {(error as Error).message}</div>;
+  if (error) return <div className="tool-page collaboration-page"><div className="tool-callout" data-tone="danger">Error: {(error as Error).message}</div></div>;
 
   return (
-    <div className="flex h-[calc(100vh-140px)] md:h-[calc(100vh-120px)] bg-white dark:bg-gray-900 md:rounded-xl md:shadow-sm md:border overflow-hidden md:m-4">
-      {/* Sidebar - HIDDEN on mobile if chat is active */}
-      <div className={cn(
-        "w-full md:w-80 border-r border-gray-200 dark:border-gray-800 flex flex-col bg-gray-50 dark:bg-gray-900 transition-all duration-300",
+    <div className="tool-page collaboration-page team-chat-page">
+      <section className="tool-panel tool-page-header">
+        <div>
+          <h1>Team Chat</h1>
+          <p>Coordinate coding work with team conversations, attachments, and assistant-ready context.</p>
+        </div>
+        <div className="search-header-meta">
+          <span>{conversations.length} conversations</span>
+          <span>{filteredConversations.length} visible</span>
+        </div>
+      </section>
+
+      <section className="tool-panel team-chat-shell">
+        <div className={cn(
+        "team-chat-list-pane",
         !showMobileSidebar && "hidden md:flex"
       )}>
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-blue-600" />
-              Codical Chat
+          <div className="team-chat-list-head">
+            <div>
+              <h2>
+                <MessageSquare size={18} />
+                Conversations
             </h2>
-            <div className="flex gap-1">
-              <Button onClick={() => setIsFriendsModalOpen(true)} size="icon" variant="ghost" className="rounded-full text-blue-600 hover:bg-blue-50">
+              <p>Recent coding discussions and direct messages.</p>
+            </div>
+            <div className="team-chat-head-actions">
+              <Button onClick={() => setIsFriendsModalOpen(true)} size="icon" variant="ghost" className="tool-icon-action" aria-label="Manage contacts">
                 <UserPlus className="w-5 h-5" />
               </Button>
-              <Button onClick={() => setIsModalOpen(true)} size="icon" variant="ghost" className="rounded-full">
+              <Button onClick={() => setIsModalOpen(true)} size="icon" variant="ghost" className="tool-icon-action" aria-label="New conversation">
                 <Plus className="w-5 h-5" />
               </Button>
             </div>
           </div>
-          <div className="relative">
+          <div className="team-chat-search">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
-              placeholder="Search conversations..."
+              placeholder="Search conversations"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-white dark:bg-gray-800"
+              className="tool-input"
             />
           </div>
-        </div>
-
-        <ScrollArea className="flex-1">
+        <ScrollArea className="team-chat-list-scroll">
           {filteredConversations.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              <p>No conversations yet</p>
-              <Button onClick={() => setIsModalOpen(true)} variant="link" className="mt-2">
+            <div className="tool-empty-state compact">
+              <MessageSquare size={28} />
+              <strong>No conversations yet</strong>
+              <span>Start a direct message or invite a teammate to a group thread.</span>
+              <Button onClick={() => setIsModalOpen(true)} variant="link" className="tool-secondary-button">
                 Start a new conversation
               </Button>
             </div>
@@ -209,11 +228,10 @@ export function TeamChat() {
             ))
           )}
         </ScrollArea>
-      </div>
+        </div>
 
-      {/* Chat Area - HIDDEN on mobile if list is visible */}
-      <div className={cn(
-        "flex-1 flex flex-col bg-white dark:bg-gray-950 transition-all duration-300",
+        <div className={cn(
+        "team-chat-thread-pane",
         showMobileSidebar && "hidden md:flex"
       )}>
         {selectedConversation ? (
@@ -225,7 +243,47 @@ export function TeamChat() {
         ) : (
           <EmptyState onNewConversation={() => setIsModalOpen(true)} />
         )}
-      </div>
+        </div>
+
+        <aside className="team-chat-context-pane">
+          <div className="tool-section-head">
+            <div>
+              <h2>Conversation Context</h2>
+              <p>{selectedConversation ? "People, status, and collaboration notes." : "Select a thread to view details."}</p>
+            </div>
+            <Info size={17} />
+          </div>
+
+          {selectedConversation ? (
+            <div className="team-chat-context-stack">
+              <div className="team-chat-context-card">
+                <span>Thread</span>
+                <strong>{getConversationDisplayName(selectedConversation, user.id)}</strong>
+                <small>{selectedConversation.isGroup ? `${selectedConversation.participants?.length || 0} participants` : "Direct message"}</small>
+              </div>
+              <div className="team-chat-context-card">
+                <span>Read Status</span>
+                <strong>{(selectedConversation.unread || 0) > 0 ? `${selectedConversation.unread} unread` : "Current"}</strong>
+                <small>Updates sync while this page is open.</small>
+              </div>
+              <div className="tool-callout compact" data-tone="info">
+                <ShieldCheck size={15} />
+                Keep PHI inside approved workflows and avoid pasting credentials or access tokens.
+              </div>
+              <button type="button" className="tool-secondary-button full-width" onClick={() => setIsFriendsModalOpen(true)}>
+                <UserPlus size={15} />
+                Manage contacts
+              </button>
+            </div>
+          ) : (
+            <div className="tool-empty-state compact">
+              <Users size={28} />
+              <strong>No thread selected</strong>
+              <span>Choose a conversation to see participants and thread actions.</span>
+            </div>
+          )}
+        </aside>
+      </section>
 
       <NewConversationModal open={isModalOpen} onOpenChange={setIsModalOpen} />
       <FriendsManager 
@@ -249,55 +307,54 @@ function ConversationItem({
   onClick: () => void;
 }) {
   const otherParticipants = conversation.participants?.filter(p => p?.id !== currentUserId) || [];
-  const displayName = conversation.name || otherParticipants.map(p => p?.fullName || p?.username).join(', ') || 'Conversation';
+  const displayName = getConversationDisplayName(conversation, currentUserId);
   const initials = displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const primaryParticipant = otherParticipants[0];
 
   return (
-    <div
+    <button
+      type="button"
       className={cn(
-        "p-3 cursor-pointer border-l-4 transition-all hover:bg-gray-100 dark:hover:bg-gray-800",
-        isSelected ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500" : "border-transparent"
+        "team-chat-conversation-card",
+        isSelected && "is-selected"
       )}
       onClick={onClick}
     >
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <Avatar className="h-12 w-12">
+      <div className="team-chat-avatar-wrap">
+          <Avatar className="team-chat-avatar">
             <AvatarImage src={primaryParticipant?.avatarUrl} />
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+            <AvatarFallback className="team-chat-avatar-fallback">
               {initials}
             </AvatarFallback>
           </Avatar>
           {primaryParticipant?.isOnline && (
-            <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-gray-900" />
+            <span className="team-chat-presence-dot" />
           )}
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex justify-between items-center">
-            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{displayName}</p>
+        <div className="team-chat-conversation-copy">
+          <div>
+            <strong>{displayName}</strong>
             {conversation.lastMessage && (
-              <span className="text-xs text-gray-500">
+              <time>
                 {formatDistanceToNow(new Date(conversation.lastMessage.createdAt || Date.now()), { addSuffix: false })}
-              </span>
+              </time>
             )}
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+          <p>
             {conversation.lastMessage?.content || 'No messages yet'}
           </p>
           {primaryParticipant && (
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+            <small>
               {formatPresence(primaryParticipant)}
-            </p>
+            </small>
           )}
         </div>
         {(conversation.unread || 0) > 0 && (
-          <span className="bg-blue-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+          <span className="team-chat-unread-count">
             {conversation.unread}
           </span>
         )}
-      </div>
-    </div>
+    </button>
   );
 }
 
@@ -435,7 +492,8 @@ function ChatWindow({
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const viewport = messagesEndRef.current?.parentElement;
+    viewport?.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
@@ -452,7 +510,7 @@ function ChatWindow({
   }, [conversation.id, currentUser?.id, messages.length]);
 
   const otherParticipants = conversation.participants?.filter((p: any) => p?.id !== currentUser.id) || [];
-  const displayName = conversation.name || otherParticipants.map((p: any) => p?.fullName || p?.username).join(', ') || 'Conversation';
+  const displayName = getConversationDisplayName(conversation, currentUser.id);
   const primaryParticipant = otherParticipants[0];
 
   const openPopup = () => window.open(window.location.href, "_blank", "width=520,height=760");
@@ -469,11 +527,11 @@ function ChatWindow({
   const askAI = async () => {
     try {
       if (!currentUser?.id) {
-        toast({ title: "Error", description: "You must be logged in to use Ask AI.", variant: "destructive" });
+        toast({ title: "Error", description: "You must be logged in to use Ask Assistant.", variant: "destructive" });
         return;
       }
 
-      toast({ title: "Ask AI", description: "Analyzing conversation..." });
+      toast({ title: "Ask Assistant", description: "Analyzing conversation..." });
 
       const res = await fetch(`/api/chat/conversations/${conversation.id}/ask-ai`, {
         method: "POST",
@@ -487,7 +545,7 @@ function ChatWindow({
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        throw new Error(data?.message || "Failed to get AI response");
+        throw new Error(data?.message || "Failed to get assistant response");
       }
 
       const suggestedReply = data?.result?.suggestedReply || "";
@@ -499,13 +557,13 @@ function ChatWindow({
       }
 
       toast({
-        title: "AI suggestion ready",
+        title: "Assistant suggestion ready",
         description: summary || nextActions[0] || "Suggested reply added to message box.",
       });
     } catch (error: any) {
       toast({
-        title: "Ask AI failed",
-        description: error.message || "Could not process AI request.",
+        title: "Ask Assistant failed",
+        description: error.message || "Could not process assistant request.",
         variant: "destructive",
       });
     }
@@ -522,73 +580,75 @@ function ChatWindow({
 
   return (
     <>
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="team-chat-thread-head">
+        <div className="team-chat-thread-title">
           {onBack && (
             <Button 
               variant="ghost" 
               size="icon" 
-              className="md:hidden -ml-2 rounded-full"
+              className="team-chat-back-button md:hidden"
               onClick={onBack}
             >
               <ChevronLeft className="w-6 h-6" />
             </Button>
           )}
-          <div className="relative">
-            <Avatar className="h-10 w-10">
+          <div className="team-chat-avatar-wrap">
+            <Avatar className="team-chat-avatar small">
               <AvatarImage src={primaryParticipant?.avatarUrl} />
-              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+              <AvatarFallback className="team-chat-avatar-fallback">
                 {displayName.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             {primaryParticipant?.isOnline && (
-              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white dark:border-gray-900" />
+              <span className="team-chat-presence-dot" />
             )}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-900 dark:text-white truncate max-w-[150px] md:max-w-none">
+            <div className="team-chat-thread-name">
+              <h3>
                 {displayName}
               </h3>
-              {displayName.toLowerCase().includes('ai') && (
-                <Badge variant="secondary" className="bg-blue-50 text-blue-600 text-[10px] h-4">AI</Badge>
+              {displayName.toLowerCase().includes('assistant') && (
+                <Badge variant="secondary" className="team-chat-assistant-badge">Assistant</Badge>
               )}
             </div>
-            <p className="text-xs text-gray-500">
+            <p>
               {conversation.isGroup ? `${conversation.participants?.length || 0} participants` : formatPresence(primaryParticipant)}
             </p>
           </div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="tool-icon-action">
               <MoreVertical className="w-5 h-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-[100] w-56 bg-white dark:bg-gray-900 border shadow-xl rounded-xl">
+          <DropdownMenuContent align="end" className="team-chat-menu">
             <DropdownMenuItem onClick={markUnread}>Mark as unread</DropdownMenuItem>
             <DropdownMenuItem onClick={openPopup}>Open in a pop-up</DropdownMenuItem>
             <DropdownMenuItem onClick={muteConversation}>Mute</DropdownMenuItem>
             <DropdownMenuItem onClick={notificationSettings}>Notifications</DropdownMenuItem>
             <DropdownMenuItem onClick={copyConversationId}>Copy conversation ID</DropdownMenuItem>
-            <DropdownMenuItem onClick={askAI}>Ask AI</DropdownMenuItem>
+            <DropdownMenuItem onClick={askAI}>Ask Assistant</DropdownMenuItem>
             <DropdownMenuItem onClick={hideConversation}>Hide conversation</DropdownMenuItem>
             <DropdownMenuItem onClick={deleteConversation} className="text-red-600 dark:text-red-400">Delete conversation</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-      <ScrollArea className="flex-1 p-4 bg-gray-50 dark:bg-gray-950">
+      <ScrollArea className="team-chat-message-scroll">
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div className="team-chat-loading">
+            <span className="tool-spinner dark" />
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>No messages yet. Start the conversation!</p>
+          <div className="tool-empty-state compact">
+            <MessageSquare size={28} />
+            <strong>No messages yet</strong>
+            <span>Start the conversation when the team is ready.</span>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="team-chat-message-list">
             {messages.map((msg: any) => (
               <MessageBubble
                 key={msg.id}
@@ -601,15 +661,15 @@ function ChatWindow({
         <div ref={messagesEndRef} />
       </ScrollArea>
 
-      <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 relative">
+      <div className="team-chat-composer">
         {showEmojiPicker && (
-          <div className="absolute bottom-20 right-20 z-50">
+          <div className="team-chat-emoji-popover">
             <EmojiPicker onEmojiClick={addEmoji} />
           </div>
         )}
 
         {selectedFile && (
-          <div className="mb-2 flex items-center justify-between rounded-lg border px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800">
+          <div className="team-chat-attachment-preview">
             <span className="truncate">{selectedFile.name}</span>
             <Button
               type="button"
@@ -622,12 +682,12 @@ function ChatWindow({
           </div>
         )}
 
-        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-          <div className="relative h-10 w-10 shrink-0">
+        <form onSubmit={handleSendMessage} className="team-chat-compose-form">
+          <div className="team-chat-attach-control">
             <input
               ref={fileInputRef}
               type="file"
-              className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+              className="team-chat-file-input"
               onChange={handleAttachmentSelect}
               disabled={uploadAttachmentMutation.isPending}
               aria-label="Attach file"
@@ -636,12 +696,12 @@ function ChatWindow({
               type="button"
               variant="ghost"
               size="icon"
-              className="pointer-events-none h-full w-full peer-focus-visible:ring-2 peer-focus-visible:ring-ring/40"
+              className="tool-icon-action pointer-events-none"
               disabled={uploadAttachmentMutation.isPending}
               aria-hidden="true"
               tabIndex={-1}
             >
-              <Paperclip className="w-5 h-5 text-gray-500" />
+              <Paperclip className="w-5 h-5" />
             </Button>
           </div>
 
@@ -649,18 +709,18 @@ function ChatWindow({
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1"
+            placeholder="Type a message"
+            className="tool-input team-chat-message-input"
           />
 
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="shrink-0"
+            className="tool-icon-action"
             onClick={() => setShowEmojiPicker((prev) => !prev)}
           >
-            <Smile className="w-5 h-5 text-gray-500" />
+            <Smile className="w-5 h-5" />
           </Button>
 
           <Button
@@ -670,7 +730,7 @@ function ChatWindow({
               uploadAttachmentMutation.isPending ||
               (!message.trim() && !selectedFile)
             }
-            className="shrink-0 bg-blue-600 hover:bg-blue-700"
+            className="tool-primary-button team-chat-send-button"
           >
             <Send className="w-4 h-4" />
           </Button>
@@ -682,25 +742,23 @@ function ChatWindow({
 
 function MessageBubble({ message, isOwnMessage }: { message: any; isOwnMessage: boolean }) {
   return (
-    <div className={cn("flex", isOwnMessage ? "justify-end" : "justify-start")}>
+    <div className={cn("team-chat-message-row", isOwnMessage ? "is-own" : "is-other")}>
       <div
         className={cn(
-          "max-w-[70%] rounded-2xl px-4 py-2 shadow-sm",
-          isOwnMessage
-            ? "bg-blue-600 text-white rounded-br-md"
-            : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md border"
+          "team-chat-message-bubble",
+          isOwnMessage ? "is-own" : "is-other"
         )}
       >
         {!isOwnMessage && (
-          <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+          <p className="team-chat-message-sender">
             {message.sender?.fullName || message.sender?.username || 'Unknown'}
           </p>
         )}
 
-        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+        <p className="team-chat-message-text">{message.content}</p>
 
         {Array.isArray(message.attachments) && message.attachments.length > 0 && (
-          <div className="mt-2 space-y-1">
+          <div className="team-chat-attachment-list">
             {message.attachments.map((att: any) => (
               <a
                 key={att.id}
@@ -708,7 +766,7 @@ function MessageBubble({ message, isOwnMessage }: { message: any; isOwnMessage: 
                 target="_blank"
                 rel="noreferrer"
                 className={cn(
-                  "block text-xs underline break-all",
+                  "team-chat-attachment-link",
                   isOwnMessage ? "text-blue-100" : "text-blue-600 dark:text-blue-400"
                 )}
               >
@@ -718,7 +776,7 @@ function MessageBubble({ message, isOwnMessage }: { message: any; isOwnMessage: 
           </div>
         )}
 
-        <p className={cn("text-xs mt-1", isOwnMessage ? "text-blue-200" : "text-gray-400")}>
+        <p className="team-chat-message-time">
           {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           {message.isEdited && <span className="ml-1">(edited)</span>}
         </p>
@@ -729,13 +787,13 @@ function MessageBubble({ message, isOwnMessage }: { message: any; isOwnMessage: 
 
 function EmptyState({ onNewConversation }: { onNewConversation: () => void }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gray-50 dark:bg-gray-950">
-      <div className="w-24 h-24 mb-4 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-        <Users className="w-12 h-12 text-gray-400" />
+    <div className="team-chat-empty-state">
+      <div>
+        <Users size={34} />
       </div>
-      <h3 className="text-lg font-semibold mb-2">Welcome to Codical Chat</h3>
-      <p className="text-sm mb-4">Select a conversation or start a new one</p>
-      <Button onClick={onNewConversation}>
+      <h3>Welcome to Team Chat</h3>
+      <p>Select a conversation or start a new one.</p>
+      <Button onClick={onNewConversation} className="tool-primary-button">
         <Plus className="w-4 h-4 mr-2" />
         New Conversation
       </Button>
@@ -745,23 +803,25 @@ function EmptyState({ onNewConversation }: { onNewConversation: () => void }) {
 
 function ChatLoadingSkeleton() {
   return (
-    <div className="flex h-[calc(100vh-120px)] m-4 rounded-xl border overflow-hidden">
-      <div className="w-80 border-r bg-gray-50 dark:bg-gray-900 p-4 space-y-4">
-        <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-        <div className="h-10 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+    <div className="tool-page collaboration-page team-chat-page">
+      <section className="tool-panel team-chat-loading-shell">
+      <div className="team-chat-loading-list">
+        <div className="team-chat-skeleton large" />
+        <div className="team-chat-skeleton" />
         {[1, 2, 3].map(i => (
-          <div key={i} className="flex items-center gap-3 p-3">
-            <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-              <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-2/3 animate-pulse" />
+          <div key={i} className="team-chat-loading-row">
+            <div className="team-chat-skeleton avatar" />
+            <div>
+              <div className="team-chat-skeleton" />
+              <div className="team-chat-skeleton short" />
             </div>
           </div>
         ))}
       </div>
-      <div className="flex-1 bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      <div className="team-chat-loading-main">
+        <span className="tool-spinner dark" />
       </div>
+      </section>
     </div>
   );
 }

@@ -91,8 +91,8 @@ export function HeroNext() {
   const meta = useMemo(
     () => [
       { icon: ShieldCheck, label: "Compliance signals" },
-      { icon: Zap, label: "Sub‑second search" },
-      { icon: Sparkles, label: "Explainable AI" },
+      { icon: Zap, label: "Sub-second search" },
+      { icon: Sparkles, label: "Explainable guidance" },
       { icon: BarChart3, label: "Analytics cockpit" },
     ],
     []
@@ -115,7 +115,7 @@ export function HeroNext() {
                   boxShadow: "0 0 0 7px rgba(74,222,128,0.08)",
                 }}
               />
-              Calm, cinematic healthcare intelligence
+              Healthcare coding workflow platform
             </div>
 
             <h1 className="ln-h1">
@@ -123,7 +123,7 @@ export function HeroNext() {
             </h1>
 
             <p className="ln-lead">
-              Codical turns policy, edits, and code intelligence into a clean, explainable workflow—built for coders,
+              Codical turns policy, edits, and code intelligence into a clean, explainable workflow built for coders,
               billers, and revenue cycle teams.
             </p>
 
@@ -179,7 +179,7 @@ export function HeroNext() {
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                   <span style={{ padding: "6px 10px", borderRadius: 12, fontWeight: 900, fontSize: 12, border: "1px solid rgba(74,222,128,0.22)", background: "rgba(74,222,128,0.12)", color: "rgba(16,185,129,1)" }} className="mono">CPT</span>
                   <span className="mono" style={{ fontSize: 18, fontWeight: 900 }}>99214</span>
-                  <span style={{ fontWeight: 800, color: "hsl(var(--muted-foreground))" }}>Office visit — established</span>
+                  <span style={{ fontWeight: 800, color: "hsl(var(--muted-foreground))" }}>Office visit - established</span>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>

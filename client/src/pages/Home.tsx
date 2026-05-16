@@ -1,79 +1,116 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import {
-  Activity,
   ArrowRight,
   BarChart2,
   BookOpen,
   Brain,
-  Calculator,
+  CalendarCheck2,
+  CheckCircle2,
   ClipboardCheck,
-  Clock,
-  FileText,
-  Hash,
-  Pill,
+  FileCheck2,
   Search,
-  Shield,
-  Sparkles,
+  ShieldCheck,
+  Stethoscope,
+  TrendingDown,
   TrendingUp,
-  User,
-  Zap,
 } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
-const TOOLS = [
-  { href: "/search", icon: Search, label: "Code Search", desc: "ICD-10, CPT, HCPCS" },
-  { href: "/intel/99214", icon: Zap, label: "Code Intelligence", desc: "RVU, guidance and risk" },
-  { href: "/workspace", icon: Brain, label: "Codical AI Coder", desc: "Suggest codes from notes" },
-  { href: "/intelligence", icon: BookOpen, label: "Coverage Hub", desc: "LCD, NCD, payer policies" },
-  { href: "/ncci", icon: Shield, label: "NCCI Checker", desc: "Code pair edit review" },
-  { href: "/claim-validator", icon: ClipboardCheck, label: "Claim Validator", desc: "Coverage and NCCI set review" },
-  { href: "/rvu", icon: Calculator, label: "RVU Calculator", desc: "Fee schedule modeling" },
-  { href: "/anesthesia", icon: Activity, label: "Anesthesia Calc", desc: "Base and time units" },
-  { href: "/npi", icon: User, label: "NPI Lookup", desc: "Provider registry" },
-  { href: "/druglookup", icon: Pill, label: "Drug Lookup", desc: "NDC database" },
+const KPI_CARDS = [
+  { label: "Encounters today", value: "128", delta: "+12%", trend: "up", icon: ClipboardCheck },
+  { label: "Queries outstanding", value: "36", delta: "-8%", trend: "down", icon: CheckCircle2 },
+  { label: "Claims in review", value: "72", delta: "+15%", trend: "alert", icon: FileCheck2 },
+  { label: "Net collections MTD", value: "$1.24M", delta: "+9%", trend: "up", icon: BarChart2 },
 ];
 
-const DB_STATS = [
-  { label: "ICD-10-CM Codes", value: "FY 2026", icon: FileText },
-  { label: "CPT / HCPCS Search", value: "Live", icon: Hash },
-  { label: "NCCI Review", value: "Edit check", icon: Shield },
-  { label: "CMS Coverage", value: "LCD/NCD", icon: BookOpen },
+const WORKFLOW_COLUMNS = [
+  {
+    title: "Routed",
+    count: 42,
+    items: [
+      ["MRN 845729", "Office Visit - Established", "Routine"],
+      ["MRN 763284", "Post-op Follow Up", "Routine"],
+      ["MRN 558912", "Annual Wellness Visit", "Preventive"],
+    ],
+  },
+  {
+    title: "Review",
+    count: 28,
+    items: [
+      ["MRN 334455", "Knee arthroscopy", "Surgical"],
+      ["MRN 221190", "ER Visit - Chest Pain", "ED"],
+      ["MRN 662341", "Laparoscopic cholecystectomy", "Surgical"],
+    ],
+  },
+  {
+    title: "Query",
+    count: 14,
+    items: [
+      ["MRN 119988", "Back pain evaluation", "Query"],
+      ["MRN 667788", "Hypertension follow up", "Query"],
+      ["MRN 445566", "Diabetes w/ complications", "Query"],
+    ],
+  },
+  {
+    title: "Finalized",
+    count: 96,
+    items: [
+      ["MRN 990011", "Colonoscopy w/ biopsy", "Complete"],
+      ["MRN 880099", "Cardiac stress test", "Complete"],
+      ["MRN 770088", "E/M - New patient", "Complete"],
+    ],
+  },
+];
+
+const ACTIVITY = [
+  ["Claim 1234567890 approved", "+ $1,245.00", "success"],
+  ["Query created for MRN 119988", "Back pain evaluation", "query"],
+  ["Code recommendation accepted", "99214", "info"],
+  ["NCCI edit identified", "2 lines", "warning"],
+  ["Claim 0987654321 approved", "+ $987.50", "success"],
 ];
 
 const TRENDING_CODES = [
-  { code: "99213", type: "CPT", desc: "Office visit, established" },
-  { code: "99214", type: "CPT", desc: "Office visit, moderate" },
-  { code: "45378", type: "CPT", desc: "Diagnostic colonoscopy" },
-  { code: "Z23", type: "ICD-10", desc: "Encounter for immunization" },
-  { code: "G0439", type: "HCPCS", desc: "Annual wellness visit" },
-  { code: "M54.50", type: "ICD-10", desc: "Low back pain, unspecified" },
+  ["99213", "Office/outpatient visit, est", "+18%"],
+  ["99214", "Office/outpatient visit, est", "+12%"],
+  ["99203", "Office/outpatient visit, new", "-5%"],
+  ["93000", "Electrocardiogram", "+8%"],
+  ["80053", "Comprehensive metabolic panel", "+6%"],
 ];
 
 const WEEK_DATA = [
-  { day: "Mon", searches: 42, reviews: 12 },
-  { day: "Tue", searches: 78, reviews: 18 },
-  { day: "Wed", searches: 55, reviews: 15 },
-  { day: "Thu", searches: 91, reviews: 24 },
-  { day: "Fri", searches: 63, reviews: 19 },
-  { day: "Sat", searches: 30, reviews: 8 },
-  { day: "Sun", searches: 48, reviews: 10 },
+  { day: "May 7", encounters: 120, codes: 88, queries: 42 },
+  { day: "May 8", encounters: 142, codes: 96, queries: 48 },
+  { day: "May 9", encounters: 148, codes: 94, queries: 46 },
+  { day: "May 10", encounters: 150, codes: 101, queries: 50 },
+  { day: "May 11", encounters: 134, codes: 89, queries: 39 },
+  { day: "May 12", encounters: 163, codes: 106, queries: 52 },
+  { day: "May 13", encounters: 145, codes: 96, queries: 36 },
+];
+
+const QUICK_ACTIONS = [
+  { href: "/workspace", label: "Analyze note", icon: Brain },
+  { href: "/search", label: "Search codes", icon: Search },
+  { href: "/claim-validator", label: "Validate claim", icon: ShieldCheck },
+  { href: "/intelligence", label: "Coverage context", icon: BookOpen },
+  { href: "/anesthesia", label: "Anesthesia units", icon: Stethoscope },
 ];
 
 export function Home() {
   const [, setLocation] = useLocation();
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
-    try {
-      const history = JSON.parse(localStorage.getItem("codicalhealth_search_history") || "[]");
-      setRecentSearches(history.slice(0, 6));
-    } catch {
-      setRecentSearches([]);
-    }
-    const timer = window.setInterval(() => setTime(new Date()), 1000);
+    const timer = window.setInterval(() => setTime(new Date()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -81,169 +118,168 @@ export function Home() {
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
-    <div className="co-dashboard">
-      <div className="co-dashboard-grid">
-        <div className="co-dashboard-hero">
-          <section className="co-dashboard-card">
-            <div className="co-eyebrow"><span className="co-live-dot" /> Command center</div>
-            <h2>{greeting}. <span className="co-gradient-text">Route the next coding decision.</span></h2>
-            <p className="mt-5 max-w-2xl text-[var(--co-muted)] leading-7">
-              Start with search, AI review, NCCI, RVU, coverage or Codical Chat. Each tool is built to keep the code set,
-              rationale and review trail close to the case.
-            </p>
-            <div className="co-hero-actions mt-6">
-              <button className="co-btn co-btn-primary" onClick={() => setLocation("/workspace")}>
-                Analyze op note <ArrowRight size={16} />
-              </button>
-              <button className="co-btn co-btn-ghost" onClick={() => setLocation("/search")}>
-                Search codes
-              </button>
-            </div>
-            <div className="co-trust-row mt-3">
-              <span className="co-trust-pill"><Sparkles size={15} /> AI assistive review</span>
-              <span className="co-trust-pill"><Shield size={15} /> NCCI and coverage checks</span>
-              <span className="co-trust-pill"><Clock size={15} /> Audit-ready history</span>
-            </div>
-          </section>
+    <div className="dash-page">
+      <section className="dash-hero-band">
+        <div className="dash-hero-icon" aria-hidden="true">
+          <CalendarCheck2 size={28} />
+        </div>
+        <div>
+          <h2>{greeting}.</h2>
+          <p>Review the next coding decision.</p>
+        </div>
+        <div className="dash-hero-actions">
+          <button type="button" onClick={() => setLocation("/workspace")}>
+            <Brain size={17} />
+            Analyze note
+          </button>
+          <button type="button" onClick={() => setLocation("/search")}>
+            <Search size={17} />
+            Search codes
+          </button>
+        </div>
+      </section>
 
-          <section className="co-dashboard-card">
-            <div className="co-dash-top">
-              <div>
-                <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--co-muted)]">Today</div>
-                <h3 className="co-heading text-2xl font-black mt-1">Coding workload</h3>
-              </div>
-              <span className="co-badge">Live workspace</span>
+      <section className="dash-kpi-grid" aria-label="Dashboard metrics">
+        {KPI_CARDS.map((card) => (
+          <article className="dash-kpi-card" key={card.label}>
+            <span className={`dash-kpi-icon dash-trend-${card.trend}`}>
+              <card.icon size={20} />
+            </span>
+            <div>
+              <strong>{card.value}</strong>
+              <p>{card.label}</p>
+              <em className={`dash-trend-${card.trend}`}>
+                {card.trend === "down" ? <TrendingDown size={13} /> : <TrendingUp size={13} />}
+                {card.delta}
+              </em>
             </div>
-            <div className="co-code-table">
-              {[
-                ["128", "Cases routed", "Team"],
-                ["18", "NCCI pairs checked", "Risk"],
-                ["2.80", "Sample RVU estimate", "RVU"],
-                ["4", "Open provider queries", "Query"],
-              ].map((row) => (
-                <div className="co-code-row" key={row[1]}>
-                  <span className="co-mono co-green">{row[0]}</span>
-                  <span>{row[1]}</span>
-                  <span className="co-mono">{row[2]}</span>
+          </article>
+        ))}
+      </section>
+
+      <div className="dash-main-grid">
+        <div className="dash-left-column">
+          <section className="dash-card">
+            <div className="dash-section-head">
+              <div>
+                <h3>Coding workflow</h3>
+                <p>Track routed cases, reviews, queries and finalized claims.</p>
+              </div>
+              <button type="button" onClick={() => setLocation("/workspace")}>
+                View worklist <ArrowRight size={15} />
+              </button>
+            </div>
+
+            <div className="dash-workflow-board">
+              {WORKFLOW_COLUMNS.map((column) => (
+                <div className="dash-workflow-column" key={column.title}>
+                  <div className="dash-column-head">
+                    <strong>{column.title}</strong>
+                    <span>{column.count}</span>
+                  </div>
+                  <div className="dash-column-list">
+                    {column.items.map(([mrn, label, status]) => (
+                      <article className="dash-case-card" key={mrn}>
+                        <strong>{mrn}</strong>
+                        <p>{label}</p>
+                        <div>
+                          <time>05/13/2025</time>
+                          <em>{status}</em>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                  <button type="button" className="dash-column-more">+ {column.count - 3} more</button>
                 </div>
               ))}
             </div>
           </section>
-        </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {DB_STATS.map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.06 }}
-              className="co-dashboard-card !p-4 flex items-center gap-3"
-            >
-              <div className="co-tool-icon"><stat.icon size={16} /></div>
+          <section className="dash-card dash-chart-card">
+            <div className="dash-section-head">
               <div>
-                <div className="text-xl font-black text-[var(--co-ink)] leading-none">{stat.value}</div>
-                <div className="text-[11px] text-[var(--co-muted)] font-semibold mt-1">{stat.label}</div>
+                <h3>Coding activity</h3>
+                <p>Last 7 days</p>
               </div>
-            </motion.div>
-          ))}
+              <div className="dash-chart-legend" aria-hidden="true">
+                <span className="is-blue">Encounters</span>
+                <span className="is-teal">Codes assigned</span>
+                <span className="is-violet">Queries</span>
+              </div>
+            </div>
+            <div className="dash-chart-wrap">
+              <ResponsiveContainer width="100%" height={236}>
+                <LineChart data={WEEK_DATA} margin={{ top: 12, right: 18, bottom: 0, left: -18 }}>
+                  <CartesianGrid stroke="#e5eef8" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fill: "#60758f", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#60758f", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      border: "1px solid #c9dcec",
+                      borderRadius: 8,
+                      boxShadow: "0 18px 40px rgba(16, 69, 119, 0.14)",
+                      fontSize: 12,
+                    }}
+                  />
+                  <Line type="monotone" dataKey="encounters" stroke="#0b5ee8" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="codes" stroke="#0f8f83" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="queries" stroke="#6d5bdc" strokeWidth={3} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
         </div>
 
-        <div className="grid lg:grid-cols-[1fr_360px] gap-5">
-          <section className="co-dashboard-card">
-            <div className="co-dash-top">
-              <div className="flex items-center gap-2 text-sm font-bold text-[var(--co-ink)]">
-                <Zap size={15} className="text-[var(--co-cyan)]" /> Professional tool stack
-              </div>
-              <span className="text-[11px] text-[var(--co-muted)]">Daily workflow</span>
+        <aside className="dash-right-column">
+          <section className="dash-card">
+            <div className="dash-section-head compact">
+              <h3>Recent activity</h3>
+              <button type="button">View all</button>
             </div>
-            <div className="co-dashboard-tools">
-              {TOOLS.map((tool, index) => (
-                <motion.button
-                  key={tool.href}
-                  onClick={() => setLocation(tool.href)}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.035 }}
-                  className="co-dashboard-tool"
-                >
-                  <div className="co-tool-icon mb-3"><tool.icon size={15} /></div>
-                  <div className="text-sm font-black text-[var(--co-ink)]">{tool.label}</div>
-                  <div className="text-[12px] text-[var(--co-muted)] mt-1">{tool.desc}</div>
-                </motion.button>
+            <div className="dash-activity-list">
+              {ACTIVITY.map(([label, value, tone]) => (
+                <article className={`dash-activity-item tone-${tone}`} key={label}>
+                  <span><CheckCircle2 size={16} /></span>
+                  <div>
+                    <strong>{label}</strong>
+                    <p>05/13/2025 12:32 PM</p>
+                  </div>
+                  <em>{value}</em>
+                </article>
               ))}
             </div>
           </section>
 
-          <aside className="grid gap-5">
-            <section className="co-dashboard-card">
-              <div className="text-xs font-bold text-[var(--co-ink)] mb-3 flex items-center justify-between">
-                <span className="flex items-center gap-2"><Clock size={13} className="text-[var(--co-cyan)]" /> Recent Searches</span>
-                {recentSearches.length > 0 && (
-                  <button onClick={() => { localStorage.removeItem("codicalhealth_search_history"); setRecentSearches([]); }} className="text-[10px] text-[var(--co-muted)] hover:text-[var(--co-ink)]">Clear</button>
-                )}
-              </div>
-              {recentSearches.length > 0 ? (
-                <div className="grid gap-1.5">
-                  {recentSearches.map((item) => (
-                    <button key={item} onClick={() => setLocation("/intel/" + item.split(" - ")[0])} className="co-tool-pill text-left">
-                      <Clock size={12} />
-                      <span className="truncate">{item}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 text-xs text-[var(--co-muted)]">No recent searches yet</div>
-              )}
-            </section>
-
-            <section className="co-dashboard-card">
-              <div className="text-xs font-bold text-[var(--co-ink)] mb-3 flex items-center gap-2">
-                <TrendingUp size={13} className="text-[var(--co-cyan)]" /> Trending codes
-              </div>
-              <div className="grid gap-1.5">
-                {TRENDING_CODES.map((code) => (
-                  <button key={code.code} onClick={() => setLocation("/intel/" + code.code)} className="co-tool-pill text-left">
-                    <span className="co-tool-icon co-mono">{code.code}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[var(--co-ink)]">{code.desc}</span>
-                      <span className="block text-[10px] text-[var(--co-muted)]">{code.type}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          </aside>
-        </div>
-
-        <section className="co-dashboard-card">
-          <div className="co-dash-top">
-            <div className="text-sm font-bold text-[var(--co-ink)] flex items-center gap-2">
-              <BarChart2 size={15} className="text-[var(--co-cyan)]" /> Activity this week
+          <section className="dash-card">
+            <div className="dash-section-head compact">
+              <h3>Trending codes</h3>
+              <p>7 days</p>
             </div>
-            <span className="text-[11px] text-[var(--co-muted)]">Sample operational data</span>
-          </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={WEEK_DATA}>
-              <defs>
-                <linearGradient id="coSearches" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#37d0c6" stopOpacity={0.24} />
-                  <stop offset="95%" stopColor="#37d0c6" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="coReviews" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#d7be7a" stopOpacity={0.22} />
-                  <stop offset="95%" stopColor="#d7be7a" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(205,217,228,0.10)" />
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "var(--co-muted)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "var(--co-muted)" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ borderRadius: "16px", border: "1px solid var(--co-line)", fontSize: "12px", background: "rgba(4,10,16,0.86)", backdropFilter: "blur(18px)", color: "var(--co-ink)" }} />
-              <Area type="monotone" dataKey="searches" stroke="#37d0c6" strokeWidth={2} fill="url(#coSearches)" />
-              <Area type="monotone" dataKey="reviews" stroke="#d7be7a" strokeWidth={2} fill="url(#coReviews)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </section>
+            <div className="dash-code-list">
+              {TRENDING_CODES.map(([code, label, delta]) => (
+                <button type="button" key={code} onClick={() => setLocation(`/intel/${code}`)}>
+                  <strong>{code}</strong>
+                  <span>{label}</span>
+                  <em className={delta.startsWith("-") ? "is-down" : ""}>{delta}</em>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="dash-card">
+            <div className="dash-section-head compact">
+              <h3>Quick actions</h3>
+            </div>
+            <div className="dash-action-list">
+              {QUICK_ACTIONS.map((action) => (
+                <button type="button" key={action.href} onClick={() => setLocation(action.href)}>
+                  <action.icon size={17} />
+                  <span>{action.label}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </aside>
       </div>
     </div>
   );

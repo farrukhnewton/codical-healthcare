@@ -168,7 +168,7 @@ function CoverageResultCard({ item, mode }: { item: any; mode: CoverageMode }) {
         </div>
         <Button asChild size="sm" variant="outline" className="gap-1.5 flex-shrink-0">
           <a href={getCoverageUrl(item, mode)} target="_blank" rel="noreferrer noopener">
-            <ExternalLink size={12} /> MCD
+            <ExternalLink size={12} /> CMS
           </a>
         </Button>
       </div>
@@ -212,7 +212,7 @@ function coveragePairStatusStyle(status: CoveragePairStatus) {
   }
 
   return {
-    label: "No MCD evidence",
+    label: "No coverage evidence",
     icon: Shield,
     badge: "bg-slate-500/15 text-slate-300 border-slate-500/30",
     card: "border-white/15 bg-white/[0.03]",
@@ -374,7 +374,7 @@ function CoveragePairChecker() {
                     {pair.topEvidence && (
                       <Button asChild size="sm" variant="outline" className="gap-1.5 flex-shrink-0">
                         <a href={getCoverageUrl({ document_display_id: pair.topEvidence.displayId, article_version: "" }, "article")} target="_blank" rel="noreferrer noopener">
-                          <ExternalLink size={12} /> MCD
+                          <ExternalLink size={12} /> CMS
                         </a>
                       </Button>
                     )}
@@ -488,7 +488,7 @@ function LiveMedicarePolicyList() {
           <div>
             <h3 className="font-bold text-foreground mb-1">Live Medicare Coverage</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Search LCDs, NCDs, and related coverage articles from the Cloudflare MCD read model inside Codical.
+              Search LCDs, NCDs, and related coverage articles from Codical's Medicare coverage index.
             </p>
           </div>
         </div>
@@ -562,7 +562,7 @@ function LiveMedicarePolicyList() {
               {(activeQuery.error as Error)?.message || "The CMS Coverage API did not return JSON."}
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              The in-app LCD/NCD/article workflow uses Codical's Cloudflare MCD cache first, with the live CMS Coverage API as fallback when needed.
+              The in-app LCD/NCD/article workflow uses Codical's coverage index first, with the live CMS Coverage API as fallback when needed.
             </p>
             <Button asChild size="sm" variant="outline" className="mt-4 gap-1.5">
               <a href="https://www.cms.gov/medicare-coverage-database/search/search-criteria.aspx" target="_blank" rel="noreferrer noopener">
@@ -579,7 +579,7 @@ function LiveMedicarePolicyList() {
       ) : (
         <div className="grid gap-3">
           <p className="text-xs text-muted-foreground">
-            Showing {rows.length} {mode === "article" ? "article" : mode.toUpperCase()} result{rows.length === 1 ? "" : "s"} from Cloudflare MCD
+            Showing {rows.length} {mode === "article" ? "article" : mode.toUpperCase()} result{rows.length === 1 ? "" : "s"} from the Medicare coverage index
           </p>
           {rows.map((item, index) => (
             <CoverageResultCard key={`${getCoverageId(item)}-${index}`} item={item} mode={mode} />

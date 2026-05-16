@@ -51,7 +51,7 @@ export async function validateClaimCodeSet(input: {
         procedureCodes,
         limit: input.coverageLimit || 8,
       });
-      if (!coverageValidation) warnings.push("Cloudflare MCD coverage intelligence is not configured");
+      if (!coverageValidation) warnings.push("Medicare coverage evidence is temporarily unavailable.");
     } catch (error: any) {
       warnings.push(`Coverage validation failed: ${error?.message || error}`);
     }
