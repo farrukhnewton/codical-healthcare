@@ -1,5 +1,3 @@
-import "@/styles/codical-os.css";
-
 import { useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { Link } from "wouter";
 import {

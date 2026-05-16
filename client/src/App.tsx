@@ -6,7 +6,6 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { motion, AnimatePresence } from "framer-motion";
 
 import { IconRail } from "@/components/layout/IconRail";
 import { TopBar } from "@/components/layout/TopBar";
@@ -53,12 +52,7 @@ function AuthLoadingScreen() {
   return (
     <div className="landingAurora appShell min-h-screen relative">
       <div className="min-h-screen flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 10, filter: "blur(10px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-sm"
-        >
+        <div className="auth-loading-card w-full max-w-sm">
           <div className="ln-preview p-8 text-center">
             <div className="flex items-center justify-center">
               <BrandMark />
@@ -78,7 +72,7 @@ function AuthLoadingScreen() {
               Loading your session...
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
@@ -119,30 +113,16 @@ function AppPage({ children }: { children: ReactNode }) {
 
 // Page transition wrapper
 function PageTransition({ children }: { children: ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-      className="h-full"
-    >
-      {children}
-    </motion.div>
-  );
+  return <div className="app-route-transition h-full">{children}</div>;
 }
 
 function LandingWithIntro() {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.2 }}
-    >
+    <div className="landing-route-fade">
       <Suspense fallback={<PublicRouteFallback />}>
         <Landing />
       </Suspense>
-    </motion.div>
+    </div>
   );
 }
 
@@ -197,164 +177,162 @@ function Router() {
             <TopBar />
 
             <main className="appShellMain flex-1 overflow-y-auto pb-16 lg:pb-0">
-              <AnimatePresence mode="wait">
-                <Switch>
-                  <Route path="/dashboard">
-                    {() => (
-                      <AppPage>
-                        <Home />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/workspace">
-                    {() => (
-                      <AppPage>
-                        <Workspace />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/chat">
-                    {() => (
-                      <AppPage>
-                        <TeamChat />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/workbench">
-                    {() => (
-                      <AppPage>
-                        <Workbench />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/voice-transcription">
-                    {() => (
-                      <AppPage>
-                        <VoiceTranscription />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/intel/:code">
-                    {() => (
-                      <AppPage>
-                        <CodeIntel />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/compliance">
-                    {() => (
-                      <AppPage>
-                        <Compliance />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/search">
-                    {() => (
-                      <AppPage>
-                        <Search />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/intelligence">
-                    {() => (
-                      <AppPage>
-                        <IntelligenceHub />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/guidelines">
-                    {() => <Redirect to="/intelligence" />}
-                  </Route>
-                  <Route path="/payers">
-                    {() => <Redirect to="/intelligence" />}
-                  </Route>
-                  <Route path="/favorites">
-                    {() => (
-                      <AppPage>
-                        <Favorites />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/reports">
-                    {() => (
-                      <AppPage>
-                        <Reports />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/analytics">
-                    {() => (
-                      <AppPage>
-                        <Analytics />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/ncci">
-                    {() => (
-                      <AppPage>
-                        <NcciChecker />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/claim-validator">
-                    {() => (
-                      <AppPage>
-                        <ClaimValidator />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/coverage">{() => <Redirect to="/intelligence" />}</Route>
-                  <Route path="/rvu">
-                    {() => (
-                      <AppPage>
-                        <RvuCalculator />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/anesthesia">
-                    {() => (
-                      <AppPage>
-                        <AnesthesiaCalculator />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/npi">
-                    {() => (
-                      <AppPage>
-                        <NpiChecker />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/codelookup">
-                    {() => (
-                      <AppPage>
-                        <CodeLookup />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/settings">
-                    {() => (
-                      <AppPage>
-                        <Settings />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route path="/druglookup">
-                    {() => (
-                      <AppPage>
-                        <DrugLookup />
-                      </AppPage>
-                    )}
-                  </Route>
-                  <Route>
-                    {() => (
-                      <AppPage>
-                        <NotFound />
-                      </AppPage>
-                    )}
-                  </Route>
-                </Switch>
-              </AnimatePresence>
+              <Switch>
+                <Route path="/dashboard">
+                  {() => (
+                    <AppPage>
+                      <Home />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/workspace">
+                  {() => (
+                    <AppPage>
+                      <Workspace />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/chat">
+                  {() => (
+                    <AppPage>
+                      <TeamChat />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/workbench">
+                  {() => (
+                    <AppPage>
+                      <Workbench />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/voice-transcription">
+                  {() => (
+                    <AppPage>
+                      <VoiceTranscription />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/intel/:code">
+                  {() => (
+                    <AppPage>
+                      <CodeIntel />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/compliance">
+                  {() => (
+                    <AppPage>
+                      <Compliance />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/search">
+                  {() => (
+                    <AppPage>
+                      <Search />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/intelligence">
+                  {() => (
+                    <AppPage>
+                      <IntelligenceHub />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/guidelines">
+                  {() => <Redirect to="/intelligence" />}
+                </Route>
+                <Route path="/payers">
+                  {() => <Redirect to="/intelligence" />}
+                </Route>
+                <Route path="/favorites">
+                  {() => (
+                    <AppPage>
+                      <Favorites />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/reports">
+                  {() => (
+                    <AppPage>
+                      <Reports />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/analytics">
+                  {() => (
+                    <AppPage>
+                      <Analytics />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/ncci">
+                  {() => (
+                    <AppPage>
+                      <NcciChecker />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/claim-validator">
+                  {() => (
+                    <AppPage>
+                      <ClaimValidator />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/coverage">{() => <Redirect to="/intelligence" />}</Route>
+                <Route path="/rvu">
+                  {() => (
+                    <AppPage>
+                      <RvuCalculator />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/anesthesia">
+                  {() => (
+                    <AppPage>
+                      <AnesthesiaCalculator />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/npi">
+                  {() => (
+                    <AppPage>
+                      <NpiChecker />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/codelookup">
+                  {() => (
+                    <AppPage>
+                      <CodeLookup />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/settings">
+                  {() => (
+                    <AppPage>
+                      <Settings />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route path="/druglookup">
+                  {() => (
+                    <AppPage>
+                      <DrugLookup />
+                    </AppPage>
+                  )}
+                </Route>
+                <Route>
+                  {() => (
+                    <AppPage>
+                      <NotFound />
+                    </AppPage>
+                  )}
+                </Route>
+              </Switch>
             </main>
 
             <Footer />

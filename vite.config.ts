@@ -19,6 +19,12 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
+    modulePreload: {
+      resolveDependencies(_filename, deps, context) {
+        if (context.hostType !== "html") return deps;
+        return deps.filter((dep) => !/vendor-(charts|motion)-/.test(dep));
+      },
+    },
     rollupOptions: {
       output: {
         // Split a few heavy libs; keep UI libs in vendor to avoid circular chunk warnings.
