@@ -22,7 +22,6 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
 import { BrandMark } from "@/components/BrandMark";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -136,28 +135,14 @@ export function IconRail() {
         <Menu size={20} />
       </button>
 
-      <AnimatePresence>
-        {mobileOpen ? (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="app-sidebar-overlay"
-              onClick={() => setMobileOpen(false)}
-            />
-            <motion.aside
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 26, stiffness: 210 }}
-              className="app-sidebar app-sidebar-mobile"
-            >
-              <NavContent mobile />
-            </motion.aside>
-          </>
-        ) : null}
-      </AnimatePresence>
+      {mobileOpen ? (
+        <>
+          <div className="app-sidebar-overlay" onClick={() => setMobileOpen(false)} />
+          <aside className="app-sidebar app-sidebar-mobile">
+            <NavContent mobile />
+          </aside>
+        </>
+      ) : null}
 
       <aside className="app-sidebar app-sidebar-desktop">
         <NavContent />

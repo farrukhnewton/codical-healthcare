@@ -29,20 +29,22 @@ export default defineConfig({
       output: {
         // Split a few heavy libs; keep UI libs in vendor to avoid circular chunk warnings.
         manualChunks(id) {
-          if (id.includes("node_modules")) {
-            if (id.includes("react-dom") || id.includes("react/") || id.includes("scheduler") || id.includes("wouter")) return "vendor-react";
-            if (id.includes("@supabase")) return "vendor-supabase";
-            if (id.includes("@tanstack")) return "vendor-tanstack";
-            if (id.includes("framer-motion")) return "vendor-motion";
-            if (id.includes("lucide-react")) return "vendor-icons";
-            if (id.includes("chart.js") || id.includes("recharts") || id.includes("d3")) return "vendor-charts";
-            if (id.includes("@radix-ui")) return "vendor-radix";
-            if (id.includes("emoji-picker-react") || id.includes("socket.io-client")) return "vendor-chat";
-            if (id.includes("react-hook-form") || id.includes("@hookform") || id.includes("zod")) return "vendor-forms";
-            if (id.includes("date-fns")) return "vendor-date";
-            if (id.includes("cmdk") || id.includes("vaul") || id.includes("react-day-picker") || id.includes("input-otp")) return "vendor-ui-extended";
-            if (id.includes("@headlessui") || id.includes("embla-carousel")) return "vendor-ui-extended";
-            return "vendor-misc";
+          const moduleId = id.replace(/\\/g, "/");
+
+          if (
+            moduleId.includes("node_modules/react-dom") ||
+            moduleId.includes("node_modules/react/") ||
+            moduleId.includes("node_modules/scheduler") ||
+            moduleId.includes("node_modules/wouter") ||
+            moduleId.includes("react/jsx-runtime") ||
+            moduleId.includes("jsx-runtime")
+          ) {
+            return "vendor-react";
+          }
+
+          if (moduleId.includes("node_modules")) {
+            if (moduleId.includes("@supabase")) return "vendor-supabase";
+            if (moduleId.includes("lucide-react")) return "vendor-icons";
           }
         },
       },
