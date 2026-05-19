@@ -1,7 +1,5 @@
 ﻿/*
-  CODICAL HEALTH 2.0 - NATURE DESIGN SYSTEM
-  Ocean + Forest + Aurora + Sunrise
-  Living Interface - 8K Ready
+  Codical Health base tokens and shared utilities.
 */
 
 @import "./styles/codical-os.css";
@@ -12,7 +10,7 @@
 
 @layer base {
   :root {
-    /* Nature Palette */
+    /* Product palette */
     --ocean-deep: 202 80% 24%;
     --ocean: 201 78% 32%;
     --ocean-light: 198 93% 60%;
@@ -34,7 +32,7 @@
     --earth-warm: 28 48% 60%;
     --earth-sand: 48 96% 89%;
 
-    /* UI Semantic */
+    /* Interface semantics */
     --background: 100 33% 98%;
     --foreground: 137 27% 14%;
     --card: 0 0% 100%;
@@ -102,7 +100,7 @@
   }
 }
 
-/* NATURE ANIMATIONS */
+/* Shared motion primitives */
 @keyframes morphBlob {
   0%, 100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
   25% { border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%; }
@@ -205,7 +203,7 @@
   100% { background-position: 200% 0; }
 }
 
-/* NATURE UTILITIES */
+/* Legacy shared utilities */
 @layer utilities {
   .glass {
     background: rgba(255, 255, 255, 0.45);
@@ -297,7 +295,7 @@
   }
 }
 
-/* DARK MODE OVERRIDES */
+/* Dark mode overrides */
 .dark {
   --app-bg: linear-gradient(160deg, #0A1A0F 0%, #0C1929 30%, #0A1A0F 50%, #1A1500 80%, #1A0A14 100%);
 }
@@ -331,7 +329,7 @@
   }
 }
 
-/* Dark mode text custom properties */
+/* Text custom properties */
 :root {
   --text-primary: #111827;
   --text-secondary: #4B5563;

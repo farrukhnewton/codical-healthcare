@@ -838,7 +838,7 @@ export function VoiceTranscription() {
       <SavedAiFilesLibrary
         module="transcription"
         title="Saved Transcriptions"
-        description="Save generated medical transcription records for 30 days, rename them, edit the text, and download permanent PDFs."
+        description="Save medical transcription records for 30 days, rename them, edit the text, and download permanent PDFs."
         currentFile={currentSavedFile}
       />
     </div>

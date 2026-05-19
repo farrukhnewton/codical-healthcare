@@ -423,7 +423,7 @@ html.dark {
   }
 }
 
-/* Phase 2 foundation: quieter SaaS shell for authenticated workflows. */
+/* Authenticated workflow foundation. */
 .appShell {
   --co-bg: #f6f8fb;
   --co-bg-2: #eef4f7;
@@ -733,7 +733,7 @@ html.dark {
   }
 }
 
-/* Phase 5A: logged-in SaaS shell and dashboard foundation. */
+/* Logged-in SaaS shell and dashboard foundation. */
 .appShell {
   --app-bg: #f5f9fd;
   --app-surface: #ffffff;
@@ -1701,7 +1701,7 @@ html.dark {
   }
 }
 
-/* Phase 5C: validation, calculator, and registry tool surfaces. */
+/* Validation, calculator, and registry tool surfaces. */
 .validation-tool-page {
   max-width: 1244px;
 }
@@ -2974,7 +2974,7 @@ html.dark {
   }
 }
 
-/* Phase 5D: collaboration and transcription work surfaces. */
+/* Collaboration and transcription work surfaces. */
 .collaboration-page {
   max-width: 1244px;
 }
@@ -3872,7 +3872,7 @@ html.dark {
   }
 }
 
-/* Phase 5B: core coding tool surfaces. */
+/* Core coding tool surfaces. */
 .tool-page {
   width: min(100% - 40px, 1244px);
   margin: 0 auto;
@@ -4746,7 +4746,7 @@ html.dark {
   }
 }
 
-/* Phase 5E: assistant and workbench product surfaces. */
+/* Assistant and workbench product surfaces. */
 .assistant-workspace-page {
   max-width: 1244px;
 }
@@ -5636,7 +5636,7 @@ html.dark {
   }
 }
 
-/* Phase 5F: secondary application surfaces and shared saved-file library. */
+/* Secondary application surfaces and shared saved-report library. */
 .is-spinning {
   animation: toolSpin 850ms linear infinite;
 }

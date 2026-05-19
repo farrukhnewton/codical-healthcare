@@ -1,3 +1,5 @@
+import "@/styles/app-shell.css";
+
 import { lazy, Suspense, type ReactNode } from "react";
 import { Redirect, Route, Switch } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";

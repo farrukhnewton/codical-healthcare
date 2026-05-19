@@ -98,7 +98,7 @@
     "use-debounce": "^10.1.0",
     "vaul": "^1.1.2",
     "wouter": "^3.3.5",
-    "ws": "^8.18.0",
+    "ws": "8.20.1",
     "zod": "^3.24.2",
     "zod-validation-error": "^3.4.0"
   },
@@ -132,6 +132,7 @@
     "wrangler": "^4.90.0"
   },
   "overrides": {
+    "ws": "8.20.1",
     "drizzle-kit": {
       "@esbuild-kit/esm-loader": "npm:tsx@^4.20.4"
     }

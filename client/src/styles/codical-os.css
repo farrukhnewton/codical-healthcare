@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap");
-
 :root {
   --co-bg: #02070d;
   --co-bg-2: #07131d;
@@ -1983,7 +1981,7 @@ html:not(.dark) .appShell [style*="background: #FFFBEB"] {
   }
 }
 
-/* Phase 3 landing page refresh. Scoped to lp-* so app/auth shell styles stay stable. */
+/* Landing page refresh. Scoped to lp-* so app/auth shell styles stay stable. */
 .lp-page,
 .lp-page * {
   box-sizing: border-box;
@@ -3190,7 +3188,7 @@ html:not(.dark) .appShell [style*="background: #FFFBEB"] {
   }
 }
 
-/* Phase 4 auth refresh. Scoped to auth-* so the app shell and landing remain stable. */
+/* Auth flow refresh. Scoped to auth-* so the app shell and landing remain stable. */
 .auth-shell-v2,
 .auth-shell-v2 * {
   box-sizing: border-box;

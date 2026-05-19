@@ -77,14 +77,14 @@ export function SavedAiFilesLibrary({
 
   const saveCurrentMutation = useMutation({
     mutationFn: async () => {
-      if (!currentFile) throw new Error("No generated report is ready to save.");
+      if (!currentFile) throw new Error("No report is ready to save.");
       return saveAiFile({
         module,
         ...currentFile,
       });
     },
     onSuccess: () => {
-      toast({ title: "Saved", description: "The file was added to your 30-day library." });
+      toast({ title: "Saved", description: "The report was added to your 30-day library." });
       refetch();
     },
     onError: (error: Error) => {
@@ -160,13 +160,13 @@ export function SavedAiFilesLibrary({
           {isLoading ? (
             <div className="saved-library-state">
               <Loader2 className="is-spinning" size={17} />
-              <span>Loading saved files...</span>
+              <span>Loading saved reports...</span>
             </div>
           ) : sortedFiles.length === 0 ? (
             <div className="tool-empty-state compact saved-library-empty">
               <FileText size={34} />
-              <strong>No saved files yet</strong>
-              <span>Generated files you save here stay available for 30 days.</span>
+              <strong>No saved reports yet</strong>
+              <span>Reports saved here stay available for 30 days.</span>
             </div>
           ) : (
             <div className="saved-library-grid">
@@ -247,7 +247,7 @@ export function SavedAiFilesLibrary({
       <Dialog open={Boolean(selectedFile)} onOpenChange={(open) => !open && setSelectedFile(null)}>
         <DialogContent className="saved-library-dialog">
           <DialogHeader className="saved-library-dialog-head">
-            <DialogTitle>Edit Saved File</DialogTitle>
+            <DialogTitle>Edit Saved Report</DialogTitle>
           </DialogHeader>
           {selectedFile && (
             <div className="saved-library-edit-form">

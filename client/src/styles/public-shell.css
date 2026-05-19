@@ -1,0 +1,103 @@
+:root {
+  --app-line: #d8e7f5;
+  --app-blue: #0b5ee8;
+  --app-blue-dark: #0747b8;
+  --app-teal: #0f8f83;
+  --app-red: #cc3648;
+  --app-shadow: 0 20px 52px rgba(16, 69, 119, 0.10);
+}
+
+.appShell {
+  color: #081225;
+}
+
+.auth-loading-card {
+  animation: codicalRouteIn 450ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.landing-route-fade {
+  animation: codicalFadeIn 200ms ease-out both;
+}
+
+.error-boundary-card {
+  width: min(100%, 420px);
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--app-shadow);
+  text-align: center;
+  animation: codicalRouteIn 220ms ease-out both;
+}
+
+.error-boundary-mark {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  border-radius: 14px;
+  color: var(--app-red);
+  background: rgba(204, 54, 72, 0.08);
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.error-boundary-action {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 850;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.error-boundary-action-primary {
+  color: #ffffff;
+  background: var(--app-blue);
+}
+
+.error-boundary-action-primary:hover {
+  background: var(--app-blue-dark);
+}
+
+.error-boundary-action-secondary {
+  color: var(--app-teal);
+  border-color: rgba(15, 143, 131, 0.24);
+  background: #ffffff;
+}
+
+.error-boundary-action-secondary:hover {
+  border-color: rgba(15, 143, 131, 0.42);
+  background: rgba(15, 143, 131, 0.08);
+}
+
+@keyframes codicalRouteIn {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes codicalFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
