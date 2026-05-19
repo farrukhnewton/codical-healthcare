@@ -951,7 +951,7 @@ export function IntelligenceHub() {
           )}
         </div>
 
-        <div className="flex gap-1 overflow-x-auto no-scrollbar">
+        <div className="coverage-tab-list flex gap-1 overflow-x-auto no-scrollbar">
           {TABS.map(tab => (
             <button
               key={tab.id}
@@ -987,7 +987,7 @@ export function IntelligenceHub() {
                     <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground/70" />
                     <Input placeholder="Search guidelines (e.g. diabetes, sepsis, E/M, fracture...)" className="pl-10" value={guideSearch} onChange={(e) => setGuideSearch(e.target.value)} />
                   </div>
-                  <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                  <div className="coverage-filter-list flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                     {TYPE_FILTERS.map(f => (
                       <Badge
                         key={f.id}

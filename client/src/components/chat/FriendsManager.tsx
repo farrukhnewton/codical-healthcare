@@ -219,6 +219,7 @@ export function FriendsManager({ open, onOpenChange, currentUserId }: FriendsMan
                           size="icon"
                           variant="outline"
                           className="h-9 w-9 rounded-full text-destructive border-border/60 hover:bg-destructive/10"
+                          aria-label={`Reject request from ${request.sender?.fullName || request.sender?.username || "this colleague"}`}
                           onClick={() =>
                             handleRequestMutation.mutate({
                               requestId: request.id,
@@ -233,6 +234,7 @@ export function FriendsManager({ open, onOpenChange, currentUserId }: FriendsMan
                           size="icon"
                           variant="outline"
                           className="h-9 w-9 rounded-full text-emerald-300 border-border/60 hover:bg-emerald-500/10"
+                          aria-label={`Accept request from ${request.sender?.fullName || request.sender?.username || "this colleague"}`}
                           onClick={() =>
                             handleRequestMutation.mutate({
                               requestId: request.id,

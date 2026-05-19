@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, MapPin, Tag, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,11 +17,10 @@ export function CodeLookup() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selected, setSelected] = useState<any>(null);
 
-  const handleSearch = (value: string) => {
-    setSearch(value);
-    clearTimeout((window as any)._lookupTimeout);
-    (window as any)._lookupTimeout = setTimeout(() => setDebouncedSearch(value), 300);
-  };
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timeoutId);
+  }, [search]);
 
   const { data: posData } = useQuery({
     queryKey: ["/api/pos", debouncedSearch],
@@ -47,9 +46,9 @@ export function CodeLookup() {
     : rawList.filter((item: any) => item.category === selectedCategory);
 
   return (
-    <div className="flex gap-6 p-8 h-full">
+    <div className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 lg:p-8 h-full min-w-0">
       {/* Left Panel */}
-      <div className="w-[420px] flex-shrink-0 space-y-4">
+      <div className="w-full min-w-0 lg:w-[420px] lg:flex-shrink-0 space-y-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="border-2">
             <CardHeader>
@@ -90,7 +89,8 @@ export function CodeLookup() {
                   placeholder={lookupType === "pos" ? "Search POS code or name..." : "Search modifier code or name..."}
                   className="pl-10 h-11 border-2"
                   value={search}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={(e) => setSearch(e.target.value)}
+                  aria-label={lookupType === "pos" ? "Search place of service codes" : "Search modifiers"}
                 />
               </div>
 
@@ -121,7 +121,7 @@ export function CodeLookup() {
         </motion.div>
 
         {/* Results List */}
-        <div className="space-y-2 overflow-y-auto max-h-[calc(100vh-26rem)]">
+        <div className="space-y-2 overflow-y-auto max-h-[calc(100vh-26rem)] lg:max-h-[calc(100vh-26rem)]">
           {list.map((item: any) => (
             <motion.div
               key={item.code}
@@ -154,7 +154,7 @@ export function CodeLookup() {
       </div>
 
       {/* Right Panel */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-w-0 overflow-y-auto">
         <AnimatePresence mode="wait">
           {selected ? (
             <motion.div
@@ -165,7 +165,7 @@ export function CodeLookup() {
             >
               <Card className="border-2">
                 <CardContent className="p-8">
-                  <div className="flex items-start gap-6 mb-8">
+                  <div className="flex flex-col sm:flex-row items-start gap-5 sm:gap-6 mb-8">
                     <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
                       <span className="text-2xl font-black text-primary">{selected.code}</span>
                     </div>
@@ -193,7 +193,7 @@ export function CodeLookup() {
                     </div>
 
                     {lookupType === "pos" && (
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10">
                           <p className="text-xs font-black text-primary uppercase tracking-wider mb-1">POS Code</p>
                           <p className="text-3xl font-black text-primary">{selected.code}</p>
@@ -206,7 +206,7 @@ export function CodeLookup() {
                     )}
 
                     {lookupType === "modifiers" && (
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10">
                           <p className="text-xs font-black text-primary uppercase tracking-wider mb-1">Modifier</p>
                           <p className="text-3xl font-black text-primary">{selected.code}</p>
@@ -215,7 +215,7 @@ export function CodeLookup() {
                           <p className="text-xs font-black text-muted-foreground uppercase tracking-wider mb-1">Category</p>
                           <p className="text-lg font-black">{selected.category}</p>
                         </div>
-                        <div className="col-span-2 bg-slate-50 rounded-2xl p-4 border border-border/50">
+                        <div className="sm:col-span-2 bg-slate-50 rounded-2xl p-4 border border-border/50">
                           <p className="text-xs font-black text-muted-foreground uppercase tracking-wider mb-1">Usage</p>
                           <p className="text-sm font-bold">Append to CPT/HCPCS code on claim form Box 24D</p>
                         </div>

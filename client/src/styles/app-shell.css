@@ -775,8 +775,8 @@ html.dark {
 }
 
 .app-sidebar {
-  width: 236px;
-  flex: 0 0 236px;
+  width: 252px;
+  flex: 0 0 252px;
   color: #f8fbff;
   background:
     radial-gradient(circle at 0% 0%, rgba(17, 139, 126, 0.22), transparent 34%),
@@ -912,9 +912,10 @@ html.dark {
 
 .app-nav-item span {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  line-height: 1.16;
   font-size: 14px;
   font-weight: 720;
 }
@@ -1662,6 +1663,40 @@ html.dark {
 @media (max-width: 720px) {
   .app-topbar-actions .app-icon-button:not(.app-mobile-search):not(.app-notification-button) {
     display: none;
+  }
+
+  .workspace-payer-scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .workspace-payer-scroll button {
+    min-width: 0;
+    flex: 1 1 118px;
+  }
+
+  .coverage-tab-list {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .coverage-tab-list button {
+    flex: 1 1 180px;
+    justify-content: center;
+  }
+
+  .coverage-filter-list {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .reports-page .secondary-table-wrap {
+    display: none;
+  }
+
+  .reports-page .secondary-mobile-list {
+    display: grid;
+    gap: 10px;
   }
 
   .dash-hero-band {
@@ -3194,13 +3229,17 @@ html.dark {
 
 .team-chat-conversation-copy p,
 .team-chat-conversation-copy small {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
   margin: 0;
   color: var(--app-muted);
   font-size: 12px;
   font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .team-chat-conversation-copy small {
@@ -3218,6 +3257,12 @@ html.dark {
   background: var(--app-blue);
   font-size: 11px;
   font-weight: 900;
+}
+
+.team-chat-attach-icon {
+  display: inline-grid;
+  place-items: center;
+  pointer-events: none;
 }
 
 .team-chat-thread-head {
@@ -3335,6 +3380,8 @@ html.dark {
   font-weight: 650;
   line-height: 1.55;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .team-chat-message-time {
@@ -5781,6 +5828,10 @@ html.dark {
   overflow-x: auto;
 }
 
+.secondary-mobile-list {
+  display: none;
+}
+
 .secondary-table {
   width: 100%;
   min-width: 720px;
@@ -5811,6 +5862,36 @@ html.dark {
   gap: 9px;
   color: var(--app-ink);
   font-weight: 850;
+}
+
+.secondary-mobile-row {
+  display: grid;
+  gap: 13px;
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #ffffff;
+}
+
+.secondary-mobile-row strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--app-ink);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.secondary-mobile-row span {
+  display: block;
+  margin-top: 5px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.coverage-tab-list button {
+  flex-shrink: 0;
 }
 
 .secondary-skeleton-list {

@@ -203,6 +203,24 @@ export function Reports() {
             </tbody>
           </table>
         </div>
+
+        <div className="secondary-mobile-list" aria-label="Recent exports">
+          {recentReports.map((report) => (
+            <article className="secondary-mobile-row" key={report.name}>
+              <div>
+                <strong>
+                  <FileBarChart size={16} />
+                  {report.name}
+                </strong>
+                <span>{report.type} - {report.date} - {report.size}</span>
+              </div>
+              <button type="button" className="secondary-row-action">
+                <Download size={14} />
+                Download
+              </button>
+            </article>
+          ))}
+        </div>
       </section>
     </div>
   );

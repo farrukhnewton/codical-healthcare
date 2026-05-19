@@ -340,7 +340,7 @@ function ConversationItem({
               </time>
             )}
           </div>
-          <p>
+          <p title={conversation.lastMessage?.content || "No messages yet"}>
             {conversation.lastMessage?.content || 'No messages yet'}
           </p>
           {primaryParticipant && (
@@ -619,7 +619,7 @@ function ChatWindow({
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="tool-icon-action">
+            <Button variant="ghost" size="icon" className="tool-icon-action" aria-label="Conversation options">
               <MoreVertical className="w-5 h-5" />
             </Button>
           </DropdownMenuTrigger>
@@ -692,17 +692,9 @@ function ChatWindow({
               disabled={uploadAttachmentMutation.isPending}
               aria-label="Attach file"
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="tool-icon-action pointer-events-none"
-              disabled={uploadAttachmentMutation.isPending}
-              aria-hidden="true"
-              tabIndex={-1}
-            >
+            <span className="tool-icon-action team-chat-attach-icon" aria-hidden="true">
               <Paperclip className="w-5 h-5" />
-            </Button>
+            </span>
           </div>
 
           <Input
@@ -719,12 +711,14 @@ function ChatWindow({
             size="icon"
             className="tool-icon-action"
             onClick={() => setShowEmojiPicker((prev) => !prev)}
+            aria-label={showEmojiPicker ? "Close emoji picker" : "Open emoji picker"}
           >
             <Smile className="w-5 h-5" />
           </Button>
 
           <Button
             type="submit"
+            aria-label="Send message"
             disabled={
               sendMessageMutation.isPending ||
               uploadAttachmentMutation.isPending ||

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   ShieldCheck, 
@@ -8,32 +8,28 @@ import {
   Search,
   Download,
   Filter,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 
 export function Compliance() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user.id || null);
-    });
-  }, []);
+  const isAdmin = user?.role === "admin";
 
   const { data: logs, isLoading, error } = useQuery({
     queryKey: ["/api/admin/audit-logs"],
-    enabled: !!userId,
+    enabled: Boolean(user?.supabaseId && isAdmin),
     queryFn: async () => {
       const res = await fetch("/api/admin/audit-logs", {
-        headers: { "x-supabase-uid": userId! }
+        headers: { "x-supabase-uid": user.supabaseId }
       });
       if (res.status === 403) throw new Error("PERMISSION_DENIED");
       if (!res.ok) throw new Error("Failed to fetch logs");
@@ -47,13 +43,27 @@ export function Compliance() {
     log.user?.username?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (error?.message === "PERMISSION_DENIED") {
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[80vh] p-8 text-center">
+        <div className="bg-blue-50 p-6 rounded-3xl mb-4 text-blue-600 shadow-xl shadow-blue-900/10">
+          <Loader2 className="h-12 w-12 animate-spin" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900">Checking access</h2>
+        <p className="text-muted-foreground mt-2 max-w-md">
+          Loading your compliance permissions.
+        </p>
+      </div>
+    );
+  }
+
+  if (!isAdmin || error?.message === "PERMISSION_DENIED") {
     return (
       <div className="flex flex-col items-center justify-center h-[80vh] p-8 text-center">
         <div className="bg-red-50 p-6 rounded-3xl mb-4 text-red-600 shadow-xl shadow-red-900/10">
           <AlertCircle className="h-12 w-12" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900">Access Denied</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Access restricted</h2>
         <p className="text-muted-foreground mt-2 max-w-md">
           This page is restricted to administrators only. Please contact your health information management lead for access.
         </p>

@@ -124,7 +124,11 @@ export function UserProfileMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="co-glow-capsule flex items-center gap-2 px-1.5 sm:px-2 py-1.5 rounded-full border border-[var(--co-line)] bg-white/5 hover:bg-white/10 transition-colors appFocusRing">
+          <button
+            type="button"
+            aria-label={`Open profile menu for ${fullName || username || user?.email || "account"}`}
+            className="co-glow-capsule flex items-center gap-2 px-1.5 sm:px-2 py-1.5 rounded-full border border-[var(--co-line)] bg-white/5 hover:bg-white/10 transition-colors appFocusRing"
+          >
             <span className="relative">
               <Avatar className="w-8 h-8">
                 <AvatarImage src={avatarUrl} />

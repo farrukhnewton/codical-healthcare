@@ -25,6 +25,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/intelligence": { title: "Coverage & Guidelines", subtitle: "Medicare LCD/NCD, payer policies and coding guidelines" },
   "/coverage": { title: "Coverage & Guidelines", subtitle: "Medicare LCD/NCD, payer policies and coding guidelines" },
   "/favorites": { title: "Saved Workspace", subtitle: "Curated codes and coding references" },
+  "/settings": { title: "Settings", subtitle: "Profile, preferences and account controls" },
 };
 
 function getPageMeta(pathname: string) {
