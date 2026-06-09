@@ -1,0 +1,69 @@
+{
+  "generatedAt": "2026-06-09T21:01:37.807Z",
+  "project": "projects/4424618916363041938",
+  "designSystem": "assets/7171876461624600483",
+  "files": [
+    {
+      "slug": "desktop-full",
+      "id": "791bbce201704f7d82ca7918a3906299",
+      "title": "Codical Health - Premium Landing Page Concept",
+      "stitchWidth": "2560",
+      "stitchHeight": "10102",
+      "png": "desktop-full.png",
+      "pngWidth": 2560,
+      "pngHeight": 10102,
+      "pngBytes": 2502676,
+      "html": "desktop-full.html",
+      "htmlBytes": 221956
+    },
+    {
+      "slug": "mobile-closed",
+      "id": "c6f8ec8a10c646cb84c9a7164b11db69",
+      "title": "Codical Health - Premium Mobile Landing",
+      "stitchWidth": "780",
+      "stitchHeight": "6572",
+      "png": "mobile-closed.png",
+      "pngWidth": 780,
+      "pngHeight": 6572,
+      "pngBytes": 684153,
+      "html": "mobile-closed.html",
+      "htmlBytes": 18057
+    },
+    {
+      "slug": "mobile-menu-open",
+      "id": "61ba6732da164846b61a07e2c6d3f97e",
+      "title": "Codical Health - Premium Mobile Menu Refined",
+      "stitchWidth": "780",
+      "stitchHeight": "6572",
+      "png": "mobile-menu-open.png",
+      "pngWidth": 780,
+      "pngHeight": 6572,
+      "pngBytes": 912855,
+      "html": "mobile-menu-open.html",
+      "htmlBytes": 20528
+    },
+    {
+      "slug": "product-detail",
+      "id": "a3655a501d884804bbcea6bdb8701f34",
+      "title": "Codical Health - Product Workspace Mockup",
+      "stitchWidth": "2560",
+      "stitchHeight": "2048",
+      "png": "product-detail.png",
+      "pngWidth": 2560,
+      "pngHeight": 2048,
+      "pngBytes": 603767,
+      "html": "product-detail.html",
+      "htmlBytes": 23844
+    },
+    {
+      "slug": "mobile-menu-open-viewport",
+      "title": "Codical Health - Premium Mobile Menu Refined (viewport crop)",
+      "png": "mobile-menu-open-viewport.png",
+      "pngWidth": 780,
+      "pngHeight": 1700,
+      "pngBytes": 550446,
+      "html": null,
+      "note": "Cropped from the full Stitch menu-open screenshot for reviewable mobile viewport state."
+    }
+  ]
+}

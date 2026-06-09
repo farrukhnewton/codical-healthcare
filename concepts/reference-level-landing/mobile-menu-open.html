@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Codical Health - Intelligent Healthcare Operations</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        codical: {
+                            navy: '#071252',
+                            blue: '#1238db',
+                            orange: '#f47a45',
+                            light: '#edf4fb',
+                            slate: '#65758b',
+                            dark: '#101828'
+                        }
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "2xl": "2rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope", "sans-serif"],
+                        "display": ["Manrope", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Manrope', sans-serif; }
+        .bg-pattern { background-image: radial-gradient(#65758b 1px, transparent 1px); background-size: 20px 20px; }
+    </style>
+</head>
+<body class="bg-codical-light/30 text-codical-dark overflow-x-hidden selection:bg-codical-orange/20 selection:text-codical-navy max-w-[390px] mx-auto md:max-w-none md:mx-0 overflow-hidden">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center w-full px-4 max-w-[390px] mx-auto md:max-w-none md:mx-0">
+<div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-full mt-4 mx-auto w-full px-6 py-3 shadow-lg shadow-[#071252]/5 border border-white/20 flex justify-between items-center transition-all duration-300">
+<div class="flex items-center gap-2">
+<img alt="Codical Health Logo" class="h-6 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AP1WRLvR2uTtzl6WRDAB1jn0yArUUHU6Tz6Gav8bBfBDEdkaDdyOQlngby33SpscfPa5FwoJ_PDOWJbgWQe0oV76M8g7NJXIAqQEXKREZOnwv76UhNcECDSgLY6c_wWew_LoR9BLBEqu9FPqksZQC4l5Xq4ddNPZeZFKFPRAAAnqdP6NL1o2qlU5N6SOwEuHnkqnWkcDXvLETP2xKH6UevJfUHvoJeOmjNEVN9DzXb1s8ghmnaxujjIBjUlYHA"/>
+<span class="text-xl font-headline font-extrabold tracking-tight text-[#071252] dark:text-white hidden sm:block">Codical Health</span>
+</div>
+<!-- Mobile Menu Icon -->
+<button class="md:hidden text-codical-navy hover:text-codical-orange transition-colors"><span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 0;">close</span></button>
+<!-- Desktop Nav (Hidden on Mobile) -->
+<nav class="hidden md:flex items-center gap-6">
+<a class="font-body font-medium text-sm tracking-tight text-[#1238db] font-bold border-b-2 border-[#1238db] pb-1" href="#">Platform</a>
+<a class="font-body font-medium text-sm tracking-tight text-[#65758b] hover:text-[#071252] transition-colors hover:scale-105 duration-200" href="#">Solutions</a>
+<a class="font-body font-medium text-sm tracking-tight text-[#65758b] hover:text-[#071252] transition-colors hover:scale-105 duration-200" href="#">Resources</a>
+<a class="font-body font-medium text-sm tracking-tight text-[#65758b] hover:text-[#071252] transition-colors hover:scale-105 duration-200" href="#">Pricing</a>
+</nav>
+<div class="hidden md:block">
+<a class="bg-codical-navy text-white px-5 py-2.5 rounded-full font-body font-medium text-sm tracking-tight hover:bg-codical-blue hover:scale-105 transition-all duration-200 shadow-md" href="#">Request access</a>
+</div>
+</div>
+</header><div class="fixed inset-0 z-40 bg-white/80 backdrop-blur-md pt-24 px-6 flex flex-col h-[900px] overflow-y-auto relative" id="mobile-menu"><div class="absolute inset-0 -z-10"><img alt="Background" class="w-full h-full object-cover opacity-20" src="https://lh3.googleusercontent.com/aida/AP1WRLt00nRmazOxnh-dv7advho43j9e3NtVClXW1zpt2AqLgKof3qrYca0u1TzUqShM1i3CNXcp3jrIMO16Mq3uQ5eiN8vNUm7NbxUX_zsQL5oU-5qDbwm9WMVFEkbcFqt6Nrc0M7-8XnmlDYPOu3dqKXvsOn01MyQl-IP8Y2_JEIOe45Lxgz3UJ2Mld1Zsai5hjZy5v-h5QXzhKd5zzpDQpA9AIxDMSGf1VPNC1IB5evfV_jaap5EjLnzgX7Y"/></div>
+<nav class="flex flex-col gap-8 mt-8"><div class="flex flex-col gap-4 mt-4"><a class="flex items-center gap-4 p-4 bg-white/60 rounded-xl border border-white/40 shadow-sm" href="#"><span class="material-symbols-outlined text-codical-blue">psychology</span><div><div class="text-base font-bold text-codical-navy">Platform</div><div class="text-xs text-codical-slate">AI coding review, claim validation, coder queue</div></div></a><a class="flex items-center gap-4 p-4 bg-white/60 rounded-xl border border-white/40 shadow-sm" href="#"><span class="material-symbols-outlined text-codical-blue">medical_services</span><div><div class="text-base font-bold text-codical-navy">Solutions</div><div class="text-xs text-codical-slate">surgical coding, billing teams, denial prevention</div></div></a><a class="flex items-center gap-4 p-4 bg-white/60 rounded-xl border border-white/40 shadow-sm" href="#"><span class="material-symbols-outlined text-codical-blue">library_books</span><div><div class="text-base font-bold text-codical-navy">Resources</div><div class="text-xs text-codical-slate">coding guide, payer intelligence, FAQ</div></div></a><a class="flex items-center gap-4 p-4 bg-white/60 rounded-xl border border-white/40 shadow-sm" href="#"><span class="material-symbols-outlined text-codical-blue">payments</span><div><div class="text-base font-bold text-codical-navy">Pricing</div><div class="text-xs text-codical-slate">transparent volume-based plans</div></div></a></div></nav>
+<div class="mt-8 flex flex-col gap-4"><a class="bg-[#1A2B4C] text-white text-center py-4 rounded-full font-bold shadow-lg" href="#">Request access</a><a class="bg-white text-[#1A2B4C] text-center py-4 rounded-full font-bold border border-gray-200" href="#">Book a demo</a><p class="text-[10px] font-bold text-codical-slate text-center uppercase tracking-wider mt-2">NCCI, Payer, NPI checks + Certified Review</p></div>
+</div>
+<!-- Hero Section -->
+<section class="relative pt-32 pb-16 px-6 overflow-hidden min-h-[85vh] flex flex-col items-center justify-start text-center">
+<!-- Hero Background -->
+<div class="absolute inset-0 -z-10 bg-gradient-to-b from-white via-codical-light/50 to-codical-light/20"></div>
+<!-- Social Proof Avatars -->
+<div class="flex items-center gap-3 bg-white/60 backdrop-blur-sm border border-white/40 rounded-full py-1.5 px-3 mb-8 shadow-sm">
+<div class="flex -space-x-2">
+<img alt="Avatar 1" class="w-7 h-7 rounded-full border-2 border-white object-cover" data-alt="Portrait of a female medical professional smiling slightly, bright clinical setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHbMnSiP1ILt7RYyG5WOTusR_aJv06wDwK5GcQyksSfDHOWE-FxfALrIuXDso1hniAFrInjKH7merPOaSYJZ81ELozgf6z7vCWmFqw_AVTUBf-fhf1snqTDZ1U6dw3ErvkVtFJPdefF685PvWQdSoAk3YGdORdKp_a2IIOFmfu9fJ221fVOht7RieWnEtwU1LXBGEQj46S-a6Q4PLKWQfr1My3JT93E3Pw93PWUtnosMs5oPKzyhVwPKfBgOmXmsPPIOOXMFjz5mk"/>
+<img alt="Avatar 2" class="w-7 h-7 rounded-full border-2 border-white object-cover" data-alt="Portrait of a male healthcare administrator with glasses, neutral expression, soft lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8trMtkzKxplch8JXKKJW_G-PlqNv1LM9ruxPA02kxFS2TpQQaNBUn-rvxwB7bf94huie_5fpRc-onhjgl4awbBjxjonfETniAV6OYI7pQhmeYiMtA08JZegMwfwwHdF36HcBU7bb2PYbZyLepimxZmkPwQJrwV0O06gyD7z-wlSED6pddPhWviSGujppq9abqiykO_BC1AzjQ-esCwaW-For0cAPCmAgqatK-iYbXrmMOanL_vlsrNYJhJjEyfg9uhTICnG-mFJE"/>
+<img alt="Avatar 3" class="w-7 h-7 rounded-full border-2 border-white object-cover" data-alt="Portrait of a diverse female professional in scrubs, confident look, modern hospital background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB12RB_NjVVyCtzid40ZNiN_mz3w071EBuk1Acwq0K6fdcidNkQ7gcNgUDi0Jccp-gmR8NjLPOEBq5KhO8kJ5Lb1nc8e6nWnz_l9-sWqHIXasWO84R6atRtZ2Q13m9B5HU6YTbzrIZXhMCtZXytdAVHyvRKGrvdw5NpDLeVa3Sj8CuarqHQ9bXvQwi6i9wTIqBNlm8gBLqv5LkLZ8zKwss_cj7L7QvIN7QDOflNu3F5MinFBCXRABj2XHzZhUr1QXRjH1xxawyPV6Y"/>
+</div>
+<span class="text-xs font-medium text-codical-slate pr-2">Trusted by 200+ teams</span>
+</div>
+<h1 class="font-headline font-extrabold text-[2.5rem] leading-[1.1] text-codical-navy mb-5 tracking-tight max-w-[340px]">
+            AI coding review <br/>for cleaner claims
+        </h1>
+<p class="font-body text-[15px] text-codical-slate mb-8 max-w-[320px] leading-relaxed">
+            Upload reports, validate codes, and route edge cases to certified coder review.
+        </p>
+<div class="flex flex-col gap-3 w-full max-w-[280px]">
+<a class="flex items-center justify-center gap-2 bg-codical-navy text-white rounded-full py-3.5 px-6 font-medium text-sm transition-transform active:scale-95 shadow-lg shadow-codical-navy/20" href="#">
+                Start review
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">arrow_forward</span>
+</a>
+<a class="flex items-center justify-center gap-2 bg-white text-codical-navy border border-gray-200 rounded-full py-3.5 px-6 font-medium text-sm transition-transform active:scale-95 shadow-sm" href="#">
+                Book demo
+            </a>
+</div>
+<!-- Mobile Product Mockup -->
+<div class="mt-12 w-full max-w-[340px] bg-white rounded-2xl shadow-xl shadow-codical-navy/10 border border-gray-100 overflow-hidden relative z-10">
+<!-- Mockup Header -->
+<div class="bg-gray-50 border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-codical-blue text-[18px]">description</span>
+<span class="text-xs font-semibold text-codical-navy">Clinical Notes</span>
+</div>
+<span class="text-[10px] font-medium bg-codical-light text-codical-blue px-2 py-1 rounded-full">Report #8912</span>
+</div>
+<!-- Mockup Content -->
+<div class="p-4 space-y-4">
+<div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
+<p class="text-[11px] text-codical-slate leading-relaxed line-clamp-3">
+                        Patient presents with acute exacerbation of chronic obstructive pulmonary disease. Administered nebulizer treatment and prescribed oral corticosteroids...
+                    </p>
+</div>
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-codical-navy">Suggested Codes</span>
+<span class="material-symbols-outlined text-green-500 text-[14px]">check_circle</span>
+</div>
+<div class="bg-white border border-gray-200 rounded-lg p-2.5 flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-2">
+<span class="bg-codical-blue/10 text-codical-blue text-[10px] font-bold px-2 py-0.5 rounded">CPT</span>
+<span class="text-xs font-semibold text-codical-navy">99214</span>
+</div>
+<span class="text-[10px] text-codical-slate">Level 4 Est. Patient</span>
+</div>
+</div>
+<div class="bg-orange-50 border border-orange-100 rounded-xl p-3 flex items-start gap-2">
+<span class="material-symbols-outlined text-codical-orange text-[16px] mt-0.5" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div>
+<span class="text-[11px] font-semibold text-codical-navy block">Validation Check</span>
+<span class="text-[10px] text-codical-slate mt-0.5 block">NCCI Warning: Modifier 25 recommended for separate E/M service.</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- About / Stats Section -->
+<section class="py-16 px-6 bg-white">
+<div class="flex flex-col gap-8">
+<div class="rounded-2xl overflow-hidden aspect-[4/3] bg-gray-100 relative shadow-md">
+<img alt="Healthcare team" class="w-full h-full object-cover" data-alt="A modern, bright medical office setting showing a diverse team of healthcare administrators and clinical coders reviewing documents on large screens, exuding professionalism and efficiency." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO4fnOVkyRBod6YRiIV8invXS8u26WrVflD8FWHr0uK9JYnpAbhvghKoTOJA45dwoSt4c7i4EPa7NjgJOnmm7bonVCkixIWyeNWJnl-3CwVBDhxqeI_ukOsDTpgra3TMx3vbh3YvY11DTh_ayyfYXC1nEuHHMPdh1AvIrKL71MPMeZ6esL1XAymK594cSkUW9zxio27SppSzgtnqIimwVygUj117cJzXzBOMCXgvcZoFO6EGkgacJ4rFtUfcit8SW5Rbu8FdTLhjk"/>
+<!-- Stat Chip 1 -->
+<div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur-md rounded-xl p-3 shadow-lg border border-white/50 max-w-[140px]">
+<div class="text-codical-orange font-headline font-bold text-lg leading-tight">42%</div>
+<div class="text-[10px] font-medium text-codical-navy mt-1 leading-snug">Fewer Preventable Denials</div>
+</div>
+<!-- Stat Chip 2 -->
+<div class="absolute top-4 right-4 bg-white/90 backdrop-blur-md rounded-xl p-3 shadow-lg border border-white/50 max-w-[120px]">
+<div class="text-codical-blue font-headline font-bold text-lg leading-tight">24h</div>
+<div class="text-[10px] font-medium text-codical-navy mt-1 leading-snug">Reviewer SLA</div>
+</div>
+</div>
+<div>
+<h2 class="font-headline font-bold text-2xl text-codical-navy mb-4 tracking-tight">Precision at every stage of the revenue cycle.</h2>
+<p class="font-body text-sm text-codical-slate leading-relaxed">
+                    Codical bridges the gap between raw clinical documentation and clean claims, empowering your team with AI precision and expert human oversight.
+                </p>
+</div>
+</div>
+</section>
+<!-- Features Section -->
+<section class="py-16 px-6 bg-codical-light/30">
+<h2 class="font-headline font-bold text-2xl text-codical-navy mb-8 text-center">Comprehensive Intelligence</h2>
+<div class="flex flex-col gap-4">
+<!-- Feature 1 -->
+<div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+<div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-codical-blue" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<h3 class="font-headline font-bold text-base text-codical-navy mb-2">Code Intelligence</h3>
+<p class="text-xs text-codical-slate leading-relaxed">Proprietary LLMs trained specifically for accurate CPT and ICD-10 extraction from unstructured notes.</p>
+</div>
+<!-- Feature 2 -->
+<div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+<div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-codical-orange" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+</div>
+<h3 class="font-headline font-bold text-base text-codical-navy mb-2">Claim Validation</h3>
+<p class="text-xs text-codical-slate leading-relaxed">Real-time NCCI edit checks and modifier suggestions to prevent rejections before submission.</p>
+</div>
+<!-- Feature 3 -->
+<div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+<div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-indigo-600" style="font-variation-settings: 'FILL' 1;">policy</span>
+</div>
+<h3 class="font-headline font-bold text-base text-codical-navy mb-2">Payer Intelligence</h3>
+<p class="text-xs text-codical-slate leading-relaxed">Automated policy matching for LCDs/NCDs ensuring medical necessity requirements are met.</p>
+</div>
+<!-- Feature 4 -->
+<div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+<div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-emerald-600" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<h3 class="font-headline font-bold text-base text-codical-navy mb-2">Certified Review</h3>
+<p class="text-xs text-codical-slate leading-relaxed">Seamless routing of complex or edge-case claims directly to our network of certified human coders.</p>
+</div>
+</div>
+</section>
+<!-- Workflow Section -->
+<section class="py-16 px-6 bg-white">
+<h2 class="font-headline font-bold text-2xl text-codical-navy mb-10 text-center">How it works</h2>
+<div class="relative pl-6 border-l border-gray-200 space-y-8 pb-4">
+<!-- Step 1 -->
+<div class="relative">
+<div class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-white border-2 border-codical-blue flex items-center justify-center text-[10px] font-bold text-codical-blue shadow-sm">1</div>
+<h4 class="font-headline font-bold text-sm text-codical-navy mb-1 pt-0.5">Upload Report</h4>
+<p class="text-xs text-codical-slate leading-relaxed">Securely ingest clinical documentation via API or portal.</p>
+</div>
+<!-- Step 2 -->
+<div class="relative">
+<div class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-white border-2 border-codical-blue flex items-center justify-center text-[10px] font-bold text-codical-blue shadow-sm">2</div>
+<h4 class="font-headline font-bold text-sm text-codical-navy mb-1 pt-0.5">AI Review</h4>
+<p class="text-xs text-codical-slate leading-relaxed">Engine extracts entities and suggests initial code sets.</p>
+</div>
+<!-- Step 3 -->
+<div class="relative">
+<div class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-white border-2 border-codical-orange flex items-center justify-center text-[10px] font-bold text-codical-orange shadow-sm">3</div>
+<h4 class="font-headline font-bold text-sm text-codical-navy mb-1 pt-0.5">Payer Validation</h4>
+<p class="text-xs text-codical-slate leading-relaxed">Cross-reference against NCCI edits and specific payer rules.</p>
+</div>
+<!-- Step 4 -->
+<div class="relative">
+<div class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-codical-navy border-2 border-codical-navy flex items-center justify-center text-[10px] font-bold text-white shadow-sm">4</div>
+<h4 class="font-headline font-bold text-sm text-codical-navy mb-1 pt-0.5">Signoff</h4>
+<p class="text-xs text-codical-slate leading-relaxed">Final human certification for flagged exceptions.</p>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="bg-[#071252] dark:bg-black pt-16 pb-8 w-full max-w-[390px] mx-auto md:max-w-none md:mx-0 border-t border-white/10">
+<div class="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-start gap-12">
+<div class="flex flex-col gap-4">
+<span class="font-headline font-bold text-white text-lg">Codical Health</span>
+<p class="font-body text-sm leading-relaxed text-[#65758b]">
+                    Intelligent Healthcare Operations.
+                </p>
+<div class="flex flex-wrap gap-4 mt-2">
+<a class="font-body text-sm leading-relaxed text-[#65758b] hover:text-white transition-colors duration-200 opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="font-body text-sm leading-relaxed text-[#65758b] hover:text-white transition-colors duration-200 opacity-80 hover:opacity-100" href="#">Terms of Service</a>
+<a class="font-body text-sm leading-relaxed text-[#65758b] hover:text-white transition-colors duration-200 opacity-80 hover:opacity-100" href="#">HIPAA Compliance</a>
+<a class="font-body text-sm leading-relaxed text-[#65758b] hover:text-white transition-colors duration-200 opacity-80 hover:opacity-100" href="#">Security</a>
+<a class="font-body text-sm leading-relaxed text-[#65758b] hover:text-white transition-colors duration-200 opacity-80 hover:opacity-100" href="#">LinkedIn</a>
+<a class="font-body text-sm leading-relaxed text-[#65758b] hover:text-white transition-colors duration-200 opacity-80 hover:opacity-100" href="#">Status</a>
+</div>
+</div>
+<div class="w-full pt-8 border-t border-white/10">
+<p class="font-body text-xs text-[#65758b]">
+                    © 2024 Codical Health. Intelligent Healthcare Operations.
+                </p>
+</div>
+</div>
+</footer>
+</body></html>
