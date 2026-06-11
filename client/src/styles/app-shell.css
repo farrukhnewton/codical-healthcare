@@ -2508,6 +2508,10 @@ html.dark {
 @media (max-width: 760px) {
   .appShellPremium .app-page-title h1 {
     font-size: 17px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .appShellPremium .app-topbar-primary {
@@ -7908,6 +7912,165 @@ html.dark {
   .appShellPremium .tool-primary-button,
   .appShellPremium .tool-secondary-button {
     width: 100%;
+  }
+}
+
+/* Coverage & Guidelines section. */
+.appShellPremium .coverage-hub-page {
+  width: min(100% - 40px, 1260px);
+  max-width: 1260px;
+  gap: 20px;
+}
+
+.appShellPremium .coverage-hero-panel {
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(255, 122, 61, 0.14), transparent 28%),
+    radial-gradient(circle at 42% 18%, rgba(33, 55, 255, 0.11), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 247, 255, 0.9)) !important;
+}
+
+.appShellPremium .coverage-hero-panel::before {
+  content: "";
+  position: absolute;
+  right: -10%;
+  top: -64%;
+  width: min(46vw, 620px);
+  height: 140%;
+  border: 1px solid rgba(33, 55, 255, 0.14);
+  border-radius: 50%;
+  transform: rotate(10deg);
+  pointer-events: none;
+}
+
+.appShellPremium .coverage-hero-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.appShellPremium .coverage-hero-panel h1 {
+  color: var(--app-ink);
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: clamp(28px, 3vw, 44px);
+  font-weight: 850;
+  line-height: 1;
+}
+
+.appShellPremium .coverage-hero-panel p {
+  color: #4c5f78;
+  font-size: 14px;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.appShellPremium .coverage-hero-panel .w-10.h-10 {
+  border: 1px solid rgba(33, 55, 255, 0.18);
+  border-radius: 8px;
+  background: #eef3ff !important;
+  box-shadow: 0 14px 32px rgba(18, 48, 91, 0.10);
+}
+
+.appShellPremium .coverage-hero-panel .w-10.h-10 svg {
+  color: var(--app-blue) !important;
+}
+
+.appShellPremium .coverage-tab-list {
+  gap: 8px;
+  border: 1px solid rgba(202, 218, 235, 0.92);
+  border-radius: 999px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.appShellPremium .coverage-tab-list button {
+  border-radius: 999px !important;
+  color: #405370 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.appShellPremium .coverage-tab-list button[class*="bg-emerald"] {
+  color: #ffffff !important;
+  background: var(--app-blue) !important;
+  box-shadow: 0 12px 28px rgba(33, 55, 255, 0.18) !important;
+}
+
+.appShellPremium .coverage-content-shell {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.appShellPremium .coverage-content-shell .appGlass,
+.appShellPremium .coverage-content-shell .appGlassStrong,
+.appShellPremium .coverage-content-shell .appCard,
+.appShellPremium .coverage-content-shell .rounded-xl {
+  border-color: rgba(202, 218, 235, 0.88) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 20px 56px rgba(18, 48, 91, 0.09) !important;
+}
+
+.appShellPremium .coverage-content-shell input,
+.appShellPremium .coverage-content-shell .coverage-filter-list .rounded-full {
+  border-color: rgba(202, 218, 235, 0.92) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.appShellPremium .coverage-filter-list {
+  gap: 8px;
+}
+
+.appShellPremium .coverage-filter-list [class*="bg-emerald"] {
+  color: var(--app-blue-dark) !important;
+  background: #eef3ff !important;
+  border-color: rgba(33, 55, 255, 0.20) !important;
+}
+
+.appShellPremium .coverage-content-shell h4,
+.appShellPremium .coverage-content-shell .font-bold {
+  color: var(--app-ink);
+}
+
+.appShellPremium .coverage-content-shell .text-muted-foreground,
+.appShellPremium .coverage-content-shell [class*="text-muted"] {
+  color: var(--app-muted) !important;
+}
+
+.appShellPremium .coverage-content-shell a {
+  color: var(--app-blue);
+}
+
+@media (max-width: 1023px) {
+  .appShellPremium .coverage-hub-page {
+    width: min(100% - 28px, 1260px);
+  }
+
+  .appShellPremium .coverage-tab-list {
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 760px) {
+  .appShellPremium .coverage-hero-panel {
+    padding: 18px;
+  }
+
+  .appShellPremium .coverage-hero-panel .flex.items-center.gap-3 {
+    align-items: flex-start;
+  }
+
+  .appShellPremium .coverage-tab-list {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .appShellPremium .coverage-hub-page {
+    width: min(100% - 22px, 1260px);
   }
 }
 

@@ -930,9 +930,9 @@ export function IntelligenceHub() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto min-h-screen">
+    <div className="coverage-hub-page tool-page">
       {/* Sticky header with tabs */}
-      <div className="appGlassStrong appCard border-b border-white/15 dark:border-white/10 px-6 py-6 sticky top-0 z-20">
+      <div className="tool-panel coverage-hero-panel">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-sky-700 flex items-center justify-center shadow-lg shadow-black/10">
             <BookOpen size={20} color="white" />
@@ -970,7 +970,7 @@ export function IntelligenceHub() {
       </div>
 
       {/* Tab content */}
-      <div className="p-6 max-w-6xl mx-auto">
+      <div className="coverage-content-shell">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
