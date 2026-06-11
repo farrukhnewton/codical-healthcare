@@ -1,7 +1,9 @@
 import "@/styles/landing-stitch.css";
 
-import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import type { Variants } from "framer-motion";
 import { Link } from "wouter";
 import {
   AlertTriangle,
@@ -76,6 +78,54 @@ type FaqItem = {
   question: string;
   answer: string;
 };
+
+type HeroCapsule = {
+  label: string;
+  icon: LucideIcon;
+  className: string;
+  tone: "blue" | "orange" | "gold" | "mint";
+  motion: {
+    x: number;
+    y: number;
+    duration: number;
+    delay: number;
+  };
+};
+
+type ProofCard = {
+  kind: "metric" | "quote";
+  value?: string;
+  label: string;
+  text: string;
+  attribution?: string;
+  tone: "blue" | "orange" | "mint";
+};
+
+const revealVariants: Variants = {
+  hidden: { opacity: 0, y: 24, filter: "blur(6px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+function Reveal({ children, className }: { children: ReactNode; className?: string }) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      className={className}
+      initial={reduceMotion ? false : "hidden"}
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.2 }}
+      variants={revealVariants}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 const TEAM_IMAGES = [
   "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=85",
@@ -229,6 +279,45 @@ const HERO_TOKENS = [
   "CMS rule linked",
 ];
 
+const HERO_CAPSULES: HeroCapsule[] = [
+  { label: "Report", icon: FileText, className: "node-upload", tone: "blue", motion: { x: 8, y: -14, duration: 7, delay: 0 } },
+  { label: "Codes", icon: Sparkles, className: "node-code", tone: "orange", motion: { x: -7, y: -12, duration: 6.4, delay: 0.7 } },
+  { label: "Claim", icon: ClipboardCheck, className: "node-check", tone: "gold", motion: { x: 6, y: -16, duration: 8.2, delay: 1.2 } },
+  { label: "Review", icon: UserCheck, className: "node-review", tone: "mint", motion: { x: -9, y: -13, duration: 7.6, delay: 1.8 } },
+];
+
+// TODO: Replace placeholder proof metrics and testimonial copy with verified production data.
+const PROOF_CARDS: ProofCard[] = [
+  {
+    kind: "metric",
+    value: "42%",
+    label: "Fewer preventable denials",
+    text: "Designed to catch NCCI, modifier and documentation issues before billing handoff.",
+    tone: "blue",
+  },
+  {
+    kind: "quote",
+    label: "Operational clarity",
+    text: "Codical gives our team a clearer first pass before the claim reaches billing.",
+    attribution: "RCM Operations Lead",
+    tone: "orange",
+  },
+  {
+    kind: "metric",
+    value: "24h",
+    label: "Reviewer SLA",
+    text: "Edge cases can move into certified coder review without losing rationale or history.",
+    tone: "mint",
+  },
+  {
+    kind: "quote",
+    label: "Audit-ready decisions",
+    text: "The workflow makes coding rationale easier to track and defend.",
+    attribution: "Certified Coding Reviewer",
+    tone: "blue",
+  },
+];
+
 function CtaButton({ href, children, variant = "primary" }: { href: string; children: ReactNode; variant?: "primary" | "secondary" }) {
   return (
     <Link className={`nex-button nex-button-${variant}`} href={href}>
@@ -242,12 +331,20 @@ function Header() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const activeGroup = MENU_GROUPS.find((group) => group.id === activeMenu);
+  const megaStyle = activeGroup
+    ? ({ "--nex-menu-image": `url(${activeGroup.image})` } as CSSProperties)
+    : undefined;
 
   return (
     <>
       <header
         className={`nex-header ${activeMenu ? "is-hovered" : ""}`}
         onMouseLeave={() => setActiveMenu(null)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setActiveMenu(null);
+          }
+        }}
       >
         <a className="nex-brand" href="#top" aria-label="Codical Health home">
           <BrandMark />
@@ -285,12 +382,12 @@ function Header() {
         </button>
 
         {activeGroup && (
-          <div className="nex-mega-menu" onMouseEnter={() => setActiveMenu(activeGroup.id)}>
+          <div className="nex-mega-menu" style={megaStyle} onMouseEnter={() => setActiveMenu(activeGroup.id)}>
             <div className="nex-mega-copy">
               <span>{activeGroup.title}</span>
               <div className="nex-mega-grid">
-                {activeGroup.items.map((item) => (
-                  <a href={item.href} className="nex-mega-link" key={item.title}>
+                {activeGroup.items.map((item, index) => (
+                  <a href={item.href} className={`nex-mega-link item-${index}`} key={item.title}>
                     <i><item.icon size={18} /></i>
                     <strong>{item.title}</strong>
                     <small>{item.text}</small>
@@ -345,8 +442,20 @@ function Header() {
 }
 
 function MotionHero() {
+  const heroRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const backdropY = useTransform(scrollYProgress, [0, 1], ["0px", "110px"]);
+  const backdropScale = useTransform(scrollYProgress, [0, 1], [1.02, 1.065]);
+  const contentY = useTransform(scrollYProgress, [0, 1], ["0px", "-34px"]);
+
   return (
-    <section className="nex-hero" id="top">
+    <section className="nex-hero" id="top" ref={heroRef}>
+      <motion.div
+        className="nex-hero-bg"
+        aria-hidden="true"
+        style={reduceMotion ? undefined : { y: backdropY, scale: backdropScale }}
+      />
       <div className="nex-motion-field" aria-hidden="true">
         <div className="nex-claim-orbit">
           <span className="nex-orbit-ring ring-one" />
@@ -359,23 +468,44 @@ function MotionHero() {
         <div className="nex-signal-stack right">
           {HERO_TOKENS.slice(1).map((token) => <span key={token}>{token}</span>)}
         </div>
-        <span className="nex-claim-node node-upload"><FileText size={18} /> Report</span>
-        <span className="nex-claim-node node-code"><Sparkles size={18} /> Codes</span>
-        <span className="nex-claim-node node-check"><ClipboardCheck size={18} /> Claim</span>
-        <span className="nex-claim-node node-review"><UserCheck size={18} /> Review</span>
+        {HERO_CAPSULES.map((capsule) => {
+          const CapsuleIcon = capsule.icon;
+          return (
+            <motion.span
+              className={`nex-claim-node ${capsule.className} tone-${capsule.tone}`}
+              key={capsule.label}
+              animate={reduceMotion ? undefined : { x: [0, capsule.motion.x, 0], y: [0, capsule.motion.y, 0] }}
+              transition={reduceMotion ? undefined : {
+                duration: capsule.motion.duration,
+                delay: capsule.motion.delay,
+                ease: "easeInOut",
+                repeat: Infinity,
+                repeatType: "mirror",
+              }}
+            >
+              <CapsuleIcon size={18} /> {capsule.label}
+            </motion.span>
+          );
+        })}
         <span className="nex-claim-route route-one" />
         <span className="nex-claim-route route-two" />
         <span className="nex-claim-route route-three" />
       </div>
 
-      <div className="nex-hero-content">
+      <motion.div
+        className="nex-hero-content"
+        initial={reduceMotion ? false : "hidden"}
+        animate="visible"
+        variants={revealVariants}
+        style={reduceMotion ? undefined : { y: contentY }}
+      >
         <div className="nex-proof">
           <span><img src={TEAM_IMAGES[0]} alt="" /></span>
           <span><img src={TEAM_IMAGES[1]} alt="" /></span>
           <span><img src={TEAM_IMAGES[2]} alt="" /></span>
           <strong>Trusted by coding, audit and revenue-cycle teams.</strong>
         </div>
-        <h1>AI coding review for cleaner claims</h1>
+        <h1>Unified coding intelligence for cleaner claims.</h1>
         <p>
           Upload clinical reports, validate codes against NCCI, payer, and NPI checks,
           then route edge cases to certified coder review.
@@ -384,7 +514,7 @@ function MotionHero() {
           <CtaButton href="/signup">Start review workflow</CtaButton>
           <CtaButton href="#process" variant="secondary">Book a demo</CtaButton>
         </div>
-      </div>
+      </motion.div>
 
       <div className="nex-product-preview" aria-label="Codical Health workflow preview">
         <div className="nex-preview-topbar">
@@ -454,9 +584,10 @@ function TeamSection() {
         <h2>Remove friction from your revenue cycle.</h2>
         <p>
           Manual coding review is slow and prone to human error, leading to preventable denials.
-          Codical acts as a brilliant first pass, instantly flagging NCCI conflicts and
-          payer-specific rules before a human ever looks at the claim.
+          Codical acts as a first-pass intelligence layer, flagging documentation gaps,
+          NCCI conflicts and payer-specific rules before the claim moves forward.
         </p>
+        {/* TODO: Replace with verified production metrics. */}
         <div className="nex-team-stats">
           <strong>42%<span>fewer preventable denials</span></strong>
           <strong>24h<span>reviewer SLA</span></strong>
@@ -474,30 +605,94 @@ function TeamSection() {
   );
 }
 
+function FeaturePreview({ feature }: { feature: FeatureCard }) {
+  if (feature.visual === "claim") {
+    return (
+      <div className="nex-feature-visual preview-claim" aria-hidden="true">
+        <strong>{feature.metric}</strong>
+        {["NCCI edit clear", "Modifier review", "Documentation gap"].map((label, index) => (
+          <span className={index === 2 ? "is-review" : "is-clear"} key={label}>
+            <em>{index === 2 ? "!" : "OK"}</em>
+            {label}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  if (feature.visual === "payer") {
+    return (
+      <div className="nex-feature-visual preview-payer" aria-hidden="true">
+        <strong>{feature.metric}</strong>
+        <div className="nex-mini-orbit">
+          <span>CMS</span>
+          <span>NPI</span>
+          <span>Payer</span>
+          <b>Codical</b>
+        </div>
+      </div>
+    );
+  }
+
+  if (feature.visual === "review") {
+    return (
+      <div className="nex-feature-visual preview-review" aria-hidden="true">
+        <strong>{feature.metric}</strong>
+        <div className="nex-review-thread">
+          <span><UserCheck size={14} /> Coder review</span>
+          <span><MessageSquareText size={14} /> Rationale attached</span>
+          <span><FileCheck2 size={14} /> Report ready</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="nex-feature-visual preview-code" aria-hidden="true">
+      <strong>{feature.metric}</strong>
+      <div className="nex-source-mini">
+        <p>clinical note excerpt</p>
+        <mark>source-linked rationale</mark>
+      </div>
+      <div className="nex-code-pills">
+        <span>CPT 99214</span>
+        <span>ICD-10 E11.9</span>
+        <span>HCPCS J7613</span>
+      </div>
+    </div>
+  );
+}
+
 function ResultsSection() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <section className="nex-results" id="results">
-      <div className="nex-section-center">
+      <Reveal className="nex-section-center">
         <span className="nex-section-chip"><BarChart3 size={16} /> Results</span>
         <h2>Intelligence at every layer.</h2>
         <p>Purpose-built validation engines catch errors before submission and keep the final decision auditable.</p>
-      </div>
+      </Reveal>
 
       <div className="nex-result-grid">
-        {FEATURE_CARDS.map((feature) => {
+        {FEATURE_CARDS.map((feature, index) => {
           const FeatureIcon = feature.icon;
           return (
-            <article className={`nex-result-card feature-${feature.visual}`} key={feature.title}>
+            <motion.article
+              className={`nex-result-card feature-${feature.visual}`}
+              key={feature.title}
+              initial={reduceMotion ? false : "hidden"}
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.22 }}
+              variants={revealVariants}
+              transition={{ delay: index * 0.06 }}
+              whileHover={reduceMotion ? undefined : { y: -6, scale: 1.01 }}
+            >
               <i><FeatureIcon size={24} /></i>
               <h3>{feature.title}</h3>
               <p>{feature.text}</p>
-              <div className="nex-feature-visual" aria-hidden="true">
-                <strong>{feature.metric}</strong>
-                <span />
-                <span />
-                <span />
-              </div>
-            </article>
+              <FeaturePreview feature={feature} />
+            </motion.article>
           );
         })}
       </div>
@@ -668,6 +863,38 @@ function IntegrationsSection() {
   );
 }
 
+function ProofReviewSection() {
+  return (
+    <section className="nex-proof-review" id="proof">
+      <Reveal className="nex-section-center">
+        <span className="nex-section-chip"><BadgeCheck size={16} /> Review proof</span>
+        <h2>Built for teams that need cleaner claims and clearer review.</h2>
+        <p>Outcome-focused workflows help coding, billing and audit teams see the same evidence before a claim moves forward.</p>
+      </Reveal>
+
+      <div className="nex-proof-grid">
+        {PROOF_CARDS.map((card) => (
+          <Reveal className={`nex-proof-card proof-${card.tone}`} key={`${card.label}-${card.tone}`}>
+            {card.kind === "metric" ? (
+              <>
+                <strong>{card.value}</strong>
+                <h3>{card.label}</h3>
+                <p>{card.text}</p>
+              </>
+            ) : (
+              <>
+                <span>{card.label}</span>
+                <blockquote>{card.text}</blockquote>
+                <p>{card.attribution}</p>
+              </>
+            )}
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function FaqSection() {
   return (
     <section className="nex-faq" id="faq">
@@ -697,15 +924,16 @@ export function Landing() {
         <ResultsSection />
         <ProcessSection />
         <IntegrationsSection />
+        <ProofReviewSection />
         <FaqSection />
         <section className="nex-final">
           <div>
             <span className="nex-section-chip"><ShieldCheck size={16} /> Codical Health</span>
-            <h2>Ready for zero-error coding?</h2>
-            <p>Join healthcare organizations reducing denial rates and accelerating revenue cycles with Codical.</p>
+            <h2>Ready to make coding review cleaner?</h2>
+            <p>Bring documentation, coding support, claim checks and certified review into one connected workflow.</p>
             <div className="nex-final-actions">
-              <CtaButton href="/signup">Get started</CtaButton>
-              <CtaButton href="/login" variant="secondary">Contact sales</CtaButton>
+              <CtaButton href="/signup">Request access</CtaButton>
+              <CtaButton href="#process" variant="secondary">Book a demo</CtaButton>
             </div>
           </div>
         </section>
@@ -719,7 +947,7 @@ export function Landing() {
           <a href="#faq">HIPAA Compliance</a>
           <a href="#top">Status</a>
         </nav>
-        <p>© 2026 Codical Health. Intelligent healthcare operations.</p>
+        <p>&copy; 2026 Codical Health. Intelligent healthcare operations.</p>
       </footer>
     </div>
   );

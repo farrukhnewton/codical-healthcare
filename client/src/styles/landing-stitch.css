@@ -2679,6 +2679,818 @@
   }
 }
 
+/* Focused premium refresh: header, cinematic hero, result cards, proof band. */
+.nex-page {
+  --nex-ink: #07122e;
+  --nex-text: #17213a;
+  --nex-muted: #536174;
+  --nex-blue: #173bff;
+  --nex-blue-2: #1028c9;
+  --nex-orange: #ff7a3d;
+  --nex-gold: #ffb84d;
+  --nex-mint: #22c7a9;
+  --nex-bg: #eef6fd;
+  --nex-card-soft: #f8fbff;
+  --nex-surface: rgba(255, 255, 255, 0.86);
+  --nex-surface-strong: #ffffff;
+  --nex-line: rgba(7, 18, 46, 0.10);
+  --nex-line-strong: rgba(7, 18, 46, 0.15);
+  --nex-shadow: 0 24px 70px rgba(23, 59, 255, 0.10);
+  --nex-shadow-soft: 0 18px 60px rgba(43, 73, 112, 0.12);
+  --nex-shadow-blue: 0 30px 90px rgba(23, 59, 255, 0.16);
+  color: var(--nex-text);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(23, 59, 255, 0.10), transparent 35%),
+    linear-gradient(180deg, #eef6fd 0%, #f8fbff 42%, #ffffff 100%);
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+.nex-page h1,
+.nex-page h2,
+.nex-page h3,
+.nex-mega-link strong,
+.nex-page .nex-button strong {
+  font-family: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+.nex-header {
+  width: min(calc(100% - 56px), 1440px);
+  min-height: 74px;
+  gap: 26px;
+  border-color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 18px 50px rgba(23, 59, 255, 0.10);
+  backdrop-filter: blur(22px) saturate(150%);
+}
+
+.nex-header.is-hovered {
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 30px 90px rgba(23, 59, 255, 0.16);
+}
+
+.nex-nav-item {
+  height: 42px;
+  color: rgba(83, 97, 116, 0.94);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.nex-nav-item:hover,
+.nex-nav-item:focus-visible,
+.nex-nav-item.is-active {
+  border-color: rgba(7, 18, 46, 0.10);
+  color: var(--nex-ink);
+  background: #f1f6ff;
+}
+
+.nex-login {
+  color: var(--nex-ink);
+  font-weight: 800;
+}
+
+.nex-page .nex-button {
+  min-height: 54px;
+  border-color: rgba(7, 18, 46, 0.12);
+  background: #0a1020;
+  box-shadow: 0 16px 40px rgba(7, 18, 46, 0.18);
+}
+
+.nex-page .nex-button-secondary {
+  color: var(--nex-ink);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 40px rgba(23, 59, 255, 0.10);
+}
+
+.nex-mega-menu {
+  isolation: isolate;
+  overflow: hidden;
+  width: min(1040px, calc(100vw - 96px));
+  grid-template-columns: minmax(0, 1fr) 318px;
+  gap: 20px;
+  border-color: rgba(255, 255, 255, 0.86);
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 34px 110px rgba(23, 59, 255, 0.18), 0 18px 42px rgba(7, 18, 46, 0.10);
+  backdrop-filter: blur(24px) saturate(145%);
+}
+
+.nex-mega-menu::before {
+  content: "";
+  position: absolute;
+  inset: -28px;
+  z-index: -2;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(238, 246, 253, 0.70)),
+    var(--nex-menu-image, none) center / cover no-repeat;
+  filter: blur(18px) saturate(120%);
+  opacity: 0.28;
+  transform: scale(1.08);
+}
+
+.nex-mega-menu::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 16% 14%, rgba(23, 59, 255, 0.10), transparent 34%),
+    radial-gradient(circle at 86% 20%, rgba(255, 122, 61, 0.14), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.80), rgba(255, 255, 255, 0.92));
+}
+
+.nex-mega-copy > span {
+  color: var(--nex-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.nex-mega-grid {
+  gap: 10px;
+}
+
+.nex-mega-link {
+  position: relative;
+  min-height: 106px;
+  border: 1px solid transparent;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.36);
+}
+
+.nex-mega-link:hover,
+.nex-mega-link:focus-visible {
+  border-color: rgba(23, 59, 255, 0.10);
+  background:
+    radial-gradient(circle at 12% 16%, rgba(23, 59, 255, 0.10), transparent 32%),
+    rgba(255, 255, 255, 0.76);
+  box-shadow: 0 18px 42px rgba(23, 59, 255, 0.10);
+}
+
+.nex-mega-link i {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  border-color: rgba(7, 18, 46, 0.08);
+  border-radius: 15px;
+  color: var(--nex-blue);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(234, 240, 255, 0.90));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94), 0 14px 28px rgba(23, 59, 255, 0.08);
+}
+
+.nex-mega-link i::before,
+.nex-mega-link i::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.14;
+}
+
+.nex-mega-link i::before {
+  width: 22px;
+  height: 22px;
+  right: -6px;
+  top: -4px;
+}
+
+.nex-mega-link i::after {
+  width: 12px;
+  height: 12px;
+  left: 7px;
+  bottom: 7px;
+}
+
+.nex-mega-link i svg {
+  position: relative;
+  z-index: 1;
+  stroke-width: 2;
+}
+
+.nex-mega-link.item-1 i,
+.nex-mega-link.item-3 i {
+  color: var(--nex-orange);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 240, 232, 0.95));
+}
+
+.nex-mega-link.item-2 i {
+  color: var(--nex-mint);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(233, 251, 247, 0.95));
+}
+
+.nex-mega-link strong {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.nex-mega-link small {
+  color: rgba(83, 97, 116, 0.92);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nex-mega-card {
+  min-height: 292px;
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  box-shadow: 0 24px 58px rgba(7, 18, 46, 0.18);
+}
+
+.nex-mega-card::after {
+  background:
+    linear-gradient(180deg, transparent 8%, rgba(7, 18, 46, 0.12) 42%, rgba(7, 18, 46, 0.88)),
+    radial-gradient(circle at 24% 12%, rgba(255, 122, 61, 0.46), transparent 30%);
+}
+
+.nex-hero {
+  isolation: isolate;
+  min-height: 1130px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(23, 59, 255, 0.10), transparent 34%),
+    linear-gradient(180deg, #eef6fd 0%, #f6fafe 52%, #edf4fb 100%);
+}
+
+.nex-hero-bg {
+  position: absolute;
+  inset: -5%;
+  z-index: 0;
+  background: url("/codical-healthcare-operations-hero.jpg") center top / cover no-repeat;
+  filter: blur(3px) saturate(108%);
+  opacity: 0.22;
+  transform-origin: center top;
+  mask-image: linear-gradient(180deg, #000 0%, #000 64%, transparent 94%);
+  animation: nex-bg-pan 24s ease-in-out infinite alternate;
+  pointer-events: none;
+  will-change: transform, background-position;
+}
+
+.nex-hero::before {
+  z-index: 1;
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.95), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), #edf4fb 88%);
+}
+
+.nex-motion-field {
+  z-index: 1;
+}
+
+.nex-motion-field::before {
+  opacity: 0.20;
+  background:
+    radial-gradient(circle at 50% 26%, rgba(255, 255, 255, 0.94), transparent 30%),
+    linear-gradient(to right, rgba(23, 59, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(23, 59, 255, 0.04) 1px, transparent 1px);
+}
+
+.nex-motion-field::after {
+  top: 138px;
+  opacity: 0.22;
+  filter: blur(14px);
+}
+
+.nex-orbit-ring {
+  border-color: rgba(23, 59, 255, 0.18);
+}
+
+.nex-orbit-ring.ring-one {
+  animation-duration: 64s;
+}
+
+.nex-orbit-ring.ring-two {
+  border-color: rgba(255, 122, 61, 0.16);
+  animation-duration: 52s;
+}
+
+.nex-orbit-ring.ring-three {
+  border-color: rgba(7, 21, 90, 0.10);
+  animation-duration: 80s;
+}
+
+.nex-signal-stack {
+  opacity: 0.58;
+}
+
+.nex-signal-stack span,
+.nex-claim-node {
+  border-color: rgba(7, 18, 46, 0.08);
+  color: var(--nex-ink);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 16px 40px rgba(23, 59, 255, 0.10);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+.nex-claim-node {
+  min-height: 48px;
+  padding: 7px 17px 7px 8px;
+  animation: none;
+  will-change: transform;
+}
+
+.nex-claim-node svg {
+  width: 32px;
+  height: 32px;
+  stroke-width: 2;
+  background: var(--nex-blue);
+}
+
+.nex-claim-node.tone-orange svg {
+  background: var(--nex-orange);
+}
+
+.nex-claim-node.tone-gold svg {
+  background: var(--nex-gold);
+}
+
+.nex-claim-node.tone-mint svg {
+  background: var(--nex-mint);
+}
+
+.nex-hero h1 {
+  max-width: 1140px;
+  color: var(--nex-ink);
+  font-size: clamp(56px, 7vw, 104px);
+  line-height: 0.98;
+  font-weight: 800;
+}
+
+.nex-hero-content > p {
+  max-width: 790px;
+  color: rgba(83, 97, 116, 0.98);
+  font-size: clamp(17px, 1.3vw, 21px);
+  font-weight: 600;
+}
+
+.nex-product-preview {
+  bottom: -130px;
+  width: min(1320px, calc(100% - 64px));
+  border-color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 -18px 90px rgba(23, 59, 255, 0.13), 0 -4px 28px rgba(7, 18, 46, 0.08);
+  animation: nex-product-enter 860ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.nex-preview-grid section {
+  border-color: rgba(7, 18, 46, 0.08);
+  box-shadow: 0 22px 58px rgba(23, 59, 255, 0.08);
+}
+
+.nex-team h2,
+.nex-section-center h2,
+.nex-process-head h2,
+.nex-final h2,
+.nex-ecosystem-copy h2,
+.nex-faq h2 {
+  color: var(--nex-ink);
+  font-size: clamp(42px, 5vw, 76px);
+  line-height: 1.02;
+  font-weight: 800;
+}
+
+.nex-team-copy > p,
+.nex-team-side > p,
+.nex-section-center p,
+.nex-process-head p,
+.nex-final p,
+.nex-ecosystem-copy p {
+  color: rgba(83, 97, 116, 0.98);
+  font-weight: 600;
+}
+
+.nex-result-card {
+  position: relative;
+  min-height: 500px;
+  border-color: rgba(255, 255, 255, 0.92);
+  padding: 34px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.90)),
+    radial-gradient(circle at 84% 10%, rgba(23, 59, 255, 0.10), transparent 32%);
+  box-shadow: 0 22px 70px rgba(43, 73, 112, 0.10);
+  transition: border-color 250ms ease, box-shadow 250ms ease;
+}
+
+.nex-result-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 14% 8%, rgba(23, 59, 255, 0.08), transparent 28%),
+    radial-gradient(circle at 88% 88%, rgba(255, 122, 61, 0.10), transparent 30%);
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+}
+
+.nex-result-card:hover {
+  border-color: rgba(23, 59, 255, 0.14);
+  box-shadow: 0 30px 88px rgba(23, 59, 255, 0.14);
+}
+
+.nex-result-card:hover::before {
+  opacity: 1;
+}
+
+.nex-result-card h3 {
+  color: var(--nex-ink);
+  font-size: clamp(26px, 2.4vw, 34px);
+  line-height: 1.08;
+  font-weight: 800;
+}
+
+.nex-result-card p {
+  color: rgba(83, 97, 116, 0.98);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.nex-result-card > i {
+  position: relative;
+  z-index: 1;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  color: var(--nex-blue);
+  background: #eef3ff;
+}
+
+.nex-feature-visual {
+  position: relative;
+  z-index: 1;
+  min-height: 212px;
+  align-content: start;
+  gap: 14px;
+  margin-top: 38px;
+  border: 1px solid rgba(7, 18, 46, 0.06);
+  padding: 22px;
+  background:
+    radial-gradient(circle at 86% 8%, rgba(23, 59, 255, 0.13), transparent 34%),
+    linear-gradient(135deg, #f8fbff 0%, #eaf0ff 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.nex-feature-visual strong {
+  position: relative;
+  z-index: 2;
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-weight: 800;
+}
+
+.nex-feature-visual span {
+  height: auto;
+}
+
+.nex-source-mini {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(7, 18, 46, 0.08);
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.nex-source-mini p,
+.nex-source-mini mark {
+  margin: 0;
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: rgba(83, 97, 116, 0.86);
+  background: rgba(23, 59, 255, 0.08);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.nex-source-mini mark {
+  color: var(--nex-ink);
+  background: rgba(255, 122, 61, 0.14);
+}
+
+.nex-code-pills,
+.nex-review-thread {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nex-code-pills span,
+.nex-review-thread span,
+.preview-claim > span {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(7, 18, 46, 0.07);
+  border-radius: 999px;
+  padding: 8px 11px;
+  color: var(--nex-ink);
+  background: rgba(255, 255, 255, 0.84);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.preview-claim > span {
+  justify-content: space-between;
+  border-radius: 16px;
+  padding: 11px 12px;
+}
+
+.preview-claim em {
+  min-width: 28px;
+  border-radius: 999px;
+  padding: 4px 6px;
+  color: #ffffff;
+  background: var(--nex-mint);
+  font-size: 10px;
+  font-style: normal;
+  text-align: center;
+}
+
+.preview-claim .is-review em {
+  background: var(--nex-orange);
+}
+
+.nex-mini-orbit {
+  position: relative;
+  min-height: 132px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(23, 59, 255, 0.10), transparent 26%),
+    radial-gradient(circle at 50% 50%, transparent 0 38%, rgba(23, 59, 255, 0.14) 39% 40%, transparent 41%),
+    rgba(255, 255, 255, 0.52);
+}
+
+.nex-mini-orbit b,
+.nex-mini-orbit span {
+  position: absolute;
+  border-radius: 999px;
+  padding: 8px 11px;
+  color: var(--nex-ink);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 24px rgba(23, 59, 255, 0.08);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.nex-mini-orbit b {
+  position: relative;
+  color: #ffffff;
+  background: var(--nex-blue);
+}
+
+.nex-mini-orbit span:nth-child(1) { top: 8px; left: 50%; transform: translateX(-50%); }
+.nex-mini-orbit span:nth-child(2) { left: 16px; top: 58px; }
+.nex-mini-orbit span:nth-child(3) { right: 16px; top: 58px; }
+
+.nex-review-thread {
+  display: grid;
+}
+
+.nex-review-thread span svg {
+  color: var(--nex-blue);
+}
+
+.nex-proof-review {
+  padding: 130px max(24px, calc((100vw - 1290px) / 2));
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255, 122, 61, 0.12), transparent 28%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.nex-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.nex-proof-card {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid rgba(7, 18, 46, 0.08);
+  border-radius: 28px;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(23, 59, 255, 0.10), transparent 34%),
+    #ffffff;
+  box-shadow: 0 22px 60px rgba(43, 73, 112, 0.10);
+}
+
+.nex-proof-card.proof-orange {
+  background:
+    radial-gradient(circle at 88% 12%, rgba(255, 122, 61, 0.16), transparent 34%),
+    #ffffff;
+}
+
+.nex-proof-card.proof-mint {
+  background:
+    radial-gradient(circle at 88% 12%, rgba(34, 199, 169, 0.16), transparent 34%),
+    #ffffff;
+}
+
+.nex-proof-card strong {
+  color: var(--nex-ink);
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: clamp(48px, 5vw, 72px);
+  line-height: 0.92;
+  font-weight: 800;
+}
+
+.nex-proof-card h3 {
+  margin: 24px 0 0;
+  color: var(--nex-ink);
+  font-size: 24px;
+  line-height: 1.08;
+  font-weight: 800;
+}
+
+.nex-proof-card span {
+  width: max-content;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--nex-blue);
+  background: #eef3ff;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.nex-proof-card blockquote {
+  margin: 30px 0 0;
+  color: var(--nex-ink);
+  font-size: 21px;
+  line-height: 1.32;
+  font-weight: 750;
+}
+
+.nex-proof-card p {
+  margin: 22px 0 0;
+  color: rgba(83, 97, 116, 0.98);
+  font-size: 14px;
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.nex-final > div {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 122, 61, 0.32), transparent 28%),
+    radial-gradient(circle at 82% 20%, rgba(23, 59, 255, 0.32), transparent 34%),
+    linear-gradient(135deg, #07122e 0%, #07155a 58%, #0a1020 100%);
+  box-shadow: 0 34px 100px rgba(7, 18, 46, 0.28);
+}
+
+.nex-final > div::before,
+.nex-final > div::after {
+  content: "NCCI clear";
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 10px 16px;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(16px);
+  font-size: 12px;
+  font-weight: 850;
+  animation: nex-float 7s ease-in-out infinite;
+}
+
+.nex-final > div::before {
+  left: 8%;
+  top: 22%;
+}
+
+.nex-final > div::after {
+  content: "Payer review";
+  right: 9%;
+  bottom: 24%;
+  animation-delay: -2.4s;
+}
+
+.nex-final .nex-section-chip {
+  position: relative;
+  z-index: 1;
+  border-color: rgba(255, 255, 255, 0.20);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nex-final h2,
+.nex-final p,
+.nex-final-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.nex-final h2 {
+  color: #ffffff;
+}
+
+.nex-final p {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.nex-final .nex-button-secondary {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.20);
+}
+
+@keyframes nex-bg-pan {
+  0% { background-position: center top; }
+  100% { background-position: center 54%; }
+}
+
+@keyframes nex-product-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(38px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@media (max-width: 1180px) {
+  .nex-proof-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nex-hero h1 {
+    font-size: clamp(52px, 8vw, 76px);
+  }
+}
+
+@media (max-width: 760px) {
+  .nex-header {
+    width: calc(100% - 28px);
+    min-height: 64px;
+  }
+
+  .nex-hero {
+    min-height: 0;
+    padding-top: 126px;
+  }
+
+  .nex-hero-bg {
+    opacity: 0.16;
+    filter: blur(4px) saturate(105%);
+  }
+
+  .nex-hero h1 {
+    font-size: clamp(40px, 12vw, 56px);
+    line-height: 1.02;
+  }
+
+  .nex-product-preview {
+    bottom: auto;
+    width: 100%;
+    animation: none;
+  }
+
+  .nex-result-card {
+    min-height: 0;
+    padding: 24px;
+  }
+
+  .nex-feature-visual {
+    min-height: 176px;
+    padding: 18px;
+  }
+
+  .nex-proof-review {
+    padding: 76px 16px;
+  }
+
+  .nex-proof-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nex-proof-card {
+    min-height: 0;
+    border-radius: 22px;
+    padding: 24px;
+  }
+
+  .nex-proof-card blockquote {
+    font-size: 18px;
+  }
+
+  .nex-final > div::before,
+  .nex-final > div::after {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nex-page *,
   .nex-page *::before,

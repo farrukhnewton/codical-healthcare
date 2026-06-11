@@ -2,12 +2,16 @@ import { useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { Link } from "wouter";
 import {
   ArrowLeft,
+  Activity,
+  BadgeCheck,
   CheckCircle2,
   ClipboardCheck,
+  FileText,
   FileCheck2,
   LockKeyhole,
   Search,
   ShieldCheck,
+  Sparkles,
   UserRoundCheck,
 } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
@@ -38,25 +42,34 @@ type AuthModeSwitchProps = {
 
 const PROOF_ITEMS = [
   {
-    icon: UserRoundCheck,
-    title: "Human review",
-    text: "Specialist oversight stays visible at every step.",
+    icon: Search,
+    title: "Code intelligence",
+    text: "ICD, CPT, HCPCS and RVU context stays tied to source documentation.",
   },
   {
     icon: ClipboardCheck,
-    title: "Payer policy context",
-    text: "Coverage and edit context travel with the case.",
+    title: "Claim validation",
+    text: "NCCI, payer and modifier checks happen before the handoff.",
   },
   {
-    icon: ShieldCheck,
-    title: "Audit trail",
-    text: "Every review action stays clear and defensible.",
+    icon: UserRoundCheck,
+    title: "Certified review",
+    text: "Edge cases route to human review with a complete audit trail.",
   },
 ];
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="codical-auth-shell auth-shell-v2">
+      <div className="auth-cinematic-bg" aria-hidden="true">
+        <span className="auth-orbit auth-orbit-one" />
+        <span className="auth-orbit auth-orbit-two" />
+        <span className="auth-float-pill pill-report"><FileText size={16} /> Report</span>
+        <span className="auth-float-pill pill-codes"><Sparkles size={16} /> Codes</span>
+        <span className="auth-float-pill pill-claim"><ClipboardCheck size={16} /> Claim</span>
+        <span className="auth-float-pill pill-review"><BadgeCheck size={16} /> Review</span>
+      </div>
+
       <header className="auth-topbar">
         <Link className="auth-brand-link" href="/" aria-label="Codical Health home">
           <BrandMark />
@@ -70,12 +83,13 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <main className="auth-layout">
         <section className="auth-story" aria-label="Codical Health security overview">
           <div className="auth-story-copy">
+            <span className="auth-story-chip"><ShieldCheck size={16} /> Secure coding access</span>
             <h1>
-              Accurate coding. Defensible outcomes. Built for healthcare.
+              Sign in to cleaner claims and defensible coding review.
             </h1>
             <p>
-              Codical Health brings together human expertise, payer-aware validation, and complete
-              auditability to support high-quality coding work at scale.
+              Codical Health brings code intelligence, claim validation, payer context,
+              and certified review into one controlled healthcare workflow.
             </p>
           </div>
 
@@ -95,10 +109,16 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
           <AuthWorkspacePreview />
 
+          <div className="auth-metric-strip" aria-label="Codical Health workflow highlights">
+            <strong>42%<span>fewer preventable denials</span></strong>
+            <strong>24h<span>reviewer SLA</span></strong>
+            <strong>NCCI<span>plus payer checks</span></strong>
+          </div>
+
           <div className="auth-request-strip">
             <div>
               <strong>Request access</strong>
-              <p>Codical Health is available by invitation. Our team will be in touch.</p>
+              <p>Bring documentation, validation checks and certified review into one secure workspace.</p>
             </div>
             <Link href="/signup">Request access</Link>
           </div>
@@ -242,8 +262,8 @@ function AuthWorkspacePreview() {
     <div className="auth-workspace-preview" aria-label="Code review workspace preview">
       <div className="auth-preview-top">
         <div>
-          <strong>Code review</strong>
-          <span>Encounter ID ENC-78241</span>
+          <strong>Codical review workspace</strong>
+          <span>Case packet #8912</span>
         </div>
         <em>Ready for review</em>
       </div>
@@ -257,12 +277,12 @@ function AuthWorkspacePreview() {
 
       <div className="auth-preview-grid">
         <section>
-          <h3>Encounter summary</h3>
+          <h3><FileText size={14} /> Clinical notes</h3>
           {[
-            ["Patient", "John Doe"],
-            ["DOS", "May 08, 2025"],
-            ["Provider", "Jane Smith, MD"],
-            ["Payer", "Aetna Medicare"],
+            ["Source", "Encounter summary"],
+            ["Context", "Moderate complexity"],
+            ["Payer", "Policy linked"],
+            ["NPI", "Verified"],
           ].map(([label, value]) => (
             <div className="auth-preview-row" key={label}>
               <span>{label}</span>
@@ -272,11 +292,11 @@ function AuthWorkspacePreview() {
         </section>
 
         <section>
-          <h3>Suggested codes</h3>
+          <h3><Sparkles size={14} /> Suggested codes</h3>
           {[
-            ["M17.11", "Supported"],
-            ["I10", "Supported"],
-            ["E78.5", "Query"],
+            ["99214", "98% match"],
+            ["J7613", "94% match"],
+            ["J44.1", "Review"],
           ].map(([code, status]) => (
             <div className="auth-code-row" key={code}>
               <strong>{code}</strong>
@@ -284,10 +304,24 @@ function AuthWorkspacePreview() {
             </div>
           ))}
         </section>
+
+        <section>
+          <h3><Activity size={14} /> Claim checks</h3>
+          {[
+            ["NCCI edits", "Clear"],
+            ["Modifier 25", "Review"],
+            ["Audit trail", "Ready"],
+          ].map(([label, status]) => (
+            <div className="auth-code-row" key={label}>
+              <strong>{label}</strong>
+              <span>{status}</span>
+            </div>
+          ))}
+        </section>
       </div>
 
       <div className="auth-preview-progress" aria-hidden="true">
-        {["Intake", "Auto-coding", "Code review", "QA review", "Complete"].map((step, index) => (
+        {["Upload", "Suggest", "Validate", "Review", "Export"].map((step, index) => (
           <div className={index < 3 ? "is-done" : ""} key={step}>
             <CheckCircle2 size={14} />
             <span>{step}</span>

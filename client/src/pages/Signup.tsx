@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail, UserPlus } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { AuthCard, AuthDivider, AuthField, AuthGoogleButton, AuthModeSwitch, AuthNotice, AuthShell, type AuthMode } from "@/components/auth/AuthShell";
 import { useToast } from "@/hooks/use-toast";
@@ -161,7 +161,6 @@ export function Signup() {
               ) : null}
 
               <button type="submit" disabled={isLoading} className="auth-submit-button">
-                {!isLoading ? <UserPlus size={18} /> : null}
                 <span>{isLoading ? "Working..." : mode === "password" ? "Create account" : "Email me a link"}</span>
                 {!isLoading ? <ArrowRight size={18} /> : null}
               </button>
