@@ -1736,6 +1736,875 @@ html.dark {
   }
 }
 
+/* Premium dashboard shell: shared chrome plus dashboard home. */
+.appShellPremium {
+  --app-bg: #edf6ff;
+  --app-surface: #ffffff;
+  --app-surface-soft: #f4f9ff;
+  --app-ink: #07132f;
+  --app-text: #304768;
+  --app-muted: #66778e;
+  --app-line: #dce8f4;
+  --app-line-strong: #c8d8ea;
+  --app-blue: #2137ff;
+  --app-blue-dark: #071fb8;
+  --app-orange: #ff7a3d;
+  --app-teal: #00a990;
+  --app-green: #0f8c56;
+  --app-red: #d73f54;
+  --app-amber: #c87919;
+  --app-premium-shadow: 0 30px 90px rgba(18, 48, 91, 0.14);
+  color: var(--app-ink);
+  background: #edf6ff !important;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.appShellPremium > *:not(.app-cinematic-bg) {
+  position: relative;
+  z-index: 1;
+}
+
+.app-cinematic-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(244, 250, 255, 0.72), rgba(237, 246, 255, 0.94) 58%, #edf6ff),
+    url("/codical-healthcare-operations-hero.jpg") center top / cover no-repeat;
+}
+
+.app-cinematic-bg::before {
+  content: "";
+  position: absolute;
+  inset: -16% -10% auto -10%;
+  height: 72%;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(33, 55, 255, 0.14), transparent 28%),
+    radial-gradient(circle at 76% 14%, rgba(0, 169, 144, 0.16), transparent 30%),
+    radial-gradient(circle at 54% 62%, rgba(255, 122, 61, 0.11), transparent 34%);
+  filter: blur(10px);
+}
+
+.app-cinematic-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.26;
+  background-image:
+    linear-gradient(rgba(33, 55, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(33, 55, 255, 0.08) 1px, transparent 1px);
+  background-size: 96px 96px;
+  mask-image: linear-gradient(180deg, black, transparent 82%);
+}
+
+.app-orbit {
+  position: absolute;
+  left: 26%;
+  top: 8%;
+  width: min(58vw, 820px);
+  height: min(32vw, 450px);
+  border: 1px solid rgba(33, 55, 255, 0.16);
+  border-radius: 50%;
+  transform: rotate(7deg);
+  animation: appOrbitDrift 30s linear infinite;
+}
+
+.app-orbit-two {
+  left: 36%;
+  top: 12%;
+  width: min(52vw, 760px);
+  height: min(24vw, 360px);
+  border-color: rgba(255, 122, 61, 0.15);
+  transform: rotate(-11deg);
+  animation-duration: 38s;
+  animation-direction: reverse;
+}
+
+.app-shell-pill {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  border: 1px solid rgba(199, 216, 234, 0.82);
+  border-radius: 999px;
+  padding: 0 16px;
+  color: #13234a;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 18px 50px rgba(18, 48, 91, 0.13);
+  backdrop-filter: blur(18px);
+  font-size: 12px;
+  font-weight: 850;
+  animation: appFloatPill 7s ease-in-out infinite;
+}
+
+.pill-ncci {
+  left: 22%;
+  top: 18%;
+}
+
+.pill-claim {
+  right: 9%;
+  top: 24%;
+  animation-delay: -2.2s;
+}
+
+.pill-review {
+  right: 18%;
+  bottom: 17%;
+  animation-delay: -4s;
+}
+
+.appShellPremium .appShellMain {
+  background: transparent !important;
+}
+
+.appShellPremium .app-sidebar {
+  width: 282px;
+  flex: 0 0 282px;
+  margin: 18px 0 18px 18px;
+  color: var(--app-ink);
+  background: rgba(255, 255, 255, 0.80);
+  border: 1px solid rgba(202, 218, 235, 0.82);
+  border-radius: 8px;
+  box-shadow: var(--app-premium-shadow);
+  backdrop-filter: blur(24px) saturate(1.25);
+  -webkit-backdrop-filter: blur(24px) saturate(1.25);
+}
+
+.appShellPremium .app-sidebar-brand {
+  min-height: 88px;
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(202, 218, 235, 0.72);
+}
+
+.appShellPremium .app-sidebar .co-brand {
+  gap: 12px;
+}
+
+.appShellPremium .app-sidebar .co-logo-bars {
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(223, 231, 242, 0.92);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(18, 48, 91, 0.12);
+}
+
+.appShellPremium .app-sidebar .co-wordmark span {
+  color: #07132f;
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: 17px;
+  font-weight: 850;
+  line-height: 0.95;
+}
+
+.appShellPremium .app-sidebar .co-wordmark small {
+  color: #07132f;
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+}
+
+.app-sidebar-status {
+  display: grid;
+  gap: 7px;
+  margin: 14px 14px 8px;
+  border: 1px solid rgba(205, 220, 236, 0.86);
+  border-radius: 8px;
+  padding: 14px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(239, 248, 255, 0.88)),
+    radial-gradient(circle at 100% 0%, rgba(255, 122, 61, 0.14), transparent 40%);
+  box-shadow: 0 16px 36px rgba(18, 48, 91, 0.08);
+}
+
+.app-sidebar-status span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--app-blue);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.app-sidebar-status strong {
+  color: var(--app-ink);
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.1;
+}
+
+.app-sidebar-status p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.appShellPremium .app-sidebar-nav {
+  padding: 12px 14px 16px;
+}
+
+.appShellPremium .app-nav-section {
+  margin-bottom: 20px;
+}
+
+.appShellPremium .app-nav-section p {
+  color: #78879a;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+.appShellPremium .app-nav-list {
+  gap: 6px;
+}
+
+.appShellPremium .app-nav-item {
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #405370;
+  background: transparent;
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, color 180ms ease;
+}
+
+.appShellPremium .app-nav-item:hover {
+  color: var(--app-ink);
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(205, 220, 236, 0.86);
+  transform: translateY(-1px);
+}
+
+.appShellPremium .app-nav-item.is-active {
+  color: var(--app-ink);
+  background: #ffffff;
+  border-color: rgba(33, 55, 255, 0.22);
+  box-shadow: 0 16px 36px rgba(33, 55, 255, 0.12);
+}
+
+.appShellPremium .app-nav-item svg {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(209, 222, 237, 0.82);
+  border-radius: 8px;
+  padding: 7px;
+  color: var(--app-blue);
+  background: linear-gradient(180deg, #ffffff, #edf4ff);
+}
+
+.appShellPremium .app-nav-item.is-active svg {
+  color: #ffffff;
+  border-color: var(--app-blue);
+  background: var(--app-blue);
+}
+
+.appShellPremium .app-nav-item span {
+  color: inherit;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.appShellPremium .app-nav-item em {
+  color: #073a32;
+  background: rgba(0, 169, 144, 0.16);
+}
+
+.appShellPremium .app-sidebar-footer {
+  padding: 14px;
+  border-top: 1px solid rgba(202, 218, 235, 0.72);
+}
+
+.appShellPremium .app-nav-logout:hover {
+  color: var(--app-red);
+  background: rgba(215, 63, 84, 0.08);
+}
+
+.appShellPremium .app-topbar {
+  min-height: 72px;
+  grid-template-columns: minmax(180px, 340px) minmax(260px, 1fr) auto;
+  margin: 18px 20px 0;
+  border: 1px solid rgba(202, 218, 235, 0.88);
+  border-radius: 999px;
+  padding: 0 14px 0 28px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 22px 60px rgba(18, 48, 91, 0.12);
+  backdrop-filter: blur(24px) saturate(1.25);
+  -webkit-backdrop-filter: blur(24px) saturate(1.25);
+}
+
+.appShellPremium .app-page-title h1 {
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  color: var(--app-ink);
+  font-size: 22px;
+  font-weight: 850;
+}
+
+.appShellPremium .app-page-title p {
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.appShellPremium .app-global-search {
+  height: 46px;
+  border-color: rgba(202, 218, 235, 0.95);
+  border-radius: 999px;
+  background: rgba(247, 251, 255, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.appShellPremium .app-topbar-primary {
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 16px;
+  color: #ffffff;
+  background: #07132f;
+  box-shadow: 0 16px 34px rgba(7, 19, 47, 0.22);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.appShellPremium .app-topbar-primary svg {
+  color: var(--app-orange);
+}
+
+.appShellPremium .app-icon-button {
+  width: 44px;
+  height: 44px;
+  border-color: rgba(202, 218, 235, 0.95);
+  border-radius: 50%;
+  color: #31476a;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.appShellPremium .dash-page {
+  width: min(100% - 40px, 1260px);
+  gap: 20px;
+  padding: 24px 0 40px;
+}
+
+.appShellPremium .dash-hero-band,
+.appShellPremium .dash-kpi-card,
+.appShellPremium .dash-card {
+  border: 1px solid rgba(202, 218, 235, 0.88);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 24px 70px rgba(18, 48, 91, 0.10);
+  backdrop-filter: blur(22px) saturate(1.18);
+  -webkit-backdrop-filter: blur(22px) saturate(1.18);
+}
+
+.appShellPremium .dash-command-hero {
+  position: relative;
+  min-height: 360px;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.72fr);
+  align-items: stretch;
+  gap: 24px;
+  overflow: hidden;
+  padding: 30px;
+  background:
+    radial-gradient(circle at 88% 8%, rgba(255, 122, 61, 0.16), transparent 26%),
+    radial-gradient(circle at 42% 18%, rgba(33, 55, 255, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(239, 247, 255, 0.88));
+}
+
+.appShellPremium .dash-command-hero::before {
+  content: "";
+  position: absolute;
+  inset: -24% auto auto 42%;
+  width: 56%;
+  height: 92%;
+  border: 1px solid rgba(33, 55, 255, 0.15);
+  border-radius: 50%;
+  transform: rotate(9deg);
+}
+
+.appShellPremium .dash-command-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -10% -45% auto;
+  width: 52%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(33, 55, 255, 0.06);
+  filter: blur(16px);
+}
+
+.dash-hero-copy,
+.dash-review-console {
+  position: relative;
+  z-index: 1;
+}
+
+.dash-hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 690px;
+}
+
+.dash-hero-chip {
+  width: fit-content;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(202, 218, 235, 0.92);
+  border-radius: 999px;
+  padding: 0 13px;
+  color: #07132f;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 12px 32px rgba(18, 48, 91, 0.08);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.appShellPremium .dash-hero-copy h2 {
+  max-width: 650px;
+  margin: 22px 0 0;
+  color: var(--app-ink);
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: clamp(40px, 5vw, 72px);
+  font-weight: 850;
+  line-height: 0.95;
+}
+
+.appShellPremium .dash-hero-copy p {
+  max-width: 660px;
+  margin: 20px 0 0;
+  color: #4c5f78;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.appShellPremium .dash-hero-actions {
+  margin-top: 26px;
+}
+
+.appShellPremium .dash-hero-actions button {
+  height: 52px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 20px;
+  color: #ffffff;
+  background: #07132f;
+  box-shadow: 0 18px 40px rgba(7, 19, 47, 0.22);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.appShellPremium .dash-hero-actions button:hover {
+  transform: translateY(-1px);
+}
+
+.appShellPremium .dash-hero-actions button + button {
+  color: #07132f;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 40px rgba(18, 48, 91, 0.10);
+}
+
+.dash-review-console {
+  align-self: center;
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(202, 218, 235, 0.92);
+  border-radius: 8px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 28px 80px rgba(18, 48, 91, 0.14);
+}
+
+.dash-console-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.dash-console-top strong {
+  display: block;
+  color: var(--app-ink);
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.dash-console-top span {
+  display: block;
+  margin-top: 3px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dash-console-top em {
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: #073a32;
+  background: rgba(0, 169, 144, 0.14);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.dash-console-code {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  border: 1px solid rgba(221, 232, 244, 0.9);
+  border-radius: 8px;
+  padding: 14px;
+  background: linear-gradient(135deg, #f7fbff, #eef5ff);
+}
+
+.dash-console-code span {
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.dash-console-code strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--app-blue);
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: 34px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.dash-console-code p {
+  justify-self: end;
+  margin: 0;
+  border-radius: 999px;
+  padding: 8px 10px;
+  color: var(--app-ink);
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.dash-console-signals {
+  display: grid;
+  gap: 8px;
+}
+
+.dash-console-signals article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  border: 1px solid rgba(221, 232, 244, 0.86);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.dash-console-signals svg {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  padding: 6px;
+  color: var(--app-blue);
+  background: #edf3ff;
+}
+
+.dash-console-signals strong {
+  display: block;
+  color: var(--app-ink);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.dash-console-signals span {
+  display: block;
+  margin-top: 2px;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dash-console-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dash-console-progress span {
+  min-height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(221, 232, 244, 0.9);
+  border-radius: 999px;
+  color: var(--app-muted);
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.dash-console-progress span.is-done {
+  color: #ffffff;
+  border-color: var(--app-blue);
+  background: var(--app-blue);
+}
+
+.appShellPremium .dash-kpi-grid {
+  gap: 14px;
+}
+
+.appShellPremium .dash-kpi-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 132px;
+  padding: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(244, 249, 255, 0.88));
+}
+
+.appShellPremium .dash-kpi-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 16px 14px 84px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(33, 55, 255, 0.22), rgba(0, 169, 144, 0.16), rgba(255, 122, 61, 0.16));
+}
+
+.appShellPremium .dash-kpi-icon {
+  border-radius: 8px;
+  color: var(--app-blue);
+  background: #edf3ff;
+}
+
+.appShellPremium .dash-kpi-card strong {
+  color: var(--app-ink);
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: 34px;
+  font-weight: 850;
+}
+
+.appShellPremium .dash-kpi-card p {
+  color: #53677f;
+  font-weight: 750;
+}
+
+.appShellPremium .dash-main-grid {
+  gap: 20px;
+}
+
+.appShellPremium .dash-left-column,
+.appShellPremium .dash-right-column {
+  gap: 20px;
+}
+
+.appShellPremium .dash-card {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.appShellPremium .dash-section-head {
+  border-bottom-color: rgba(221, 232, 244, 0.9);
+}
+
+.appShellPremium .dash-section-head h3 {
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-weight: 850;
+}
+
+.appShellPremium .dash-section-head button {
+  color: var(--app-blue);
+}
+
+.appShellPremium .dash-workflow-column {
+  background: rgba(248, 251, 255, 0.82);
+}
+
+.appShellPremium .dash-case-card {
+  border-color: rgba(221, 232, 244, 0.92);
+  box-shadow: 0 12px 30px rgba(18, 48, 91, 0.06);
+}
+
+.appShellPremium .dash-code-list button:hover,
+.appShellPremium .dash-action-list button:hover {
+  background: rgba(239, 246, 255, 0.72);
+}
+
+.appShellPremium .app-mobile-bottom-nav {
+  right: 14px;
+  bottom: 14px;
+  left: 14px;
+  height: 64px;
+  border: 1px solid rgba(202, 218, 235, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 50px rgba(18, 48, 91, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+@media (max-width: 1180px) {
+  .appShellPremium .app-topbar {
+    grid-template-columns: minmax(170px, 280px) minmax(220px, 1fr) auto;
+  }
+
+  .appShellPremium .dash-command-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .appShellPremium .dash-review-console {
+    align-self: stretch;
+  }
+}
+
+@media (max-width: 1023px) {
+  .app-orbit,
+  .app-shell-pill {
+    display: none;
+  }
+
+  .appShellPremium .app-sidebar {
+    margin: 14px;
+    width: min(318px, calc(100vw - 28px));
+    flex-basis: auto;
+  }
+
+  .appShellPremium .app-sidebar-mobile {
+    inset: 0 auto 0 0;
+  }
+
+  .appShellPremium .app-mobile-menu-button {
+    top: 24px;
+    left: 24px;
+    border-radius: 50%;
+  }
+
+  .appShellPremium .app-topbar {
+    min-height: 66px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin: 14px 14px 0;
+    padding: 0 12px 0 72px;
+  }
+
+  .appShellPremium .dash-page {
+    width: min(100% - 28px, 1260px);
+    padding-top: 16px;
+  }
+}
+
+@media (max-width: 760px) {
+  .appShellPremium .app-page-title h1 {
+    font-size: 17px;
+  }
+
+  .appShellPremium .app-topbar-primary {
+    display: none;
+  }
+
+  .appShellPremium .dash-command-hero {
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .appShellPremium .dash-hero-copy h2 {
+    font-size: 38px;
+    line-height: 1;
+  }
+
+  .appShellPremium .dash-hero-copy p {
+    font-size: 14px;
+  }
+
+  .appShellPremium .dash-hero-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .appShellPremium .dash-hero-actions button {
+    width: 100%;
+  }
+
+  .dash-console-code {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-console-code p {
+    justify-self: start;
+  }
+
+  .dash-console-progress {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 460px) {
+  .appShellPremium .app-topbar {
+    padding-left: 62px;
+  }
+
+  .appShellPremium .app-mobile-menu-button {
+    left: 18px;
+    top: 22px;
+  }
+
+  .appShellPremium .dash-page {
+    width: min(100% - 22px, 1260px);
+  }
+
+  .appShellPremium .dash-hero-copy h2 {
+    font-size: 34px;
+  }
+
+  .appShellPremium .dash-command-hero {
+    padding: 16px;
+  }
+
+  .appShellPremium .dash-kpi-card {
+    grid-template-columns: 1fr;
+  }
+
+  .appShellPremium .dash-kpi-card::after {
+    inset: auto 16px 14px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-orbit,
+  .app-shell-pill {
+    animation: none;
+  }
+}
+
+@keyframes appOrbitDrift {
+  from {
+    transform: rotate(7deg);
+  }
+  to {
+    transform: rotate(367deg);
+  }
+}
+
+@keyframes appFloatPill {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0);
+  }
+}
+
 /* Validation, calculator, and registry tool surfaces. */
 .validation-tool-page {
   max-width: 1244px;

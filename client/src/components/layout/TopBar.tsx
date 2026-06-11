@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { Bell, Command, Moon, Search, Sun } from "lucide-react";
+import { Bell, Command, Moon, Search, Sparkles, Sun } from "lucide-react";
 import { UnifiedSearch } from "@/components/layout/UnifiedSearch";
 import { UserProfileMenu } from "@/components/chat/UserProfileMenu";
 import { useTheme } from "@/lib/theme";
@@ -36,7 +36,7 @@ function getPageMeta(pathname: string) {
 }
 
 export function TopBar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { theme, toggle: toggleTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -74,6 +74,10 @@ export function TopBar() {
       </button>
 
       <div className="app-topbar-actions">
+        <button type="button" onClick={() => setLocation("/workspace")} className="app-topbar-primary">
+          <Sparkles size={16} />
+          <span>New review</span>
+        </button>
         <button type="button" onClick={() => setSearchOpen(true)} className="app-icon-button app-mobile-search" aria-label="Open search">
           <Search size={18} />
         </button>

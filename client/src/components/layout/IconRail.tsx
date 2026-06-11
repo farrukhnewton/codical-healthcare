@@ -89,6 +89,12 @@ export function IconRail() {
         ) : null}
       </div>
 
+      <div className="app-sidebar-status" aria-label="Coding operations status">
+        <span><Activity size={15} /> Live operations</span>
+        <strong>72 claims in review</strong>
+        <p>NCCI, payer and NPI checks synced 2 min ago.</p>
+      </div>
+
       <nav className="app-sidebar-nav" aria-label="Main navigation">
         {groupedItems.map(({ section, items }) => (
           <section className="app-nav-section" key={section}>

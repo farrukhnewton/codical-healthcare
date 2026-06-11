@@ -97,7 +97,15 @@ function AuthenticatedRoutes() {
 export function AuthenticatedApp() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="landingAurora appShell flex h-screen overflow-hidden font-sans selection:bg-primary/20 relative">
+      <div className="landingAurora appShell appShellPremium flex h-screen overflow-hidden font-sans selection:bg-primary/20 relative">
+        <div className="app-cinematic-bg" aria-hidden="true">
+          <span className="app-orbit app-orbit-one" />
+          <span className="app-orbit app-orbit-two" />
+          <span className="app-shell-pill pill-ncci">NCCI clear</span>
+          <span className="app-shell-pill pill-claim">Claim ready</span>
+          <span className="app-shell-pill pill-review">Coder review</span>
+        </div>
+
         <Suspense fallback={null}>
           <ChatRealtimeBridge />
         </Suspense>

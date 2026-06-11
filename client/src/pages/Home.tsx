@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ArrowRight,
+  AlertTriangle,
   BarChart2,
   BookOpen,
   Brain,
@@ -9,11 +10,14 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileCheck2,
+  FileText,
   Search,
   ShieldCheck,
+  Sparkles,
   Stethoscope,
   TrendingDown,
   TrendingUp,
+  UserRoundCheck,
 } from "lucide-react";
 import {
   CartesianGrid,
@@ -105,6 +109,13 @@ const QUICK_ACTIONS = [
   { href: "/anesthesia", label: "Anesthesia units", icon: Stethoscope },
 ];
 
+const HERO_SIGNALS = [
+  { icon: FileText, label: "Documentation", value: "Clinical note indexed" },
+  { icon: Sparkles, label: "Suggested codes", value: "4 high-confidence matches" },
+  { icon: AlertTriangle, label: "Claim checks", value: "Modifier review needed" },
+  { icon: UserRoundCheck, label: "Certified review", value: "Ready to route" },
+];
+
 export function Home() {
   const [, setLocation] = useLocation();
   const [time, setTime] = useState(new Date());
@@ -119,23 +130,60 @@ export function Home() {
 
   return (
     <div className="dash-page">
-      <section className="dash-hero-band">
-        <div className="dash-hero-icon" aria-hidden="true">
-          <CalendarCheck2 size={28} />
+      <section className="dash-hero-band dash-command-hero">
+        <div className="dash-hero-copy">
+          <span className="dash-hero-chip"><CalendarCheck2 size={16} /> {greeting}</span>
+          <h2>Clinical coding command center.</h2>
+          <p>
+            Move cases from documentation intake to NCCI, payer, NPI and certified review
+            without losing the evidence trail behind each coding decision.
+          </p>
+          <div className="dash-hero-actions">
+            <button type="button" onClick={() => setLocation("/workspace")}>
+              <Brain size={17} />
+              Analyze note
+            </button>
+            <button type="button" onClick={() => setLocation("/claim-validator")}>
+              <ShieldCheck size={17} />
+              Validate claim
+            </button>
+          </div>
         </div>
-        <div>
-          <h2>{greeting}.</h2>
-          <p>Review the next coding decision.</p>
-        </div>
-        <div className="dash-hero-actions">
-          <button type="button" onClick={() => setLocation("/workspace")}>
-            <Brain size={17} />
-            Analyze note
-          </button>
-          <button type="button" onClick={() => setLocation("/search")}>
-            <Search size={17} />
-            Search codes
-          </button>
+
+        <div className="dash-review-console" aria-label="Live coding review preview">
+          <div className="dash-console-top">
+            <div>
+              <strong>Case packet #8912</strong>
+              <span>Ready for coding review</span>
+            </div>
+            <em>Live</em>
+          </div>
+
+          <div className="dash-console-code">
+            <div>
+              <span>Suggested E/M</span>
+              <strong>99214</strong>
+            </div>
+            <p>98% source-linked rationale</p>
+          </div>
+
+          <div className="dash-console-signals">
+            {HERO_SIGNALS.map((signal) => (
+              <article key={signal.label}>
+                <signal.icon size={15} />
+                <div>
+                  <strong>{signal.label}</strong>
+                  <span>{signal.value}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="dash-console-progress" aria-hidden="true">
+            {["Upload", "Suggest", "Validate", "Review"].map((step, index) => (
+              <span className={index < 3 ? "is-done" : ""} key={step}>{step}</span>
+            ))}
+          </div>
         </div>
       </section>
 
