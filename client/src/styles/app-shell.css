@@ -7560,3 +7560,354 @@ html.dark {
   }
 }
 
+/* Premium shared tool sections for the upgraded authenticated workspace. */
+.appShellPremium .tool-page {
+  width: min(100% - 40px, 1260px);
+  gap: 20px;
+  padding: 24px 0 42px;
+}
+
+.appShellPremium .tool-panel,
+.appShellPremium .code-detail-surface > .tool-panel:not(.code-detail-hero),
+.appShellPremium .workspace-result-section,
+.appShellPremium .saved-library-dialog {
+  border-color: rgba(202, 218, 235, 0.88) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 24px 70px rgba(18, 48, 91, 0.10) !important;
+  backdrop-filter: blur(20px) saturate(1.16);
+  -webkit-backdrop-filter: blur(20px) saturate(1.16);
+}
+
+.appShellPremium .tool-page-header {
+  position: relative;
+  min-height: 156px;
+  overflow: hidden;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(255, 122, 61, 0.14), transparent 28%),
+    radial-gradient(circle at 42% 18%, rgba(33, 55, 255, 0.11), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 247, 255, 0.9)) !important;
+}
+
+.appShellPremium .tool-page-header::before {
+  content: "";
+  position: absolute;
+  right: -8%;
+  top: -62%;
+  width: min(46vw, 620px);
+  height: 138%;
+  border: 1px solid rgba(33, 55, 255, 0.14);
+  border-radius: 50%;
+  transform: rotate(10deg);
+  pointer-events: none;
+}
+
+.appShellPremium .tool-page-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+.appShellPremium .tool-page-header h1 {
+  color: var(--app-ink);
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: clamp(30px, 3.5vw, 48px);
+  font-weight: 850;
+  line-height: 0.98;
+}
+
+.appShellPremium .tool-page-header p {
+  max-width: 690px;
+  margin-top: 10px;
+  color: #4c5f78;
+  font-size: 15px;
+  font-weight: 720;
+  line-height: 1.5;
+}
+
+.appShellPremium .search-header-meta span,
+.appShellPremium .workspace-ai-pill,
+.appShellPremium .secondary-count-pill,
+.appShellPremium .secondary-status-pill,
+.appShellPremium .saved-library-countdown {
+  border-color: rgba(202, 218, 235, 0.9);
+  color: #07132f;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 12px 32px rgba(18, 48, 91, 0.07);
+}
+
+.appShellPremium .tool-primary-button,
+.appShellPremium .tool-secondary-button {
+  min-height: 44px;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 0 16px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.appShellPremium .tool-primary-button {
+  border-color: #07132f;
+  color: #ffffff;
+  background: #07132f;
+  box-shadow: 0 16px 34px rgba(7, 19, 47, 0.20);
+}
+
+.appShellPremium .tool-primary-button:hover:not(:disabled),
+.appShellPremium .tool-secondary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.appShellPremium .tool-secondary-button {
+  border-color: rgba(202, 218, 235, 0.94);
+  color: #07132f;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 34px rgba(18, 48, 91, 0.08);
+}
+
+.appShellPremium .tool-search-field,
+.appShellPremium .tool-segmented-control,
+.appShellPremium .workspace-payer-scroll button,
+.appShellPremium .workspace-upload-card,
+.appShellPremium .workspace-note-input,
+.appShellPremium .saved-library-field-grid input,
+.appShellPremium .saved-library-textarea {
+  border-color: rgba(202, 218, 235, 0.92) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.appShellPremium .tool-search-field {
+  height: 52px;
+  color: var(--app-blue);
+  border-radius: 999px !important;
+  padding: 0 15px;
+}
+
+.appShellPremium .tool-search-field button,
+.appShellPremium .tool-icon-action {
+  border-radius: 50%;
+}
+
+.appShellPremium .tool-segmented-control {
+  border-radius: 999px !important;
+  padding: 5px;
+}
+
+.appShellPremium .tool-segmented-control button {
+  border-radius: 999px;
+  padding: 0 15px;
+}
+
+.appShellPremium .tool-segmented-control button.is-active {
+  color: #ffffff;
+  background: var(--app-blue);
+  box-shadow: 0 12px 28px rgba(33, 55, 255, 0.18);
+}
+
+.appShellPremium .search-command-panel,
+.appShellPremium .secondary-command-panel,
+.appShellPremium .workspace-context-panel,
+.appShellPremium .calculator-command-panel {
+  padding: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(244, 249, 255, 0.86)) !important;
+}
+
+.appShellPremium .tool-section-head,
+.appShellPremium .secondary-section-head,
+.appShellPremium .workspace-ai-panel-header {
+  border-bottom-color: rgba(221, 232, 244, 0.92);
+}
+
+.appShellPremium .tool-section-head h2,
+.appShellPremium .secondary-section-head h2,
+.appShellPremium .workspace-ai-panel-header h2 {
+  color: var(--app-ink);
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-weight: 850;
+}
+
+.appShellPremium .tool-section-head p,
+.appShellPremium .secondary-section-head p {
+  color: var(--app-muted);
+  font-weight: 700;
+}
+
+.appShellPremium .code-result-card,
+.appShellPremium .favorite-code-card,
+.appShellPremium .saved-library-card,
+.appShellPremium .secondary-mobile-row,
+.appShellPremium .workspace-output-item,
+.appShellPremium .workspace-flow-rail div,
+.appShellPremium .workspace-result-metrics div,
+.appShellPremium .analytics-metric-card,
+.appShellPremium .settings-card,
+.appShellPremium .report-template-card,
+.appShellPremium .validation-input-panel,
+.appShellPremium .calculator-summary-panel,
+.appShellPremium .claim-result-panel,
+.appShellPremium .npi-results-panel,
+.appShellPremium .provider-detail-panel {
+  border-color: rgba(221, 232, 244, 0.92) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  box-shadow: 0 14px 36px rgba(18, 48, 91, 0.07);
+}
+
+.appShellPremium .code-result-card:hover,
+.appShellPremium .code-result-card.is-selected,
+.appShellPremium .favorite-code-card:hover,
+.appShellPremium .workspace-payer-scroll button.is-active {
+  border-color: rgba(33, 55, 255, 0.34) !important;
+  background: rgba(244, 248, 255, 0.95) !important;
+  box-shadow: 0 18px 42px rgba(33, 55, 255, 0.11);
+}
+
+.appShellPremium .tool-code-chip,
+.appShellPremium .favorite-code-chip,
+.appShellPremium .workspace-code-badge,
+.appShellPremium .dash-code-list strong {
+  border-color: rgba(33, 55, 255, 0.18);
+  border-radius: 8px;
+  color: var(--app-blue-dark);
+  background: #eef3ff;
+}
+
+.appShellPremium .tool-filter-panel,
+.appShellPremium .search-results-panel,
+.appShellPremium .workspace-flow-rail {
+  background: rgba(248, 251, 255, 0.84) !important;
+}
+
+.appShellPremium .workspace-hero .workspace-hero-title {
+  align-items: center;
+}
+
+.appShellPremium .workspace-hero-icon {
+  width: 48px;
+  height: 48px;
+  border-color: rgba(33, 55, 255, 0.18);
+  border-radius: 8px;
+  color: var(--app-blue);
+  background: #eef3ff;
+}
+
+.appShellPremium .workspace-assistant-grid {
+  gap: 20px;
+}
+
+.appShellPremium .workspace-note-panel,
+.appShellPremium .workspace-ai-output-panel,
+.appShellPremium .workspace-flow-rail {
+  padding: 18px;
+}
+
+.appShellPremium .workspace-upload-card {
+  border-style: dashed !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(240, 247, 255, 0.86)) !important;
+}
+
+.appShellPremium .workspace-note-input {
+  color: var(--app-ink) !important;
+  background: #ffffff !important;
+}
+
+.appShellPremium .workspace-result-hero {
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(255, 122, 61, 0.28), transparent 30%),
+    linear-gradient(135deg, #07132f, #142b66) !important;
+}
+
+.appShellPremium .workspace-result-hero .tool-secondary-button {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.appShellPremium .analytics-metric-grid,
+.appShellPremium .report-template-grid,
+.appShellPremium .settings-layout,
+.appShellPremium .analytics-lower-grid {
+  gap: 20px;
+}
+
+.appShellPremium .analytics-metric-card strong,
+.appShellPremium .workbench-metric-card strong {
+  color: var(--app-ink);
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-weight: 850;
+}
+
+.appShellPremium .analytics-compliance-list div i,
+.appShellPremium .secondary-skeleton-row,
+.appShellPremium .saved-library-empty,
+.appShellPremium .tool-empty-state {
+  border-color: rgba(221, 232, 244, 0.92);
+  background: rgba(247, 251, 255, 0.88);
+}
+
+.appShellPremium .secondary-table th {
+  color: #718198;
+}
+
+.appShellPremium .secondary-table td {
+  border-top-color: rgba(221, 232, 244, 0.92);
+}
+
+.appShellPremium .tool-callout {
+  border-color: rgba(202, 218, 235, 0.92);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 14px 36px rgba(18, 48, 91, 0.07);
+}
+
+@media (max-width: 1023px) {
+  .appShellPremium .tool-page {
+    width: min(100% - 28px, 1260px);
+    padding: 16px 0 92px;
+  }
+
+  .appShellPremium .tool-page-header {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .appShellPremium .tool-page-header {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .appShellPremium .tool-page-header h1 {
+    font-size: 30px;
+  }
+
+  .appShellPremium .tool-page-header p {
+    font-size: 13px;
+  }
+
+  .appShellPremium .search-header-meta,
+  .appShellPremium .secondary-header-actions,
+  .appShellPremium .workspace-note-actions,
+  .appShellPremium .workspace-result-actions,
+  .appShellPremium .workbench-hero-actions {
+    justify-content: stretch;
+  }
+}
+
+@media (max-width: 520px) {
+  .appShellPremium .tool-page {
+    width: min(100% - 22px, 1260px);
+  }
+
+  .appShellPremium .tool-primary-button,
+  .appShellPremium .tool-secondary-button {
+    width: 100%;
+  }
+}
+
