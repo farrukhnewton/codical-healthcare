@@ -27,6 +27,7 @@ import {
   getMcdIcdProcedurePairEvidence,
   searchMcdCoverageRows,
 } from "./mcd-service";
+import { getMcdCrosswalk } from "./mcd-crosswalk-service";
 import { discoverPayerPolicies } from "./services/payer-policy-ingestion";
 import { DrChronoService } from "./services/emr/drchrono";
 import { patients, encounters, assignments, clinicalNotes, auditLogs, commercialPayers, payerPolicies } from "@shared/schema";
@@ -1341,6 +1342,24 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/coverage/crosswalk", async (req, res) => {
+    try {
+      const result = await getMcdCrosswalk({
+        direction: req.query.direction,
+        code: req.query.code,
+        limit: req.query.limit,
+      });
+
+      if (result.source === "unavailable") {
+        return res.status(503).json({ message: "Medicare crosswalk index is temporarily unavailable." });
+      }
+
+      return res.json(result);
+    } catch (error: any) {
+      res.status(error?.statusCode || 502).json({ message: error.message || "Crosswalk lookup failed" });
+    }
+  });
+
   app.get("/api/coverage/lcd/search/smart", async (req, res) => {
     try {
       const query = (req.query.q as string)?.trim() || "";
@@ -1370,7 +1389,7 @@ export async function registerRoutes(
         ? await tryMcdCoverageRows("lcd", { cpt: query, limit: 50 })
         : await tryMcdCoverageRows("lcd", { search: searchTerms.join(" "), limit: 50 });
 
-      if (mcdRows && (mcdRows.length > 0 || !isCptCode)) {
+      if (mcdRows) {
         return res.json({ searchTerms, isCptCode, results: mcdRows.slice(0, 50) });
       }
 

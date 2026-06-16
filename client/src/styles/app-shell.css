@@ -8043,6 +8043,69 @@ html.dark {
   color: var(--app-blue);
 }
 
+.appShellPremium .coverage-content-shell .crosswalk-hero,
+.appShellPremium .coverage-content-shell .crosswalk-search-panel {
+  padding: 20px;
+}
+
+.appShellPremium .crosswalk-mode-switch {
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(202, 218, 235, 0.92);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.appShellPremium .crosswalk-mode-switch button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: #405370;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.appShellPremium .crosswalk-mode-switch button.is-active {
+  color: #fff;
+  background: var(--app-blue);
+  box-shadow: 0 12px 28px rgba(33, 55, 255, 0.18);
+}
+
+.appShellPremium .crosswalk-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.appShellPremium .crosswalk-stat {
+  min-height: 86px;
+  padding: 16px;
+}
+
+.appShellPremium .crosswalk-result-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.appShellPremium .crosswalk-result-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 98% 0%, rgba(33, 55, 255, 0.08), transparent 26%),
+    linear-gradient(180deg, rgba(255,255,255,0.08), transparent 42%);
+}
+
+.appShellPremium .crosswalk-result-card > * {
+  position: relative;
+  z-index: 1;
+}
+
 @media (max-width: 1023px) {
   .appShellPremium .coverage-hub-page {
     width: min(100% - 28px, 1260px);
@@ -8050,6 +8113,10 @@ html.dark {
 
   .appShellPremium .coverage-tab-list {
     border-radius: 8px;
+  }
+
+  .appShellPremium .crosswalk-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -8066,11 +8133,27 @@ html.dark {
     display: grid;
     grid-template-columns: 1fr;
   }
+
+  .appShellPremium .crosswalk-mode-switch {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .appShellPremium .crosswalk-mode-switch button {
+    width: 100%;
+    border-radius: 8px;
+  }
 }
 
 @media (max-width: 520px) {
   .appShellPremium .coverage-hub-page {
     width: min(100% - 22px, 1260px);
+  }
+
+  .appShellPremium .crosswalk-summary-grid {
+    grid-template-columns: 1fr;
   }
 }
 
