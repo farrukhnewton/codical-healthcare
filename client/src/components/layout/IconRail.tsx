@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   Activity,
   BarChart2,
+  BadgeCheck,
   BookOpen,
   Brain,
   Calculator,
@@ -14,6 +15,7 @@ import {
   MessageSquare,
   Mic,
   Pill,
+  PlusCircle,
   Search,
   Settings,
   Shield,
@@ -27,42 +29,49 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 
 type NavSection = "MAIN" | "TOOLS";
+type NavTone = "blue" | "teal" | "orange" | "violet" | "mint" | "slate";
 
 type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
   section: NavSection;
+  hint: string;
+  tone: NavTone;
   badge?: string;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, section: "MAIN" },
-  { href: "/intelligence", label: "Coverage & Guidelines", icon: BookOpen, section: "MAIN", badge: "Live" },
-  { href: "/search", label: "Code Search", icon: Search, section: "MAIN" },
-  { href: "/workspace", label: "Coding Assistant", icon: Brain, section: "MAIN" },
-  { href: "/voice-transcription", label: "Clinical Transcription", icon: Mic, section: "MAIN" },
-  { href: "/chat", label: "Team Chat", icon: MessageSquare, section: "MAIN" },
-  { href: "/analytics", label: "Analytics", icon: BarChart2, section: "MAIN" },
-  { href: "/compliance", label: "Compliance", icon: Shield, section: "MAIN" },
-  { href: "/ncci", label: "NCCI Checker", icon: Shield, section: "TOOLS" },
-  { href: "/claim-validator", label: "Claim Validator", icon: ClipboardCheck, section: "TOOLS" },
-  { href: "/rvu", label: "RVU Calculator", icon: Calculator, section: "TOOLS" },
-  { href: "/anesthesia", label: "Anesthesia Calculator", icon: Activity, section: "TOOLS" },
-  { href: "/npi", label: "NPI Lookup", icon: User, section: "TOOLS" },
-  { href: "/codelookup", label: "POS & Modifiers", icon: Tag, section: "TOOLS" },
-  { href: "/druglookup", label: "Drug Lookup", icon: Pill, section: "TOOLS" },
-  { href: "/reports", label: "Reports", icon: FileBarChart, section: "TOOLS" },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, section: "MAIN", hint: "Live command", tone: "blue" },
+  { href: "/intelligence", label: "Coverage & Guidelines", icon: BookOpen, section: "MAIN", hint: "MCD, payer, crosswalk", tone: "teal", badge: "Live" },
+  { href: "/search", label: "Code Search", icon: Search, section: "MAIN", hint: "ICD, CPT, HCPCS", tone: "violet" },
+  { href: "/workspace", label: "Coding Assistant", icon: Brain, section: "MAIN", hint: "Review workspace", tone: "orange" },
+  { href: "/voice-transcription", label: "Clinical Transcription", icon: Mic, section: "MAIN", hint: "Voice to note", tone: "mint" },
+  { href: "/chat", label: "Team Chat", icon: MessageSquare, section: "MAIN", hint: "Coder collaboration", tone: "slate" },
+  { href: "/analytics", label: "Analytics", icon: BarChart2, section: "MAIN", hint: "Revenue signals", tone: "blue" },
+  { href: "/compliance", label: "Compliance", icon: Shield, section: "MAIN", hint: "Audit controls", tone: "teal" },
+  { href: "/ncci", label: "NCCI Checker", icon: Shield, section: "TOOLS", hint: "Edit conflicts", tone: "orange" },
+  { href: "/claim-validator", label: "Claim Validator", icon: ClipboardCheck, section: "TOOLS", hint: "Payer readiness", tone: "blue" },
+  { href: "/rvu", label: "RVU Calculator", icon: Calculator, section: "TOOLS", hint: "Fee schedule", tone: "violet" },
+  { href: "/anesthesia", label: "Anesthesia Calculator", icon: Activity, section: "TOOLS", hint: "Base + time units", tone: "mint" },
+  { href: "/npi", label: "NPI Lookup", icon: User, section: "TOOLS", hint: "NPPES registry", tone: "teal" },
+  { href: "/codelookup", label: "POS & Modifiers", icon: Tag, section: "TOOLS", hint: "Claim metadata", tone: "slate" },
+  { href: "/druglookup", label: "Drug Lookup", icon: Pill, section: "TOOLS", hint: "NDC database", tone: "orange" },
+  { href: "/reports", label: "Reports", icon: FileBarChart, section: "TOOLS", hint: "Export packets", tone: "blue" },
 ];
 
 const SECTIONS: NavSection[] = ["MAIN", "TOOLS"];
+const SECTION_LABELS: Record<NavSection, string> = {
+  MAIN: "Command center",
+  TOOLS: "Validation tools",
+};
 
 function isActiveRoute(location: string, href: string) {
   return location === href || (href !== "/dashboard" && location.startsWith(href));
 }
 
 export function IconRail() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { toast } = useToast();
 
@@ -76,10 +85,15 @@ export function IconRail() {
     toast({ title: "Signed out", description: "See you next time." });
   };
 
+  const startNewClaim = (mobile = false) => {
+    setLocation("/workspace");
+    if (mobile) setMobileOpen(false);
+  };
+
   const NavContent = ({ mobile = false }: { mobile?: boolean }) => (
     <div className="app-sidebar-inner">
       <div className="app-sidebar-brand">
-        <Link href="/dashboard" onClick={() => mobile && setMobileOpen(false)} aria-label="Codical Health dashboard">
+        <Link href="/dashboard" onClick={() => mobile && setMobileOpen(false)} aria-label="Codical Health dashboard" className="app-sidebar-brand-link">
           <BrandMark />
         </Link>
         {mobile ? (
@@ -90,22 +104,32 @@ export function IconRail() {
       </div>
 
       <div className="app-sidebar-status" aria-label="Coding operations status">
-        <span><Activity size={15} /> Live operations</span>
+        <span><BadgeCheck size={15} /> Validation active</span>
         <strong>72 claims in review</strong>
-        <p>NCCI, payer and NPI checks synced 2 min ago.</p>
+        <p>NCCI, payer policy and NPI checks synced 2 min ago.</p>
       </div>
+
+      <button type="button" className="app-sidebar-claim-cta" onClick={() => startNewClaim(mobile)}>
+        <PlusCircle size={17} />
+        <span>New claim review</span>
+      </button>
 
       <nav className="app-sidebar-nav" aria-label="Main navigation">
         {groupedItems.map(({ section, items }) => (
           <section className="app-nav-section" key={section}>
-            <p>{section}</p>
+            <p>{SECTION_LABELS[section]}</p>
             <div className="app-nav-list">
               {items.map((item) => {
                 const active = isActiveRoute(location, item.href);
                 return (
                   <Link key={item.href} href={item.href} onClick={() => mobile && setMobileOpen(false)} className={`app-nav-item${active ? " is-active" : ""}`}>
-                    <item.icon size={18} />
-                    <span>{item.label}</span>
+                    <span className={`app-nav-icon tone-${item.tone}`} aria-hidden="true">
+                      <item.icon size={17} />
+                    </span>
+                    <span className="app-nav-copy">
+                      <span className="app-nav-label">{item.label}</span>
+                      <small>{item.hint}</small>
+                    </span>
                     {item.badge ? <em>{item.badge}</em> : null}
                   </Link>
                 );
@@ -116,9 +140,21 @@ export function IconRail() {
       </nav>
 
       <div className="app-sidebar-footer">
+        <div className="app-sidebar-user-card">
+          <User size={15} />
+          <div>
+            <strong>Certified coder</strong>
+            <span>Clinical review team</span>
+          </div>
+        </div>
         <Link href="/settings" onClick={() => mobile && setMobileOpen(false)} className={`app-nav-item${isActiveRoute(location, "/settings") ? " is-active" : ""}`}>
-          <Settings size={18} />
-          <span>Settings</span>
+          <span className="app-nav-icon tone-slate" aria-hidden="true">
+            <Settings size={17} />
+          </span>
+          <span className="app-nav-copy">
+            <span className="app-nav-label">Settings</span>
+            <small>Account controls</small>
+          </span>
         </Link>
         <button
           type="button"
@@ -128,8 +164,13 @@ export function IconRail() {
           }}
           className="app-nav-item app-nav-logout"
         >
-          <LogOut size={18} />
-          <span>Sign out</span>
+          <span className="app-nav-icon tone-slate" aria-hidden="true">
+            <LogOut size={17} />
+          </span>
+          <span className="app-nav-copy">
+            <span className="app-nav-label">Sign out</span>
+            <small>End session</small>
+          </span>
         </button>
       </div>
     </div>
@@ -137,9 +178,11 @@ export function IconRail() {
 
   return (
     <>
-      <button type="button" onClick={() => setMobileOpen(true)} className="app-mobile-menu-button" aria-label="Open navigation">
-        <Menu size={20} />
-      </button>
+      {!mobileOpen ? (
+        <button type="button" onClick={() => setMobileOpen(true)} className="app-mobile-menu-button" aria-label="Open navigation">
+          <Menu size={20} />
+        </button>
+      ) : null}
 
       {mobileOpen ? (
         <>

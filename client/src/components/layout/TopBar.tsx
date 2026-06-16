@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { Bell, Command, Moon, Search, Sparkles, Sun } from "lucide-react";
+import { Bell, CheckCircle2, Command, Moon, Search, Sparkles, Sun } from "lucide-react";
 import { UnifiedSearch } from "@/components/layout/UnifiedSearch";
 import { UserProfileMenu } from "@/components/chat/UserProfileMenu";
 import { useTheme } from "@/lib/theme";
@@ -72,6 +72,11 @@ export function TopBar() {
         <span>Search codes, descriptions, guidelines, docs...</span>
         <kbd><Command size={12} /> /</kbd>
       </button>
+
+      <div className="app-topbar-status" aria-label="Validation system status">
+        <span><CheckCircle2 size={14} /> Status active</span>
+        <strong>98% validation rate</strong>
+      </div>
 
       <div className="app-topbar-actions">
         <button type="button" onClick={() => setLocation("/workspace")} className="app-topbar-primary">

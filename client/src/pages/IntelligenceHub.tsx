@@ -516,6 +516,9 @@ function CrosswalkWorkbench() {
     setError("");
   };
 
+  const leadResult = result?.results?.[0];
+  const leadEvidence = leadResult?.evidence?.[0];
+
   return (
     <div className="space-y-5">
       <div className="crosswalk-hero appGlass appCard border border-blue-500/20">
@@ -611,81 +614,107 @@ function CrosswalkWorkbench() {
             ))}
           </div>
 
-          <div className="p-4 rounded-xl appGlass appCard border border-white/15 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{sourceLabel}</p>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <span className="font-mono text-lg font-black text-foreground">{result.code}</span>
-                {result.description && <span className="text-sm text-muted-foreground">{result.description}</span>}
+          <div className="crosswalk-workspace-grid">
+            <div className="crosswalk-workspace-main">
+              <div className="p-4 rounded-xl appGlass appCard border border-white/15 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{sourceLabel}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-lg font-black text-foreground">{result.code}</span>
+                    {result.description && <span className="text-sm text-muted-foreground">{result.description}</span>}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                  <span>{targetLabel}</span>
+                  {result.generatedAt && <span>Indexed {new Date(result.generatedAt).toLocaleDateString()}</span>}
+                </div>
               </div>
-            </div>
-            <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-              <span>{targetLabel}</span>
-              {result.generatedAt && <span>Indexed {new Date(result.generatedAt).toLocaleDateString()}</span>}
-            </div>
-          </div>
 
-          {result.results.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground appGlass appCard rounded-xl border border-white/15">
-              <Link2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No coverage-derived crosswalk evidence found for {result.code}.</p>
-            </div>
-          ) : (
-            <div className="grid gap-3">
-              {result.results.map((item) => {
-                const style = crosswalkStatusStyle(item.status);
-                const topEvidence = item.evidence[0];
+              {result.results.length === 0 ? (
+                <div className="py-12 text-center text-muted-foreground appGlass appCard rounded-xl border border-white/15">
+                  <Link2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No coverage-derived crosswalk evidence found for {result.code}.</p>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {result.results.map((item) => {
+                    const style = crosswalkStatusStyle(item.status);
+                    const topEvidence = item.evidence[0];
 
-                return (
-                  <div key={item.normalizedCode} className={`crosswalk-result-card rounded-xl border p-4 ${style.card}`}>
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-base font-black text-foreground">{item.code}</span>
-                          <Badge variant="outline" className={`${style.badge} rounded-full`}>
-                            {style.label}
-                          </Badge>
-                          <Badge variant="outline" className="rounded-full bg-white/5 text-[10px]">
-                            {(item.confidenceScore * 100).toFixed(0)}% confidence
-                          </Badge>
-                        </div>
-                        {item.description && (
-                          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{item.description}</p>
-                        )}
-
-                        <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-muted-foreground">
-                          <span>{item.evidenceCount} evidence row{item.evidenceCount === 1 ? "" : "s"}</span>
-                          <span>{item.articleCount} source article{item.articleCount === 1 ? "" : "s"}</span>
-                          <span>{item.coveredEvidenceCount} covered</span>
-                          <span>{item.noncoveredEvidenceCount} noncovered</span>
-                        </div>
-
-                        {topEvidence && (
-                          <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                    return (
+                      <div key={item.normalizedCode} className={`crosswalk-result-card rounded-xl border p-4 ${style.card}`}>
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-mono text-xs font-black text-foreground">{topEvidence.displayId}</span>
+                              <span className="font-mono text-base font-black text-foreground">{item.code}</span>
+                              <Badge variant="outline" className={`${style.badge} rounded-full`}>
+                                {style.label}
+                              </Badge>
                               <Badge variant="outline" className="rounded-full bg-white/5 text-[10px]">
-                                Group {topEvidence.groupNumber}
+                                {(item.confidenceScore * 100).toFixed(0)}% confidence
                               </Badge>
                             </div>
-                            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{topEvidence.title}</p>
-                          </div>
-                        )}
-                      </div>
+                            {item.description && (
+                              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                            )}
 
-                      {topEvidence && (
-                        <Button asChild size="sm" variant="outline" className="gap-1.5 flex-shrink-0">
-                          <a href={getCoverageUrl({ document_display_id: topEvidence.displayId, article_version: topEvidence.articleVersion }, "article")} target="_blank" rel="noreferrer noopener">
-                            <ExternalLink size={12} /> CMS source
-                          </a>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                            <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-muted-foreground">
+                              <span>{item.evidenceCount} evidence row{item.evidenceCount === 1 ? "" : "s"}</span>
+                              <span>{item.articleCount} source article{item.articleCount === 1 ? "" : "s"}</span>
+                              <span>{item.coveredEvidenceCount} covered</span>
+                              <span>{item.noncoveredEvidenceCount} noncovered</span>
+                            </div>
+
+                            {topEvidence && (
+                              <div className="crosswalk-evidence-snippet mt-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-mono text-xs font-black text-foreground">{topEvidence.displayId}</span>
+                                  <Badge variant="outline" className="rounded-full bg-white/5 text-[10px]">
+                                    Group {topEvidence.groupNumber}
+                                  </Badge>
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{topEvidence.title}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {topEvidence && (
+                            <Button asChild size="sm" variant="outline" className="gap-1.5 flex-shrink-0">
+                              <a href={getCoverageUrl({ document_display_id: topEvidence.displayId, article_version: topEvidence.articleVersion }, "article")} target="_blank" rel="noreferrer noopener">
+                                <ExternalLink size={12} /> CMS source
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          )}
+
+            <aside className="crosswalk-evidence-panel appGlass appCard border border-white/15">
+              <div className="crosswalk-evidence-panel-head">
+                <span><Shield size={14} /> CMS MCD evidence</span>
+                <strong>{leadEvidence?.displayId || "No source selected"}</strong>
+                <p>{leadEvidence?.title || "Run a crosswalk lookup to preview the strongest source article and evidence group."}</p>
+              </div>
+
+              <div className="crosswalk-evidence-checklist">
+                <span className={leadEvidence ? "is-done" : ""}>Article group linked</span>
+                <span className={leadResult?.confidenceScore ? "is-done" : ""}>Confidence scored</span>
+                <span className={result.returnedCount > 0 ? "is-done" : ""}>Coverage candidates ranked</span>
+              </div>
+
+              {leadEvidence && (
+                <Button asChild className="w-full gap-1.5 rounded-full">
+                  <a href={getCoverageUrl({ document_display_id: leadEvidence.displayId, article_version: leadEvidence.articleVersion }, "article")} target="_blank" rel="noreferrer noopener">
+                    <ExternalLink size={13} /> Open CMS evidence
+                  </a>
+                </Button>
+              )}
+            </aside>
+          </div>
         </div>
       )}
     </div>

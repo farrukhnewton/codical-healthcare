@@ -8157,3 +8157,826 @@ html.dark {
   }
 }
 
+/* Stitch dashboard shell upgrade: app chrome, sidebar, and Coverage workspace. */
+.appShellPremium {
+  --app-bg: #eef6ff;
+  --app-surface: #ffffff;
+  --app-surface-soft: #f6faff;
+  --app-ink: #071252;
+  --app-text: #35496a;
+  --app-muted: #6d7d91;
+  --app-line: rgba(198, 215, 234, 0.82);
+  --app-line-strong: rgba(179, 199, 223, 0.96);
+  --app-blue: #1536e8;
+  --app-blue-dark: #071fb8;
+  --app-orange: #ff7a3d;
+  --app-teal: #00a990;
+  --app-green: #0f8c56;
+  --app-red: #d73f54;
+  --app-amber: #c87919;
+  --app-card-radius: 12px;
+  --app-premium-shadow: 0 26px 80px rgba(16, 48, 91, 0.13);
+}
+
+.appShellPremium .app-cinematic-bg {
+  background:
+    linear-gradient(180deg, rgba(247, 251, 255, 0.70), rgba(238, 246, 255, 0.92) 48%, #eef6ff),
+    url("/codical-healthcare-operations-hero.jpg") center top / cover no-repeat;
+}
+
+.appShellPremium .app-cinematic-bg::before {
+  inset: -18% -12% auto -12%;
+  height: 76%;
+  opacity: 0.92;
+  background:
+    radial-gradient(circle at 17% 20%, rgba(21, 54, 232, 0.15), transparent 27%),
+    radial-gradient(circle at 78% 15%, rgba(0, 169, 144, 0.16), transparent 30%),
+    radial-gradient(circle at 52% 60%, rgba(255, 122, 61, 0.12), transparent 34%),
+    conic-gradient(from 82deg at 50% 45%, transparent, rgba(21, 54, 232, 0.08), transparent, rgba(255, 122, 61, 0.08), transparent);
+  animation: appAbstractDrift 18s ease-in-out infinite alternate;
+}
+
+.appShellPremium .app-cinematic-bg::after {
+  opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(21, 54, 232, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(21, 54, 232, 0.09) 1px, transparent 1px);
+  background-size: 112px 112px;
+}
+
+.appShellPremium .app-sidebar {
+  position: relative;
+  width: 270px;
+  flex: 0 0 270px;
+  overflow: hidden;
+  margin: 16px 0 16px 16px;
+  border: 1px solid rgba(198, 215, 234, 0.88);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.91), rgba(246, 250, 255, 0.84)),
+    url("/codical-healthcare-operations-hero.jpg") left top / 620px auto no-repeat;
+  box-shadow: 0 28px 80px rgba(16, 48, 91, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.appShellPremium .app-sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.94) 42%, rgba(246, 250, 255, 0.92) 100%),
+    radial-gradient(circle at 95% 8%, rgba(255, 122, 61, 0.16), transparent 28%),
+    radial-gradient(circle at 18% 18%, rgba(21, 54, 232, 0.12), transparent 34%);
+}
+
+.appShellPremium .app-sidebar::after {
+  content: "";
+  position: absolute;
+  right: -72px;
+  top: 74px;
+  width: 170px;
+  height: 112px;
+  border: 1px solid rgba(21, 54, 232, 0.16);
+  border-radius: 50%;
+  transform: rotate(-18deg);
+  pointer-events: none;
+}
+
+.appShellPremium .app-sidebar-inner {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+}
+
+.appShellPremium .app-sidebar-brand {
+  min-height: 82px;
+  padding: 0 16px 0 18px;
+  border-bottom: 1px solid rgba(207, 222, 238, 0.82);
+}
+
+.app-sidebar-brand-link {
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.appShellPremium .app-sidebar .co-logo-bars {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+.appShellPremium .app-sidebar .co-wordmark span,
+.appShellPremium .app-sidebar .co-wordmark small,
+.appShellPremium .app-page-title h1,
+.appShellPremium .tool-page-header h1,
+.appShellPremium .coverage-hero-panel h1,
+.appShellPremium .dash-hero-copy h2 {
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.appShellPremium .app-sidebar .co-wordmark span {
+  color: var(--app-ink);
+  font-size: 16px;
+  letter-spacing: -0.025em;
+}
+
+.appShellPremium .app-sidebar .co-wordmark small {
+  color: var(--app-ink);
+  font-size: 11px;
+  letter-spacing: 0.34em;
+}
+
+.appShellPremium .app-sidebar-status {
+  position: relative;
+  overflow: hidden;
+  margin: 14px 14px 10px;
+  border-radius: 14px;
+  border-color: rgba(199, 216, 234, 0.92);
+  background:
+    radial-gradient(circle at 96% 0%, rgba(255, 122, 61, 0.17), transparent 35%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(238, 246, 255, 0.9));
+}
+
+.appShellPremium .app-sidebar-status::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 72px;
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(21, 54, 232, 0.22), rgba(0, 169, 144, 0.22), rgba(255, 122, 61, 0.22));
+}
+
+.appShellPremium .app-sidebar-claim-cta {
+  width: calc(100% - 28px);
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: 0 14px 14px;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  background: var(--app-orange);
+  box-shadow: 0 18px 38px rgba(255, 122, 61, 0.24);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.appShellPremium .app-sidebar-claim-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 46px rgba(255, 122, 61, 0.30);
+}
+
+.appShellPremium .app-sidebar-nav {
+  padding: 4px 12px 14px;
+}
+
+.appShellPremium .app-nav-section {
+  margin-bottom: 16px;
+}
+
+.appShellPremium .app-nav-section p {
+  margin-bottom: 8px;
+  padding: 0 10px;
+  color: #75849a;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.appShellPremium .app-nav-list {
+  gap: 4px;
+}
+
+.appShellPremium .app-nav-item {
+  min-height: 52px;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 6px 9px;
+}
+
+.appShellPremium .app-nav-item:hover {
+  background: rgba(255, 255, 255, 0.74);
+  border-color: rgba(199, 216, 234, 0.9);
+}
+
+.appShellPremium .app-nav-item.is-active {
+  color: var(--app-ink);
+  border-color: rgba(21, 54, 232, 0.24);
+  background:
+    linear-gradient(135deg, #ffffff, #f3f7ff);
+  box-shadow: 0 16px 36px rgba(21, 54, 232, 0.13);
+}
+
+.appShellPremium .app-nav-icon {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(205, 220, 238, 0.86);
+  border-radius: 12px;
+  color: var(--app-blue);
+  background: #eef3ff;
+}
+
+.appShellPremium .app-nav-icon::before {
+  content: "";
+  position: absolute;
+  inset: -32% auto auto 42%;
+  width: 88%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  opacity: 0.72;
+}
+
+.appShellPremium .app-nav-icon svg {
+  position: relative;
+  z-index: 1;
+  width: 17px;
+  height: 17px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  color: currentColor;
+  background: transparent;
+}
+
+.appShellPremium .app-nav-icon.tone-blue {
+  color: #1536e8;
+  background: #edf3ff;
+}
+
+.appShellPremium .app-nav-icon.tone-blue::before {
+  background: rgba(21, 54, 232, 0.18);
+}
+
+.appShellPremium .app-nav-icon.tone-teal,
+.appShellPremium .app-nav-icon.tone-mint {
+  color: #078d7b;
+  background: #e8fbf7;
+}
+
+.appShellPremium .app-nav-icon.tone-teal::before,
+.appShellPremium .app-nav-icon.tone-mint::before {
+  background: rgba(0, 169, 144, 0.18);
+}
+
+.appShellPremium .app-nav-icon.tone-orange {
+  color: #e85f24;
+  background: #fff1e9;
+}
+
+.appShellPremium .app-nav-icon.tone-orange::before {
+  background: rgba(255, 122, 61, 0.20);
+}
+
+.appShellPremium .app-nav-icon.tone-violet {
+  color: #5540d9;
+  background: #f0efff;
+}
+
+.appShellPremium .app-nav-icon.tone-violet::before {
+  background: rgba(85, 64, 217, 0.16);
+}
+
+.appShellPremium .app-nav-icon.tone-slate {
+  color: #455773;
+  background: #f2f6fb;
+}
+
+.appShellPremium .app-nav-item.is-active .app-nav-icon {
+  color: #ffffff;
+  border-color: var(--app-blue);
+  background: linear-gradient(135deg, var(--app-blue), #071fb8);
+  box-shadow: 0 12px 24px rgba(21, 54, 232, 0.22);
+}
+
+.appShellPremium .app-nav-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.appShellPremium .app-nav-copy .app-nav-label {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 12.5px;
+  font-weight: 900;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appShellPremium .app-nav-copy small {
+  min-width: 0;
+  overflow: hidden;
+  color: #7a899d;
+  font-size: 10.5px;
+  font-weight: 720;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appShellPremium .app-nav-item.is-active .app-nav-copy small {
+  color: #52647e;
+}
+
+.appShellPremium .app-nav-item em {
+  padding: 4px 7px;
+  color: #073a32;
+  background: rgba(0, 169, 144, 0.16);
+  font-size: 9.5px;
+}
+
+.appShellPremium .app-sidebar-footer {
+  gap: 7px;
+  padding: 12px;
+  border-top: 1px solid rgba(207, 222, 238, 0.82);
+}
+
+.appShellPremium .app-sidebar-user-card {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  border: 1px solid rgba(205, 220, 238, 0.9);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.appShellPremium .app-sidebar-user-card > svg {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  padding: 8px;
+  color: var(--app-teal);
+  background: #e8fbf7;
+}
+
+.appShellPremium .app-sidebar-user-card strong,
+.appShellPremium .app-sidebar-user-card span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appShellPremium .app-sidebar-user-card strong {
+  color: var(--app-ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.appShellPremium .app-sidebar-user-card span {
+  margin-top: 2px;
+  color: var(--app-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.appShellPremium .app-topbar {
+  min-height: 72px;
+  grid-template-columns: minmax(168px, 285px) minmax(260px, 1fr) auto auto;
+  gap: 12px;
+  margin: 16px 18px 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.appShellPremium .app-page-title h1 {
+  font-size: 20px;
+  letter-spacing: -0.035em;
+}
+
+.appShellPremium .app-global-search {
+  min-width: 0;
+  height: 48px;
+}
+
+.appShellPremium .app-topbar-status {
+  min-height: 46px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  border: 1px solid rgba(199, 216, 234, 0.92);
+  border-radius: 999px;
+  padding: 0 15px;
+  color: var(--app-ink);
+  background: rgba(246, 250, 255, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+}
+
+.appShellPremium .app-topbar-status span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--app-green);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.appShellPremium .app-topbar-status strong {
+  color: var(--app-ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.appShellPremium .dash-hero-band,
+.appShellPremium .dash-kpi-card,
+.appShellPremium .dash-card,
+.appShellPremium .tool-panel,
+.appShellPremium .code-detail-surface > .tool-panel:not(.code-detail-hero),
+.appShellPremium .workspace-result-section,
+.appShellPremium .saved-library-dialog,
+.appShellPremium .coverage-content-shell .appGlass,
+.appShellPremium .coverage-content-shell .appGlassStrong,
+.appShellPremium .coverage-content-shell .appCard,
+.appShellPremium .coverage-content-shell .rounded-xl,
+.appShellPremium .code-result-card,
+.appShellPremium .favorite-code-card,
+.appShellPremium .saved-library-card,
+.appShellPremium .secondary-mobile-row,
+.appShellPremium .workspace-output-item,
+.appShellPremium .workspace-flow-rail div,
+.appShellPremium .workspace-result-metrics div,
+.appShellPremium .analytics-metric-card,
+.appShellPremium .settings-card,
+.appShellPremium .report-template-card,
+.appShellPremium .validation-input-panel,
+.appShellPremium .calculator-summary-panel,
+.appShellPremium .claim-result-panel,
+.appShellPremium .npi-results-panel,
+.appShellPremium .provider-detail-panel,
+.appShellPremium .tool-callout {
+  border-radius: var(--app-card-radius) !important;
+  border-color: rgba(198, 215, 234, 0.9) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 22px 62px rgba(16, 48, 91, 0.09) !important;
+}
+
+.appShellPremium .coverage-hub-page {
+  width: min(100% - 36px, 1260px);
+  padding-top: 22px;
+}
+
+.appShellPremium .coverage-hero-panel {
+  min-height: 168px;
+  border-radius: 16px !important;
+  padding: 26px;
+  box-shadow: 0 28px 78px rgba(16, 48, 91, 0.12) !important;
+}
+
+.appShellPremium .coverage-hero-panel h1 {
+  font-size: clamp(32px, 3.8vw, 52px);
+  letter-spacing: -0.05em;
+}
+
+.appShellPremium .coverage-hero-panel p {
+  max-width: 650px;
+  font-size: 15px;
+}
+
+.appShellPremium .coverage-tab-list {
+  width: fit-content;
+  max-width: 100%;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.appShellPremium .coverage-tab-list button {
+  min-height: 42px;
+  padding: 0 15px;
+  font-size: 12px;
+}
+
+.appShellPremium .coverage-content-shell {
+  gap: 18px;
+}
+
+.appShellPremium .crosswalk-hero,
+.appShellPremium .crosswalk-search-panel {
+  border-radius: 16px !important;
+}
+
+.appShellPremium .crosswalk-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(21, 54, 232, 0.10), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(240, 247, 255, 0.9)) !important;
+}
+
+.appShellPremium .crosswalk-hero::after {
+  content: "";
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  width: min(36%, 280px);
+  height: 7px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(21, 54, 232, 0.24), rgba(0, 169, 144, 0.20), rgba(255, 122, 61, 0.18));
+}
+
+.appShellPremium .crosswalk-search-panel {
+  background: rgba(255, 255, 255, 0.92) !important;
+}
+
+.appShellPremium .crosswalk-summary-grid {
+  gap: 12px;
+}
+
+.appShellPremium .crosswalk-stat {
+  position: relative;
+  overflow: hidden;
+  min-height: 100px;
+  border-radius: 16px !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(240, 247, 255, 0.88)) !important;
+}
+
+.appShellPremium .crosswalk-stat::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  left: 74px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(21, 54, 232, 0.22), rgba(0, 169, 144, 0.16), rgba(255, 122, 61, 0.14));
+}
+
+.appShellPremium .crosswalk-result-card {
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 18px 48px rgba(16, 48, 91, 0.08);
+}
+
+.appShellPremium .crosswalk-result-card::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(180deg, var(--app-blue), var(--app-teal));
+}
+
+.appShellPremium .crosswalk-workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: 16px;
+  align-items: start;
+}
+
+.appShellPremium .crosswalk-workspace-main {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.appShellPremium .crosswalk-evidence-snippet {
+  border-color: rgba(198, 215, 234, 0.84) !important;
+  background: rgba(246, 250, 255, 0.82) !important;
+}
+
+.appShellPremium .crosswalk-evidence-panel {
+  position: sticky;
+  top: 18px;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 122, 61, 0.14), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(239, 247, 255, 0.9)) !important;
+}
+
+.appShellPremium .crosswalk-evidence-panel-head {
+  display: grid;
+  gap: 7px;
+}
+
+.appShellPremium .crosswalk-evidence-panel-head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--app-blue);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.appShellPremium .crosswalk-evidence-panel-head strong {
+  color: var(--app-ink);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.appShellPremium .crosswalk-evidence-panel-head p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.appShellPremium .crosswalk-evidence-checklist {
+  display: grid;
+  gap: 8px;
+}
+
+.appShellPremium .crosswalk-evidence-checklist span {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(205, 220, 238, 0.86);
+  border-radius: 999px;
+  padding: 0 12px;
+  color: #65768c;
+  background: rgba(255, 255, 255, 0.74);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.appShellPremium .crosswalk-evidence-checklist span::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #c8d8ea;
+}
+
+.appShellPremium .crosswalk-evidence-checklist span.is-done {
+  color: #073a32;
+}
+
+.appShellPremium .crosswalk-evidence-checklist span.is-done::before {
+  background: var(--app-teal);
+  box-shadow: 0 0 0 4px rgba(0, 169, 144, 0.12);
+}
+
+.appShellPremium .coverage-content-shell input {
+  min-height: 46px;
+  border-radius: 999px !important;
+}
+
+.appShellPremium .coverage-filter-list .rounded-full,
+.appShellPremium .coverage-content-shell .rounded-full {
+  border-radius: 999px !important;
+}
+
+@media (max-width: 1280px) {
+  .appShellPremium .app-topbar {
+    grid-template-columns: minmax(150px, 260px) minmax(220px, 1fr) auto;
+  }
+
+  .appShellPremium .app-topbar-status {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .appShellPremium .app-sidebar {
+    width: min(326px, calc(100vw - 28px));
+    margin: 14px;
+    border-radius: 18px;
+  }
+
+  .appShellPremium .app-sidebar-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 900 !important;
+    background: rgba(15, 32, 61, 0.24);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .appShellPremium .app-sidebar-mobile {
+    position: fixed !important;
+    inset: 14px auto 14px 14px !important;
+    z-index: 1001 !important;
+    width: min(326px, calc(100vw - 28px)) !important;
+    max-height: calc(100vh - 28px);
+    max-width: calc(100vw - 28px);
+    margin: 0 !important;
+    overflow: hidden;
+  }
+
+  .appShellPremium .app-sidebar-mobile .app-sidebar-inner {
+    max-height: 100%;
+  }
+
+  .appShellPremium .app-sidebar-close {
+    color: var(--app-ink);
+    border-color: rgba(198, 215, 234, 0.92);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.82);
+  }
+
+  .appShellPremium .app-mobile-menu-button {
+    position: fixed !important;
+    top: 23px;
+    left: 22px;
+    z-index: 1000 !important;
+    border-radius: 50%;
+    color: var(--app-blue);
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(16px);
+    pointer-events: auto;
+  }
+
+  .appShellPremium .app-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin: 14px 14px 0;
+    padding-left: 72px;
+  }
+}
+
+@media (max-width: 760px) {
+  .appShellPremium .coverage-hub-page {
+    width: min(100% - 22px, 1260px);
+    padding-top: 14px;
+  }
+
+  .appShellPremium .coverage-hero-panel {
+    padding: 18px;
+  }
+
+  .appShellPremium .coverage-hero-panel h1 {
+    font-size: 30px;
+  }
+
+  .appShellPremium .coverage-tab-list {
+    width: 100%;
+    display: flex;
+    overflow-x: auto;
+    border-radius: 16px;
+    scroll-snap-type: x proximity;
+  }
+
+  .appShellPremium .coverage-tab-list button {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+
+  .appShellPremium .crosswalk-hero::after,
+  .appShellPremium .crosswalk-stat::after {
+    display: none;
+  }
+
+  .appShellPremium .crosswalk-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .appShellPremium .crosswalk-evidence-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 520px) {
+  .appShellPremium .app-topbar {
+    padding-left: 62px;
+    padding-right: 10px;
+  }
+
+  .appShellPremium .app-page-title h1 {
+    max-width: 170px;
+  }
+
+  .appShellPremium .app-mobile-bottom-nav {
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+  }
+}
+
+@keyframes appAbstractDrift {
+  from {
+    transform: translate3d(-1%, 0, 0) rotate(0deg) scale(1);
+  }
+  to {
+    transform: translate3d(1.5%, -1%, 0) rotate(2deg) scale(1.04);
+  }
+}
+
