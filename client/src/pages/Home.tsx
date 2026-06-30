@@ -30,10 +30,10 @@ import {
 } from "recharts";
 
 const KPI_CARDS = [
-  { label: "Encounters today", value: "128", delta: "+12%", trend: "up", icon: ClipboardCheck },
-  { label: "Queries outstanding", value: "36", delta: "-8%", trend: "down", icon: CheckCircle2 },
-  { label: "Claims in review", value: "72", delta: "+15%", trend: "alert", icon: FileCheck2 },
-  { label: "Net collections MTD", value: "$1.24M", delta: "+9%", trend: "up", icon: BarChart2 },
+  { label: "Claims in review", value: "128", delta: "+18%", trend: "up", icon: ClipboardCheck },
+  { label: "NCCI clear", value: "94.2%", delta: "+2.6 pts", trend: "up", icon: CheckCircle2 },
+  { label: "First pass yield", value: "88.1%", delta: "+4.3 pts", trend: "up", icon: FileCheck2 },
+  { label: "Turnaround time", value: "2.6 hrs", delta: "-0.7 hrs", trend: "down", icon: BarChart2 },
 ];
 
 const WORKFLOW_COLUMNS = [
@@ -133,10 +133,10 @@ export function Home() {
       <section className="dash-hero-band dash-command-hero">
         <div className="dash-hero-copy">
           <span className="dash-hero-chip"><CalendarCheck2 size={16} /> {greeting}</span>
-          <h2>Clinical coding command center.</h2>
+          <h2>Cleaner claim review, from code search to payer checks.</h2>
           <p>
-            Move cases from documentation intake to NCCI, payer, NPI and certified review
-            without losing the evidence trail behind each coding decision.
+            Move documentation through ICD/CPT suggestions, NCCI edits, payer policy,
+            NPI verification and certified review without losing the evidence trail.
           </p>
           <div className="dash-hero-actions">
             <button type="button" onClick={() => setLocation("/workspace")}>
@@ -153,16 +153,16 @@ export function Home() {
         <div className="dash-review-console" aria-label="Live coding review preview">
           <div className="dash-console-top">
             <div>
-              <strong>Case packet #8912</strong>
-              <span>Ready for coding review</span>
+              <strong>Case #C-48291</strong>
+              <span>Outpatient claim packet</span>
             </div>
             <em>Live</em>
           </div>
 
           <div className="dash-console-code">
             <div>
-              <span>Suggested E/M</span>
-              <strong>99214</strong>
+              <span>Claim review</span>
+              <strong>Ready</strong>
             </div>
             <p>98% source-linked rationale</p>
           </div>

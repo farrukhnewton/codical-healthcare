@@ -29,7 +29,9 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",
     "@fontsource/inter": "^5.2.8",
+    "@fontsource/outfit": "^5.2.8",
     "@fontsource/plus-jakarta-sans": "^5.2.8",
+    "@fontsource/rubik": "^5.2.8",
     "@headlessui/react": "^2.2.10",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
@@ -125,6 +127,7 @@
     "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.8",
     "esbuild": "^0.28.0",
+    "playwright": "^1.61.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.5",

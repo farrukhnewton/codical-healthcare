@@ -1,4 +1,5 @@
 import "@/styles/app-shell.css";
+import "@/styles/codical-redesign.css";
 
 import { lazy, Suspense, type ReactNode } from "react";
 import { Redirect, Route, Switch } from "wouter";
@@ -97,7 +98,7 @@ function AuthenticatedRoutes() {
 export function AuthenticatedApp() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="landingAurora appShell appShellPremium flex h-screen overflow-hidden font-sans selection:bg-primary/20 relative">
+      <div className="landingAurora appShell appShellPremium appShellCodical flex h-screen overflow-hidden font-sans selection:bg-primary/20 relative">
         <div className="app-cinematic-bg" aria-hidden="true">
           <span className="app-orbit app-orbit-one" />
           <span className="app-orbit app-orbit-two" />

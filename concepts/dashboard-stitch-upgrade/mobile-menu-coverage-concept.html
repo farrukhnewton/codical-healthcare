@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Codical Health | Mobile Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        navy: "#071252",
+                        cobalt: "#1238db",
+                        orange: "#ff7a3d",
+                        "orange-accent": "#f47a45",
+                        mint: "#e6f9f2",
+                        "mint-text": "#0a5d4a"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Manrope", "sans-serif"],
+                        display: ["Manrope", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fbff;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-navy">
+<!-- Background Layer -->
+<div class="fixed inset-0 z-0">
+<img class="w-full h-full object-cover opacity-20" data-alt="A brightly lit, modern healthcare administrative center with clean white surfaces, expansive windows showing a clinical campus, and a professional atmosphere. The scene is bathed in high-key morning light with soft blue and navy accents, creating a premium and reliable medical operations aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyWxG7CQQ71gIv7LcANUNj9dJskp5_U0FwJimtHE1R29l5hgsbl7-rKYt6lbhHklZUNVqMPj2TGw80L0rDQH5QBc5YQG7YVrSEeZjAufeH7UA1IGoB6mV8qkwKkckxLY7U-Sg6TDxFRFJa_8_wjzbcQr6EAKZYgpKsiF72GH3nMzzQdBFOWcoVJfNQdBRmVhpVtXxE3Q3viYXFFtDW-tSQRkMeSVNrv0GUC-yY1JpwQdVqPTkF06nxaDILHqLHBL0j-N_jMvLqAvY"/>
+<div class="absolute inset-0 bg-gradient-to-b from-white/60 to-[#edf4fb]/90"></div>
+</div>
+<!-- Top AppBar (Pill Shape) -->
+<header class="fixed top-4 left-1/2 -translate-x-1/2 w-[92%] z-40">
+<div class="bg-white/80 backdrop-blur-md border border-slate-200/50 shadow-xl shadow-slate-200/20 rounded-full flex justify-between items-center px-4 py-2">
+<button class="p-2 hover:bg-slate-50 transition-colors active:scale-95 duration-200 text-navy" id="menuTrigger">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="flex items-center gap-2">
+<div class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-100">
+<span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    ACTIVE
+                </div>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm">
+<img alt="User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXvPH2F4oc9lb8eJD8MYIjHF6pbfQ4waZPkdO-wclBb02VVlM-_6InKLGLkWIS_xhRN8pw0HroYMpBczeHzVfaurYKDiBp0FlJUH83U9zqoMyc1IANrHChkIf_GErUGkGrbTMW7F6Mk3BwQyJmLnhuRkwYkFXduxomdGANnlWcjUPYpQwHJB5a8yLm7LsTjReeG276TKe12IDBRP6c0eMgqEny86wb8o_0v5GTfVkPXtLJzoZnV4fXbSN4-krQXawN0DF5LAkkuaU"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area (Workspace) -->
+<main class="relative z-10 pt-24 px-4 pb-32 h-full overflow-y-auto no-scrollbar">
+<div class="mb-6">
+<h1 class="font-headline text-2xl font-extrabold text-navy leading-tight">
+                Real-Time Coding <br/>Validation
+            </h1>
+</div>
+<!-- Navigation Chips -->
+<div class="flex overflow-x-auto gap-2 no-scrollbar mb-8 pb-2">
+<button class="whitespace-nowrap px-4 py-2 bg-cobalt text-white rounded-full text-xs font-semibold shadow-md">LCD/NCD Search</button>
+<button class="whitespace-nowrap px-4 py-2 bg-white text-slate-500 border border-slate-100 rounded-full text-xs font-medium">ICD to CPT</button>
+<button class="whitespace-nowrap px-4 py-2 bg-white text-slate-500 border border-slate-100 rounded-full text-xs font-medium">CPT to ICD</button>
+<button class="whitespace-nowrap px-4 py-2 bg-white text-slate-500 border border-slate-100 rounded-full text-xs font-medium">NCCI Checks</button>
+</div>
+<!-- Data Cards -->
+<div class="space-y-4">
+<!-- Card 1 -->
+<div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100/50">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-slate-400 tracking-wider">ICD-10-CM</span>
+<span class="text-lg font-bold text-navy">M17.0</span>
+</div>
+<div class="bg-mint px-2 py-1 rounded text-[10px] font-bold text-mint-text border border-mint-text/10">
+                        95% AI MATCH
+                    </div>
+</div>
+<p class="text-sm text-slate-600 mb-4 leading-snug">Bilateral primary osteoarthritis of knee</p>
+<div class="flex items-center gap-2 py-2 px-3 bg-amber-50 rounded-lg border border-amber-100">
+<span class="material-symbols-outlined text-amber-500 text-sm fill-icon">warning</span>
+<span class="text-[11px] font-medium text-amber-700">NCCI: Check CPT 27447 bundling rules.</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100/50 opacity-60">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-slate-400 tracking-wider">CPT</span>
+<span class="text-lg font-bold text-navy">99214</span>
+</div>
+<div class="bg-blue-50 px-2 py-1 rounded text-[10px] font-bold text-cobalt border border-cobalt/10">
+                        88% CONFIDENCE
+                    </div>
+</div>
+<p class="text-sm text-slate-600 mb-4 leading-snug">Office or other outpatient visit, 30-39 minutes</p>
+<div class="flex items-center gap-2 py-2 px-3 bg-mint rounded-lg border border-mint-text/10">
+<span class="material-symbols-outlined text-mint-text text-sm fill-icon">verified</span>
+<span class="text-[11px] font-medium text-mint-text">Validator cleared. Meets all payer guidelines.</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100/50 opacity-40">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-slate-400 tracking-wider">HCPCS</span>
+<span class="text-lg font-bold text-navy">J1745</span>
+</div>
+</div>
+<p class="text-sm text-slate-600 mb-2">Injection, infliximab, excludes biosimilar, 10 mg</p>
+</div>
+</div>
+</main>
+<!-- FAB Action Area -->
+<div class="fixed bottom-6 left-0 w-full px-6 z-30">
+<button class="w-full bg-navy text-white h-14 rounded-full font-headline font-bold flex items-center justify-center gap-3 shadow-2xl active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined fill-icon">rule</span>
+            Apply All Validations
+        </button>
+</div>
+<!-- Mobile Menu Overlay (Open State) -->
+<div class="fixed inset-0 z-[60] bg-navy/40 backdrop-blur-sm transition-opacity duration-300" id="drawerOverlay">
+<!-- Drawer Panel -->
+<div class="absolute left-0 top-0 h-full w-80 bg-white shadow-2xl flex flex-col py-8 px-6 transform transition-transform duration-300 ease-in-out" id="drawerContent">
+<div class="flex items-center justify-between mb-10">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 bg-cobalt rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-xl fill-icon">medical_services</span>
+</div>
+<span class="text-xl font-headline font-black text-navy">Codical Health</span>
+</div>
+<button class="p-2 text-slate-400 hover:text-navy" id="closeDrawer">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex flex-col gap-1 flex-grow">
+<!-- Navigation Drawer Items -->
+<a class="flex items-center gap-4 py-3 px-4 rounded-xl text-slate-500 font-medium transition-all hover:bg-slate-50" href="#">
+<span class="material-symbols-outlined text-[22px]">dashboard</span>
+<span class="text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-xl text-slate-500 font-medium transition-all hover:bg-slate-50" href="#">
+<span class="material-symbols-outlined text-[22px]">description</span>
+<span class="text-sm">Claims</span>
+</a>
+<!-- Intelligence - ACTIVE TAB -->
+<a class="flex items-center gap-4 py-3 px-4 rounded-xl bg-slate-50 text-cobalt font-semibold border-r-4 border-cobalt transition-all" href="#">
+<span class="material-symbols-outlined text-[22px] fill-icon">psychology</span>
+<span class="text-sm">Intelligence</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-xl text-slate-500 font-medium transition-all hover:bg-slate-50" href="#">
+<span class="material-symbols-outlined text-[22px]">assessment</span>
+<span class="text-sm">Reports</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-xl text-slate-500 font-medium transition-all hover:bg-slate-50" href="#">
+<span class="material-symbols-outlined text-[22px]">settings</span>
+<span class="text-sm">Settings</span>
+</a>
+<div class="mt-8">
+<button class="w-full bg-orange-accent text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-accent/20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined fill-icon">add_circle</span>
+                        New Claim
+                    </button>
+</div>
+</div>
+<!-- Footer Profile -->
+<div class="mt-auto pt-8 border-t border-slate-100">
+<div class="flex items-center gap-3 mb-6 px-2">
+<img alt="Coder Profile" class="w-10 h-10 rounded-full border border-slate-100" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDF8rmyjCIiMD2JeASkTe-c1YGVb9OgfD9l8cgpFb-GQSFvwb2BcFGiOwe1OJtwzxk_wpkrPLRhpqu1r3J5D2xsxiTSUp09AMhTUMd0gRGxScml-2rK5Vh44ogZds6ecnm6UdDTipgMwcub7RoumD8KWzYRNj-NdjkSiRczNv2KgyB9pmC5sHJwAIGsRFbvi7NReKaauvIfX-zqNIReL84NSLcPrTGS1APNPVCBYCIlCT_hq3H1ifvD-DyXIrvGABse0HqRQnLFr38"/>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-navy leading-none">Certified Coder</span>
+<span class="text-[10px] text-slate-400 font-semibold mt-1">Clinical Review Team</span>
+</div>
+</div>
+<button class="flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-sm">Logout</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bottom Nav Bar (Mobile Viewport Context) -->
+<nav class="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-100 z-50 flex justify-around items-center pt-3 pb-safe px-4">
+<div class="flex flex-col items-center text-slate-400 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[10px] font-medium uppercase tracking-wider mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center text-slate-400 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px] font-medium uppercase tracking-wider mt-1">Claims</span>
+</div>
+<div class="flex flex-col items-center text-cobalt font-bold active:scale-90 transition-transform">
+<span class="material-symbols-outlined fill-icon">query_stats</span>
+<span class="text-[10px] uppercase tracking-wider mt-1">Insight</span>
+</div>
+<div class="flex flex-col items-center text-slate-400 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="text-[10px] font-medium uppercase tracking-wider mt-1">Review</span>
+</div>
+</nav>
+<script>
+        const menuTrigger = document.getElementById('menuTrigger');
+        const closeDrawer = document.getElementById('closeDrawer');
+        const drawerOverlay = document.getElementById('drawerOverlay');
+        const drawerContent = document.getElementById('drawerContent');
+
+        function openMenu() {
+            drawerOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            drawerContent.style.transform = 'translateX(0)';
+        }
+
+        function closeMenu() {
+            drawerOverlay.classList.add('opacity-0', 'pointer-events-none');
+            drawerContent.style.transform = 'translateX(-100%)';
+        }
+
+        menuTrigger.addEventListener('click', openMenu);
+        closeDrawer.addEventListener('click', closeMenu);
+        drawerOverlay.addEventListener('click', (e) => {
+            if (e.target === drawerOverlay) closeMenu();
+        });
+
+        // Initialize state as open per prompt
+        openMenu();
+    </script>
+</body></html>

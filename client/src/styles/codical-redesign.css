@@ -1,0 +1,796 @@
+/*
+  Codical Health phase 1 redesign foundation.
+  Scoped to the authenticated shell so public/auth pages and business logic stay untouched.
+*/
+
+.appShellCodical {
+  --ch-ink: #071252;
+  --ch-text: #314763;
+  --ch-muted: #6d7c91;
+  --ch-bg: #eef6ff;
+  --ch-surface: rgba(255, 255, 255, 0.9);
+  --ch-surface-solid: #ffffff;
+  --ch-surface-soft: #f6faff;
+  --ch-line: rgba(195, 213, 232, 0.9);
+  --ch-line-strong: rgba(166, 190, 217, 0.92);
+  --ch-indigo: #071db8;
+  --ch-blue: #1646f5;
+  --ch-blue-soft: #edf3ff;
+  --ch-teal: #049886;
+  --ch-teal-soft: #e9fbf8;
+  --ch-orange: #ff7a3d;
+  --ch-orange-soft: #fff0e8;
+  --ch-coral: #e84f68;
+  --ch-violet: #6e55f5;
+  --ch-radius: 14px;
+  --ch-radius-sm: 10px;
+  --ch-pill: 999px;
+  --ch-shadow: 0 24px 72px rgba(16, 48, 91, 0.12);
+  --ch-shadow-soft: 0 14px 34px rgba(16, 48, 91, 0.09);
+  --ch-glass: blur(20px) saturate(122%);
+  color: var(--ch-ink);
+  background:
+    radial-gradient(circle at 78% -10%, rgba(22, 70, 245, 0.12), transparent 32%),
+    radial-gradient(circle at 24% 12%, rgba(4, 152, 134, 0.08), transparent 34%),
+    linear-gradient(180deg, #f9fcff 0%, #eef6ff 58%, #e8f2ff 100%) !important;
+}
+
+.appShellCodical,
+.appShellCodical * {
+  min-width: 0;
+}
+
+.appShellCodical .app-cinematic-bg {
+  background:
+    linear-gradient(180deg, rgba(248, 252, 255, 0.84), rgba(238, 246, 255, 0.96) 56%, #eef6ff),
+    url("/codical-healthcare-operations-hero.jpg") center top / cover no-repeat;
+}
+
+.appShellCodical .app-cinematic-bg::before {
+  inset: -22% -18% auto -14%;
+  height: 74%;
+  opacity: 0.92;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(22, 70, 245, 0.13), transparent 26%),
+    radial-gradient(circle at 78% 12%, rgba(4, 152, 134, 0.13), transparent 28%),
+    radial-gradient(circle at 57% 58%, rgba(255, 122, 61, 0.12), transparent 34%),
+    conic-gradient(from 88deg at 52% 48%, transparent, rgba(22, 70, 245, 0.10), transparent, rgba(255, 122, 61, 0.08), transparent);
+  filter: blur(0.2px);
+  animation: codicalAmbientDrift 20s ease-in-out infinite alternate;
+}
+
+.appShellCodical .app-cinematic-bg::after {
+  opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(22, 70, 245, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 70, 245, 0.10) 1px, transparent 1px);
+  background-size: 118px 118px;
+}
+
+.appShellCodical .appShellMain {
+  background:
+    radial-gradient(circle at 78% 0%, rgba(22, 70, 245, 0.06), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(238, 246, 255, 0.74)) !important;
+  scroll-padding-bottom: 88px;
+}
+
+.appShellCodical .appShellMain > * {
+  position: relative;
+}
+
+.appShellCodical .app-sidebar {
+  width: 268px;
+  flex: 0 0 268px;
+  margin: 18px 0 18px 18px;
+  border: 1px solid rgba(82, 114, 211, 0.26);
+  border-radius: 20px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 82% 0%, rgba(255, 122, 61, 0.22), transparent 28%),
+    radial-gradient(circle at 20% 12%, rgba(83, 118, 255, 0.24), transparent 32%),
+    linear-gradient(180deg, #1536e8 0%, #071db8 54%, #061168 100%);
+  box-shadow: 20px 0 68px rgba(9, 26, 96, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.appShellCodical .app-sidebar::before {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02) 38%, transparent 100%),
+    radial-gradient(circle at 90% 16%, rgba(255, 255, 255, 0.13), transparent 32%);
+}
+
+.appShellCodical .app-sidebar::after {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.appShellCodical .app-sidebar-brand {
+  min-height: 88px;
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+}
+
+.appShellCodical .app-sidebar .co-logo-bars {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.18);
+}
+
+.appShellCodical .app-sidebar .co-wordmark span,
+.appShellCodical .app-sidebar .co-wordmark small {
+  color: #ffffff;
+}
+
+.appShellCodical .app-sidebar .co-wordmark span {
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.appShellCodical .app-sidebar .co-wordmark small {
+  color: rgba(255, 255, 255, 0.82);
+  letter-spacing: 0.28em;
+}
+
+.appShellCodical .app-sidebar-status {
+  margin: 14px 14px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  background:
+    radial-gradient(circle at 96% 0%, rgba(255, 122, 61, 0.28), transparent 36%),
+    rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.appShellCodical .app-sidebar-status span,
+.appShellCodical .app-sidebar-status strong,
+.appShellCodical .app-sidebar-status p {
+  color: inherit;
+}
+
+.appShellCodical .app-sidebar-status span {
+  color: #dffcf8;
+}
+
+.appShellCodical .app-sidebar-status strong {
+  color: #ffffff;
+}
+
+.appShellCodical .app-sidebar-claim-cta {
+  min-height: 48px;
+  border-radius: var(--ch-pill);
+  color: #071252;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.16);
+}
+
+.appShellCodical .app-sidebar-claim-cta:hover {
+  color: #071252;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.2);
+}
+
+.appShellCodical .app-nav-section p {
+  color: rgba(255, 255, 255, 0.62);
+  letter-spacing: 0.08em;
+}
+
+.appShellCodical .app-nav-item {
+  min-height: 52px;
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.86);
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.appShellCodical .app-nav-item:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.appShellCodical .app-nav-item.is-active {
+  color: var(--ch-ink);
+  border-color: rgba(255, 255, 255, 0.92);
+  background: #ffffff;
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.16);
+}
+
+.appShellCodical .app-nav-copy .app-nav-label {
+  font-size: 12.75px;
+}
+
+.appShellCodical .app-nav-copy small,
+.appShellCodical .app-nav-item.is-active .app-nav-copy small {
+  color: currentColor;
+  opacity: 0.68;
+}
+
+.appShellCodical .app-nav-icon {
+  width: 34px;
+  height: 34px;
+  border-color: rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.appShellCodical .app-nav-item.is-active .app-nav-icon {
+  color: #ffffff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--ch-blue), var(--ch-indigo));
+}
+
+.appShellCodical .app-sidebar-user-card {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.appShellCodical .app-sidebar-user-card strong,
+.appShellCodical .app-sidebar-user-card span {
+  color: #ffffff;
+}
+
+.appShellCodical .app-sidebar-user-card span {
+  opacity: 0.68;
+}
+
+.appShellCodical .app-topbar {
+  min-height: 74px;
+  grid-template-columns: minmax(170px, 280px) minmax(280px, 1fr) auto auto;
+  gap: 12px;
+  margin: 18px 18px 0;
+  border: 1px solid rgba(198, 215, 234, 0.92);
+  border-radius: var(--ch-pill);
+  padding: 10px 12px 10px 20px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--ch-shadow-soft);
+  backdrop-filter: var(--ch-glass);
+  -webkit-backdrop-filter: var(--ch-glass);
+}
+
+.appShellCodical .app-page-title h1 {
+  color: var(--ch-ink);
+  font-family: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.appShellCodical .app-page-title p {
+  color: var(--ch-muted);
+  font-weight: 700;
+}
+
+.appShellCodical .app-global-search {
+  height: 50px;
+  border: 1px solid rgba(198, 215, 234, 0.95);
+  border-radius: var(--ch-pill);
+  color: #4b6382;
+  background: rgba(246, 250, 255, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.appShellCodical .app-global-search:hover {
+  border-color: rgba(22, 70, 245, 0.28);
+  background: #ffffff;
+}
+
+.appShellCodical .app-topbar-date,
+.appShellCodical .app-topbar-status {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(198, 215, 234, 0.92);
+  border-radius: var(--ch-pill);
+  padding: 0 14px;
+  color: var(--ch-ink);
+  background: rgba(246, 250, 255, 0.86);
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.appShellCodical .app-topbar-date svg {
+  color: var(--ch-blue);
+}
+
+.appShellCodical .app-topbar-status {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+}
+
+.appShellCodical .app-topbar-primary,
+.appShellCodical .app-icon-button {
+  min-height: 46px;
+  border-radius: var(--ch-pill);
+}
+
+.appShellCodical .app-topbar-primary {
+  border: 0;
+  color: #ffffff;
+  background: #080b1a;
+  box-shadow: 0 16px 34px rgba(8, 11, 26, 0.22);
+}
+
+.appShellCodical .app-icon-button {
+  color: var(--ch-ink);
+  border: 1px solid rgba(198, 215, 234, 0.92);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.appShellCodical .dash-page {
+  width: min(100% - 44px, 1260px);
+  gap: 20px;
+  padding: 26px 0 44px;
+}
+
+.appShellCodical .dash-hero-band,
+.appShellCodical .dash-kpi-card,
+.appShellCodical .dash-card,
+.appShellCodical .tool-panel,
+.appShellCodical .code-detail-surface > .tool-panel:not(.code-detail-hero),
+.appShellCodical .workspace-result-section,
+.appShellCodical .analytics-metric-card,
+.appShellCodical .settings-card,
+.appShellCodical .report-template-card,
+.appShellCodical .validation-input-panel,
+.appShellCodical .calculator-summary-panel,
+.appShellCodical .claim-result-panel,
+.appShellCodical .npi-results-panel,
+.appShellCodical .provider-detail-panel,
+.appShellCodical .coverage-content-shell .appGlass,
+.appShellCodical .coverage-content-shell .appGlassStrong,
+.appShellCodical .coverage-content-shell .appCard,
+.appShellCodical .coverage-content-shell .rounded-xl {
+  border: 1px solid var(--ch-line) !important;
+  border-radius: var(--ch-radius) !important;
+  background: var(--ch-surface) !important;
+  box-shadow: var(--ch-shadow-soft) !important;
+  backdrop-filter: var(--ch-glass);
+  -webkit-backdrop-filter: var(--ch-glass);
+}
+
+.appShellCodical .dash-command-hero {
+  position: relative;
+  min-height: 374px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.78fr);
+  gap: 26px;
+  overflow: hidden;
+  padding: 32px;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(255, 122, 61, 0.16), transparent 28%),
+    radial-gradient(circle at 48% 18%, rgba(22, 70, 245, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 247, 255, 0.9)) !important;
+}
+
+.appShellCodical .dash-command-hero::before {
+  content: "";
+  position: absolute;
+  inset: -28% auto auto 39%;
+  width: 58%;
+  height: 96%;
+  border: 1px solid rgba(22, 70, 245, 0.16);
+  border-radius: 50%;
+  transform: rotate(8deg);
+}
+
+.appShellCodical .dash-command-hero::after {
+  content: "";
+  position: absolute;
+  right: 28px;
+  bottom: 24px;
+  width: min(310px, 34%);
+  height: 7px;
+  border-radius: var(--ch-pill);
+  background: linear-gradient(90deg, rgba(22, 70, 245, 0.28), rgba(4, 152, 134, 0.24), rgba(255, 122, 61, 0.22));
+}
+
+.appShellCodical .dash-hero-copy,
+.appShellCodical .dash-review-console {
+  position: relative;
+  z-index: 1;
+}
+
+.appShellCodical .dash-hero-chip {
+  min-height: 36px;
+  border-color: var(--ch-line);
+  border-radius: var(--ch-pill);
+  color: var(--ch-ink);
+  background: #ffffff;
+  box-shadow: var(--ch-shadow-soft);
+}
+
+.appShellCodical .dash-hero-copy h2 {
+  max-width: 760px;
+  color: var(--ch-ink);
+  font-family: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(42px, 5.2vw, 74px);
+  font-weight: 800;
+  letter-spacing: -0.058em;
+  line-height: 0.96;
+}
+
+.appShellCodical .dash-hero-copy p {
+  max-width: 680px;
+  color: var(--ch-text);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.58;
+}
+
+.appShellCodical .dash-hero-actions button {
+  min-height: 52px;
+  border-radius: var(--ch-pill);
+}
+
+.appShellCodical .dash-hero-actions button:first-child {
+  color: #ffffff;
+  background: #080b1a;
+  box-shadow: 0 18px 40px rgba(8, 11, 26, 0.22);
+}
+
+.appShellCodical .dash-hero-actions button:last-child {
+  color: var(--ch-ink);
+  background: #ffffff;
+  box-shadow: var(--ch-shadow-soft);
+}
+
+.appShellCodical .dash-review-console {
+  align-self: stretch;
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--ch-line);
+  border-radius: 16px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--ch-shadow);
+}
+
+.appShellCodical .dash-console-code {
+  border-color: rgba(216, 230, 246, 0.92);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f8fbff, #eef5ff);
+}
+
+.appShellCodical .dash-console-code strong {
+  color: var(--ch-blue);
+  font-size: clamp(30px, 4vw, 42px);
+}
+
+.appShellCodical .dash-console-code p {
+  border-radius: var(--ch-pill);
+  color: var(--ch-ink);
+  background: #ffffff;
+}
+
+.appShellCodical .dash-console-signals article,
+.appShellCodical .dash-console-progress span,
+.appShellCodical .dash-case-card,
+.appShellCodical .dash-workflow-column {
+  border-color: rgba(216, 230, 246, 0.92);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.appShellCodical .dash-console-progress span.is-done {
+  border-color: var(--ch-blue);
+  background: var(--ch-blue);
+}
+
+.appShellCodical .dash-kpi-grid {
+  gap: 14px;
+}
+
+.appShellCodical .dash-kpi-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 134px;
+  padding: 18px;
+  background:
+    radial-gradient(circle at 95% 4%, rgba(22, 70, 245, 0.09), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(244, 249, 255, 0.9)) !important;
+}
+
+.appShellCodical .dash-kpi-card::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  left: 84px;
+  height: 6px;
+  border-radius: var(--ch-pill);
+  background: linear-gradient(90deg, rgba(22, 70, 245, 0.26), rgba(4, 152, 134, 0.18), rgba(255, 122, 61, 0.16));
+}
+
+.appShellCodical .dash-kpi-icon {
+  border-radius: 13px;
+  color: var(--ch-blue);
+  background: var(--ch-blue-soft);
+}
+
+.appShellCodical .dash-trend-down {
+  color: var(--ch-teal) !important;
+}
+
+.appShellCodical .dash-kpi-card strong {
+  color: var(--ch-ink);
+  font-family: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 800;
+}
+
+.appShellCodical .dash-kpi-card p,
+.appShellCodical .dash-section-head p,
+.appShellCodical .dash-case-card p {
+  color: var(--ch-muted);
+  font-weight: 720;
+}
+
+.appShellCodical .dash-main-grid,
+.appShellCodical .dash-left-column,
+.appShellCodical .dash-right-column {
+  gap: 20px;
+}
+
+.appShellCodical .dash-section-head {
+  border-bottom-color: rgba(216, 230, 246, 0.92);
+}
+
+.appShellCodical .dash-section-head h3 {
+  color: var(--ch-ink);
+  font-family: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.appShellCodical .dash-section-head button,
+.appShellCodical .dash-code-list button,
+.appShellCodical .dash-action-list button {
+  border-radius: 12px;
+}
+
+.appShellCodical .dash-section-head button {
+  color: var(--ch-blue);
+}
+
+.appShellCodical .dash-code-list button:hover,
+.appShellCodical .dash-action-list button:hover,
+.appShellCodical .dash-column-more:hover {
+  color: var(--ch-blue);
+  background: rgba(237, 243, 255, 0.9);
+}
+
+.appShellCodical .coverage-hub-page {
+  width: min(100% - 44px, 1260px);
+}
+
+.appShellCodical .coverage-hero-panel,
+.appShellCodical .crosswalk-hero,
+.appShellCodical .crosswalk-search-panel,
+.appShellCodical .crosswalk-result-card {
+  border-radius: 16px !important;
+}
+
+.appShellCodical .app-mobile-bottom-nav {
+  right: 14px;
+  bottom: 14px;
+  left: 14px;
+  height: 66px;
+  border: 1px solid var(--ch-line);
+  border-radius: var(--ch-pill);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 50px rgba(16, 48, 91, 0.17);
+  backdrop-filter: var(--ch-glass);
+  -webkit-backdrop-filter: var(--ch-glass);
+}
+
+.appShellCodical .app-mobile-bottom-item {
+  color: var(--ch-muted);
+}
+
+.appShellCodical .app-mobile-bottom-item.is-active {
+  color: var(--ch-blue);
+}
+
+@media (max-width: 1500px) {
+  .appShellCodical .app-topbar-status {
+    display: none;
+  }
+}
+
+@media (max-width: 1280px) {
+  .appShellCodical .app-topbar {
+    grid-template-columns: minmax(150px, 250px) minmax(220px, 1fr) auto;
+  }
+
+  .appShellCodical .app-topbar-date {
+    display: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .appShellCodical .dash-command-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1023px) {
+  .appShellCodical .app-sidebar {
+    width: min(326px, calc(100vw - 28px)) !important;
+    max-width: calc(100vw - 28px);
+    margin: 14px;
+    border-radius: 20px;
+  }
+
+  .appShellCodical .app-sidebar-mobile {
+    inset: 14px auto 14px 14px !important;
+    max-height: calc(100vh - 28px);
+    overflow: hidden;
+  }
+
+  .appShellCodical .app-sidebar-mobile .app-sidebar-inner {
+    max-height: 100%;
+  }
+
+  .appShellCodical .app-sidebar-overlay {
+    background: rgba(9, 23, 58, 0.26);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+  }
+
+  .appShellCodical .app-mobile-menu-button {
+    top: 23px;
+    left: 22px;
+    z-index: 1002 !important;
+    color: var(--ch-blue);
+    border: 1px solid var(--ch-line);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--ch-shadow-soft);
+  }
+
+  .appShellCodical .app-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 66px;
+    margin: 14px 14px 0;
+    padding: 8px 12px 8px 72px;
+  }
+
+  .appShellCodical .app-global-search,
+  .appShellCodical .app-page-title p {
+    display: none;
+  }
+
+  .appShellCodical .dash-page,
+  .appShellCodical .coverage-hub-page {
+    width: min(100% - 28px, 1260px);
+    padding-top: 16px;
+  }
+}
+
+@media (max-width: 760px) {
+  .appShellCodical .appShellMain {
+    overflow-x: hidden;
+  }
+
+  .appShellCodical .app-page-title h1 {
+    max-width: 48vw;
+    overflow: hidden;
+    font-size: 17px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .appShellCodical .app-topbar-primary {
+    display: none;
+  }
+
+  .appShellCodical .dash-command-hero {
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .appShellCodical .dash-command-hero::after {
+    display: none;
+  }
+
+  .appShellCodical .dash-hero-copy h2 {
+    font-size: clamp(34px, 11vw, 44px);
+    letter-spacing: -0.05em;
+  }
+
+  .appShellCodical .dash-hero-copy p {
+    font-size: 14px;
+  }
+
+  .appShellCodical .dash-hero-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .appShellCodical .dash-hero-actions button {
+    width: 100%;
+  }
+
+  .appShellCodical .dash-kpi-grid {
+    display: grid;
+    grid-auto-columns: minmax(215px, 82%);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+  }
+
+  .appShellCodical .dash-kpi-card {
+    scroll-snap-align: start;
+  }
+
+  .appShellCodical .dash-console-code,
+  .appShellCodical .dash-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .appShellCodical .dash-console-code p {
+    justify-self: start;
+  }
+
+  .appShellCodical .dash-console-progress {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .appShellCodical .coverage-tab-list {
+    width: 100%;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .appShellCodical .app-topbar {
+    padding-left: 62px;
+    padding-right: 9px;
+  }
+
+  .appShellCodical .app-mobile-menu-button {
+    left: 18px;
+    top: 21px;
+  }
+
+  .appShellCodical .dash-page,
+  .appShellCodical .coverage-hub-page {
+    width: min(100% - 22px, 1260px);
+  }
+
+  .appShellCodical .dash-command-hero {
+    padding: 16px;
+  }
+
+  .appShellCodical .dash-kpi-card {
+    grid-template-columns: 1fr;
+  }
+
+  .appShellCodical .dash-kpi-card::after {
+    right: 16px;
+    left: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appShellCodical *,
+  .appShellCodical *::before,
+  .appShellCodical *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes codicalAmbientDrift {
+  from {
+    transform: translate3d(-1%, 0, 0) rotate(0deg) scale(1);
+  }
+  to {
+    transform: translate3d(1.5%, -1%, 0) rotate(2deg) scale(1.04);
+  }
+}

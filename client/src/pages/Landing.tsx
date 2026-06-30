@@ -1,38 +1,52 @@
 import "@/styles/landing-stitch.css";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import type { Variants } from "framer-motion";
+import heroLaptopCleanCutout from "@/assets/landing/hero-laptop-clean-cutout-2x.png";
+import heroWaveLeftFinal from "@/assets/landing/hero-wave-left-final.png";
+import heroWaveRightFinal from "@/assets/landing/hero-wave-right-final.png";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "wouter";
 import {
-  AlertTriangle,
+  Activity,
   ArrowRight,
   BarChart3,
-  BadgeCheck,
-  BookOpenCheck,
-  Building2,
+  Calculator,
   CheckCircle2,
   ChevronDown,
   ClipboardCheck,
-  Cloud,
-  FileCheck2,
+  FileAudio,
   FileText,
-  LockKeyhole,
+  Globe2,
   Menu,
   MessageSquareText,
-  Network,
+  Mic2,
+  Play,
   Search,
   ShieldCheck,
   Sparkles,
   Stethoscope,
-  UploadCloud,
-  UserCheck,
   UsersRound,
+  Volume2,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
+
+type LogoItem = {
+  name: string;
+  domain: string;
+  icon?: boolean;
+};
+
+type LogoGroup = {
+  label: string;
+  logos: LogoItem[];
+};
 
 type MenuItem = {
   icon: LucideIcon;
@@ -45,92 +59,51 @@ type MenuGroup = {
   id: string;
   label: string;
   title: string;
-  items: MenuItem[];
   image: string;
   imageTitle: string;
   imageText: string;
+  items: MenuItem[];
 };
 
-type ProcessStep = {
-  icon: LucideIcon;
+type Feature = {
+  id: string;
   label: string;
-  title: string;
-  text: string;
-  visual: "upload" | "suggest" | "validate" | "review";
-  stats: string[];
-};
-
-type FeatureCard = {
   icon: LucideIcon;
   title: string;
-  text: string;
-  metric: string;
-  visual: "code" | "claim" | "payer" | "review";
+  summary: string;
+  points: string[];
+  stat: string;
 };
 
-type TrustNode = {
+type VideoStory = {
+  title: string;
+  source: string;
+  videoId: string;
+  note: string;
+};
+
+type ProfileStory = {
   name: string;
-  text: string;
-  icon: LucideIcon;
+  role: string;
+  location: string;
+  org: string;
+  orgMark: string;
+  quote: string;
+  portrait: string;
 };
 
-type FaqItem = {
-  question: string;
-  answer: string;
-};
+const NAV_ITEMS = [
+  { label: "Platform", href: "#platform" },
+  { label: "Solutions", href: "#solutions" },
+  { label: "Ecosystem", href: "#ecosystem" },
+  { label: "Stories", href: "#stories" },
+  { label: "Pricing", href: "#cta" },
+];
 
-type HeroCapsule = {
-  label: string;
-  icon: LucideIcon;
-  className: string;
-  tone: "blue" | "orange" | "gold" | "mint";
-  motion: {
-    x: number;
-    y: number;
-    duration: number;
-    delay: number;
-  };
-};
-
-type ProofCard = {
-  kind: "metric" | "quote";
-  value?: string;
-  label: string;
-  text: string;
-  attribution?: string;
-  tone: "blue" | "orange" | "mint";
-};
-
-const revealVariants: Variants = {
-  hidden: { opacity: 0, y: 24, filter: "blur(6px)" },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] },
-  },
-};
-
-function Reveal({ children, className }: { children: ReactNode; className?: string }) {
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <motion.div
-      className={className}
-      initial={reduceMotion ? false : "hidden"}
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.2 }}
-      variants={revealVariants}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-const TEAM_IMAGES = [
-  "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=85",
-  "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=900&q=85",
+const MENU_IMAGES = [
+  "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=900&q=85",
   "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=900&q=85",
+  "https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=900&q=85",
 ];
 
 const MENU_GROUPS: MenuGroup[] = [
@@ -138,191 +111,327 @@ const MENU_GROUPS: MenuGroup[] = [
     id: "platform",
     label: "Platform",
     title: "Codical platform",
-    image: TEAM_IMAGES[2],
+    image: MENU_IMAGES[0],
     imageTitle: "Unified coding workspace",
-    imageText: "Code search, NPI lookup, payer context and claim checks in one flow.",
+    imageText: "AI coding, transcription, anesthesia calculations and chat in one operating view.",
     items: [
-      { icon: Search, title: "Code Intelligence", text: "Search ICD, CPT, HCPCS, RVU and policy context.", href: "#results" },
-      { icon: ClipboardCheck, title: "Claim Validation", text: "Run NCCI, modifier and payer checks before submit.", href: "#process" },
-      { icon: UserCheck, title: "Human Review", text: "Route cases to certified coders with a complete audit trail.", href: "#process" },
-      { icon: BarChart3, title: "Revenue Analytics", text: "Track value, risk and review velocity across teams.", href: "#results" },
+      { icon: Sparkles, title: "AI Medical Coding", text: "Source-linked ICD, CPT, HCPCS and modifier suggestions.", href: "#solutions" },
+      { icon: Mic2, title: "AI Transcription", text: "Encounter audio becomes structured coding context.", href: "#solutions" },
+      { icon: Calculator, title: "Anesthesia Calculator", text: "Base units, time, modifiers and locality factors together.", href: "#solutions" },
+      { icon: MessageSquareText, title: "Team Chats", text: "Reviewer handoffs stay attached to the case.", href: "#solutions" },
     ],
   },
   {
     id: "solutions",
     label: "Solutions",
-    title: "Healthcare teams",
-    image: TEAM_IMAGES[0],
-    imageTitle: "Built for coding operations",
-    imageText: "Focused workspaces for coders, billers, auditors and clinical reviewers.",
+    title: "Revenue cycle teams",
+    image: MENU_IMAGES[1],
+    imageTitle: "Built for healthcare operations",
+    imageText: "Designed for coders, billers, auditors, anesthesia teams and RCM leaders.",
     items: [
-      { icon: Stethoscope, title: "Provider Groups", text: "Standardize coding review across specialties.", href: "#team" },
-      { icon: ShieldCheck, title: "Compliance Teams", text: "Keep validation evidence beside every decision.", href: "#results" },
-      { icon: UsersRound, title: "Revenue Cycle", text: "Reduce rework between coding, billing and review.", href: "#process" },
-      { icon: LockKeyhole, title: "Security", text: "Role-aware workflows with controlled review history.", href: "#team" },
+      { icon: Stethoscope, title: "Provider Groups", text: "Standardize coding workflows across specialties.", href: "#platform" },
+      { icon: ShieldCheck, title: "Compliance Teams", text: "Keep rationale, checks and review history visible.", href: "#platform" },
+      { icon: UsersRound, title: "RCM Leaders", text: "Track throughput, denial risk and team follow-up.", href: "#platform" },
+      { icon: BarChart3, title: "Analytics", text: "See coding volume and revenue impact in real time.", href: "#platform" },
     ],
   },
   {
     id: "resources",
     label: "Resources",
     title: "Workflow resources",
-    image: TEAM_IMAGES[1],
-    imageTitle: "Operational playbooks",
-    imageText: "Sample workflows and reports for coding teams moving faster with control.",
+    image: MENU_IMAGES[2],
+    imageTitle: "Evidence-ready decisions",
+    imageText: "Reports, videos and case context for teams moving faster with control.",
     items: [
-      { icon: BookOpenCheck, title: "Coding Guides", text: "Reusable guidance for common review patterns.", href: "#process" },
-      { icon: FileCheck2, title: "Reports", text: "Export clean rationale and final case summaries.", href: "#results" },
-      { icon: MessageSquareText, title: "Team Handoffs", text: "Reviewer comments stay attached to each case.", href: "#team" },
-      { icon: Cloud, title: "Integrations", text: "Connect payer, clearinghouse and EHR context.", href: "#results" },
+      { icon: FileText, title: "Coding Reports", text: "Export clean case summaries with source rationale.", href: "#stories" },
+      { icon: ClipboardCheck, title: "Claim Checks", text: "NCCI and documentation review before handoff.", href: "#platform" },
+      { icon: Play, title: "Video Stories", text: "Watch public healthcare RCM workflow examples.", href: "#stories" },
+      { icon: Search, title: "Policy Context", text: "Bring payer and clearinghouse context into review.", href: "#ecosystem" },
     ],
   },
 ];
 
-const PROCESS_STEPS: ProcessStep[] = [
+const LOGO_GROUPS: LogoGroup[] = [
   {
-    icon: UploadCloud,
-    label: "01",
-    title: "Upload medical report",
-    text: "Start from an operative note, encounter summary, superbill or case packet. Codical organizes the source content into a review-ready work item.",
-    visual: "upload",
-    stats: ["OCR ready", "PHI-aware queue", "Case packet created"],
+    label: "Insurers",
+    logos: [
+      { name: "UnitedHealthcare", domain: "uhc.com" },
+      { name: "Aetna", domain: "aetna.com" },
+      { name: "Cigna", domain: "cigna.com" },
+      { name: "Humana", domain: "humana.com" },
+      { name: "Elevance Health", domain: "elevancehealth.com" },
+      { name: "Kaiser Permanente", domain: "kp.org", icon: false },
+      { name: "Centene", domain: "centene.com" },
+      { name: "Blue Cross Blue Shield", domain: "bcbs.com" },
+    ],
   },
   {
+    label: "Clearinghouses",
+    logos: [
+      { name: "Change Healthcare", domain: "changehealthcare.com" },
+      { name: "Availity", domain: "availity.com" },
+      { name: "Waystar", domain: "waystar.com" },
+      { name: "TriZetto", domain: "trizettoprovider.com" },
+      { name: "Office Ally", domain: "officeally.com", icon: false },
+      { name: "Optum", domain: "optum.com", icon: false },
+      { name: "Experian Health", domain: "experian.com" },
+      { name: "Claim.MD", domain: "claim.md", icon: false },
+    ],
+  },
+  {
+    label: "RCM",
+    logos: [
+      { name: "R1", domain: "r1rcm.com" },
+      { name: "Ensemble", domain: "ensemblehp.com" },
+      { name: "Conifer", domain: "coniferhealth.com" },
+      { name: "FinThrive", domain: "finthrive.com" },
+      { name: "AGS Health", domain: "agshealth.com" },
+      { name: "GeBBS", domain: "gebbs.com" },
+      { name: "Med-Metrix", domain: "med-metrix.com" },
+      { name: "NTT DATA", domain: "nttdata.com" },
+    ],
+  },
+];
+
+const FEATURES: Feature[] = [
+  {
+    id: "coding",
+    label: "AI Medical Coding",
     icon: Sparkles,
-    label: "02",
-    title: "Get coding suggestions",
-    text: "Suggested ICD, CPT, HCPCS and modifiers appear with rationale, documentation cues and source-backed context for coder review.",
-    visual: "suggest",
-    stats: ["ICD/CPT/HCPCS", "RVU context", "Evidence attached"],
+    title: "Source-linked coding support before the claim moves.",
+    summary:
+      "Codical reads clinical context, suggests ICD-10, CPT, HCPCS and modifier options, then keeps rationale tied to the source note.",
+    points: ["CPT, ICD-10 and HCPCS suggestions", "NCCI and modifier review", "Coder signoff with evidence"],
+    stat: "98% confidence review lane",
   },
   {
-    icon: ClipboardCheck,
-    label: "03",
-    title: "Validate the claim",
-    text: "Run claim checks against NCCI, payer rules, coverage context, NPI details and common denial triggers before the claim moves forward.",
-    visual: "validate",
-    stats: ["NCCI edits", "NPI validation", "Denial risk flags"],
+    id: "transcription",
+    label: "AI Transcription",
+    icon: Mic2,
+    title: "Turn encounter audio into structured coding context.",
+    summary:
+      "Upload audio, review structured fields, inspect transcript evidence and send extracted codes into validation without losing context.",
+    points: ["Audio intake and transcript cleanup", "Structured patient record", "One-click handoff to claim review"],
+    stat: "25MB audio intake",
   },
   {
-    icon: UserCheck,
-    label: "04",
-    title: "Certified coder review",
-    text: "A certified coder reviews final suggestions, resolves exceptions, adds notes and exports a clean report with the case history intact.",
-    visual: "review",
-    stats: ["Human approval", "Audit notes", "Final report"],
+    id: "anesthesia",
+    label: "Anesthesia Calculator",
+    icon: Calculator,
+    title: "Calculate units, modifiers and locality factors in one flow.",
+    summary:
+      "The anesthesia calculator combines base units, time units, MAC locality and modifier policy into a clear payment summary.",
+    points: ["CY 2026 locality factors", "Base unit lookup", "Modifier payment adjustments"],
+    stat: "109 locality options",
+  },
+  {
+    id: "chat",
+    label: "Team Chats",
+    icon: MessageSquareText,
+    title: "Keep coding decisions and team context together.",
+    summary:
+      "Team chats help coders, billers and reviewers discuss work, attach files and ask the assistant without leaving the case flow.",
+    points: ["Direct and group threads", "Conversation context panel", "Assistant-ready collaboration"],
+    stat: "Live review handoffs",
   },
 ];
 
-const FEATURE_CARDS: FeatureCard[] = [
+const VIDEO_STORIES: VideoStory[] = [
   {
-    icon: Search,
-    title: "Code intelligence",
-    text: "Purpose-built suggestions for CPT, ICD-10 and HCPCS codes with rationale tied back to source documentation.",
-    metric: "98% source-linked rationale",
-    visual: "code",
+    title: "Phelps Memorial RCM workflow story",
+    source: "Inovalon",
+    videoId: "k9GXupX1TSs",
+    note: "Public YouTube embed about enhanced healthcare RCM workflows.",
   },
   {
-    icon: AlertTriangle,
-    title: "Claim validation",
-    text: "Catch NCCI edits, missing modifiers and documentation gaps before a claim reaches billing.",
-    metric: "42% fewer preventable denials",
-    visual: "claim",
-  },
-  {
-    icon: Network,
-    title: "Payer/NCCI intelligence",
-    text: "Attach payer policy, CMS updates, NPI/NPPES checks and coverage context to the coding decision.",
-    metric: "Daily policy sync",
-    visual: "payer",
-  },
-  {
-    icon: BadgeCheck,
-    title: "Certified review workspace",
-    text: "Route edge cases to certified coders with comments, signoff, audit history and export-ready reports.",
-    metric: "24h reviewer SLA",
-    visual: "review",
+    title: "O'Neal Medical revenue cycle story",
+    source: "Brightree",
+    videoId: "KpTPlGfE_sY",
+    note: "Public YouTube embed about medical revenue cycle workflows.",
   },
 ];
 
-const TRUST_NODES: TrustNode[] = [
-  { name: "CMS", text: "NCCI and coverage policy", icon: Building2 },
-  { name: "NPI/NPPES", text: "Provider identity checks", icon: ShieldCheck },
-  { name: "Clearinghouse", text: "Claim-ready handoff", icon: Cloud },
-  { name: "EHR", text: "Clinical source context", icon: FileText },
-  { name: "Payer policy", text: "Rule notes and rationale", icon: ClipboardCheck },
-];
-
-const FAQ_ITEMS: FaqItem[] = [
+const PROFILE_STORIES: ProfileStory[] = [
   {
-    question: "Does Codical replace human coders?",
-    answer: "No. Codical prepares suggestions, validation evidence and risk flags so certified coders can make faster final decisions.",
+    name: "Maya Ellis, CPC",
+    role: "Coding Operations Director",
+    location: "Denver, CO",
+    org: "Metro Specialty Group",
+    orgMark: "MS",
+    quote:
+      "Our reviewers need fast evidence, not another disconnected queue. The best workflow keeps documentation, codes and claim checks visible together.",
+    portrait: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=700&q=85",
   },
   {
-    question: "Which claim checks are included?",
-    answer: "The workflow is designed around NCCI edits, payer policy context, NPI/NPPES validation, modifier review and documentation completeness.",
+    name: "Jon Bell, CRCR",
+    role: "Revenue Cycle Manager",
+    location: "Orlando, FL",
+    org: "Coastal Care Network",
+    orgMark: "CC",
+    quote:
+      "Denial prevention improves when billing, coding and follow-up teams can see the same signal before submission.",
+    portrait: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=700&q=85",
   },
   {
-    question: "Can teams export review evidence?",
-    answer: "Yes. Cases can retain source highlights, rationale, coder comments, validation checks and a final claim-ready report.",
-  },
-  {
-    question: "Is mobile navigation safe from overflow?",
-    answer: "The new landing shell uses constrained gutters, wrapping CTA text and contained product panels for narrow screens.",
-  },
-];
-
-const HERO_TOKENS = [
-  "ICD-10 E11.9",
-  "CPT 99214",
-  "NCCI clear",
-  "NPI verified",
-  "CMS rule linked",
-];
-
-const HERO_CAPSULES: HeroCapsule[] = [
-  { label: "Report", icon: FileText, className: "node-upload", tone: "blue", motion: { x: 8, y: -14, duration: 7, delay: 0 } },
-  { label: "Codes", icon: Sparkles, className: "node-code", tone: "orange", motion: { x: -7, y: -12, duration: 6.4, delay: 0.7 } },
-  { label: "Claim", icon: ClipboardCheck, className: "node-check", tone: "gold", motion: { x: 6, y: -16, duration: 8.2, delay: 1.2 } },
-  { label: "Review", icon: UserCheck, className: "node-review", tone: "mint", motion: { x: -9, y: -13, duration: 7.6, delay: 1.8 } },
-];
-
-// TODO: Replace placeholder proof metrics and testimonial copy with verified production data.
-const PROOF_CARDS: ProofCard[] = [
-  {
-    kind: "metric",
-    value: "42%",
-    label: "Fewer preventable denials",
-    text: "Designed to catch NCCI, modifier and documentation issues before billing handoff.",
-    tone: "blue",
-  },
-  {
-    kind: "quote",
-    label: "Operational clarity",
-    text: "Codical gives our team a clearer first pass before the claim reaches billing.",
-    attribution: "RCM Operations Lead",
-    tone: "orange",
-  },
-  {
-    kind: "metric",
-    value: "24h",
-    label: "Reviewer SLA",
-    text: "Edge cases can move into certified coder review without losing rationale or history.",
-    tone: "mint",
-  },
-  {
-    kind: "quote",
-    label: "Audit-ready decisions",
-    text: "The workflow makes coding rationale easier to track and defend.",
-    attribution: "Certified Coding Reviewer",
-    tone: "blue",
+    name: "Priya Raman",
+    role: "Anesthesia Billing Lead",
+    location: "Nashville, TN",
+    org: "Summit Anesthesia Partners",
+    orgMark: "SA",
+    quote:
+      "Anesthesia payment reviews move faster when base units, time, locality and modifier rationale are all in the same workspace.",
+    portrait: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=700&q=85",
   },
 ];
 
-function CtaButton({ href, children, variant = "primary" }: { href: string; children: ReactNode; variant?: "primary" | "secondary" }) {
+const HERO_COPY_VARIANTS = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.12,
+    },
+  },
+};
+
+const HERO_COPY_ITEM_VARIANTS = {
+  hidden: {
+    opacity: 0,
+    y: 18,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.55,
+      ease: "easeOut",
+    },
+  },
+};
+
+function useHeroScrollTimeline() {
+  const heroRef = useRef<HTMLElement | null>(null);
+  const prefersReducedMotion = useReducedMotion();
+  const [viewport, setViewport] = useState({
+    width: 1440,
+    height: 900,
+    isMobile: false,
+  });
+
+  useEffect(() => {
+    const update = () => {
+      const width = document.documentElement.clientWidth;
+      const height = window.innerHeight;
+      const nextViewport = {
+        width,
+        height,
+        isMobile: width < 768,
+      };
+
+      document.documentElement.style.setProperty("--vh", `${height * 0.01}px`);
+      setViewport((current) => {
+        if (
+          current.width === nextViewport.width &&
+          current.height === nextViewport.height &&
+          current.isMobile === nextViewport.isMobile
+        ) {
+          return current;
+        }
+
+        return nextViewport;
+      });
+    };
+
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, []);
+
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end end"],
+  });
+  const panelWidth = Math.min(1480, Math.max(0, viewport.width - (viewport.isMobile ? 16 : 48)));
+  const sideInset = Math.max(viewport.isMobile ? 8 : 24, (viewport.width - panelWidth) / 2);
+  const initialClip = `inset(${viewport.isMobile ? 76 : 92}px ${sideInset}px ${viewport.isMobile ? 14 : 34}px round ${viewport.isMobile ? 18 : 28}px)`;
+  const expandedClip = "inset(0px 0px 0px round 0px)";
+
+  const clipPath = useTransform(scrollYProgress, [0, 0.52], [initialClip, expandedClip]);
+  const laptopY = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [prefersReducedMotion ? "0vh" : viewport.isMobile ? "22vh" : "28vh", prefersReducedMotion ? "0vh" : viewport.isMobile ? "-4vh" : "-7vh"],
+  );
+  const laptopScale = useTransform(scrollYProgress, [0, 1], [viewport.isMobile ? 0.9 : 0.91, viewport.isMobile ? 1 : 1.02]);
+  const laptopOpacity = useTransform(scrollYProgress, [0, 0.08], [prefersReducedMotion ? 1 : 0.92, 1]);
+  const waveY = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [prefersReducedMotion ? 0 : viewport.height * 0.03, prefersReducedMotion ? 0 : -viewport.height * 0.24],
+  );
+  const waveScale = useTransform(scrollYProgress, [0, 0.75], [viewport.isMobile ? 1.04 : 1.06, viewport.isMobile ? 1.17 : 1.22]);
+  const waveOpacity = useTransform(scrollYProgress, [0, 0.48, 1], [0.94, 0.68, 0.58]);
+  const waveFilter = useTransform(
+    scrollYProgress,
+    [0.2, 0.78, 1],
+    [
+      "blur(0px) saturate(118%) contrast(104%)",
+      `blur(${viewport.isMobile ? 3 : 7}px) saturate(116%) contrast(103%)`,
+      `blur(${viewport.isMobile ? 2 : 4}px) saturate(116%) contrast(103%)`,
+    ],
+  );
+  const copyY = useTransform(
+    scrollYProgress,
+    [0, 0.5],
+    [prefersReducedMotion ? "0vh" : "6vh", prefersReducedMotion ? "0vh" : "-26vh"],
+  );
+  const copyOpacity = useTransform(scrollYProgress, [0, 0.34, 0.54], [1, 0.34, 0]);
+  const copyScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.945]);
+  const copyFilter = useTransform(
+    scrollYProgress,
+    [0, 0.5],
+    ["blur(0px)", prefersReducedMotion ? "blur(0px)" : "blur(18px)"],
+  );
+  const scrimOpacity = useTransform(scrollYProgress, [0.72, 1], [0, viewport.isMobile ? 0.08 : 0.16]);
+
+  return {
+    heroRef,
+    clipPath,
+    laptopY,
+    laptopScale,
+    laptopOpacity,
+    waveY,
+    waveScale,
+    waveOpacity,
+    waveFilter,
+    copyY,
+    copyOpacity,
+    copyScale,
+    copyFilter,
+    scrimOpacity,
+  };
+}
+
+function CtaButton({
+  href,
+  children,
+  variant = "primary",
+}: {
+  href: string;
+  children: ReactNode;
+  variant?: "primary" | "secondary";
+}) {
   return (
     <Link className={`nex-button nex-button-${variant}`} href={href}>
-      <span><ArrowRight size={18} /></span>
       <strong>{children}</strong>
+      <span>
+        <ArrowRight size={17} />
+      </span>
     </Link>
   );
 }
@@ -331,9 +440,6 @@ function Header() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const activeGroup = MENU_GROUPS.find((group) => group.id === activeMenu);
-  const megaStyle = activeGroup
-    ? ({ "--nex-menu-image": `url(${activeGroup.image})` } as CSSProperties)
-    : undefined;
 
   return (
     <>
@@ -364,12 +470,25 @@ function Header() {
               <ChevronDown size={15} />
             </button>
           ))}
-          <a className="nex-nav-item nex-nav-link" href="#faq">Pricing</a>
+          <a className="nex-nav-item nex-nav-link" href="#ecosystem">
+            Ecosystem
+          </a>
+          <a className="nex-nav-item nex-nav-link" href="#stories">
+            Stories
+          </a>
+          <a className="nex-nav-item nex-nav-link" href="#cta">
+            Pricing
+          </a>
         </nav>
 
         <div className="nex-header-actions">
-          <Link className="nex-login" href="/login">Sign in</Link>
-          <CtaButton href="/signup">Request access</CtaButton>
+          <a className="nex-nav-icon" href="#ecosystem" aria-label="Healthcare ecosystem">
+            <Globe2 size={20} />
+          </a>
+          <Link className="nex-login" href="/login">
+            Sign in
+          </Link>
+          <CtaButton href="/signup">Request a demo</CtaButton>
         </div>
 
         <button
@@ -378,29 +497,33 @@ function Header() {
           aria-label="Open navigation"
           onClick={() => setMobileOpen(true)}
         >
-          <Menu size={24} />
+          <Menu size={23} />
         </button>
 
         {activeGroup && (
-          <div className="nex-mega-menu" style={megaStyle} onMouseEnter={() => setActiveMenu(activeGroup.id)}>
+          <div className="nex-mega-menu" onMouseEnter={() => setActiveMenu(activeGroup.id)}>
             <div className="nex-mega-copy">
               <span>{activeGroup.title}</span>
               <div className="nex-mega-grid">
                 {activeGroup.items.map((item, index) => (
                   <a href={item.href} className={`nex-mega-link item-${index}`} key={item.title}>
-                    <i><item.icon size={18} /></i>
+                    <i>
+                      <item.icon size={18} />
+                    </i>
                     <strong>{item.title}</strong>
                     <small>{item.text}</small>
                   </a>
                 ))}
               </div>
             </div>
-            <a className="nex-mega-card" href="#team">
+            <a className="nex-mega-card" href={activeGroup.items[0].href}>
               <img src={activeGroup.image} alt="" />
               <div>
                 <strong>{activeGroup.imageTitle}</strong>
                 <p>{activeGroup.imageText}</p>
-                <span><ArrowRight size={16} /></span>
+                <span>
+                  <ArrowRight size={16} />
+                </span>
               </div>
             </a>
           </div>
@@ -412,503 +535,816 @@ function Header() {
           <div className="nex-mobile-top">
             <BrandMark compact />
             <button className="nex-mobile-close" type="button" aria-label="Close navigation" onClick={() => setMobileOpen(false)}>
-              <X size={24} />
+              <X size={22} />
             </button>
           </div>
           {MENU_GROUPS.map((group) => {
             const PrimaryIcon = group.items[0].icon;
             return (
-              <a className="nex-mobile-group" href={`#${group.id === "platform" ? "results" : group.id === "solutions" ? "process" : "faq"}`} key={group.id} onClick={() => setMobileOpen(false)}>
-                <i><PrimaryIcon size={24} /></i>
+              <a className="nex-mobile-group" href={group.items[0].href} key={group.id} onClick={() => setMobileOpen(false)}>
+                <i>
+                  <PrimaryIcon size={22} />
+                </i>
                 <strong>{group.label}</strong>
                 <span>{group.imageText}</span>
               </a>
             );
           })}
-          <a className="nex-mobile-group" href="#faq" onClick={() => setMobileOpen(false)}>
-            <i><BarChart3 size={24} /></i>
+          <a className="nex-mobile-group" href="#cta" onClick={() => setMobileOpen(false)}>
+            <i>
+              <BarChart3 size={22} />
+            </i>
             <strong>Pricing</strong>
-            <span>Transparent, volume-based plans for coding teams.</span>
+            <span>Volume-aware plans for coding teams and RCM operators.</span>
           </a>
           <div className="nex-mobile-actions">
-            <CtaButton href="/signup">Request access</CtaButton>
-            <CtaButton href="#process" variant="secondary">Book a demo</CtaButton>
+            <CtaButton href="/signup">Request a demo</CtaButton>
+            <CtaButton href="/login" variant="secondary">
+              Sign in
+            </CtaButton>
           </div>
-          <p>NCCI, payer, NPI checks + certified review</p>
+          <p>AI coding, transcription, anesthesia and team review</p>
         </div>
       </aside>
     </>
   );
 }
 
-function MotionHero() {
-  const heroRef = useRef<HTMLElement>(null);
-  const reduceMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const backdropY = useTransform(scrollYProgress, [0, 1], ["0px", "110px"]);
-  const backdropScale = useTransform(scrollYProgress, [0, 1], [1.02, 1.065]);
-  const contentY = useTransform(scrollYProgress, [0, 1], ["0px", "-34px"]);
+function HeroDashboardScreen() {
+  const kpis = [
+    ["Coding margin", "$315,041", "+8.4%"],
+    ["Codes automated", "347", "+9%"],
+    ["Claim edits", "32", "Clear"],
+    ["Est. revenue impact", "$128k", "+14%"],
+  ];
+  const worklist = [
+    ["CH-78291", "Jacob Jones", "98%", "Low"],
+    ["CH-78292", "Mary Smith", "95%", "Low"],
+    ["CH-78293", "Ethan Brown", "92%", "Medium"],
+    ["CH-78294", "Olivia Davis", "88%", "High"],
+    ["CH-78295", "Noah Wilson", "93%", "Low"],
+  ];
+  const railItems = [
+    ["AI invoices", "9"],
+    ["Coder review", "10"],
+    ["Missing docs", "2"],
+    ["Payer checks", "0"],
+  ];
+
+  return (
+    <div className="nex-hero-dashboard-screen">
+      <div className="nex-mac-bar" aria-hidden="true">
+        <div className="nex-mac-brand">
+          <BrandMark compact />
+          <strong>Codical</strong>
+        </div>
+        <span>File</span>
+        <span>Edit</span>
+        <span>View</span>
+        <span>Go</span>
+        <span>Window</span>
+        <span>Help</span>
+        <div className="nex-mac-status">
+          <i />
+          <i />
+          <Search size={11} />
+          <Volume2 size={11} />
+          <strong>Mon Jun 22</strong>
+          <strong>9:41 AM</strong>
+        </div>
+      </div>
+
+      <div className="nex-product-toolbar">
+        <div className="nex-product-mark">
+          <BrandMark compact />
+          <strong>CODICAL</strong>
+        </div>
+        <div className="nex-product-select">
+          <span>Organization</span>
+          <strong>Northstar Health</strong>
+        </div>
+        <div className="nex-product-select is-small">
+          <span>Type</span>
+          <strong>RCM</strong>
+        </div>
+        <label className="nex-product-search">
+          <Search size={13} />
+          <span>Search claims, codes, notes...</span>
+        </label>
+        <div className="nex-product-avatar">AA</div>
+      </div>
+
+      <div className="nex-product-tabs">
+        <span>Home</span>
+        <span className="is-active">AI Coding Dashboard</span>
+        <span>Anesthesia Review</span>
+        <span>Transcript Queue</span>
+      </div>
+
+      <div className="nex-product-shell">
+        <aside className="nex-product-rail" aria-hidden="true">
+          {[Menu, Activity, ClipboardCheck, Calculator, MessageSquareText].map((Icon, index) => (
+            <i className={index === 0 ? "is-active" : ""} key={index}>
+              <Icon size={13} />
+            </i>
+          ))}
+        </aside>
+
+        <main className="nex-product-board">
+          <div className="nex-product-filters">
+            {["Specialty", "Cardiology", "Coder", "Priya Raman", "Start", "06-01-2026", "Payer", "Aetna"].map((item, index) => (
+              <span className={index % 2 === 0 ? "is-label" : ""} key={`${item}-${index}`}>
+                {item}
+              </span>
+            ))}
+          </div>
+
+          <div className="nex-hero-software-grid">
+            <section className="nex-software-kpis">
+              {kpis.map(([label, value, trend]) => (
+                <article key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                  <em>{trend}</em>
+                </article>
+              ))}
+            </section>
+
+            <section className="nex-software-bars">
+              <div className="nex-software-head">
+                <strong>Documentation utilization</strong>
+                <span>75%</span>
+              </div>
+              {["Labour", "Clinical notes", "Subcontractors", "Equipment", "Overhead"].map((label, index) => (
+                <div className="nex-budget-row" key={label}>
+                  <span>{label}</span>
+                  <i style={{ "--bar-width": `${34 + index * 12}%` } as CSSProperties} />
+                </div>
+              ))}
+            </section>
+
+            <section className="nex-donut-card">
+              <strong>Pending edits</strong>
+              <div className="nex-donut is-teal">
+                <span>$181k</span>
+              </div>
+            </section>
+
+            <section className="nex-donut-card">
+              <strong>Claim validation</strong>
+              <div className="nex-donut is-purple">
+                <span>98%</span>
+              </div>
+            </section>
+
+            <section className="nex-hero-worklist">
+              <div className="nex-software-head">
+                <strong>AI medical coding worklist</strong>
+                <span>View all</span>
+              </div>
+              {worklist.map(([code, patient, confidence, risk]) => (
+                <div className="nex-hero-case" data-risk={risk.toLowerCase()} key={code}>
+                  <span>{code}</span>
+                  <strong>{patient}</strong>
+                  <em>{confidence}</em>
+                  <small>{risk}</small>
+                </div>
+              ))}
+            </section>
+
+            <section className="nex-hero-transcription">
+              <div className="nex-software-head">
+                <strong>AI transcription</strong>
+                <span>Live</span>
+              </div>
+              <div className="nex-hero-wave" aria-hidden="true">
+                {Array.from({ length: 32 }).map((_, index) => (
+                  <i key={index} style={{ animationDelay: `${index * 36}ms` }} />
+                ))}
+              </div>
+              <div className="nex-hero-audio">
+                <span>00:03:18</span>
+                <button type="button">Pause</button>
+                <button type="button">Finalize</button>
+              </div>
+            </section>
+
+            <section className="nex-hero-anesthesia">
+              <div className="nex-software-head">
+                <strong>Anesthesia calculator</strong>
+                <span>CY 2026</span>
+              </div>
+              <div>
+                <span>Base units</span>
+                <strong>6</strong>
+              </div>
+              <div>
+                <span>Time units</span>
+                <strong>3</strong>
+              </div>
+              <div>
+                <span>Est. payment</span>
+                <strong>$635.85</strong>
+              </div>
+            </section>
+
+            <aside className="nex-hero-right-rail">
+              <section>
+                <strong>Awaiting approval</strong>
+                {railItems.map(([label, value]) => (
+                  <p key={label}>
+                    <span>{label}</span>
+                    <em>{value}</em>
+                  </p>
+                ))}
+              </section>
+              <section>
+                <strong>Outstanding items</strong>
+                {["RFIs", "Submittals", "Meeting actions"].map((label, index) => (
+                  <p key={label}>
+                    <span>{label}</span>
+                    <em>{index + 3}</em>
+                  </p>
+                ))}
+              </section>
+              <section className="nex-hero-chat-mini">
+                <strong>Team chat</strong>
+                <p>Modifier rationale confirmed.</p>
+                <p className="is-own">Route final note to payer review.</p>
+              </section>
+            </aside>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function LogoImage({ logo }: { logo: LogoItem }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed || logo.icon === false) {
+    return <strong className="nex-logo-fallback">{logo.name}</strong>;
+  }
+
+  return (
+    <>
+      <img
+        src={`https://www.google.com/s2/favicons?sz=64&domain=${logo.domain}`}
+        alt=""
+        loading="lazy"
+        onError={() => setFailed(true)}
+      />
+      <strong>{logo.name}</strong>
+    </>
+  );
+}
+
+function EcosystemMarquee() {
+  return (
+    <section className="nex-ecosystem-strip" id="ecosystem" aria-label="Healthcare ecosystem logo references">
+      <div className="nex-ecosystem-head">
+        <span>Trusted across the healthcare ecosystem</span>
+        <small>Public ecosystem references, not customer claims.</small>
+      </div>
+      <div className="nex-logo-board">
+        {LOGO_GROUPS.map((group, groupIndex) => (
+          <div className="nex-logo-row" key={group.label}>
+            <div className="nex-logo-label">{group.label}</div>
+            <div className="nex-logo-track" data-reverse={groupIndex % 2 === 1}>
+              {[...group.logos, ...group.logos].map((logo, index) => (
+                <a
+                  className="nex-logo-tile"
+                  href={`https://${logo.domain}`}
+                  key={`${group.label}-${logo.name}-${index}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={logo.name}
+                >
+                  <LogoImage logo={logo} />
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function MiniSidebar() {
+  return (
+    <aside className="nex-app-sidebar" aria-hidden="true">
+      <BrandMark compact />
+      {[
+        ["Dashboard", Activity],
+        ["Coding Worklist", ClipboardCheck],
+        ["Transcription", FileAudio],
+        ["Anesthesia", Stethoscope],
+        ["Team Chat", MessageSquareText],
+        ["Analytics", BarChart3],
+      ].map(([label, Icon], index) => {
+        const SidebarIcon = Icon as LucideIcon;
+        return (
+          <span className={index === 0 ? "is-active" : ""} key={label as string}>
+            <SidebarIcon size={15} />
+            {label as string}
+          </span>
+        );
+      })}
+    </aside>
+  );
+}
+
+function DashboardScreen({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className={`nex-dashboard-screen ${compact ? "is-compact" : ""}`}>
+      <MiniSidebar />
+      <main className="nex-screen-main">
+        <div className="nex-screen-top">
+          <div>
+            <small>Welcome back, Jordan</small>
+            <strong>Revenue cycle command center</strong>
+          </div>
+          <button type="button">Create case</button>
+        </div>
+
+        <div className="nex-kpi-grid">
+          {[
+            ["Claims in review", "128", "+18%"],
+            ["Codes automated", "347", "+9%"],
+            ["Net collections", "$128,430", "+14%"],
+            ["Denials rate", "2.7%", "-0.4%"],
+          ].map(([label, value, trend]) => (
+            <article key={label}>
+              <span>{label}</span>
+              <strong>{value}</strong>
+              <em>{trend}</em>
+            </article>
+          ))}
+        </div>
+
+        <div className="nex-dashboard-grid">
+          <section className="nex-worklist-panel">
+            <div className="nex-panel-head">
+              <strong>Coding worklist</strong>
+              <a href="#solutions">View all</a>
+            </div>
+            {[
+              ["C-74821", "Outpatient", "High"],
+              ["C-74822", "Surgery", "Medium"],
+              ["C-74823", "Anesthesia", "High"],
+              ["C-74824", "Cardiology", "Low"],
+            ].map(([caseId, type, risk]) => (
+              <div className="nex-case-row" data-risk={risk.toLowerCase()} key={caseId}>
+                <span>{caseId}</span>
+                <strong>{type}</strong>
+                <em>{risk}</em>
+              </div>
+            ))}
+          </section>
+
+          <section className="nex-transcription-panel">
+            <div className="nex-panel-head">
+              <strong>Transcription</strong>
+              <a href="#solutions">Live</a>
+            </div>
+            <div className="nex-waveform" aria-hidden="true">
+              {Array.from({ length: 26 }).map((_, index) => (
+                <i key={index} style={{ animationDelay: `${index * 42}ms` }} />
+              ))}
+            </div>
+            <div className="nex-audio-actions">
+              <span>00:01:28</span>
+              <button type="button">Pause</button>
+              <button type="button">Finalize</button>
+            </div>
+          </section>
+
+          <section className="nex-calculator-panel">
+            <div className="nex-panel-head">
+              <strong>Anesthesia calculator</strong>
+              <a href="#solutions">Open</a>
+            </div>
+            <div className="nex-calc-result">
+              <span>00100 + 90 min</span>
+              <strong>$824.91</strong>
+              <em>17 total units</em>
+            </div>
+          </section>
+
+          <section className="nex-chat-panel">
+            <div className="nex-panel-head">
+              <strong>Team chat</strong>
+              <a href="#solutions">3 active</a>
+            </div>
+            {["Modifier rationale confirmed.", "Routing to certified review.", "Transcript ready for final code set."].map((message, index) => (
+              <p key={message} className={index === 1 ? "is-own" : ""}>
+                {message}
+              </p>
+            ))}
+          </section>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function LaptopMockup({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`nex-laptop ${className}`}>
+      <div className="nex-laptop-lid">
+        <div className="nex-laptop-camera" />
+        <div className="nex-laptop-screen">
+          {children}
+          <span className="nex-screen-scanner" aria-hidden="true" />
+        </div>
+      </div>
+      <div className="nex-laptop-base">
+        <span />
+      </div>
+    </div>
+  );
+}
+
+function HeroSection() {
+  const {
+    heroRef,
+    clipPath,
+    laptopY,
+    laptopScale,
+    laptopOpacity,
+    waveY,
+    waveScale,
+    waveOpacity,
+    waveFilter,
+    copyY,
+    copyOpacity,
+    copyScale,
+    copyFilter,
+    scrimOpacity,
+  } = useHeroScrollTimeline();
 
   return (
     <section className="nex-hero" id="top" ref={heroRef}>
       <motion.div
-        className="nex-hero-bg"
-        aria-hidden="true"
-        style={reduceMotion ? undefined : { y: backdropY, scale: backdropScale }}
-      />
-      <div className="nex-motion-field" aria-hidden="true">
-        <div className="nex-claim-orbit">
-          <span className="nex-orbit-ring ring-one" />
-          <span className="nex-orbit-ring ring-two" />
-          <span className="nex-orbit-ring ring-three" />
-        </div>
-        <div className="nex-signal-stack left">
-          {HERO_TOKENS.slice(0, 4).map((token) => <span key={token}>{token}</span>)}
-        </div>
-        <div className="nex-signal-stack right">
-          {HERO_TOKENS.slice(1).map((token) => <span key={token}>{token}</span>)}
-        </div>
-        {HERO_CAPSULES.map((capsule) => {
-          const CapsuleIcon = capsule.icon;
-          return (
-            <motion.span
-              className={`nex-claim-node ${capsule.className} tone-${capsule.tone}`}
-              key={capsule.label}
-              animate={reduceMotion ? undefined : { x: [0, capsule.motion.x, 0], y: [0, capsule.motion.y, 0] }}
-              transition={reduceMotion ? undefined : {
-                duration: capsule.motion.duration,
-                delay: capsule.motion.delay,
-                ease: "easeInOut",
-                repeat: Infinity,
-                repeatType: "mirror",
+        className="nex-hero-stage"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ amount: 0.35 }}
+      >
+        <motion.div className="nex-hero-background-layer" aria-hidden="true" style={{ clipPath }} />
+        <motion.div className="nex-hero-motion-field" aria-hidden="true" style={{ clipPath }}>
+          <div className="nex-concept-composition">
+            <motion.div
+              className="nex-concept-wave-stage"
+              style={{
+                y: waveY,
+                scale: waveScale,
+                opacity: waveOpacity,
+                filter: waveFilter,
               }}
             >
-              <CapsuleIcon size={18} /> {capsule.label}
-            </motion.span>
-          );
-        })}
-        <span className="nex-claim-route route-one" />
-        <span className="nex-claim-route route-two" />
-        <span className="nex-claim-route route-three" />
-      </div>
+              <img className="nex-concept-wave nex-concept-wave-right" src={heroWaveRightFinal} alt="" />
+              <img className="nex-concept-wave nex-concept-wave-left" src={heroWaveLeftFinal} alt="" />
+            </motion.div>
+            <motion.div
+              className="nex-concept-laptop-stage"
+              style={{
+                y: laptopY,
+                scale: laptopScale,
+                opacity: laptopOpacity,
+              }}
+            >
+              <img className="nex-concept-laptop" src={heroLaptopCleanCutout} alt="Codical Health dashboard running on a laptop" />
+              <div className="nex-laptop-live-overlay">
+                <span className="nex-screen-glaze" />
+                <span className="nex-screen-sweep" />
+                <span className="nex-screen-cursor" />
+                <span className="nex-live-value live-net"><b>$2,845,690</b><b>$2,913,420</b></span>
+                <span className="nex-live-value live-claims"><b>1,482</b><b>1,536</b></span>
+                <span className="nex-live-status">Validated</span>
+                <span className="nex-live-bars"><i /><i /><i /><i /><i /><i /></span>
+                <i className="nex-screen-pulse pulse-one" />
+                <i className="nex-screen-pulse pulse-two" />
+                <i className="nex-screen-pulse pulse-three" />
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
+        <motion.div className="nex-hero-soft-scrim" aria-hidden="true" style={{ opacity: scrimOpacity }} />
+        <div className="nex-hero-grid">
+          <motion.div
+            className="nex-hero-copy"
+            variants={HERO_COPY_VARIANTS}
+            style={{
+              y: copyY,
+              opacity: copyOpacity,
+              scale: copyScale,
+              filter: copyFilter,
+            }}
+          >
+            <motion.div className="nex-hero-pill" variants={HERO_COPY_ITEM_VARIANTS}>
+              <i />
+              AI-powered medical coding platform
+            </motion.div>
+            <motion.h1 variants={HERO_COPY_ITEM_VARIANTS}>Precision in coding, <span>Power in revenue.</span></motion.h1>
+            <motion.p variants={HERO_COPY_ITEM_VARIANTS}>
+              Codical Health unifies AI medical coding, transcription, anesthesia calculations and team collaboration in one calm,
+              intelligent revenue cycle workspace.
+            </motion.p>
+            <motion.div className="nex-hero-actions" variants={HERO_COPY_ITEM_VARIANTS}>
+              <CtaButton href="/signup">Request a demo</CtaButton>
+            </motion.div>
+          </motion.div>
 
-      <motion.div
-        className="nex-hero-content"
-        initial={reduceMotion ? false : "hidden"}
-        animate="visible"
-        variants={revealVariants}
-        style={reduceMotion ? undefined : { y: contentY }}
-      >
-        <div className="nex-proof">
-          <span><img src={TEAM_IMAGES[0]} alt="" /></span>
-          <span><img src={TEAM_IMAGES[1]} alt="" /></span>
-          <span><img src={TEAM_IMAGES[2]} alt="" /></span>
-          <strong>Trusted by coding, audit and revenue-cycle teams.</strong>
-        </div>
-        <h1>Unified coding intelligence for cleaner claims.</h1>
-        <p>
-          Upload clinical reports, validate codes against NCCI, payer, and NPI checks,
-          then route edge cases to certified coder review.
-        </p>
-        <div className="nex-hero-actions">
-          <CtaButton href="/signup">Start review workflow</CtaButton>
-          <CtaButton href="#process" variant="secondary">Book a demo</CtaButton>
         </div>
       </motion.div>
-
-      <div className="nex-product-preview" aria-label="Codical Health workflow preview">
-        <div className="nex-preview-topbar">
-          <span />
-          <span />
-          <span />
-          <strong>app.codical.health/review/case-8912</strong>
-        </div>
-        <div className="nex-preview-grid">
-          <section className="nex-preview-notes">
-            <div className="nex-pane-title">
-              <FileText size={17} />
-              <strong>Clinical notes</strong>
-              <em>Report #8912</em>
-            </div>
-            <p>Patient presents with acute exacerbation of chronic obstructive pulmonary disease. Nebulizer treatment administered and oral medication prescribed.</p>
-            <mark>Highlighted by AI: moderate complexity, active treatment, chronic condition</mark>
-          </section>
-          <section className="nex-preview-codes">
-            <div className="nex-pane-title">
-              <Sparkles size={17} />
-              <strong>Suggested codes</strong>
-              <em>4 matched</em>
-            </div>
-            {[
-              ["99214", "E/M established patient", "98%"],
-              ["J7613", "Nebulizer medication", "94%"],
-              ["J44.1", "COPD exacerbation", "91%"],
-            ].map(([code, label, confidence]) => (
-              <div className="nex-code-suggestion" key={code}>
-                <span>{code}</span>
-                <strong>{label}</strong>
-                <em>{confidence}</em>
-              </div>
-            ))}
-            <button type="button">Accept selected</button>
-          </section>
-          <section className="nex-preview-validation">
-            <div className="nex-pane-title">
-              <ShieldCheck size={17} />
-              <strong>Validation checks</strong>
-              <em>Live</em>
-            </div>
-            <div className="nex-warning">
-              <AlertTriangle size={18} />
-              <strong>NCCI edit warning</strong>
-              <span>Modifier 25 recommended for separate E/M service.</span>
-            </div>
-            <div className="nex-check-card"><CheckCircle2 size={18} /> Payer rule applied</div>
-            <div className="nex-check-card"><CheckCircle2 size={18} /> NPI verified</div>
-            <button type="button">Route to certified review</button>
-          </section>
-        </div>
-      </div>
     </section>
   );
 }
 
-function TeamSection() {
+function CommandCenterSection() {
   return (
-    <section className="nex-team" id="team">
-      <div className="nex-team-photo tall">
-        <img src={TEAM_IMAGES[0]} alt="Healthcare professional reviewing clinical workflow" />
+    <section className="nex-command" id="platform">
+      <div className="nex-command-visual">
+        <LaptopMockup className="is-side">
+          <DashboardScreen compact />
+        </LaptopMockup>
       </div>
-      <div className="nex-team-copy">
-        <span className="nex-section-chip"><Stethoscope size={16} /> About Codical</span>
-        <h2>Remove friction from your revenue cycle.</h2>
+      <div className="nex-command-copy">
+        <span className="nex-section-label">Command center</span>
+        <h2>One intelligent command center. Total revenue cycle visibility.</h2>
         <p>
-          Manual coding review is slow and prone to human error, leading to preventable denials.
-          Codical acts as a first-pass intelligence layer, flagging documentation gaps,
-          NCCI conflicts and payer-specific rules before the claim moves forward.
+          Real-time performance, coding worklists, transcription status, anesthesia calculations and team follow-up live in one
+          coordinated surface.
         </p>
-        {/* TODO: Replace with verified production metrics. */}
-        <div className="nex-team-stats">
-          <strong>42%<span>fewer preventable denials</span></strong>
-          <strong>24h<span>reviewer SLA</span></strong>
-          <strong>NCCI<span>plus payer checks</span></strong>
-        </div>
-      </div>
-      <div className="nex-team-side">
-        <p>Designed for teams that need clinical context, coding accuracy and billing readiness to stay connected.</p>
-        <CtaButton href="#results" variant="secondary">Explore results</CtaButton>
-        <div className="nex-team-photo wide">
-          <img src={TEAM_IMAGES[2]} alt="Clinical team discussing coding review" />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FeaturePreview({ feature }: { feature: FeatureCard }) {
-  if (feature.visual === "claim") {
-    return (
-      <div className="nex-feature-visual preview-claim" aria-hidden="true">
-        <strong>{feature.metric}</strong>
-        {["NCCI edit clear", "Modifier review", "Documentation gap"].map((label, index) => (
-          <span className={index === 2 ? "is-review" : "is-clear"} key={label}>
-            <em>{index === 2 ? "!" : "OK"}</em>
-            {label}
-          </span>
-        ))}
-      </div>
-    );
-  }
-
-  if (feature.visual === "payer") {
-    return (
-      <div className="nex-feature-visual preview-payer" aria-hidden="true">
-        <strong>{feature.metric}</strong>
-        <div className="nex-mini-orbit">
-          <span>CMS</span>
-          <span>NPI</span>
-          <span>Payer</span>
-          <b>Codical</b>
-        </div>
-      </div>
-    );
-  }
-
-  if (feature.visual === "review") {
-    return (
-      <div className="nex-feature-visual preview-review" aria-hidden="true">
-        <strong>{feature.metric}</strong>
-        <div className="nex-review-thread">
-          <span><UserCheck size={14} /> Coder review</span>
-          <span><MessageSquareText size={14} /> Rationale attached</span>
-          <span><FileCheck2 size={14} /> Report ready</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="nex-feature-visual preview-code" aria-hidden="true">
-      <strong>{feature.metric}</strong>
-      <div className="nex-source-mini">
-        <p>clinical note excerpt</p>
-        <mark>source-linked rationale</mark>
-      </div>
-      <div className="nex-code-pills">
-        <span>CPT 99214</span>
-        <span>ICD-10 E11.9</span>
-        <span>HCPCS J7613</span>
-      </div>
-    </div>
-  );
-}
-
-function ResultsSection() {
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <section className="nex-results" id="results">
-      <Reveal className="nex-section-center">
-        <span className="nex-section-chip"><BarChart3 size={16} /> Results</span>
-        <h2>Intelligence at every layer.</h2>
-        <p>Purpose-built validation engines catch errors before submission and keep the final decision auditable.</p>
-      </Reveal>
-
-      <div className="nex-result-grid">
-        {FEATURE_CARDS.map((feature, index) => {
-          const FeatureIcon = feature.icon;
-          return (
-            <motion.article
-              className={`nex-result-card feature-${feature.visual}`}
-              key={feature.title}
-              initial={reduceMotion ? false : "hidden"}
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.22 }}
-              variants={revealVariants}
-              transition={{ delay: index * 0.06 }}
-              whileHover={reduceMotion ? undefined : { y: -6, scale: 1.01 }}
-            >
-              <i><FeatureIcon size={24} /></i>
-              <h3>{feature.title}</h3>
-              <p>{feature.text}</p>
-              <FeaturePreview feature={feature} />
-            </motion.article>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function WorkflowVisual({ step }: { step: ProcessStep }) {
-  const StepIcon = step.icon;
-
-  return (
-    <div className={`nex-process-visual visual-${step.visual}`}>
-      <div className="nex-workflow-canvas">
-        <div className="nex-workflow-header">
-          <span><StepIcon size={18} /> {step.label}</span>
-          <strong>{step.title}</strong>
-        </div>
-
-        {step.visual === "upload" && (
-          <div className="nex-upload-scene">
-            <div className="nex-document-stack">
-              <span className="sheet one"><FileText size={20} /> Operative note</span>
-              <span className="sheet two">Patient encounter summary</span>
-              <span className="sheet three">Supporting documentation</span>
-            </div>
-            <div className="nex-drop-zone">
-              <UploadCloud size={34} />
-              <strong>Upload packet</strong>
-              <small>PDF, image, text or encounter export</small>
-            </div>
-          </div>
-        )}
-
-        {step.visual === "suggest" && (
-          <div className="nex-suggestion-scene">
-            <div className="nex-source-note">
-              <strong>Documentation cues</strong>
-              <span>chronic condition reviewed</span>
-              <span>moderate complexity noted</span>
-              <span>EKG interpreted in visit</span>
-            </div>
-            <div className="nex-code-suggestions">
-              {["99214", "E11.9", "93000", "25"].map((code) => (
-                <span key={code}><Sparkles size={14} /> {code}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {step.visual === "validate" && (
-          <div className="nex-validation-scene">
-            {["NCCI edits", "Payer policy", "NPI taxonomy", "Coverage context"].map((label, index) => (
-              <div className="nex-validation-row" key={label}>
-                <span>{index + 1}</span>
-                <strong>{label}</strong>
-                <em>{index === 1 ? "Review" : "Clear"}</em>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {step.visual === "review" && (
-          <div className="nex-review-scene">
-            <div className="nex-reviewer-card">
-              <UserCheck size={24} />
-              <strong>Certified coder</strong>
-              <small>Final approval required</small>
-            </div>
-            <div className="nex-review-note">
-              <span>Reviewer note</span>
-              <p>Modifier rationale confirmed. Documentation supports final code set.</p>
-              <button type="button">Approve report</button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="nex-process-overlay">
-        <span><StepIcon size={21} /> {step.label}</span>
-        <strong>{step.title}</strong>
-        <div>
-          {step.stats.map((stat) => <em key={stat}>{stat}</em>)}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProcessSection() {
-  const [active, setActive] = useState(0);
-  const step = PROCESS_STEPS[active];
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setActive((current) => (current + 1) % PROCESS_STEPS.length);
-    }, 4200);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const progressItems = useMemo(() => PROCESS_STEPS.map((item, index) => ({ ...item, active: index === active })), [active]);
-
-  return (
-    <section className="nex-process" id="process">
-      <div className="nex-process-head">
-        <div>
-          <span className="nex-section-chip"><ClipboardCheck size={16} /> Core workflow</span>
-          <h2>Healthcare AI medical coding in four controlled steps.</h2>
-        </div>
-        <p>Codical keeps every case moving through a clear path: document intake, coding support, claim checks and certified review.</p>
-      </div>
-
-      <div className="nex-process-shell">
-        <WorkflowVisual step={step} />
-
-        <div className="nex-process-copy">
-          <span>{step.label}</span>
-          <h3>{step.title}</h3>
-          <p>{step.text}</p>
-          <div className="nex-process-tabs" role="tablist" aria-label="Coding workflow steps">
-            {progressItems.map((item, index) => (
-              <button
-                key={item.title}
-                type="button"
-                className={item.active ? "is-active" : ""}
-                onClick={() => setActive(index)}
-                role="tab"
-                aria-selected={item.active}
-              >
-                <b>{item.label}</b>
-                <span>{item.title}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function IntegrationsSection() {
-  return (
-    <section className="nex-integrations" id="integrations">
-      <div className="nex-ecosystem">
-        <div className="nex-ecosystem-orbit" aria-hidden="true">
-          <BrandMark compact />
-          {TRUST_NODES.map((node, index) => {
-            const NodeIcon = node.icon;
+        <div className="nex-command-list">
+          {[
+            ["Real-time performance", "Monitor coding, claims and collections in the same view.", BarChart3],
+            ["AI-driven automation", "Reduce manual routing while keeping coder review in control.", Sparkles],
+            ["Actionable insights", "Identify denials, documentation gaps and coding risk early.", Search],
+            ["Secure by design", "Build review workflows around controlled access and audit history.", ShieldCheck],
+          ].map(([title, text, Icon]) => {
+            const RowIcon = Icon as LucideIcon;
             return (
-              <span className={`trust-node trust-node-${index}`} key={node.name}>
-                <NodeIcon size={18} />
-                <strong>{node.name}</strong>
-              </span>
+              <article key={title as string}>
+                <RowIcon size={19} />
+                <div>
+                  <strong>{title as string}</strong>
+                  <p>{text as string}</p>
+                </div>
+              </article>
             );
           })}
         </div>
-        <div className="nex-ecosystem-copy">
-          <span className="nex-section-chip"><Network size={16} /> Healthcare ecosystem</span>
-          <h2>Plugs into your existing reality.</h2>
-          <p>Codical sits between clinical documentation and claim submission, acting as a high-speed intelligence layer for teams already operating across EHR, payer and clearinghouse systems.</p>
-          <ul>
-            {TRUST_NODES.map((node) => (
-              <li key={node.name}><CheckCircle2 size={17} /> <strong>{node.name}</strong> {node.text}</li>
-            ))}
-          </ul>
+      </div>
+    </section>
+  );
+}
+
+function FeaturePanel({ feature }: { feature: Feature }) {
+  if (feature.id === "transcription") {
+    return (
+      <div className="nex-feature-ui transcription-ui">
+        <div className="nex-feature-note">
+          <FileAudio size={18} />
+          <div>
+            <strong>Consult-audio-0618.m4a</strong>
+            <span>Structured record created</span>
+          </div>
+        </div>
+        <div className="nex-waveform large" aria-hidden="true">
+          {Array.from({ length: 34 }).map((_, index) => (
+            <i key={index} style={{ animationDelay: `${index * 38}ms` }} />
+          ))}
+        </div>
+        <div className="nex-code-columns">
+          <span>CPT 99214</span>
+          <span>ICD-10 J44.1</span>
+          <span>HCPCS J7613</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (feature.id === "anesthesia") {
+    return (
+      <div className="nex-feature-ui anesthesia-ui">
+        <div className="nex-calc-hero">
+          <span>Non-qualifying payment</span>
+          <strong>$824.91</strong>
+          <small>17 units x locality factor</small>
+        </div>
+        <div className="nex-calc-grid">
+          <span>Base units <strong>6</strong></span>
+          <span>Time units <strong>6</strong></span>
+          <span>Modifier <strong>AA</strong></span>
+          <span>Locality <strong>TN 00</strong></span>
+        </div>
+      </div>
+    );
+  }
+
+  if (feature.id === "chat") {
+    return (
+      <div className="nex-feature-ui chat-ui">
+        {[
+          ["Coder", "The modifier rationale is supported by the operative note."],
+          ["Billing", "Claim validator is clear after the update."],
+          ["Assistant", "Summary attached to case C-74823."],
+        ].map(([sender, message], index) => (
+          <div className={index === 1 ? "is-own" : ""} key={sender}>
+            <strong>{sender}</strong>
+            <p>{message}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="nex-feature-ui coding-ui">
+      <div className="nex-feature-table">
+        {[
+          ["M54.16", "Radiculopathy", "99%", "Selected"],
+          ["721.3", "Lumbosacral spondylosis", "96%", "Selected"],
+          ["62323", "Injection, epidural", "97%", "Review"],
+        ].map(([code, label, confidence, status]) => (
+          <div key={code}>
+            <strong>{code}</strong>
+            <span>{label}</span>
+            <em>{confidence}</em>
+            <small>{status}</small>
+          </div>
+        ))}
+      </div>
+      <button type="button">Send to claim validation</button>
+    </div>
+  );
+}
+
+function SolutionsSection() {
+  const [activeId, setActiveId] = useState(FEATURES[0].id);
+  const activeFeature = useMemo(() => FEATURES.find((feature) => feature.id === activeId) || FEATURES[0], [activeId]);
+  const ActiveIcon = activeFeature.icon;
+
+  return (
+    <section className="nex-solutions" id="solutions">
+      <div className="nex-section-center">
+        <span className="nex-section-label">AI-powered solutions</span>
+        <h2>Smarter tools for modern revenue cycle teams.</h2>
+      </div>
+
+      <div className="nex-feature-shell">
+        <div className="nex-feature-tabs" role="tablist" aria-label="Codical Health features">
+          {FEATURES.map((feature) => {
+            const FeatureIcon = feature.icon;
+            return (
+              <button
+                type="button"
+                key={feature.id}
+                className={feature.id === activeId ? "is-active" : ""}
+                onClick={() => setActiveId(feature.id)}
+                role="tab"
+                aria-selected={feature.id === activeId}
+              >
+                <FeatureIcon size={18} />
+                {feature.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="nex-feature-body">
+          <div className="nex-feature-copy">
+            <ActiveIcon size={22} />
+            <h3>{activeFeature.title}</h3>
+            <p>{activeFeature.summary}</p>
+            <ul>
+              {activeFeature.points.map((point) => (
+                <li key={point}>
+                  <CheckCircle2 size={16} />
+                  {point}
+                </li>
+              ))}
+            </ul>
+            <strong>{activeFeature.stat}</strong>
+          </div>
+          <FeaturePanel feature={activeFeature} />
         </div>
       </div>
     </section>
   );
 }
 
-function ProofReviewSection() {
+function VideoStoriesSection() {
   return (
-    <section className="nex-proof-review" id="proof">
-      <Reveal className="nex-section-center">
-        <span className="nex-section-chip"><BadgeCheck size={16} /> Review proof</span>
-        <h2>Built for teams that need cleaner claims and clearer review.</h2>
-        <p>Outcome-focused workflows help coding, billing and audit teams see the same evidence before a claim moves forward.</p>
-      </Reveal>
+    <section className="nex-video-stories" id="stories">
+      <div className="nex-section-center">
+        <span className="nex-section-label">Healthcare revenue voices</span>
+        <h2>Hear from medical billing and RCM professionals.</h2>
+        <p>Playable public YouTube embeds selected for the medical billing, RCM and healthcare operations context.</p>
+      </div>
 
-      <div className="nex-proof-grid">
-        {PROOF_CARDS.map((card) => (
-          <Reveal className={`nex-proof-card proof-${card.tone}`} key={`${card.label}-${card.tone}`}>
-            {card.kind === "metric" ? (
-              <>
-                <strong>{card.value}</strong>
-                <h3>{card.label}</h3>
-                <p>{card.text}</p>
-              </>
-            ) : (
-              <>
-                <span>{card.label}</span>
-                <blockquote>{card.text}</blockquote>
-                <p>{card.attribution}</p>
-              </>
-            )}
-          </Reveal>
+      <div className="nex-video-grid">
+        {VIDEO_STORIES.map((story) => (
+          <article className="nex-video-card" key={story.videoId}>
+            <VideoPlayer story={story} />
+            <div className="nex-video-copy">
+              <small>{story.source}</small>
+              <h3>{story.title}</h3>
+              <p>{story.note}</p>
+              <a href={`https://www.youtube.com/watch?v=${story.videoId}`} target="_blank" rel="noreferrer">
+                Watch on YouTube <ArrowRight size={14} />
+              </a>
+            </div>
+          </article>
         ))}
       </div>
     </section>
   );
 }
 
-function FaqSection() {
+function VideoPlayer({ story }: { story: VideoStory }) {
+  const [playing, setPlaying] = useState(false);
+
   return (
-    <section className="nex-faq" id="faq">
+    <div className="nex-video-frame">
+      {playing ? (
+        <iframe
+          title={story.title}
+          src={`https://www.youtube-nocookie.com/embed/${story.videoId}?rel=0&modestbranding=1&autoplay=1`}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      ) : (
+        <button type="button" onClick={() => setPlaying(true)} aria-label={`Play ${story.title}`}>
+          <img
+            src={`https://i.ytimg.com/vi/${story.videoId}/hqdefault.jpg`}
+            alt=""
+            loading="lazy"
+          />
+          <span aria-hidden="true">
+            <Play size={24} />
+          </span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ProfileStoriesSection() {
+  return (
+    <section className="nex-profile-stories">
       <div className="nex-section-center">
-        <span className="nex-section-chip"><MessageSquareText size={16} /> FAQ</span>
-        <h2>Frequently asked questions</h2>
+        <span className="nex-section-label">Role profiles</span>
+        <h2>Results that matter. Partnerships that last.</h2>
       </div>
-      <div className="nex-faq-list">
-        {FAQ_ITEMS.map((item) => (
-          <details key={item.question}>
-            <summary>{item.question}<ChevronDown size={18} /></summary>
-            <p>{item.answer}</p>
-          </details>
+
+      <div className="nex-profile-grid">
+        {PROFILE_STORIES.map((story) => (
+          <article className="nex-profile-card" key={story.name}>
+            <div className="nex-profile-brand">
+              <span>{story.orgMark}</span>
+              <strong>{story.org}</strong>
+            </div>
+            <blockquote>{story.quote}</blockquote>
+            <div className="nex-profile-person">
+              <img src={story.portrait} alt={`${story.name} professional portrait`} loading="lazy" />
+              <div>
+                <strong>{story.name}</strong>
+                <span>{story.role}</span>
+                <small>{story.location}</small>
+              </div>
+            </div>
+          </article>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function GlassLogoCta() {
+  return (
+    <section className="nex-final" id="cta">
+      <div className="nex-final-copy">
+        <span className="nex-section-label">Codical Health</span>
+        <h2>Ready to elevate your revenue cycle?</h2>
+        <p>See how Codical Health can help your team code with precision and drive sustainable revenue growth.</p>
+        <div className="nex-final-actions">
+          <CtaButton href="/signup">Request a demo</CtaButton>
+          <CtaButton href="/login" variant="secondary">Sign in</CtaButton>
+        </div>
+      </div>
+      <div className="nex-glass-logo" aria-label="Animated Codical Health logo">
+        <div className="nex-glass-mark">
+          {[0, 1, 2, 3, 4].map((index) => (
+            <span key={index} />
+          ))}
+        </div>
+        <strong>codical</strong>
+        <em>health</em>
       </div>
     </section>
   );
@@ -919,36 +1355,29 @@ export function Landing() {
     <div className="nex-page">
       <Header />
       <main>
-        <MotionHero />
-        <TeamSection />
-        <ResultsSection />
-        <ProcessSection />
-        <IntegrationsSection />
-        <ProofReviewSection />
-        <FaqSection />
-        <section className="nex-final">
-          <div>
-            <span className="nex-section-chip"><ShieldCheck size={16} /> Codical Health</span>
-            <h2>Ready to make coding review cleaner?</h2>
-            <p>Bring documentation, coding support, claim checks and certified review into one connected workflow.</p>
-            <div className="nex-final-actions">
-              <CtaButton href="/signup">Request access</CtaButton>
-              <CtaButton href="#process" variant="secondary">Book a demo</CtaButton>
-            </div>
-          </div>
-        </section>
+        <HeroSection />
+        <EcosystemMarquee />
+        <CommandCenterSection />
+        <SolutionsSection />
+        <VideoStoriesSection />
+        <ProfileStoriesSection />
+        <GlassLogoCta />
       </main>
       <footer className="nex-footer">
         <BrandMark compact />
         <nav aria-label="Footer">
-          <a href="/signup">Request access</a>
-          <a href="#faq">Privacy Policy</a>
-          <a href="#faq">Terms of Service</a>
-          <a href="#faq">HIPAA Compliance</a>
-          <a href="#top">Status</a>
+          <a href="#platform">Platform</a>
+          <a href="#solutions">Solutions</a>
+          <a href="#ecosystem">Ecosystem</a>
+          <a href="#stories">Stories</a>
+          <a href="#cta">Privacy</a>
+          <a href="#cta">Security</a>
         </nav>
-        <p>&copy; 2026 Codical Health. Intelligent healthcare operations.</p>
+        <p>&copy; 2026 Codical Health. All rights reserved.</p>
       </footer>
     </div>
   );
 }
+
+
+

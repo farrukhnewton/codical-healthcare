@@ -45,7 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, section: "MAIN", hint: "Live command", tone: "blue" },
   { href: "/intelligence", label: "Coverage & Guidelines", icon: BookOpen, section: "MAIN", hint: "MCD, payer, crosswalk", tone: "teal", badge: "Live" },
   { href: "/search", label: "Code Search", icon: Search, section: "MAIN", hint: "ICD, CPT, HCPCS", tone: "violet" },
-  { href: "/workspace", label: "Coding Assistant", icon: Brain, section: "MAIN", hint: "Review workspace", tone: "orange" },
+  { href: "/workspace", label: "AI Coder", icon: Brain, section: "MAIN", hint: "Review workspace", tone: "orange" },
   { href: "/voice-transcription", label: "Clinical Transcription", icon: Mic, section: "MAIN", hint: "Voice to note", tone: "mint" },
   { href: "/chat", label: "Team Chat", icon: MessageSquare, section: "MAIN", hint: "Coder collaboration", tone: "slate" },
   { href: "/analytics", label: "Analytics", icon: BarChart2, section: "MAIN", hint: "Revenue signals", tone: "blue" },
@@ -104,14 +104,14 @@ export function IconRail() {
       </div>
 
       <div className="app-sidebar-status" aria-label="Coding operations status">
-        <span><BadgeCheck size={15} /> Validation active</span>
+        <span><BadgeCheck size={15} /> Operations live</span>
         <strong>72 claims in review</strong>
-        <p>NCCI, payer policy and NPI checks synced 2 min ago.</p>
+        <p>NCCI, payer policy, crosswalk and NPI checks synced 2 min ago.</p>
       </div>
 
       <button type="button" className="app-sidebar-claim-cta" onClick={() => startNewClaim(mobile)}>
         <PlusCircle size={17} />
-        <span>New claim review</span>
+        <span>Start claim review</span>
       </button>
 
       <nav className="app-sidebar-nav" aria-label="Main navigation">
@@ -144,7 +144,7 @@ export function IconRail() {
           <User size={15} />
           <div>
             <strong>Certified coder</strong>
-            <span>Clinical review team</span>
+            <span>Coding operations</span>
           </div>
         </div>
         <Link href="/settings" onClick={() => mobile && setMobileOpen(false)} className={`app-nav-item${isActiveRoute(location, "/settings") ? " is-active" : ""}`}>

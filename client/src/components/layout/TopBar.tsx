@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { Bell, CheckCircle2, Command, Moon, Search, Sparkles, Sun } from "lucide-react";
+import { Bell, CalendarDays, CheckCircle2, Command, Moon, Search, Sparkles, Sun } from "lucide-react";
 import { UnifiedSearch } from "@/components/layout/UnifiedSearch";
 import { UserProfileMenu } from "@/components/chat/UserProfileMenu";
 import { useTheme } from "@/lib/theme";
@@ -41,6 +41,10 @@ export function TopBar() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   const page = useMemo(() => getPageMeta(location), [location]);
+  const dateLabel = useMemo(
+    () => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(new Date()),
+    [],
+  );
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -79,6 +83,10 @@ export function TopBar() {
       </div>
 
       <div className="app-topbar-actions">
+        <div className="app-topbar-date" aria-label={`Today is ${dateLabel}`}>
+          <CalendarDays size={15} />
+          <span>{dateLabel}</span>
+        </div>
         <button type="button" onClick={() => setLocation("/workspace")} className="app-topbar-primary">
           <Sparkles size={16} />
           <span>New review</span>
