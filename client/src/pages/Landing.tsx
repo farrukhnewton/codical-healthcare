@@ -1,6 +1,6 @@
 import "@/styles/landing-stitch.css";
 
-import heroLaptopCleanCutout from "@/assets/landing/hero-laptop-clean-cutout-2x.png";
+import heroLaptopCleanCutout from "@/assets/landing/hero-laptop-polished-cutout-2x.png";
 import heroWaveLeftFinal from "@/assets/landing/hero-wave-left-final.png";
 import heroWaveRightFinal from "@/assets/landing/hero-wave-right-final.png";
 import {
@@ -14,33 +14,47 @@ import { Link } from "wouter";
 import {
   Activity,
   ArrowRight,
+  AudioLines,
+  BadgeCheck,
   BarChart3,
+  BrainCircuit,
   Calculator,
   CheckCircle2,
   ChevronDown,
   ClipboardCheck,
   FileAudio,
-  FileText,
+  FileChartColumnIncreasing,
+  Gauge,
   Globe2,
+  Landmark,
   Menu,
+  MessagesSquare,
   MessageSquareText,
   Mic2,
   Play,
+  ScanSearch,
   Search,
   ShieldCheck,
+  ShieldPlus,
   Sparkles,
   Stethoscope,
   UsersRound,
   Volume2,
+  Workflow,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 
+type LogoMark = "shield" | "heart" | "leaf" | "cross" | "monogram" | "rings" | "wave" | "diamond" | "grid" | "pulse";
+
 type LogoItem = {
   name: string;
   domain: string;
-  icon?: boolean;
+  short: string;
+  color: string;
+  accent?: string;
+  mark: LogoMark;
 };
 
 type LogoGroup = {
@@ -115,10 +129,10 @@ const MENU_GROUPS: MenuGroup[] = [
     imageTitle: "Unified coding workspace",
     imageText: "AI coding, transcription, anesthesia calculations and chat in one operating view.",
     items: [
-      { icon: Sparkles, title: "AI Medical Coding", text: "Source-linked ICD, CPT, HCPCS and modifier suggestions.", href: "#solutions" },
-      { icon: Mic2, title: "AI Transcription", text: "Encounter audio becomes structured coding context.", href: "#solutions" },
-      { icon: Calculator, title: "Anesthesia Calculator", text: "Base units, time, modifiers and locality factors together.", href: "#solutions" },
-      { icon: MessageSquareText, title: "Team Chats", text: "Reviewer handoffs stay attached to the case.", href: "#solutions" },
+      { icon: BrainCircuit, title: "AI Medical Coding", text: "Source-linked ICD, CPT, HCPCS and modifier suggestions.", href: "#solutions" },
+      { icon: AudioLines, title: "AI Transcription", text: "Encounter audio becomes structured coding context.", href: "#solutions" },
+      { icon: Gauge, title: "Anesthesia Calculator", text: "Base units, time, modifiers and locality factors together.", href: "#solutions" },
+      { icon: MessagesSquare, title: "Team Chats", text: "Reviewer handoffs stay attached to the case.", href: "#solutions" },
     ],
   },
   {
@@ -129,10 +143,10 @@ const MENU_GROUPS: MenuGroup[] = [
     imageTitle: "Built for healthcare operations",
     imageText: "Designed for coders, billers, auditors, anesthesia teams and RCM leaders.",
     items: [
-      { icon: Stethoscope, title: "Provider Groups", text: "Standardize coding workflows across specialties.", href: "#platform" },
-      { icon: ShieldCheck, title: "Compliance Teams", text: "Keep rationale, checks and review history visible.", href: "#platform" },
-      { icon: UsersRound, title: "RCM Leaders", text: "Track throughput, denial risk and team follow-up.", href: "#platform" },
-      { icon: BarChart3, title: "Analytics", text: "See coding volume and revenue impact in real time.", href: "#platform" },
+      { icon: Landmark, title: "Provider Groups", text: "Standardize coding workflows across specialties.", href: "#platform" },
+      { icon: ShieldPlus, title: "Compliance Teams", text: "Keep rationale, checks and review history visible.", href: "#platform" },
+      { icon: Workflow, title: "RCM Leaders", text: "Track throughput, denial risk and team follow-up.", href: "#platform" },
+      { icon: FileChartColumnIncreasing, title: "Analytics", text: "See coding volume and revenue impact in real time.", href: "#platform" },
     ],
   },
   {
@@ -143,10 +157,10 @@ const MENU_GROUPS: MenuGroup[] = [
     imageTitle: "Evidence-ready decisions",
     imageText: "Reports, videos and case context for teams moving faster with control.",
     items: [
-      { icon: FileText, title: "Coding Reports", text: "Export clean case summaries with source rationale.", href: "#stories" },
-      { icon: ClipboardCheck, title: "Claim Checks", text: "NCCI and documentation review before handoff.", href: "#platform" },
+      { icon: FileChartColumnIncreasing, title: "Coding Reports", text: "Export clean case summaries with source rationale.", href: "#stories" },
+      { icon: BadgeCheck, title: "Claim Checks", text: "NCCI and documentation review before handoff.", href: "#platform" },
       { icon: Play, title: "Video Stories", text: "Watch public healthcare RCM workflow examples.", href: "#stories" },
-      { icon: Search, title: "Policy Context", text: "Bring payer and clearinghouse context into review.", href: "#ecosystem" },
+      { icon: ScanSearch, title: "Policy Context", text: "Bring payer and clearinghouse context into review.", href: "#ecosystem" },
     ],
   },
 ];
@@ -155,40 +169,40 @@ const LOGO_GROUPS: LogoGroup[] = [
   {
     label: "Insurers",
     logos: [
-      { name: "UnitedHealthcare", domain: "uhc.com" },
-      { name: "Aetna", domain: "aetna.com" },
-      { name: "Cigna", domain: "cigna.com" },
-      { name: "Humana", domain: "humana.com" },
-      { name: "Elevance Health", domain: "elevancehealth.com" },
-      { name: "Kaiser Permanente", domain: "kp.org", icon: false },
-      { name: "Centene", domain: "centene.com" },
-      { name: "Blue Cross Blue Shield", domain: "bcbs.com" },
+      { name: "UnitedHealthcare", domain: "uhc.com", short: "UH", color: "#005eb8", accent: "#0b7de3", mark: "shield" },
+      { name: "Aetna", domain: "aetna.com", short: "A", color: "#7d3f98", accent: "#a654c8", mark: "heart" },
+      { name: "Cigna", domain: "cigna.com", short: "C", color: "#00a862", accent: "#30c987", mark: "leaf" },
+      { name: "Humana", domain: "humana.com", short: "H", color: "#78be20", accent: "#b7db37", mark: "cross" },
+      { name: "Elevance Health", domain: "elevancehealth.com", short: "E", color: "#2864c7", accent: "#5c8bf0", mark: "monogram" },
+      { name: "Kaiser Permanente", domain: "kp.org", short: "KP", color: "#006ba6", accent: "#42a6d5", mark: "pulse" },
+      { name: "Centene", domain: "centene.com", short: "C", color: "#0085ca", accent: "#36b5e7", mark: "rings" },
+      { name: "Blue Cross Blue Shield", domain: "bcbs.com", short: "BC", color: "#0071bc", accent: "#1a9ad6", mark: "shield" },
     ],
   },
   {
     label: "Clearinghouses",
     logos: [
-      { name: "Change Healthcare", domain: "changehealthcare.com" },
-      { name: "Availity", domain: "availity.com" },
-      { name: "Waystar", domain: "waystar.com" },
-      { name: "TriZetto", domain: "trizettoprovider.com" },
-      { name: "Office Ally", domain: "officeally.com", icon: false },
-      { name: "Optum", domain: "optum.com", icon: false },
-      { name: "Experian Health", domain: "experian.com" },
-      { name: "Claim.MD", domain: "claim.md", icon: false },
+      { name: "Availity", domain: "availity.com", short: "AV", color: "#f7941e", accent: "#ffb347", mark: "diamond" },
+      { name: "Change Healthcare", domain: "changehealthcare.com", short: "CH", color: "#f15a24", accent: "#ff8a4c", mark: "rings" },
+      { name: "Waystar", domain: "waystar.com", short: "W", color: "#f05a28", accent: "#ffb140", mark: "diamond" },
+      { name: "TriZetto", domain: "trizettoprovider.com", short: "TZ", color: "#10194f", accent: "#3443d9", mark: "monogram" },
+      { name: "Office Ally", domain: "officeally.com", short: "OA", color: "#3843d0", accent: "#6b75ff", mark: "grid" },
+      { name: "Optum", domain: "optum.com", short: "O", color: "#f7941d", accent: "#ffc042", mark: "pulse" },
+      { name: "Experian Health", domain: "experian.com", short: "EX", color: "#7a1fa2", accent: "#df2f8a", mark: "grid" },
+      { name: "Claim.MD", domain: "claim.md", short: "MD", color: "#10194f", accent: "#5b6cff", mark: "wave" },
     ],
   },
   {
     label: "RCM",
     logos: [
-      { name: "R1", domain: "r1rcm.com" },
-      { name: "Ensemble", domain: "ensemblehp.com" },
-      { name: "Conifer", domain: "coniferhealth.com" },
-      { name: "FinThrive", domain: "finthrive.com" },
-      { name: "AGS Health", domain: "agshealth.com" },
-      { name: "GeBBS", domain: "gebbs.com" },
-      { name: "Med-Metrix", domain: "med-metrix.com" },
-      { name: "NTT DATA", domain: "nttdata.com" },
+      { name: "R1", domain: "r1rcm.com", short: "R1", color: "#005eff", accent: "#38a5ff", mark: "monogram" },
+      { name: "Ensemble", domain: "ensemblehp.com", short: "EN", color: "#00b050", accent: "#33d47a", mark: "pulse" },
+      { name: "Conifer", domain: "coniferhealth.com", short: "C", color: "#a20000", accent: "#d3212b", mark: "cross" },
+      { name: "FinThrive", domain: "finthrive.com", short: "FT", color: "#08745f", accent: "#36c59c", mark: "grid" },
+      { name: "AGS Health", domain: "agshealth.com", short: "AGS", color: "#00a870", accent: "#64d29b", mark: "leaf" },
+      { name: "GeBBS", domain: "gebbs.com", short: "G", color: "#111827", accent: "#2563eb", mark: "monogram" },
+      { name: "Med-Metrix", domain: "med-metrix.com", short: "MM", color: "#2436c7", accent: "#7a7dff", mark: "wave" },
+      { name: "NTT DATA", domain: "nttdata.com", short: "ND", color: "#0072bc", accent: "#36a3e0", mark: "grid" },
     ],
   },
 ];
@@ -780,21 +794,14 @@ function HeroDashboardScreen() {
   );
 }
 
-function LogoImage({ logo }: { logo: LogoItem }) {
-  const [failed, setFailed] = useState(false);
-
-  if (failed || logo.icon === false) {
-    return <strong className="nex-logo-fallback">{logo.name}</strong>;
-  }
-
+function PartnerLogo({ logo }: { logo: LogoItem }) {
   return (
     <>
-      <img
-        src={`https://www.google.com/s2/favicons?sz=64&domain=${logo.domain}`}
-        alt=""
-        loading="lazy"
-        onError={() => setFailed(true)}
-      />
+      <span className="nex-logo-emblem" data-mark={logo.mark} aria-hidden="true">
+        <span>{logo.short}</span>
+        <i />
+        <b />
+      </span>
       <strong>{logo.name}</strong>
     </>
   );
@@ -803,30 +810,35 @@ function LogoImage({ logo }: { logo: LogoItem }) {
 function EcosystemMarquee() {
   return (
     <section className="nex-ecosystem-strip" id="ecosystem" aria-label="Healthcare ecosystem logo references">
-      <div className="nex-ecosystem-head">
-        <span>Trusted across the healthcare ecosystem</span>
-        <small>Public ecosystem references, not customer claims.</small>
-      </div>
-      <div className="nex-logo-board">
-        {LOGO_GROUPS.map((group, groupIndex) => (
-          <div className="nex-logo-row" key={group.label}>
-            <div className="nex-logo-label">{group.label}</div>
-            <div className="nex-logo-track" data-reverse={groupIndex % 2 === 1}>
-              {[...group.logos, ...group.logos].map((logo, index) => (
-                <a
-                  className="nex-logo-tile"
-                  href={`https://${logo.domain}`}
-                  key={`${group.label}-${logo.name}-${index}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={logo.name}
-                >
-                  <LogoImage logo={logo} />
-                </a>
-              ))}
+      <div className="nex-ecosystem-inner">
+        <div className="nex-ecosystem-head">
+          <span>Trusted across the healthcare ecosystem</span>
+          <small>Public ecosystem references, not customer claims.</small>
+        </div>
+        <div className="nex-logo-board">
+          {LOGO_GROUPS.map((group, groupIndex) => (
+            <div className="nex-logo-row" data-category={group.label.toLowerCase()} key={group.label}>
+              <div className="nex-logo-label">{group.label}</div>
+              <div className="nex-logo-track-window">
+                <div className="nex-logo-track" data-reverse={groupIndex % 2 === 1 ? "true" : "false"}>
+                  {[...group.logos, ...group.logos, ...group.logos].map((logo, index) => (
+                    <a
+                      className="nex-logo-tile"
+                      href={`https://${logo.domain}`}
+                      key={`${group.label}-${logo.name}-${index}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`${logo.name} public website`}
+                      style={{ "--brand": logo.color, "--accent": logo.accent ?? logo.color } as CSSProperties}
+                    >
+                      <PartnerLogo logo={logo} />
+                    </a>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );

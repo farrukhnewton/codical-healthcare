@@ -4924,5 +4924,643 @@
   }
 }
 
+/* phase polish: navbar menu, laptop mask, healthcare partner marquee */
+.nex-nav-item {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: rgba(23, 16, 72, 0.76);
+  background: transparent;
+  box-shadow: inset 0 0 0 0 rgba(255, 255, 255, 0);
+}
+
+.nex-nav-item::before,
+.nex-nav-item::after {
+  content: "";
+  position: absolute;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease, transform 240ms ease;
+}
+
+.nex-nav-item::before {
+  inset: -1px;
+  z-index: -2;
+  background: linear-gradient(115deg, rgba(123, 47, 190, 0), rgba(157, 78, 221, 0.72), rgba(8, 29, 184, 0.42), rgba(123, 47, 190, 0));
+  transform: translateX(-28%) scaleX(0.68);
+}
+
+.nex-nav-item::after {
+  inset: 1px;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.96), transparent 34%),
+    linear-gradient(135deg, rgba(248, 245, 255, 0.94), rgba(226, 218, 255, 0.78));
+}
+
+.nex-nav-item:hover,
+.nex-nav-item:focus-visible,
+.nex-nav-item.is-active {
+  color: var(--nex-ink);
+  border-color: rgba(123, 47, 190, 0.28);
+  background: rgba(241, 235, 255, 0.58);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.54),
+    0 10px 26px rgba(91, 36, 143, 0.12),
+    0 0 24px rgba(157, 78, 221, 0.18);
+}
+
+.nex-nav-item:hover::before,
+.nex-nav-item:focus-visible::before,
+.nex-nav-item.is-active::before {
+  opacity: 1;
+  transform: translateX(0) scaleX(1);
+  animation: nex-nav-capsule-glow 2.8s ease-in-out infinite;
+}
+
+.nex-nav-item:hover::after,
+.nex-nav-item:focus-visible::after,
+.nex-nav-item.is-active::after {
+  opacity: 1;
+}
+
+.nex-mega-menu {
+  overflow: hidden;
+  border-color: rgba(157, 78, 221, 0.26);
+  background:
+    radial-gradient(circle at 86% 10%, rgba(157, 78, 221, 0.2), transparent 32%),
+    radial-gradient(circle at 12% 4%, rgba(255, 255, 255, 0.92), transparent 34%),
+    linear-gradient(135deg, rgba(247, 243, 255, 0.96), rgba(225, 216, 255, 0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.94),
+    0 38px 120px rgba(82, 45, 146, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.48);
+}
+
+.nex-mega-menu::before,
+.nex-mega-menu::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.nex-mega-menu::before {
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.1), rgba(157, 78, 221, 0.58), rgba(255, 255, 255, 0.64), rgba(8, 29, 184, 0.34), rgba(255, 255, 255, 0.12));
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: nex-menu-border-flow 5.5s linear infinite;
+}
+
+.nex-mega-menu::after {
+  width: 280px;
+  height: 280px;
+  top: -150px;
+  right: -90px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(157, 78, 221, 0.18), transparent 70%);
+  filter: blur(4px);
+}
+
+.nex-mega-menu > * {
+  position: relative;
+  z-index: 1;
+}
+
+.nex-mega-copy > span {
+  color: rgba(50, 17, 138, 0.72);
+}
+
+.nex-mega-link {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(123, 47, 190, 0.12);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(235, 229, 255, 0.28));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.nex-mega-link::before {
+  content: "";
+  position: absolute;
+  inset: -50% -25%;
+  background: linear-gradient(115deg, transparent 26%, rgba(255, 255, 255, 0.46), transparent 58%);
+  opacity: 0;
+  transform: translateX(-36%);
+  transition: opacity 180ms ease, transform 460ms ease;
+}
+
+.nex-mega-link:hover,
+.nex-mega-link:focus-visible {
+  border-color: rgba(123, 47, 190, 0.28);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.86), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(229, 220, 255, 0.68));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 16px 34px rgba(91, 36, 143, 0.13);
+}
+
+.nex-mega-link:hover::before,
+.nex-mega-link:focus-visible::before {
+  opacity: 1;
+  transform: translateX(26%);
+}
+
+.nex-mega-link i {
+  position: relative;
+  z-index: 1;
+  border-color: rgba(123, 47, 190, 0.2);
+  color: var(--nex-purple);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.92), transparent 40%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(224, 216, 255, 0.72));
+  box-shadow: 0 10px 24px rgba(91, 36, 143, 0.08);
+  transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 220ms ease;
+}
+
+.nex-mega-link:hover i,
+.nex-mega-link:focus-visible i {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--nex-violet), var(--nex-purple-2));
+  box-shadow: 0 14px 28px rgba(123, 47, 190, 0.26);
+  transform: translateY(-2px) scale(1.08) rotate(-6deg);
+}
+
+.nex-mega-link:hover i svg,
+.nex-mega-link:focus-visible i svg {
+  animation: nex-icon-float 520ms ease both;
+}
+
+.nex-mega-link strong {
+  color: var(--nex-ink);
+}
+
+.nex-mega-link small {
+  color: rgba(51, 47, 69, 0.72);
+}
+
+.nex-mega-card {
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  box-shadow: 0 18px 42px rgba(42, 22, 92, 0.18);
+}
+
+.nex-mega-card::after {
+  background:
+    linear-gradient(180deg, rgba(40, 16, 86, 0.03) 8%, rgba(20, 12, 56, 0.18) 42%, rgba(22, 12, 62, 0.9)),
+    radial-gradient(circle at 74% 18%, rgba(157, 78, 221, 0.22), transparent 34%);
+}
+
+.nex-mega-card strong {
+  font-family: "Marble Regular", Outfit, Rubik, "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  line-height: 1.04;
+  font-weight: 400;
+}
+
+.nex-mega-card p {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.nex-mega-card span {
+  width: 46px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--nex-violet), var(--nex-purple-2));
+  box-shadow: 0 16px 32px rgba(123, 47, 190, 0.34);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.nex-mega-card:hover span,
+.nex-mega-card:focus-visible span {
+  transform: translateX(3px);
+  box-shadow: 0 20px 38px rgba(123, 47, 190, 0.42);
+}
+
+.nex-concept-laptop-stage {
+  filter:
+    drop-shadow(0 34px 74px rgba(34, 28, 72, 0.2))
+    drop-shadow(0 2px 1px rgba(255, 255, 255, 0.4));
+}
+
+.nex-concept-laptop {
+  clip-path: inset(0.12% 0.2% 0.62% 0.2% round 18px);
+  filter: saturate(1.045) contrast(1.035);
+  backface-visibility: hidden;
+}
+
+.nex-laptop-live-overlay {
+  opacity: 0.48;
+  clip-path: inset(0.4% 1.2% 1% 0.4% round 10px);
+}
+
+.nex-ecosystem-strip {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  overflow: hidden;
+  padding: 108px 0 126px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(157, 78, 221, 0.12), transparent 32%),
+    linear-gradient(180deg, rgba(232, 238, 255, 0.72), rgba(239, 243, 255, 0.94) 42%, rgba(230, 237, 255, 0.96));
+}
+
+.nex-ecosystem-inner {
+  width: min(1320px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.nex-ecosystem-head {
+  gap: 7px;
+  margin-bottom: 24px;
+}
+
+.nex-ecosystem-head span {
+  color: var(--nex-blue);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.nex-ecosystem-head small {
+  color: rgba(51, 47, 69, 0.62);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.nex-logo-board {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.86), transparent 28%),
+    linear-gradient(135deg, rgba(248, 250, 255, 0.86), rgba(225, 232, 255, 0.74));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 38px 110px rgba(72, 73, 150, 0.16);
+  backdrop-filter: blur(26px) saturate(150%);
+}
+
+.nex-logo-board::before,
+.nex-logo-board::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 140px;
+  pointer-events: none;
+}
+
+.nex-logo-board::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(239, 243, 255, 0.98), rgba(239, 243, 255, 0));
+}
+
+.nex-logo-board::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(239, 243, 255, 0.98), rgba(239, 243, 255, 0));
+}
+
+.nex-logo-row {
+  grid-template-columns: 142px minmax(0, 1fr);
+  min-height: 92px;
+  border-top-color: rgba(91, 36, 143, 0.1);
+}
+
+.nex-logo-label {
+  position: relative;
+  z-index: 3;
+  padding-left: 30px;
+  color: rgba(23, 16, 72, 0.48);
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, rgba(239, 243, 255, 0.96), rgba(239, 243, 255, 0.76));
+}
+
+.nex-logo-track-window {
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.nex-logo-track {
+  width: max-content;
+  gap: 22px;
+  padding: 0 22px;
+  animation: nex-logo-scroll 46s linear infinite;
+}
+
+.nex-logo-track[data-reverse="true"] {
+  animation-direction: reverse;
+}
+
+.nex-logo-row:hover .nex-logo-track {
+  animation-play-state: running;
+}
+
+.nex-logo-tile {
+  flex: 0 0 214px;
+  height: 68px;
+  justify-content: flex-start;
+  gap: 13px;
+  border: 1px solid rgba(91, 36, 143, 0.1);
+  border-radius: 16px;
+  padding: 0 18px;
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 12px 28px rgba(55, 53, 123, 0.06);
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.nex-logo-tile:hover,
+.nex-logo-tile:focus-visible {
+  z-index: 3;
+  border-color: color-mix(in srgb, var(--brand) 36%, transparent);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 18px 42px rgba(55, 53, 123, 0.12);
+  transform: translateY(-2px);
+}
+
+.nex-logo-emblem {
+  position: relative;
+  isolation: isolate;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 14px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.42), transparent 34%),
+    linear-gradient(135deg, var(--brand), var(--accent));
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--brand) 24%, transparent);
+  filter: grayscale(1) saturate(0) contrast(1.08);
+  opacity: 0.52;
+  transition: filter 220ms ease, opacity 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+}
+
+.nex-logo-emblem > span {
+  position: relative;
+  z-index: 3;
+  color: inherit;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.nex-logo-emblem i,
+.nex-logo-emblem b {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+.nex-logo-emblem i {
+  inset: auto 7px 7px auto;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.56);
+  border-radius: 999px;
+}
+
+.nex-logo-emblem b {
+  inset: 8px auto auto 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(18deg);
+}
+
+.nex-logo-emblem[data-mark="shield"] b {
+  width: 19px;
+  height: 23px;
+  clip-path: polygon(50% 0, 92% 18%, 82% 78%, 50% 100%, 18% 78%, 8% 18%);
+  border-radius: 0;
+}
+
+.nex-logo-emblem[data-mark="heart"] b {
+  width: 17px;
+  height: 17px;
+  right: 9px;
+  bottom: 9px;
+  left: auto;
+  top: auto;
+  border-radius: 5px 5px 2px 5px;
+  transform: rotate(45deg);
+}
+
+.nex-logo-emblem[data-mark="leaf"] b {
+  width: 21px;
+  height: 13px;
+  border-radius: 999px 0 999px 999px;
+  transform: rotate(-26deg);
+}
+
+.nex-logo-emblem[data-mark="cross"] i,
+.nex-logo-emblem[data-mark="cross"] b {
+  inset: 50% auto auto 50%;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.34);
+  transform: translate(-50%, -50%);
+}
+
+.nex-logo-emblem[data-mark="cross"] i {
+  width: 6px;
+  height: 24px;
+}
+
+.nex-logo-emblem[data-mark="cross"] b {
+  width: 24px;
+  height: 6px;
+}
+
+.nex-logo-emblem[data-mark="rings"] i {
+  width: 20px;
+  height: 20px;
+  right: 7px;
+  bottom: 8px;
+  border-width: 3px;
+}
+
+.nex-logo-emblem[data-mark="rings"] b {
+  width: 18px;
+  height: 18px;
+  left: 8px;
+  top: 8px;
+  border: 3px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: transparent;
+}
+
+.nex-logo-emblem[data-mark="wave"] i {
+  left: 7px;
+  right: 7px;
+  bottom: 10px;
+  width: auto;
+  height: 12px;
+  border: 0;
+  border-top: 3px solid rgba(255, 255, 255, 0.54);
+  border-radius: 999px 999px 0 0;
+  transform: rotate(-7deg);
+}
+
+.nex-logo-emblem[data-mark="diamond"] b {
+  inset: 10px auto auto 11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  transform: rotate(45deg);
+}
+
+.nex-logo-emblem[data-mark="grid"] b {
+  inset: 10px auto auto 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  box-shadow:
+    11px 0 0 rgba(255, 255, 255, 0.26),
+    0 11px 0 rgba(255, 255, 255, 0.26),
+    11px 11px 0 rgba(255, 255, 255, 0.26);
+  transform: none;
+}
+
+.nex-logo-emblem[data-mark="pulse"] i {
+  left: 7px;
+  right: 7px;
+  top: 22px;
+  width: auto;
+  height: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: 9px -8px 0 -1px rgba(255, 255, 255, 0.36), 18px 5px 0 -1px rgba(255, 255, 255, 0.36);
+}
+
+.nex-logo-tile strong {
+  color: var(--nex-ink);
+  font-size: 13px;
+  filter: grayscale(1) saturate(0) contrast(1.08);
+  opacity: 0.6;
+  transition: color 220ms ease, filter 220ms ease, opacity 220ms ease;
+}
+
+.nex-logo-tile:hover .nex-logo-emblem,
+.nex-logo-tile:focus-visible .nex-logo-emblem,
+.nex-logo-tile:hover strong,
+.nex-logo-tile:focus-visible strong {
+  filter: none;
+  opacity: 1;
+}
+
+.nex-logo-tile:hover .nex-logo-emblem,
+.nex-logo-tile:focus-visible .nex-logo-emblem {
+  box-shadow: 0 18px 34px color-mix(in srgb, var(--brand) 30%, transparent);
+  transform: scale(1.06);
+  animation: nex-logo-pop 460ms ease both;
+}
+
+.nex-logo-tile:hover strong,
+.nex-logo-tile:focus-visible strong {
+  color: var(--brand);
+}
+
+@keyframes nex-nav-capsule-glow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.18); }
+}
+
+@keyframes nex-menu-border-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes nex-icon-float {
+  0% { transform: translateY(0) rotate(0deg); }
+  45% { transform: translateY(-2px) rotate(-7deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+@keyframes nex-logo-pop {
+  0% { transform: scale(1); }
+  48% { transform: scale(1.11); }
+  100% { transform: scale(1.06); }
+}
+
+@keyframes nex-logo-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-33.333%); }
+}
+
+@media (max-width: 920px) {
+  .nex-ecosystem-strip {
+    padding: 82px 0 96px;
+  }
+
+  .nex-ecosystem-inner {
+    width: min(100% - 28px, 760px);
+  }
+
+  .nex-logo-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 18px 0;
+  }
+
+  .nex-logo-label {
+    padding-left: 22px;
+  }
+
+  .nex-logo-track {
+    padding-left: 22px;
+    gap: 14px;
+  }
+
+  .nex-logo-tile {
+    flex-basis: 188px;
+    height: 62px;
+  }
+}
+
+@media (max-width: 620px) {
+  .nex-concept-laptop {
+    clip-path: inset(0.12% 0.35% 0.78% 0.35% round 14px);
+  }
+
+  .nex-logo-board::before,
+  .nex-logo-board::after {
+    width: 58px;
+  }
+
+  .nex-logo-tile {
+    flex-basis: 176px;
+    padding: 0 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nex-nav-item::before,
+  .nex-mega-menu::before,
+  .nex-logo-track,
+  .nex-logo-tile:hover .nex-logo-emblem,
+  .nex-logo-tile:focus-visible .nex-logo-emblem,
+  .nex-mega-link:hover i svg,
+  .nex-mega-link:focus-visible i svg {
+    animation: none !important;
+  }
+}
+
 
 
