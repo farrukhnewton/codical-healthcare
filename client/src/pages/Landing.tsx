@@ -522,7 +522,7 @@ function Header() {
                 {activeGroup.items.map((item, index) => (
                   <a href={item.href} className={`nex-mega-link item-${index}`} key={item.title}>
                     <i>
-                      <item.icon size={18} />
+                      <item.icon size={20} strokeWidth={2.35} />
                     </i>
                     <strong>{item.title}</strong>
                     <small>{item.text}</small>

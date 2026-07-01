@@ -5562,5 +5562,504 @@
   }
 }
 
+/* PremierCS reference pass: shared landing background, CTA-linked nav, wordmark partners, laptop edge polish */
+.nex-page {
+  font-family: "Marble Regular", Outfit, Rubik, "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 8% 5%, rgba(123, 47, 190, 0.12), transparent 28%),
+    radial-gradient(circle at 89% 4%, rgba(157, 78, 221, 0.18), transparent 30%),
+    radial-gradient(circle at 76% 42%, rgba(178, 145, 239, 0.18), transparent 34%),
+    linear-gradient(135deg, #f8fbff 0%, #eef3ff 30%, #e4dbf8 63%, #d8c9ef 100%);
+}
+
+.nex-page::before {
+  opacity: 0.95;
+  background-image:
+    linear-gradient(rgba(123, 47, 190, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8, 29, 184, 0.03) 1px, transparent 1px);
+  background-size: 78px 78px;
+  mask-image: none;
+}
+
+.nex-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 18% 36%, rgba(255, 255, 255, 0.7), transparent 32%),
+    linear-gradient(115deg, transparent 0 45%, rgba(255, 255, 255, 0.18) 46% 48%, transparent 49% 100%);
+  opacity: 0.65;
+}
+
+.nex-page strong,
+.nex-page button,
+.nex-page a,
+.nex-section-label,
+.nex-ecosystem-head span,
+.nex-ecosystem-head small {
+  font-family: inherit;
+}
+
+.nex-command,
+.nex-solutions,
+.nex-video-stories,
+.nex-profile-stories,
+.nex-final {
+  background: transparent;
+}
+
+.nex-command-copy h2,
+.nex-section-center h2,
+.nex-video-copy h3,
+.nex-final h2,
+.nex-profile-card blockquote,
+.nex-ecosystem-head span {
+  font-family: "Marble Regular", Outfit, Rubik, "Plus Jakarta Sans", sans-serif;
+  font-weight: 400;
+}
+
+.nex-nav-item {
+  font-weight: 400;
+  color: rgba(23, 16, 72, 0.86);
+}
+
+.nex-nav-item::before {
+  background: linear-gradient(115deg, rgba(123, 47, 190, 0), rgba(123, 47, 190, 0.9), rgba(157, 78, 221, 0.9), rgba(123, 47, 190, 0));
+}
+
+.nex-nav-item::after {
+  background:
+    radial-gradient(circle at 24% 16%, rgba(255, 255, 255, 0.28), transparent 34%),
+    linear-gradient(135deg, var(--nex-violet), var(--nex-purple-2));
+}
+
+.nex-nav-item:hover,
+.nex-nav-item:focus-visible,
+.nex-nav-item.is-active {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.54);
+  background: linear-gradient(135deg, var(--nex-violet), var(--nex-purple-2));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 16px 32px rgba(123, 47, 190, 0.24),
+    0 0 30px rgba(157, 78, 221, 0.34);
+}
+
+.nex-nav-item:hover svg,
+.nex-nav-item:focus-visible svg,
+.nex-nav-item.is-active svg {
+  color: #ffffff;
+}
+
+.nex-mega-menu {
+  background:
+    radial-gradient(circle at 88% 10%, rgba(157, 78, 221, 0.2), transparent 30%),
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.96), transparent 32%),
+    linear-gradient(135deg, rgba(248, 245, 255, 0.96), rgba(225, 216, 255, 0.96));
+}
+
+.nex-mega-copy > span {
+  color: rgba(91, 36, 143, 0.78);
+  font-weight: 400;
+}
+
+.nex-mega-link {
+  border-color: rgba(123, 47, 190, 0.16);
+  background:
+    radial-gradient(circle at 16% 10%, rgba(255, 255, 255, 0.76), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.52), rgba(234, 225, 255, 0.34));
+}
+
+.nex-mega-link:hover,
+.nex-mega-link:focus-visible {
+  border-color: rgba(255, 255, 255, 0.5);
+  background:
+    radial-gradient(circle at 20% 12%, rgba(255, 255, 255, 0.32), transparent 32%),
+    linear-gradient(135deg, var(--nex-violet), var(--nex-purple-2));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 18px 42px rgba(123, 47, 190, 0.24);
+}
+
+.nex-mega-link i {
+  width: 38px;
+  height: 38px;
+  color: var(--nex-violet);
+  border-color: rgba(123, 47, 190, 0.22);
+  background:
+    radial-gradient(circle at 32% 18%, rgba(255, 255, 255, 0.98), transparent 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(229, 220, 255, 0.76));
+}
+
+.nex-mega-link i::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(123, 47, 190, 0.12);
+  border-radius: 12px;
+  transform: rotate(10deg);
+  transition: transform 220ms ease, border-color 220ms ease;
+}
+
+.nex-mega-link:hover i,
+.nex-mega-link:focus-visible i {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.38);
+}
+
+.nex-mega-link:hover i::after,
+.nex-mega-link:focus-visible i::after {
+  border-color: rgba(255, 255, 255, 0.34);
+  transform: rotate(-8deg) scale(1.08);
+}
+
+.nex-mega-link strong {
+  color: var(--nex-violet);
+  font-family: "Marble Regular", Outfit, Rubik, "Plus Jakarta Sans", sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+}
+
+.nex-mega-link small {
+  color: rgba(51, 47, 69, 0.7);
+  font-weight: 400;
+}
+
+.nex-mega-link:hover strong,
+.nex-mega-link:focus-visible strong,
+.nex-mega-link:hover small,
+.nex-mega-link:focus-visible small {
+  color: #ffffff;
+}
+
+.nex-mega-card strong {
+  color: #ffffff;
+}
+
+.nex-concept-laptop-stage {
+  filter:
+    drop-shadow(0 36px 86px rgba(34, 28, 72, 0.18))
+    drop-shadow(0 4px 1px rgba(255, 255, 255, 0.34));
+}
+
+.nex-concept-laptop {
+  clip-path: inset(0.16% 1.16% 1.1% 0.34% round 20px);
+  filter: saturate(1.06) contrast(1.045) brightness(1.01);
+  image-rendering: auto;
+}
+
+.nex-laptop-live-overlay {
+  opacity: 0.32;
+  mix-blend-mode: soft-light;
+  clip-path: inset(0.8% 1.7% 1.7% 0.9% round 12px);
+  filter: saturate(1.08) contrast(1.04);
+}
+
+.nex-ecosystem-strip {
+  background: transparent;
+  padding: 124px 0 136px;
+}
+
+.nex-ecosystem-inner {
+  width: min(1420px, calc(100% - 52px));
+}
+
+.nex-ecosystem-head {
+  margin-bottom: 40px;
+}
+
+.nex-ecosystem-head::before {
+  content: "* * * * *";
+  color: var(--nex-violet);
+  font-size: 20px;
+  letter-spacing: 0.18em;
+  line-height: 1;
+}
+
+.nex-ecosystem-head span {
+  max-width: min(1180px, calc(100vw - 56px));
+  margin: 0 auto;
+  color: #090712;
+  font-size: clamp(34px, 4vw, 56px);
+  line-height: 0.98;
+  letter-spacing: 0;
+  text-transform: none;
+  text-wrap: balance;
+}
+
+.nex-ecosystem-head small {
+  color: rgba(23, 16, 72, 0.5);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.nex-logo-board {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: visible;
+}
+
+.nex-logo-board::before,
+.nex-logo-board::after {
+  display: none;
+}
+
+.nex-logo-row {
+  grid-template-columns: 1fr;
+  min-height: 116px;
+  border-top: 0;
+}
+
+.nex-logo-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  background: transparent;
+}
+
+.nex-logo-track-window {
+  overflow: visible;
+  width: 100%;
+}
+
+.nex-logo-track {
+  gap: clamp(58px, 5vw, 92px);
+  padding: 0 clamp(22px, 3vw, 42px);
+  animation-duration: 58s;
+}
+
+.nex-logo-track[data-reverse="true"] {
+  animation-duration: 66s;
+}
+
+.nex-logo-row:hover .nex-logo-track {
+  animation-play-state: paused;
+}
+
+.nex-logo-tile {
+  flex: 0 0 auto;
+  width: clamp(170px, 15vw, 250px);
+  height: 78px;
+  padding: 0;
+  gap: 14px;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  filter: grayscale(1) saturate(0);
+  opacity: 0.34;
+  transform: translateZ(0);
+  transition: opacity 260ms ease, filter 260ms ease, transform 260ms ease;
+}
+
+.nex-logo-tile:hover,
+.nex-logo-tile:focus-visible {
+  opacity: 1;
+  filter: none;
+  background: transparent;
+  box-shadow: none;
+  transform: translateY(-4px) scale(1.035);
+}
+
+.nex-logo-emblem {
+  width: 42px;
+  height: 42px;
+  border-radius: 0;
+  color: var(--brand);
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+  opacity: 1;
+  transition: color 260ms ease, transform 260ms ease;
+}
+
+.nex-logo-emblem > span {
+  display: none;
+}
+
+.nex-logo-emblem i,
+.nex-logo-emblem b {
+  background: currentColor;
+  border-color: currentColor;
+  opacity: 0.9;
+}
+
+.nex-logo-emblem i {
+  inset: 10px auto auto 8px;
+  width: 26px;
+  height: 18px;
+  border: 3px solid currentColor;
+  background: transparent;
+}
+
+.nex-logo-emblem b {
+  inset: 12px auto auto 15px;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  transform: rotate(45deg);
+}
+
+.nex-logo-emblem[data-mark="shield"] b {
+  width: 26px;
+  height: 31px;
+  left: 8px;
+  top: 5px;
+  background: currentColor;
+  opacity: 0.95;
+}
+
+.nex-logo-emblem[data-mark="heart"] b {
+  width: 27px;
+  height: 27px;
+  right: 8px;
+  bottom: 7px;
+}
+
+.nex-logo-emblem[data-mark="leaf"] b {
+  width: 34px;
+  height: 20px;
+  left: 5px;
+  top: 11px;
+}
+
+.nex-logo-emblem[data-mark="cross"] i,
+.nex-logo-emblem[data-mark="cross"] b {
+  background: currentColor;
+}
+
+.nex-logo-emblem[data-mark="cross"] i {
+  width: 7px;
+  height: 32px;
+}
+
+.nex-logo-emblem[data-mark="cross"] b {
+  width: 32px;
+  height: 7px;
+}
+
+.nex-logo-emblem[data-mark="rings"] i,
+.nex-logo-emblem[data-mark="rings"] b {
+  border-color: currentColor;
+  background: transparent;
+}
+
+.nex-logo-emblem[data-mark="wave"] i {
+  border-top-color: currentColor;
+}
+
+.nex-logo-emblem[data-mark="diamond"] b {
+  width: 26px;
+  height: 26px;
+  left: 8px;
+  top: 8px;
+}
+
+.nex-logo-emblem[data-mark="grid"] b {
+  background: currentColor;
+  box-shadow:
+    13px 0 0 currentColor,
+    0 13px 0 currentColor,
+    13px 13px 0 currentColor;
+}
+
+.nex-logo-emblem[data-mark="pulse"] i {
+  background: currentColor;
+  box-shadow:
+    11px -10px 0 -1px currentColor,
+    22px 7px 0 -1px currentColor;
+}
+
+.nex-logo-tile strong {
+  max-width: 190px;
+  color: #090712;
+  font-family: "Marble Regular", Outfit, Rubik, "Plus Jakarta Sans", sans-serif;
+  font-size: clamp(22px, 1.85vw, 31px);
+  font-weight: 400;
+  line-height: 0.92;
+  filter: none;
+  opacity: 1;
+  white-space: normal;
+  text-align: left;
+  transition: color 260ms ease, text-shadow 260ms ease;
+}
+
+.nex-logo-tile:hover .nex-logo-emblem,
+.nex-logo-tile:focus-visible .nex-logo-emblem,
+.nex-logo-tile:hover strong,
+.nex-logo-tile:focus-visible strong {
+  filter: none;
+  opacity: 1;
+}
+
+.nex-logo-tile:hover .nex-logo-emblem,
+.nex-logo-tile:focus-visible .nex-logo-emblem {
+  transform: translateY(-1px) scale(1.06);
+  box-shadow: none;
+}
+
+.nex-logo-tile:hover strong,
+.nex-logo-tile:focus-visible strong {
+  color: var(--brand);
+  text-shadow: 0 14px 34px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+
+@media (max-width: 920px) {
+  .nex-ecosystem-strip {
+    padding: 86px 0 104px;
+  }
+
+  .nex-logo-row {
+    min-height: 88px;
+    padding: 0;
+  }
+
+  .nex-logo-track {
+    gap: 34px;
+    padding: 0 20px;
+  }
+
+  .nex-logo-tile {
+    width: 184px;
+    height: 68px;
+  }
+}
+
+@media (max-width: 620px) {
+  .nex-ecosystem-inner {
+    width: min(100% - 24px, 560px);
+  }
+
+  .nex-ecosystem-head span {
+    font-size: 36px;
+  }
+
+  .nex-logo-track {
+    gap: 28px;
+  }
+
+  .nex-logo-tile {
+    width: 168px;
+  }
+
+  .nex-logo-tile strong {
+    font-size: 22px;
+  }
+
+  .nex-concept-laptop {
+    clip-path: inset(0.18% 1.26% 1.18% 0.44% round 14px);
+  }
+}
+
 
 
