@@ -3,6 +3,15 @@ import "@/styles/landing-stitch.css";
 import heroLaptopCleanCutout from "@/assets/landing/hero-laptop-polished-cutout-2x.png";
 import heroWaveLeftFinal from "@/assets/landing/hero-wave-left-final.png";
 import heroWaveRightFinal from "@/assets/landing/hero-wave-right-final.png";
+import aetnaLogo from "@/assets/landing/partners/aetna.svg";
+import availityLogo from "@/assets/landing/partners/availity.svg";
+import changeHealthcareLogo from "@/assets/landing/partners/change-healthcare.png";
+import cignaLogo from "@/assets/landing/partners/cigna.png";
+import elevanceLogo from "@/assets/landing/partners/elevance-health.svg";
+import humanaLogo from "@/assets/landing/partners/humana.svg";
+import kaiserLogo from "@/assets/landing/partners/kaiser-permanente.png";
+import optumLogo from "@/assets/landing/partners/optum.svg";
+import unitedHealthcareLogo from "@/assets/landing/partners/unitedhealthcare.svg";
 import {
   motion,
   useReducedMotion,
@@ -46,15 +55,12 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 
-type LogoMark = "shield" | "heart" | "leaf" | "cross" | "monogram" | "rings" | "wave" | "diamond" | "grid" | "pulse";
-
 type LogoItem = {
   name: string;
   domain: string;
-  short: string;
+  logo: string;
   color: string;
-  accent?: string;
-  mark: LogoMark;
+  size?: "wide" | "compact" | "tall";
 };
 
 type LogoGroup = {
@@ -169,40 +175,20 @@ const LOGO_GROUPS: LogoGroup[] = [
   {
     label: "Insurers",
     logos: [
-      { name: "UnitedHealthcare", domain: "uhc.com", short: "UH", color: "#005eb8", accent: "#0b7de3", mark: "shield" },
-      { name: "Aetna", domain: "aetna.com", short: "A", color: "#7d3f98", accent: "#a654c8", mark: "heart" },
-      { name: "Cigna", domain: "cigna.com", short: "C", color: "#00a862", accent: "#30c987", mark: "leaf" },
-      { name: "Humana", domain: "humana.com", short: "H", color: "#78be20", accent: "#b7db37", mark: "cross" },
-      { name: "Elevance Health", domain: "elevancehealth.com", short: "E", color: "#2864c7", accent: "#5c8bf0", mark: "monogram" },
-      { name: "Kaiser Permanente", domain: "kp.org", short: "KP", color: "#006ba6", accent: "#42a6d5", mark: "pulse" },
-      { name: "Centene", domain: "centene.com", short: "C", color: "#0085ca", accent: "#36b5e7", mark: "rings" },
-      { name: "Blue Cross Blue Shield", domain: "bcbs.com", short: "BC", color: "#0071bc", accent: "#1a9ad6", mark: "shield" },
+      { name: "UnitedHealthcare", domain: "uhc.com", logo: unitedHealthcareLogo, color: "#1f3570", size: "wide" },
+      { name: "Aetna", domain: "aetna.com", logo: aetnaLogo, color: "#7d3f98", size: "compact" },
+      { name: "Cigna", domain: "cigna.com", logo: cignaLogo, color: "#1188c9", size: "wide" },
+      { name: "Humana", domain: "humana.com", logo: humanaLogo, color: "#4e8416", size: "wide" },
+      { name: "Elevance Health", domain: "elevancehealth.com", logo: elevanceLogo, color: "#1a3673", size: "wide" },
+      { name: "Kaiser Permanente", domain: "kp.org", logo: kaiserLogo, color: "#0087b4", size: "wide" },
     ],
   },
   {
     label: "Clearinghouses",
     logos: [
-      { name: "Availity", domain: "availity.com", short: "AV", color: "#f7941e", accent: "#ffb347", mark: "diamond" },
-      { name: "Change Healthcare", domain: "changehealthcare.com", short: "CH", color: "#f15a24", accent: "#ff8a4c", mark: "rings" },
-      { name: "Waystar", domain: "waystar.com", short: "W", color: "#f05a28", accent: "#ffb140", mark: "diamond" },
-      { name: "TriZetto", domain: "trizettoprovider.com", short: "TZ", color: "#10194f", accent: "#3443d9", mark: "monogram" },
-      { name: "Office Ally", domain: "officeally.com", short: "OA", color: "#3843d0", accent: "#6b75ff", mark: "grid" },
-      { name: "Optum", domain: "optum.com", short: "O", color: "#f7941d", accent: "#ffc042", mark: "pulse" },
-      { name: "Experian Health", domain: "experian.com", short: "EX", color: "#7a1fa2", accent: "#df2f8a", mark: "grid" },
-      { name: "Claim.MD", domain: "claim.md", short: "MD", color: "#10194f", accent: "#5b6cff", mark: "wave" },
-    ],
-  },
-  {
-    label: "RCM",
-    logos: [
-      { name: "R1", domain: "r1rcm.com", short: "R1", color: "#005eff", accent: "#38a5ff", mark: "monogram" },
-      { name: "Ensemble", domain: "ensemblehp.com", short: "EN", color: "#00b050", accent: "#33d47a", mark: "pulse" },
-      { name: "Conifer", domain: "coniferhealth.com", short: "C", color: "#a20000", accent: "#d3212b", mark: "cross" },
-      { name: "FinThrive", domain: "finthrive.com", short: "FT", color: "#08745f", accent: "#36c59c", mark: "grid" },
-      { name: "AGS Health", domain: "agshealth.com", short: "AGS", color: "#00a870", accent: "#64d29b", mark: "leaf" },
-      { name: "GeBBS", domain: "gebbs.com", short: "G", color: "#111827", accent: "#2563eb", mark: "monogram" },
-      { name: "Med-Metrix", domain: "med-metrix.com", short: "MM", color: "#2436c7", accent: "#7a7dff", mark: "wave" },
-      { name: "NTT DATA", domain: "nttdata.com", short: "ND", color: "#0072bc", accent: "#36a3e0", mark: "grid" },
+      { name: "Availity", domain: "availity.com", logo: availityLogo, color: "#f7941e", size: "wide" },
+      { name: "Change Healthcare", domain: "changehealthcare.com", logo: changeHealthcareLogo, color: "#f72b55", size: "wide" },
+      { name: "Optum", domain: "optum.com", logo: optumLogo, color: "#ff612b", size: "wide" },
     ],
   },
 ];
@@ -796,14 +782,7 @@ function HeroDashboardScreen() {
 
 function PartnerLogo({ logo }: { logo: LogoItem }) {
   return (
-    <>
-      <span className="nex-logo-emblem" data-mark={logo.mark} aria-hidden="true">
-        <span>{logo.short}</span>
-        <i />
-        <b />
-      </span>
-      <strong>{logo.name}</strong>
-    </>
+    <img className={`nex-partner-logo-image is-${logo.size ?? "wide"}`} src={logo.logo} alt="" loading="lazy" />
   );
 }
 
@@ -829,7 +808,7 @@ function EcosystemMarquee() {
                       target="_blank"
                       rel="noreferrer"
                       aria-label={`${logo.name} public website`}
-                      style={{ "--brand": logo.color, "--accent": logo.accent ?? logo.color } as CSSProperties}
+                      style={{ "--brand": logo.color } as CSSProperties}
                     >
                       <PartnerLogo logo={logo} />
                     </a>

@@ -6061,5 +6061,94 @@
   }
 }
 
+/* Real partner-logo assets: PremierCS-style monochrome idle, color hover */
+.nex-logo-track {
+  gap: clamp(76px, 6.4vw, 116px);
+}
+
+.nex-logo-row {
+  min-height: 126px;
+}
+
+.nex-logo-tile {
+  width: clamp(230px, 19vw, 340px);
+  height: 92px;
+  opacity: 0.42;
+  filter: grayscale(1) saturate(0) contrast(0.92);
+  mix-blend-mode: multiply;
+}
+
+.nex-logo-tile:hover,
+.nex-logo-tile:focus-visible {
+  opacity: 1;
+  filter: grayscale(0) saturate(1.12) contrast(1.02);
+  mix-blend-mode: normal;
+  transform: translateY(-5px) scale(1.04);
+}
+
+.nex-logo-tile .nex-partner-logo-image {
+  display: block;
+  width: 100%;
+  height: 68px;
+  flex: 0 1 auto;
+  max-width: 100%;
+  max-height: 68px;
+  object-fit: contain;
+  object-position: center;
+  filter: none;
+  pointer-events: none;
+  transform: translateZ(0);
+  transition: transform 260ms ease, filter 260ms ease;
+}
+
+.nex-logo-tile .nex-partner-logo-image.is-compact {
+  max-width: 190px;
+  max-height: 76px;
+}
+
+.nex-logo-tile .nex-partner-logo-image.is-wide {
+  max-width: 320px;
+}
+
+.nex-logo-tile .nex-partner-logo-image.is-tall {
+  max-height: 82px;
+}
+
+.nex-logo-tile:hover .nex-partner-logo-image,
+.nex-logo-tile:focus-visible .nex-partner-logo-image {
+  transform: translateZ(0) scale(1.015);
+}
+
+@media (max-width: 920px) {
+  .nex-logo-track {
+    gap: 48px;
+  }
+
+  .nex-logo-row {
+    min-height: 96px;
+  }
+
+  .nex-logo-tile {
+    width: 230px;
+    height: 76px;
+  }
+
+  .nex-logo-tile .nex-partner-logo-image {
+    max-width: 218px;
+    height: 58px;
+    max-height: 58px;
+  }
+}
+
+@media (max-width: 620px) {
+  .nex-logo-track {
+    gap: 34px;
+  }
+
+  .nex-logo-tile {
+    width: 204px;
+  }
+}
+
 
 
