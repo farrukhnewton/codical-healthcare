@@ -6150,5 +6150,301 @@
   }
 }
 
+/* Final continuity pass: reusable laptop asset, shared hero background, smoother partners */
+.nex-page {
+  --nex-hero-purple: #4d177d;
+  --nex-hero-violet: #8e3fdd;
+  --nex-hero-muted: rgba(58, 44, 86, 0.72);
+  --nex-heading-gradient: linear-gradient(100deg, #3d176a 0%, #6824a8 38%, #9d4edd 76%, #6b6fe8 112%);
+  color: #372b56;
+  background:
+    radial-gradient(circle at 8% 4%, rgba(123, 47, 190, 0.12), transparent 28%),
+    radial-gradient(circle at 92% 0%, rgba(157, 78, 221, 0.17), transparent 31%),
+    radial-gradient(circle at 76% 44%, rgba(178, 145, 239, 0.16), transparent 34%),
+    linear-gradient(135deg, #f8fbff 0%, #eef3ff 31%, #e5dcf8 64%, #d9c9f0 100%);
+}
+
+.nex-page::before {
+  opacity: 0.92;
+  background-image:
+    linear-gradient(rgba(123, 47, 190, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8, 29, 184, 0.03) 1px, transparent 1px);
+  background-size: 78px 78px;
+  mask-image: none;
+}
+
+.nex-hero,
+.nex-command,
+.nex-solutions,
+.nex-video-stories,
+.nex-profile-stories,
+.nex-final,
+.nex-ecosystem-strip {
+  background: transparent !important;
+}
+
+.nex-hero::after {
+  display: none;
+}
+
+.nex-hero-background-layer {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.nex-hero-background-layer::before {
+  display: none;
+}
+
+.nex-command-copy h2,
+.nex-section-center h2,
+.nex-video-copy h3,
+.nex-final h2,
+.nex-profile-card blockquote,
+.nex-ecosystem-head span,
+.nex-feature-copy h3 {
+  color: var(--nex-hero-purple);
+  background: var(--nex-heading-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nex-section-label,
+.nex-ecosystem-head::before {
+  color: var(--nex-hero-violet);
+}
+
+.nex-command-copy p,
+.nex-section-center p,
+.nex-feature-copy p,
+.nex-video-copy p,
+.nex-final-copy p,
+.nex-profile-card p,
+.nex-profile-card cite,
+.nex-ecosystem-head small {
+  color: var(--nex-hero-muted);
+}
+
+.nex-universal-laptop {
+  position: relative;
+  width: 100%;
+  line-height: 0;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.nex-universal-laptop-image {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
+  user-select: none;
+  transform: translateZ(0);
+  image-rendering: auto;
+}
+
+.nex-universal-laptop.is-hero-laptop-asset {
+  filter:
+    drop-shadow(0 36px 82px rgba(34, 28, 72, 0.18))
+    drop-shadow(0 2px 1px rgba(255, 255, 255, 0.34));
+}
+
+.nex-universal-laptop.is-hero-laptop-asset .nex-universal-laptop-image {
+  clip-path: inset(0.04% 0.08% 0.08% 0.05% round 4px);
+  filter: saturate(1.065) contrast(1.055) brightness(1.01);
+}
+
+.nex-universal-laptop.is-hero-laptop-asset::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  left: 42.3%;
+  bottom: 2.15%;
+  width: 15.6%;
+  height: 4.1%;
+  border-radius: 0 0 22px 22px;
+  background:
+    linear-gradient(180deg, rgba(245, 248, 255, 0.72), rgba(90, 96, 109, 0.76) 26%, rgba(33, 36, 45, 0.6) 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.06));
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.55),
+    0 8px 14px rgba(17, 18, 24, 0.24);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.nex-universal-laptop.is-hero-laptop-asset::before {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  left: 3.25%;
+  right: 2.85%;
+  bottom: 1.05%;
+  height: 7.3%;
+  border-radius: 0 0 28px 28px / 0 0 18px 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(116, 123, 138, 0.55) 9%, rgba(20, 22, 28, 0.94) 24%, rgba(83, 89, 101, 0.96) 54%, rgba(215, 219, 226, 0.86) 74%, rgba(42, 45, 54, 0.72) 100%),
+    linear-gradient(90deg, rgba(17, 18, 24, 0.62), rgba(255, 255, 255, 0.32) 24%, rgba(255, 255, 255, 0.58) 50%, rgba(255, 255, 255, 0.22) 73%, rgba(17, 18, 24, 0.78));
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.5),
+    inset 0 -5px 10px rgba(7, 8, 12, 0.56),
+    0 14px 34px rgba(25, 20, 54, 0.22);
+  pointer-events: none;
+}
+
+.nex-laptop-live-overlay {
+  z-index: 5;
+  left: 8.85%;
+  top: 7.75%;
+  width: 81.7%;
+  height: 75.05%;
+  opacity: 0.36;
+  mix-blend-mode: soft-light;
+  clip-path: inset(0.8% 1.55% 1.35% 0.7% round 12px);
+  filter: saturate(1.08) contrast(1.04);
+}
+
+.nex-logo-track {
+  animation-duration: 46s;
+  animation-timing-function: linear;
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+}
+
+.nex-logo-track[data-reverse="true"] {
+  animation-duration: 53s;
+}
+
+@keyframes nex-logo-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-33.333%, 0, 0); }
+}
+
+.nex-nav-item::before {
+  background: linear-gradient(115deg, rgba(123, 47, 190, 0), rgba(188, 135, 255, 0.82), rgba(157, 78, 221, 0.54), rgba(123, 47, 190, 0));
+}
+
+.nex-nav-item::after {
+  background:
+    radial-gradient(circle at 24% 16%, rgba(255, 255, 255, 0.84), transparent 36%),
+    linear-gradient(135deg, rgba(248, 242, 255, 0.96), rgba(226, 214, 255, 0.88));
+}
+
+.nex-nav-item:hover,
+.nex-nav-item:focus-visible,
+.nex-nav-item.is-active {
+  color: #5b248f;
+  border-color: rgba(157, 78, 221, 0.34);
+  background: linear-gradient(135deg, rgba(248, 242, 255, 0.92), rgba(226, 214, 255, 0.82));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 14px 30px rgba(123, 47, 190, 0.15),
+    0 0 28px rgba(157, 78, 221, 0.22);
+}
+
+.nex-nav-item:hover svg,
+.nex-nav-item:focus-visible svg,
+.nex-nav-item.is-active svg {
+  color: #7b2fbe;
+}
+
+.nex-mega-link:hover,
+.nex-mega-link:focus-visible {
+  border-color: rgba(157, 78, 221, 0.3);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.9), transparent 34%),
+    linear-gradient(135deg, rgba(250, 246, 255, 0.88), rgba(228, 216, 255, 0.78));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 18px 38px rgba(91, 36, 143, 0.14);
+}
+
+.nex-mega-link:hover i,
+.nex-mega-link:focus-visible i {
+  color: #7b2fbe;
+  border-color: rgba(157, 78, 221, 0.32);
+  background:
+    radial-gradient(circle at 32% 18%, rgba(255, 255, 255, 0.96), transparent 38%),
+    linear-gradient(135deg, rgba(250, 246, 255, 0.96), rgba(223, 211, 255, 0.88));
+  box-shadow: 0 14px 28px rgba(123, 47, 190, 0.18);
+}
+
+.nex-mega-link:hover strong,
+.nex-mega-link:focus-visible strong {
+  color: #7b2fbe;
+  -webkit-text-fill-color: currentColor;
+}
+
+.nex-mega-link:hover small,
+.nex-mega-link:focus-visible small {
+  color: rgba(58, 44, 86, 0.76);
+}
+
+@media (max-width: 620px) {
+  .nex-universal-laptop.is-hero-laptop-asset .nex-universal-laptop-image {
+    clip-path: inset(0.06% 0.12% 0.1% 0.08% round 3px);
+  }
+}
+
+/* Final visual QA corrections */
+.nex-page {
+  background:
+    radial-gradient(circle at 8% 4%, rgba(123, 47, 190, 0.13), transparent 28%),
+    radial-gradient(circle at 92% 0%, rgba(157, 78, 221, 0.18), transparent 31%),
+    radial-gradient(circle at 76% 44%, rgba(178, 145, 239, 0.18), transparent 35%),
+    linear-gradient(135deg, #f8fbff 0%, #eff3ff 28%, #e9e1fb 58%, #decff4 100%);
+}
+
+.nex-page::after {
+  background:
+    radial-gradient(ellipse at 18% 34%, rgba(255, 255, 255, 0.34), transparent 32%),
+    radial-gradient(ellipse at 78% 30%, rgba(255, 255, 255, 0.2), transparent 30%),
+    linear-gradient(115deg, transparent 0 45%, rgba(255, 255, 255, 0.11) 46% 48%, transparent 49% 100%);
+  opacity: 0.48;
+}
+
+.nex-mega-menu {
+  opacity: 1 !important;
+  transform: translateX(-50%) !important;
+  animation: none !important;
+}
+
+.nex-mega-link:hover,
+.nex-mega-link:focus-visible {
+  border-color: rgba(157, 78, 221, 0.28);
+  background:
+    radial-gradient(circle at 20% 14%, rgba(255, 255, 255, 0.96), transparent 34%),
+    linear-gradient(135deg, rgba(253, 250, 255, 0.92), rgba(231, 220, 255, 0.76));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 16px 34px rgba(91, 36, 143, 0.12);
+}
+
+.nex-mega-link:hover i,
+.nex-mega-link:focus-visible i {
+  color: #7b2fbe;
+  border-color: rgba(157, 78, 221, 0.28);
+  background:
+    radial-gradient(circle at 32% 18%, rgba(255, 255, 255, 0.98), transparent 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(229, 216, 255, 0.82));
+  box-shadow: 0 12px 26px rgba(123, 47, 190, 0.16);
+}
+
+.nex-mega-link:hover strong,
+.nex-mega-link:focus-visible strong {
+  color: #7b2fbe;
+  -webkit-text-fill-color: currentColor;
+}
+
+.nex-mega-link:hover small,
+.nex-mega-link:focus-visible small {
+  color: rgba(58, 44, 86, 0.74);
+}
+
 
 

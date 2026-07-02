@@ -1,6 +1,6 @@
 import "@/styles/landing-stitch.css";
 
-import heroLaptopCleanCutout from "@/assets/landing/hero-laptop-polished-cutout-2x.png";
+import heroLaptopCleanCutout from "@/assets/landing/hero-laptop-universal-clean.png";
 import heroWaveLeftFinal from "@/assets/landing/hero-wave-left-final.png";
 import heroWaveRightFinal from "@/assets/landing/hero-wave-right-final.png";
 import aetnaLogo from "@/assets/landing/partners/aetna.svg";
@@ -958,6 +958,25 @@ function LaptopMockup({ children, className = "" }: { children: ReactNode; class
   );
 }
 
+function UniversalLaptopAsset({
+  src,
+  alt,
+  className = "",
+  children,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className={`nex-universal-laptop ${className}`}>
+      <img className="nex-universal-laptop-image nex-concept-laptop" src={src} alt={alt} />
+      {children}
+    </div>
+  );
+}
+
 function HeroSection() {
   const {
     heroRef,
@@ -1007,19 +1026,24 @@ function HeroSection() {
                 opacity: laptopOpacity,
               }}
             >
-              <img className="nex-concept-laptop" src={heroLaptopCleanCutout} alt="Codical Health dashboard running on a laptop" />
-              <div className="nex-laptop-live-overlay">
-                <span className="nex-screen-glaze" />
-                <span className="nex-screen-sweep" />
-                <span className="nex-screen-cursor" />
-                <span className="nex-live-value live-net"><b>$2,845,690</b><b>$2,913,420</b></span>
-                <span className="nex-live-value live-claims"><b>1,482</b><b>1,536</b></span>
-                <span className="nex-live-status">Validated</span>
-                <span className="nex-live-bars"><i /><i /><i /><i /><i /><i /></span>
-                <i className="nex-screen-pulse pulse-one" />
-                <i className="nex-screen-pulse pulse-two" />
-                <i className="nex-screen-pulse pulse-three" />
-              </div>
+              <UniversalLaptopAsset
+                className="is-hero-laptop-asset"
+                src={heroLaptopCleanCutout}
+                alt="Codical Health dashboard running on a laptop"
+              >
+                <div className="nex-laptop-live-overlay">
+                  <span className="nex-screen-glaze" />
+                  <span className="nex-screen-sweep" />
+                  <span className="nex-screen-cursor" />
+                  <span className="nex-live-value live-net"><b>$2,845,690</b><b>$2,913,420</b></span>
+                  <span className="nex-live-value live-claims"><b>1,482</b><b>1,536</b></span>
+                  <span className="nex-live-status">Validated</span>
+                  <span className="nex-live-bars"><i /><i /><i /><i /><i /><i /></span>
+                  <i className="nex-screen-pulse pulse-one" />
+                  <i className="nex-screen-pulse pulse-two" />
+                  <i className="nex-screen-pulse pulse-three" />
+                </div>
+              </UniversalLaptopAsset>
             </motion.div>
           </div>
         </motion.div>
