@@ -1,6 +1,6 @@
 import "@/styles/landing-stitch.css";
 
-import heroLaptopCleanCutout from "@/assets/landing/hero-laptop-universal-clean.png";
+import heroLaptopPremierFrame from "@/assets/landing/hero-concept-laptop-clean-premier.png";
 import heroWaveLeftFinal from "@/assets/landing/hero-wave-left-final.png";
 import heroWaveRightFinal from "@/assets/landing/hero-wave-right-final.png";
 import aetnaLogo from "@/assets/landing/partners/aetna.svg";
@@ -14,6 +14,8 @@ import optumLogo from "@/assets/landing/partners/optum.svg";
 import unitedHealthcareLogo from "@/assets/landing/partners/unitedhealthcare.svg";
 import {
   motion,
+  type MotionValue,
+  type MotionStyle,
   useReducedMotion,
   useScroll,
   useTransform,
@@ -93,6 +95,27 @@ type Feature = {
   summary: string;
   points: string[];
   stat: string;
+};
+
+type CommandDemoId = "coding" | "transcription" | "chat";
+
+type CommandDemo = {
+  id: CommandDemoId;
+  label: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  metric: string;
+  status: string;
+};
+
+type CreativeTool = Feature & {
+  accent: string;
+  caption: string;
+};
+
+type AccentMotionStyle = MotionStyle & {
+  "--tool-accent"?: string;
 };
 
 type VideoStory = {
@@ -234,6 +257,49 @@ const FEATURES: Feature[] = [
     points: ["Direct and group threads", "Conversation context panel", "Assistant-ready collaboration"],
     stat: "Live review handoffs",
   },
+];
+
+const COMMAND_DEMOS: CommandDemo[] = [
+  {
+    id: "coding",
+    label: "AI coding",
+    icon: BrainCircuit,
+    title: "AI coding work queue",
+    description: "Coder-controlled suggestions with source evidence, modifier checks and payer-ready rationale.",
+    metric: "98%",
+    status: "Code set accepted",
+  },
+  {
+    id: "transcription",
+    label: "AI transcription",
+    icon: FileAudio,
+    title: "Encounter transcription",
+    description: "Live audio becomes a structured note, then key coding context is sent into review.",
+    metric: "01:24",
+    status: "Transcript finalized",
+  },
+  {
+    id: "chat",
+    label: "Team chat",
+    icon: MessagesSquare,
+    title: "Case-attached team chat",
+    description: "Coders, billers and reviewers coordinate in one thread without losing claim context.",
+    metric: "3 live",
+    status: "Handoff routed",
+  },
+];
+
+const CREATIVE_TOOLS: CreativeTool[] = FEATURES.map((feature, index) => ({
+  ...feature,
+  accent: ["#00d0ff", "#b65cff", "#ff914d", "#38d8a5"][index] ?? "#9d4edd",
+  caption: ["Evidence-first coding", "Structured clinical audio", "Payment logic in one view", "Review decisions together"][index] ?? feature.label,
+}));
+
+const CREATIVE_CARD_LAYOUTS = [
+  { x: -34, y: -20, r: -9 },
+  { x: 24, y: -26, r: 7 },
+  { x: -20, y: 25, r: 5 },
+  { x: 34, y: 21, r: -6 },
 ];
 
 const VIDEO_STORIES: VideoStory[] = [
@@ -958,22 +1024,48 @@ function LaptopMockup({ children, className = "" }: { children: ReactNode; class
   );
 }
 
-function UniversalLaptopAsset({
-  src,
-  alt,
-  className = "",
+function LaptopHardwareFrame({
   children,
+  className = "",
+  screenClassName = "",
+  decorative = false,
+  alt = "Codical Health software running on a laptop",
 }: {
-  src: string;
-  alt: string;
+  children: ReactNode;
   className?: string;
-  children?: ReactNode;
+  screenClassName?: string;
+  decorative?: boolean;
+  alt?: string;
 }) {
   return (
-    <div className={`nex-universal-laptop ${className}`}>
-      <img className="nex-universal-laptop-image nex-concept-laptop" src={src} alt={alt} />
-      {children}
+    <div className={`nex-hero-laptop-frame ${className}`}>
+      <img
+        className="nex-hero-laptop-frame-image nex-concept-laptop"
+        src={heroLaptopPremierFrame}
+        alt={decorative ? "" : alt}
+        aria-hidden={decorative ? true : undefined}
+      />
+      <div className={`nex-hero-laptop-screen ${screenClassName}`} aria-hidden={decorative ? true : undefined}>
+        {children}
+      </div>
     </div>
+  );
+}
+
+function HeroLaptopFrame() {
+  return (
+    <LaptopHardwareFrame decorative alt="Codical Health dashboard running on a laptop">
+      <HeroDashboardScreen />
+      <span className="nex-hero-screen-glaze" />
+      <span className="nex-hero-screen-sweep" />
+      <span className="nex-hero-screen-cursor" />
+      <span className="nex-hero-click-ring is-one" />
+      <span className="nex-hero-click-ring is-two" />
+      <span className="nex-hero-click-ring is-three" />
+      <span className="nex-hero-action-badge is-coding">AI code accepted</span>
+      <span className="nex-hero-action-badge is-transcript">Transcript finalized</span>
+      <span className="nex-hero-action-badge is-claim">Claim validated</span>
+    </LaptopHardwareFrame>
   );
 }
 
@@ -1026,24 +1118,7 @@ function HeroSection() {
                 opacity: laptopOpacity,
               }}
             >
-              <UniversalLaptopAsset
-                className="is-hero-laptop-asset"
-                src={heroLaptopCleanCutout}
-                alt="Codical Health dashboard running on a laptop"
-              >
-                <div className="nex-laptop-live-overlay">
-                  <span className="nex-screen-glaze" />
-                  <span className="nex-screen-sweep" />
-                  <span className="nex-screen-cursor" />
-                  <span className="nex-live-value live-net"><b>$2,845,690</b><b>$2,913,420</b></span>
-                  <span className="nex-live-value live-claims"><b>1,482</b><b>1,536</b></span>
-                  <span className="nex-live-status">Validated</span>
-                  <span className="nex-live-bars"><i /><i /><i /><i /><i /><i /></span>
-                  <i className="nex-screen-pulse pulse-one" />
-                  <i className="nex-screen-pulse pulse-two" />
-                  <i className="nex-screen-pulse pulse-three" />
-                </div>
-              </UniversalLaptopAsset>
+              <HeroLaptopFrame />
             </motion.div>
           </div>
         </motion.div>
@@ -1079,39 +1154,221 @@ function HeroSection() {
   );
 }
 
-function CommandCenterSection() {
+function CommandCenterScreen({
+  activeDemo,
+  onChange,
+}: {
+  activeDemo: CommandDemoId;
+  onChange: (demo: CommandDemoId) => void;
+}) {
+  const active = COMMAND_DEMOS.find((demo) => demo.id === activeDemo) ?? COMMAND_DEMOS[0];
+  const ActiveIcon = active.icon;
+  const caseRows = [
+    ["CH-83472", "J47.1", "98%", "Ready"],
+    ["CH-83473", "E11.65", "96%", "Review"],
+    ["CH-83474", "K21.9", "97%", "Ready"],
+    ["CH-83475", "M54.16", "95%", "Hold"],
+  ];
+
   return (
-    <section className="nex-command" id="platform">
-      <div className="nex-command-visual">
-        <LaptopMockup className="is-side">
-          <DashboardScreen compact />
-        </LaptopMockup>
-      </div>
+    <div className="nex-command-screen">
+      <header className="nex-command-osbar">
+        <div>
+          <BrandMark compact />
+          <strong>CODICAL</strong>
+        </div>
+        <label>
+          <Search size={12} />
+          <span>Search patients, claims, codes...</span>
+        </label>
+        <div className="nex-command-os-status">
+          <span>AK</span>
+          <strong>Admin</strong>
+        </div>
+      </header>
+
+      <nav className="nex-command-demo-tabs" aria-label="Command center demo modes">
+        {COMMAND_DEMOS.map((demo) => {
+          const DemoIcon = demo.icon;
+          return (
+            <button
+              type="button"
+              key={demo.id}
+              className={demo.id === activeDemo ? "is-active" : ""}
+              onClick={() => onChange(demo.id)}
+            >
+              <DemoIcon size={14} />
+              {demo.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      <main className="nex-command-workspace" data-mode={activeDemo}>
+        <aside className="nex-command-rail" aria-hidden="true">
+          {[Activity, ClipboardCheck, FileAudio, MessagesSquare, ShieldCheck].map((Icon, index) => (
+            <i className={index === COMMAND_DEMOS.findIndex((demo) => demo.id === activeDemo) + 1 ? "is-active" : ""} key={index}>
+              <Icon size={13} />
+            </i>
+          ))}
+        </aside>
+
+        <section className="nex-command-mainboard">
+          <div className="nex-command-filters">
+            {["Date Range", "May 01 - May 22, 2026", "Facility", "All Facilities", "Payer", "All Payers", "Filters"].map((item, index) => (
+              <span className={index % 2 === 0 ? "is-label" : ""} key={`${item}-${index}`}>
+                {item}
+              </span>
+            ))}
+          </div>
+
+          <div className="nex-command-kpis">
+            {[
+              ["Net revenue", "$2,845,690", "+18.6%"],
+              ["Claims paid", "1,482", "+14.2%"],
+              ["First pass rate", "96.4%", "+6.3%"],
+              ["Denial rate", "4.2%", "-1.0%"],
+            ].map(([label, value, trend], index) => (
+              <article key={label} className={index === COMMAND_DEMOS.findIndex((demo) => demo.id === activeDemo) ? "is-live" : ""}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+                <em>{trend}</em>
+                <i />
+              </article>
+            ))}
+          </div>
+
+          <div className="nex-command-content-grid">
+            <section className="nex-command-live-card is-primary">
+              <div className="nex-command-live-head">
+                <span>
+                  <ActiveIcon size={15} />
+                  {active.title}
+                </span>
+                <strong>{active.metric}</strong>
+              </div>
+              <p>{active.description}</p>
+              {activeDemo === "coding" && (
+                <div className="nex-command-code-review">
+                  {caseRows.map(([caseId, code, confidence, status]) => (
+                    <button type="button" key={caseId}>
+                      <span>{caseId}</span>
+                      <strong>{code}</strong>
+                      <em>{confidence}</em>
+                      <small>{status}</small>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {activeDemo === "transcription" && (
+                <div className="nex-command-transcript">
+                  <div className="nex-command-wave" aria-hidden="true">
+                    {Array.from({ length: 42 }).map((_, index) => (
+                      <i key={index} style={{ animationDelay: `${index * 31}ms` }} />
+                    ))}
+                  </div>
+                  <blockquote>
+                    Patient reports improved breathing after nebulizer treatment. Assessment supports J44.1 with documented exacerbation.
+                  </blockquote>
+                </div>
+              )}
+              {activeDemo === "chat" && (
+                <div className="nex-command-chat">
+                  {[
+                    ["Sarah", "EBM audit update attached to the claim."],
+                    ["Raj", "Denied claim 247912 reprocessed."],
+                    ["Emily", "New payer rule for Aetna effective today."],
+                  ].map(([person, message], index) => (
+                    <p className={index === 1 ? "is-own" : ""} key={person}>
+                      <strong>{person}</strong>
+                      <span>{message}</span>
+                    </p>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="nex-command-live-card is-chart">
+              <strong>Revenue overview</strong>
+              <div className="nex-command-bars" aria-hidden="true">
+                {[46, 62, 54, 74, 68, 82, 93].map((height, index) => (
+                  <i key={index} style={{ "--bar-height": `${height}%`, animationDelay: `${index * 110}ms` } as CSSProperties} />
+                ))}
+              </div>
+            </section>
+
+            <section className="nex-command-live-card is-ring">
+              <strong>Coding accuracy</strong>
+              <div className="nex-command-accuracy-ring">
+                <span>96.4%</span>
+              </div>
+            </section>
+
+            <aside className="nex-command-live-card is-side-panel">
+              <strong>Team follow-up</strong>
+              <p><span>Claim validation</span><em>Clean</em></p>
+              <p><span>Coder review</span><em>3</em></p>
+              <p><span>Chat updates</span><em>Live</em></p>
+              <button type="button">{active.status}</button>
+            </aside>
+          </div>
+        </section>
+
+        <span className="nex-command-cursor" aria-hidden="true" />
+        <span className="nex-command-click is-a" aria-hidden="true" />
+        <span className="nex-command-click is-b" aria-hidden="true" />
+        <span className="nex-command-click is-c" aria-hidden="true" />
+      </main>
+    </div>
+  );
+}
+
+function CommandCenterSection() {
+  const [activeDemo, setActiveDemo] = useState<CommandDemoId>("coding");
+  const active = COMMAND_DEMOS.find((demo) => demo.id === activeDemo) ?? COMMAND_DEMOS[0];
+  const ActiveIcon = active.icon;
+
+  return (
+    <section className="nex-command nex-command-premier" id="platform">
+      <div className="nex-command-glow" aria-hidden="true" />
       <div className="nex-command-copy">
         <span className="nex-section-label">Command center</span>
-        <h2>One intelligent command center. Total revenue cycle visibility.</h2>
+        <h2>One workspace. Every revenue cycle signal in motion.</h2>
         <p>
-          Real-time performance, coding worklists, transcription status, anesthesia calculations and team follow-up live in one
-          coordinated surface.
+          A live operating view for coding, transcription and team review, with software that can be tested directly inside the laptop.
         </p>
-        <div className="nex-command-list">
-          {[
-            ["Real-time performance", "Monitor coding, claims and collections in the same view.", BarChart3],
-            ["AI-driven automation", "Reduce manual routing while keeping coder review in control.", Sparkles],
-            ["Actionable insights", "Identify denials, documentation gaps and coding risk early.", Search],
-            ["Secure by design", "Build review workflows around controlled access and audit history.", ShieldCheck],
-          ].map(([title, text, Icon]) => {
-            const RowIcon = Icon as LucideIcon;
+        <div className="nex-command-mode-pills" role="tablist" aria-label="Command center demo controls">
+          {COMMAND_DEMOS.map((demo) => {
+            const DemoIcon = demo.icon;
             return (
-              <article key={title as string}>
-                <RowIcon size={19} />
-                <div>
-                  <strong>{title as string}</strong>
-                  <p>{text as string}</p>
-                </div>
-              </article>
+              <button
+                type="button"
+                key={demo.id}
+                className={demo.id === activeDemo ? "is-active" : ""}
+                onClick={() => setActiveDemo(demo.id)}
+                role="tab"
+                aria-selected={demo.id === activeDemo}
+              >
+                <DemoIcon size={16} />
+                <span>{demo.label}</span>
+              </button>
             );
           })}
+        </div>
+      </div>
+
+      <div className="nex-command-showcase">
+        <div className="nex-command-context-card">
+          <ActiveIcon size={20} />
+          <strong>{active.title}</strong>
+          <p>{active.description}</p>
+          <span>{active.status}</span>
+        </div>
+        <div className="nex-command-visual">
+          <LaptopHardwareFrame className="nex-command-laptop" screenClassName="nex-command-laptop-screen">
+            <CommandCenterScreen activeDemo={activeDemo} onChange={setActiveDemo} />
+            <span className="nex-hero-screen-glaze" />
+          </LaptopHardwareFrame>
         </div>
       </div>
     </section>
@@ -1199,56 +1456,154 @@ function FeaturePanel({ feature }: { feature: Feature }) {
   );
 }
 
-function SolutionsSection() {
-  const [activeId, setActiveId] = useState(FEATURES[0].id);
-  const activeFeature = useMemo(() => FEATURES.find((feature) => feature.id === activeId) || FEATURES[0], [activeId]);
-  const ActiveIcon = activeFeature.icon;
+function CreativeToolCard({
+  tool,
+  index,
+  progress,
+}: {
+  tool: CreativeTool;
+  index: number;
+  progress: MotionValue<number>;
+}) {
+  const layout = CREATIVE_CARD_LAYOUTS[index] ?? CREATIVE_CARD_LAYOUTS[0];
+  const activeStart = 0.32 + index * 0.12;
+  const activeHold = activeStart + 0.07;
+  const activeEnd = activeStart + 0.13;
+  const ToolIcon = tool.icon;
+  const x = useTransform(
+    progress,
+    [0, 0.22, activeStart - 0.03, activeStart, activeHold, activeEnd, 1],
+    [`${layout.x}vw`, "0vw", "0vw", "24vw", "24vw", "34vw", "34vw"],
+  );
+  const y = useTransform(
+    progress,
+    [0, 0.22, activeStart - 0.03, activeStart, activeHold, activeEnd, 1],
+    [`${layout.y}vh`, `${index * 1.4}vh`, `${index * 1.4}vh`, `${index * 1.2 - 1}vh`, `${index * 1.2 - 1}vh`, "-4vh", "-4vh"],
+  );
+  const rotate = useTransform(
+    progress,
+    [0, 0.22, activeStart, activeEnd],
+    [`${layout.r}deg`, `${(index - 1.5) * 1.8}deg`, "0deg", "7deg"],
+  );
+  const scale = useTransform(progress, [0, 0.22, activeStart, activeHold, activeEnd, 1], [1, 0.86, 1.05, 1.05, 0.9, 0.86]);
+  const opacity = useTransform(progress, [0, 0.24, activeStart - 0.04, activeStart, activeHold, activeEnd, 0.91], [1, 1, 0.34, 1, 1, 0.08, 0]);
 
   return (
-    <section className="nex-solutions" id="solutions">
-      <div className="nex-section-center">
-        <span className="nex-section-label">AI-powered solutions</span>
-        <h2>Smarter tools for modern revenue cycle teams.</h2>
+    <motion.article className="nex-creative-card" style={{ x, y, rotate, scale, opacity, "--tool-accent": tool.accent } as AccentMotionStyle}>
+      <div className="nex-creative-card-head">
+        <i>
+          <ToolIcon size={22} />
+        </i>
+        <span>{tool.caption}</span>
       </div>
+      <strong>{tool.label}</strong>
+      <p>{tool.summary}</p>
+      <div className="nex-creative-card-art" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+    </motion.article>
+  );
+}
 
-      <div className="nex-feature-shell">
-        <div className="nex-feature-tabs" role="tablist" aria-label="Codical Health features">
-          {FEATURES.map((feature) => {
-            const FeatureIcon = feature.icon;
-            return (
-              <button
-                type="button"
-                key={feature.id}
-                className={feature.id === activeId ? "is-active" : ""}
-                onClick={() => setActiveId(feature.id)}
-                role="tab"
-                aria-selected={feature.id === activeId}
-              >
-                <FeatureIcon size={18} />
-                {feature.label}
-              </button>
-            );
-          })}
+function CreativeToolNarrative({
+  tool,
+  index,
+  progress,
+}: {
+  tool: CreativeTool;
+  index: number;
+  progress: MotionValue<number>;
+}) {
+  const activeStart = 0.32 + index * 0.12;
+  const activeHold = activeStart + 0.07;
+  const activeEnd = activeStart + 0.13;
+  const ToolIcon = tool.icon;
+  const opacity = useTransform(progress, [activeStart - 0.045, activeStart, activeHold, activeEnd], [0, 1, 1, 0]);
+  const y = useTransform(progress, [activeStart - 0.045, activeStart, activeEnd], ["24px", "0px", "-20px"]);
+  const filter = useTransform(progress, [activeStart - 0.045, activeStart, activeHold, activeEnd], ["blur(22px)", "blur(0px)", "blur(0px)", "blur(16px)"]);
+
+  return (
+    <motion.div className="nex-creative-narrative" style={{ opacity, y, filter, "--tool-accent": tool.accent } as AccentMotionStyle}>
+      <span>
+        <ToolIcon size={18} />
+        {tool.label}
+      </span>
+      <h3>{tool.title}</h3>
+      <p>{tool.summary}</p>
+      <ul>
+        {tool.points.map((point) => (
+          <li key={point}>
+            <CheckCircle2 size={15} />
+            {point}
+          </li>
+        ))}
+      </ul>
+      <strong>{tool.stat}</strong>
+    </motion.div>
+  );
+}
+
+function CreativeEyeFinale({ progress }: { progress: MotionValue<number> }) {
+  const opacity = useTransform(progress, [0.78, 0.86, 0.96, 1], [0, 1, 1, 0]);
+  const scale = useTransform(progress, [0.78, 0.9, 1], [0.7, 1, 1.55]);
+  const y = useTransform(progress, [0.78, 0.9, 1], ["18vh", "0vh", "-12vh"]);
+  const filter = useTransform(progress, [0.78, 0.88, 1], ["blur(20px)", "blur(0px)", "blur(10px)"]);
+
+  return (
+    <motion.div className="nex-creative-eye-scene" style={{ opacity, scale, y, filter }}>
+      <div className="nex-creative-eye-card">
+        <div className="nex-eye-orbits" aria-hidden="true">
+          <span />
+          <span />
+          <span />
         </div>
+        <div className="nex-eye-core" aria-hidden="true">
+          <i />
+          <b />
+        </div>
+        <h3>Built for forward revenue momentum.</h3>
+      </div>
+    </motion.div>
+  );
+}
 
-        <div className="nex-feature-body">
-          <div className="nex-feature-copy">
-            <ActiveIcon size={22} />
-            <h3>{activeFeature.title}</h3>
-            <p>{activeFeature.summary}</p>
-            <ul>
-              {activeFeature.points.map((point) => (
-                <li key={point}>
-                  <CheckCircle2 size={16} />
-                  {point}
-                </li>
-              ))}
-            </ul>
-            <strong>{activeFeature.stat}</strong>
+function SolutionsSection() {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
+  const introOpacity = useTransform(scrollYProgress, [0, 0.14, 0.26], [1, 1, 0]);
+  const introY = useTransform(scrollYProgress, [0, 0.24], ["0vh", "-8vh"]);
+  const stageOpacity = useTransform(scrollYProgress, [0, 0.08, 0.9, 1], [0.86, 1, 1, 0.86]);
+
+  return (
+    <section className="nex-solutions nex-creative-tools" id="solutions" ref={sectionRef}>
+      <motion.div className="nex-creative-sticky" style={{ opacity: stageOpacity }}>
+        <div className="nex-creative-canvas-bg" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <motion.div className="nex-creative-intro" style={{ opacity: introOpacity, y: introY }}>
+          <span>AI-powered solutions</span>
+          <h2>Smarter tools for modern revenue cycle teams.</h2>
+          <p>Scroll through Codical Health's core tools as they stack into one operating system for coding, audio, payment logic and team review.</p>
+        </motion.div>
+
+        <div className="nex-creative-stage">
+          <div className="nex-creative-card-field">
+            {CREATIVE_TOOLS.map((tool, index) => (
+              <CreativeToolCard key={tool.id} tool={tool} index={index} progress={scrollYProgress} />
+            ))}
           </div>
-          <FeaturePanel feature={activeFeature} />
+          <div className="nex-creative-copy-field">
+            {CREATIVE_TOOLS.map((tool, index) => (
+              <CreativeToolNarrative key={tool.id} tool={tool} index={index} progress={scrollYProgress} />
+            ))}
+          </div>
+          <CreativeEyeFinale progress={scrollYProgress} />
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -1393,6 +1748,3 @@ export function Landing() {
     </div>
   );
 }
-
-
-
