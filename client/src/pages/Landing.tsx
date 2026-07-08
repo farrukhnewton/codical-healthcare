@@ -30,7 +30,6 @@ import {
   BarChart3,
   BrainCircuit,
   Calculator,
-  CheckCircle2,
   ChevronDown,
   ClipboardCheck,
   FileAudio,
@@ -109,13 +108,36 @@ type CommandDemo = {
   status: string;
 };
 
+type CommandWizardStep = {
+  id: CommandDemoId;
+  action: string;
+  title: string;
+  detail: string;
+  result: string;
+  x: string;
+  y: string;
+};
+
 type CreativeTool = Feature & {
   accent: string;
   caption: string;
 };
 
+type CreativeShowcase = CreativeTool & {
+  category: string;
+  line: string;
+  subline: string;
+  proof: string;
+  visual: "coding" | "transcription" | "calculator" | "chat";
+};
+
 type AccentMotionStyle = MotionStyle & {
   "--tool-accent"?: string;
+};
+
+type WizardMotionStyle = CSSProperties & {
+  "--wizard-x": string;
+  "--wizard-y": string;
 };
 
 type VideoStory = {
@@ -289,17 +311,72 @@ const COMMAND_DEMOS: CommandDemo[] = [
   },
 ];
 
+const COMMAND_WIZARD_STEPS: CommandWizardStep[] = [
+  {
+    id: "coding",
+    action: "Accept coding set",
+    title: "Step 1: review AI coding evidence",
+    detail: "Click the suggested ICD and CPT bundle to lock the source-linked coding decision.",
+    result: "Coding evidence accepted",
+    x: "34%",
+    y: "57%",
+  },
+  {
+    id: "transcription",
+    action: "Finalize transcript",
+    title: "Step 2: convert audio into coding context",
+    detail: "Finalize the encounter transcript and send the extracted clinical context to review.",
+    result: "Transcript routed to coding",
+    x: "51%",
+    y: "72%",
+  },
+  {
+    id: "chat",
+    action: "Route team handoff",
+    title: "Step 3: attach the team decision",
+    detail: "Send the validation summary into the case thread so billing and review stay aligned.",
+    result: "Handoff complete",
+    x: "82%",
+    y: "55%",
+  },
+];
+
 const CREATIVE_TOOLS: CreativeTool[] = FEATURES.map((feature, index) => ({
   ...feature,
   accent: ["#00d0ff", "#b65cff", "#ff914d", "#38d8a5"][index] ?? "#9d4edd",
   caption: ["Evidence-first coding", "Structured clinical audio", "Payment logic in one view", "Review decisions together"][index] ?? feature.label,
 }));
 
-const CREATIVE_CARD_LAYOUTS = [
-  { x: -34, y: -20, r: -9 },
-  { x: 24, y: -26, r: 7 },
-  { x: -20, y: 25, r: 5 },
-  { x: 34, y: 21, r: -6 },
+const CREATIVE_SHOWCASES: CreativeShowcase[] = CREATIVE_TOOLS.map((tool, index) => ({
+  ...tool,
+  category: ["CODING", "AUDIO", "PAYMENT", "TEAM"][index] ?? tool.label.toUpperCase(),
+  line:
+    [
+      "AI coding that keeps evidence visible.",
+      "Transcription that turns speech into structure.",
+      "Anesthesia math that explains the payment.",
+      "Team review that stays attached to the case.",
+    ][index] ?? tool.title,
+  subline:
+    [
+      "Source-linked ICD, CPT, HCPCS and modifier suggestions stay connected to the claim.",
+      "Encounter audio becomes usable notes, coding context and review-ready language.",
+      "Base units, time, modifiers and locality factors stay in one calculation view.",
+      "Coders, billers and reviewers resolve questions without leaving the workflow.",
+    ][index] ?? tool.summary,
+  proof: ["98% confidence", "01:24 transcript", "187.5 MME", "3 live reviewers"][index] ?? tool.stat,
+  visual: (["coding", "transcription", "calculator", "chat"] as const)[index] ?? "coding",
+}));
+
+const CREATIVE_SCATTER_LAYOUTS = [
+  { x: -39, y: -20, r: -6, s: 0.92 },
+  { x: -15, y: -27, r: 7, s: 0.82 },
+  { x: 18, y: -24, r: -2, s: 0.88 },
+  { x: 38, y: -17, r: 5, s: 0.86 },
+  { x: -34, y: 18, r: 4, s: 0.84 },
+  { x: -8, y: 25, r: -7, s: 0.86 },
+  { x: 24, y: 22, r: 6, s: 0.84 },
+  { x: 45, y: 28, r: -9, s: 0.8 },
 ];
 
 const VIDEO_STORIES: VideoStory[] = [
@@ -1163,12 +1240,49 @@ function CommandCenterScreen({
 }) {
   const active = COMMAND_DEMOS.find((demo) => demo.id === activeDemo) ?? COMMAND_DEMOS[0];
   const ActiveIcon = active.icon;
+  const [wizardIndex, setWizardIndex] = useState(0);
+  const [wizardComplete, setWizardComplete] = useState(false);
+  const wizard = COMMAND_WIZARD_STEPS[wizardIndex] ?? COMMAND_WIZARD_STEPS[0];
+  const wizardStyle = { "--wizard-x": wizard.x, "--wizard-y": wizard.y } as WizardMotionStyle;
   const caseRows = [
     ["CH-83472", "J47.1", "98%", "Ready"],
     ["CH-83473", "E11.65", "96%", "Review"],
     ["CH-83474", "K21.9", "97%", "Ready"],
     ["CH-83475", "M54.16", "95%", "Hold"],
   ];
+  const selectDemo = (demoId: CommandDemoId) => {
+    const nextIndex = COMMAND_WIZARD_STEPS.findIndex((step) => step.id === demoId);
+    if (nextIndex >= 0) {
+      setWizardIndex(nextIndex);
+      setWizardComplete(false);
+    }
+    onChange(demoId);
+  };
+  const advanceWizard = () => {
+    if (wizardComplete) {
+      setWizardComplete(false);
+      setWizardIndex(0);
+      onChange(COMMAND_WIZARD_STEPS[0].id);
+      return;
+    }
+
+    const nextIndex = wizardIndex + 1;
+    if (nextIndex < COMMAND_WIZARD_STEPS.length) {
+      setWizardIndex(nextIndex);
+      onChange(COMMAND_WIZARD_STEPS[nextIndex].id);
+      return;
+    }
+
+    setWizardComplete(true);
+  };
+
+  useEffect(() => {
+    const nextIndex = COMMAND_WIZARD_STEPS.findIndex((step) => step.id === activeDemo);
+    if (nextIndex >= 0 && COMMAND_WIZARD_STEPS[wizardIndex]?.id !== activeDemo) {
+      setWizardIndex(nextIndex);
+      setWizardComplete(false);
+    }
+  }, [activeDemo, wizardIndex]);
 
   return (
     <div className="nex-command-screen">
@@ -1195,7 +1309,7 @@ function CommandCenterScreen({
               type="button"
               key={demo.id}
               className={demo.id === activeDemo ? "is-active" : ""}
-              onClick={() => onChange(demo.id)}
+              onClick={() => selectDemo(demo.id)}
             >
               <DemoIcon size={14} />
               {demo.label}
@@ -1204,7 +1318,7 @@ function CommandCenterScreen({
         })}
       </nav>
 
-      <main className="nex-command-workspace" data-mode={activeDemo}>
+      <main className="nex-command-workspace" data-mode={activeDemo} style={wizardStyle}>
         <aside className="nex-command-rail" aria-hidden="true">
           {[Activity, ClipboardCheck, FileAudio, MessagesSquare, ShieldCheck].map((Icon, index) => (
             <i className={index === COMMAND_DEMOS.findIndex((demo) => demo.id === activeDemo) + 1 ? "is-active" : ""} key={index}>
@@ -1251,7 +1365,7 @@ function CommandCenterScreen({
               {activeDemo === "coding" && (
                 <div className="nex-command-code-review">
                   {caseRows.map(([caseId, code, confidence, status]) => (
-                    <button type="button" key={caseId}>
+                    <button type="button" key={caseId} onClick={advanceWizard}>
                       <span>{caseId}</span>
                       <strong>{code}</strong>
                       <em>{confidence}</em>
@@ -1270,6 +1384,7 @@ function CommandCenterScreen({
                   <blockquote>
                     Patient reports improved breathing after nebulizer treatment. Assessment supports J44.1 with documented exacerbation.
                   </blockquote>
+                  <button type="button" onClick={advanceWizard}>Finalize structured note</button>
                 </div>
               )}
               {activeDemo === "chat" && (
@@ -1309,11 +1424,39 @@ function CommandCenterScreen({
               <p><span>Claim validation</span><em>Clean</em></p>
               <p><span>Coder review</span><em>3</em></p>
               <p><span>Chat updates</span><em>Live</em></p>
-              <button type="button">{active.status}</button>
+              <button type="button" className={wizardComplete ? "is-complete" : ""} onClick={advanceWizard}>
+                {wizardComplete ? "Demo complete" : active.status}
+              </button>
             </aside>
           </div>
         </section>
 
+        <button
+          type="button"
+          className={wizardComplete ? "nex-command-wizard-target is-complete" : "nex-command-wizard-target"}
+          onClick={advanceWizard}
+          aria-label={wizardComplete ? "Restart command center demo" : wizard.action}
+        >
+          <span>{wizardComplete ? "Done" : wizard.action}</span>
+        </button>
+        <div className={wizardComplete ? "nex-command-demo-wizard is-complete" : "nex-command-demo-wizard"} aria-live="polite">
+          <div className="nex-command-wizard-progress" aria-hidden="true">
+            {COMMAND_WIZARD_STEPS.map((step, index) => (
+              <i
+                key={step.id}
+                className={index < wizardIndex || wizardComplete ? "is-done" : index === wizardIndex ? "is-active" : ""}
+              />
+            ))}
+          </div>
+          <span>{wizardComplete ? "Guided demo finished" : `Guided demo ${wizardIndex + 1}/${COMMAND_WIZARD_STEPS.length}`}</span>
+          <strong>{wizardComplete ? "Every signal is now attached to the case." : wizard.title}</strong>
+          <p>{wizardComplete ? "Coding evidence, transcript context and team handoff are visible in one command center." : wizard.detail}</p>
+          <button type="button" onClick={advanceWizard}>
+            {wizardComplete ? "Restart demo" : wizard.action}
+            <ArrowRight size={12} />
+          </button>
+          <small>{wizardComplete ? "Ready for claim validation" : wizard.result}</small>
+        </div>
         <span className="nex-command-cursor" aria-hidden="true" />
         <span className="nex-command-click is-a" aria-hidden="true" />
         <span className="nex-command-click is-b" aria-hidden="true" />
@@ -1456,115 +1599,232 @@ function FeaturePanel({ feature }: { feature: Feature }) {
   );
 }
 
-function CreativeToolCard({
-  tool,
-  index,
-  progress,
+function CreativeImagePanel({
+  showcase,
+  variant = "standard",
 }: {
-  tool: CreativeTool;
-  index: number;
-  progress: MotionValue<number>;
+  showcase: CreativeShowcase;
+  variant?: "standard" | "scatter" | "stack" | "sequence" | "ghost";
 }) {
-  const layout = CREATIVE_CARD_LAYOUTS[index] ?? CREATIVE_CARD_LAYOUTS[0];
-  const activeStart = 0.32 + index * 0.12;
-  const activeHold = activeStart + 0.07;
-  const activeEnd = activeStart + 0.13;
-  const ToolIcon = tool.icon;
-  const x = useTransform(
-    progress,
-    [0, 0.22, activeStart - 0.03, activeStart, activeHold, activeEnd, 1],
-    [`${layout.x}vw`, "0vw", "0vw", "24vw", "24vw", "34vw", "34vw"],
-  );
-  const y = useTransform(
-    progress,
-    [0, 0.22, activeStart - 0.03, activeStart, activeHold, activeEnd, 1],
-    [`${layout.y}vh`, `${index * 1.4}vh`, `${index * 1.4}vh`, `${index * 1.2 - 1}vh`, `${index * 1.2 - 1}vh`, "-4vh", "-4vh"],
-  );
-  const rotate = useTransform(
-    progress,
-    [0, 0.22, activeStart, activeEnd],
-    [`${layout.r}deg`, `${(index - 1.5) * 1.8}deg`, "0deg", "7deg"],
-  );
-  const scale = useTransform(progress, [0, 0.22, activeStart, activeHold, activeEnd, 1], [1, 0.86, 1.05, 1.05, 0.9, 0.86]);
-  const opacity = useTransform(progress, [0, 0.24, activeStart - 0.04, activeStart, activeHold, activeEnd, 0.91], [1, 1, 0.34, 1, 1, 0.08, 0]);
+  const ToolIcon = showcase.icon;
 
   return (
-    <motion.article className="nex-creative-card" style={{ x, y, rotate, scale, opacity, "--tool-accent": tool.accent } as AccentMotionStyle}>
-      <div className="nex-creative-card-head">
-        <i>
-          <ToolIcon size={22} />
-        </i>
-        <span>{tool.caption}</span>
+    <figure className={`nex-portfolio-image is-${showcase.visual} is-${variant}`} aria-label={`${showcase.label} product visual`}>
+      <div className="nex-portfolio-chrome">
+        <span />
+        <span />
+        <span />
+        <strong>{showcase.label}</strong>
       </div>
-      <strong>{tool.label}</strong>
-      <p>{tool.summary}</p>
-      <div className="nex-creative-card-art" aria-hidden="true">
-        <span />
-        <span />
-        <span />
+      <div className="nex-portfolio-body">
+        <div className="nex-portfolio-badge">
+          <ToolIcon size={16} />
+          <span>{showcase.proof}</span>
+        </div>
+
+        {showcase.visual === "coding" && (
+          <div className="nex-portfolio-coding">
+            <BrandMark compact />
+            <div className="nex-portfolio-mini-table">
+              {[
+                ["CH-83472", "J47.1", "98"],
+                ["CH-83473", "E11.65", "96"],
+                ["CH-83474", "K21.9", "97"],
+              ].map(([chart, code, score]) => (
+                <span key={chart}>
+                  <b>{chart}</b>
+                  <em>{code}</em>
+                  <i>{score}%</i>
+                </span>
+              ))}
+            </div>
+            <div className="nex-portfolio-donut" aria-hidden="true" />
+          </div>
+        )}
+
+        {showcase.visual === "transcription" && (
+          <div className="nex-portfolio-transcription">
+            <div className="nex-portfolio-wave" aria-hidden="true">
+              {Array.from({ length: 34 }).map((_, index) => (
+                <i key={index} style={{ animationDelay: `${index * 34}ms` }} />
+              ))}
+            </div>
+            <p>Patient reports improved breathing. Assessment supports exacerbation coding with source language.</p>
+            <strong>Structured note ready</strong>
+          </div>
+        )}
+
+        {showcase.visual === "calculator" && (
+          <div className="nex-portfolio-calculator">
+            <strong>$824.91</strong>
+            <span>17 units x locality factor</span>
+            {[
+              ["Base", "6"],
+              ["Time", "6"],
+              ["Modifier", "AA"],
+              ["MME", "187.5"],
+            ].map(([label, value]) => (
+              <p key={label}>
+                <em>{label}</em>
+                <b>{value}</b>
+              </p>
+            ))}
+          </div>
+        )}
+
+        {showcase.visual === "chat" && (
+          <div className="nex-portfolio-chat">
+            {[
+              ["Coder", "Evidence accepted."],
+              ["Billing", "Validator is clean."],
+              ["Assistant", "Summary attached."],
+            ].map(([sender, text], index) => (
+              <p className={index === 1 ? "is-own" : ""} key={sender}>
+                <strong>{sender}</strong>
+                <span>{text}</span>
+              </p>
+            ))}
+          </div>
+        )}
       </div>
-    </motion.article>
+    </figure>
   );
 }
 
-function CreativeToolNarrative({
-  tool,
+function CreativeScatterImage({
+  showcase,
   index,
   progress,
 }: {
-  tool: CreativeTool;
+  showcase: CreativeShowcase;
   index: number;
   progress: MotionValue<number>;
 }) {
-  const activeStart = 0.32 + index * 0.12;
-  const activeHold = activeStart + 0.07;
-  const activeEnd = activeStart + 0.13;
-  const ToolIcon = tool.icon;
-  const opacity = useTransform(progress, [activeStart - 0.045, activeStart, activeHold, activeEnd], [0, 1, 1, 0]);
-  const y = useTransform(progress, [activeStart - 0.045, activeStart, activeEnd], ["24px", "0px", "-20px"]);
-  const filter = useTransform(progress, [activeStart - 0.045, activeStart, activeHold, activeEnd], ["blur(22px)", "blur(0px)", "blur(0px)", "blur(16px)"]);
+  const layout = CREATIVE_SCATTER_LAYOUTS[index] ?? CREATIVE_SCATTER_LAYOUTS[0];
+  const x = useTransform(progress, [0, 0.14, 0.23, 0.32], [`${layout.x}vw`, `${layout.x * 0.58}vw`, "0vw", "0vw"]);
+  const y = useTransform(progress, [0, 0.14, 0.23, 0.32], [`${layout.y}vh`, `${layout.y * 0.5}vh`, "0vh", "0vh"]);
+  const rotate = useTransform(progress, [0, 0.2, 0.3], [`${layout.r}deg`, `${layout.r * 0.32}deg`, "0deg"]);
+  const scale = useTransform(progress, [0, 0.2, 0.32], [layout.s, 0.78, 0.58]);
+  const opacity = useTransform(progress, [0, 0.18, 0.27, 0.35], [1, 1, 0.5, 0]);
+  const filter = useTransform(progress, [0, 0.22, 0.34], ["blur(0px)", "blur(0px)", "blur(18px)"]);
 
   return (
-    <motion.div className="nex-creative-narrative" style={{ opacity, y, filter, "--tool-accent": tool.accent } as AccentMotionStyle}>
-      <span>
-        <ToolIcon size={18} />
-        {tool.label}
-      </span>
-      <h3>{tool.title}</h3>
-      <p>{tool.summary}</p>
-      <ul>
-        {tool.points.map((point) => (
-          <li key={point}>
-            <CheckCircle2 size={15} />
-            {point}
-          </li>
-        ))}
-      </ul>
-      <strong>{tool.stat}</strong>
+    <motion.div className="nex-creative-scatter-item" style={{ x, y, rotate, scale, opacity, filter }}>
+      <CreativeImagePanel showcase={showcase} variant="scatter" />
     </motion.div>
   );
 }
 
-function CreativeEyeFinale({ progress }: { progress: MotionValue<number> }) {
-  const opacity = useTransform(progress, [0.78, 0.86, 0.96, 1], [0, 1, 1, 0]);
-  const scale = useTransform(progress, [0.78, 0.9, 1], [0.7, 1, 1.55]);
-  const y = useTransform(progress, [0.78, 0.9, 1], ["18vh", "0vh", "-12vh"]);
-  const filter = useTransform(progress, [0.78, 0.88, 1], ["blur(20px)", "blur(0px)", "blur(10px)"]);
+function CreativeStackIntro({ progress }: { progress: MotionValue<number> }) {
+  const opacity = useTransform(progress, [0.12, 0.2, 0.34, 0.41], [0, 1, 1, 0]);
+  const scale = useTransform(progress, [0.12, 0.25, 0.41], [0.72, 1, 0.92]);
+  const y = useTransform(progress, [0.12, 0.41], ["6vh", "-4vh"]);
+  const textOpacity = useTransform(progress, [0.22, 0.29, 0.37], [0, 1, 0]);
+  const textFilter = useTransform(progress, [0.22, 0.29, 0.37], ["blur(18px)", "blur(0px)", "blur(14px)"]);
 
   return (
-    <motion.div className="nex-creative-eye-scene" style={{ opacity, scale, y, filter }}>
+    <motion.div className="nex-creative-stack-intro" style={{ opacity, scale, y }}>
+      <CreativeImagePanel showcase={CREATIVE_SHOWCASES[0]} variant="stack" />
+      <motion.h2 style={{ opacity: textOpacity, filter: textFilter }}>
+        what moves <em>revenue</em> forward?
+      </motion.h2>
+    </motion.div>
+  );
+}
+
+function CreativeEmptyPrompt({ progress }: { progress: MotionValue<number> }) {
+  const opacity = useTransform(progress, [0.38, 0.44, 0.49, 0.54], [0, 1, 1, 0]);
+  const filter = useTransform(progress, [0.38, 0.44, 0.54], ["blur(24px)", "blur(5px)", "blur(18px)"]);
+  const x = useTransform(progress, [0.38, 0.5], ["7vw", "0vw"]);
+
+  return (
+    <motion.div className="nex-creative-empty-prompt" style={{ opacity, filter }}>
+      <div className="nex-creative-category-ghosts" aria-hidden="true">
+        {CREATIVE_SHOWCASES.map((showcase) => (
+          <span key={showcase.id}>{showcase.category}</span>
+        ))}
+      </div>
+      <motion.div className="nex-creative-empty-frame" style={{ x }} />
+    </motion.div>
+  );
+}
+
+function CreativeSequenceMoment({
+  showcase,
+  index,
+  progress,
+}: {
+  showcase: CreativeShowcase;
+  index: number;
+  progress: MotionValue<number>;
+}) {
+  const start = 0.49 + index * 0.09;
+  const hold = start + 0.055;
+  const end = start + 0.095;
+  const opacity = useTransform(progress, [start - 0.035, start, hold, end], [0, 1, 1, 0]);
+  const filter = useTransform(progress, [start - 0.035, start, hold, end], ["blur(26px)", "blur(0px)", "blur(0px)", "blur(18px)"]);
+  const imageX = useTransform(progress, [start - 0.035, start, end], ["10vw", "0vw", "-4vw"]);
+  const imageRotate = useTransform(progress, [start - 0.035, start, end], ["9deg", "-2deg", "4deg"]);
+  const imageScale = useTransform(progress, [start - 0.035, start, end], [0.82, 1, 0.88]);
+
+  return (
+    <motion.article className="nex-creative-sequence-moment" style={{ opacity, filter }}>
+      <div className="nex-creative-word-stack" aria-hidden="true">
+        {CREATIVE_SHOWCASES.map((item) => (
+          <span className={item.id === showcase.id ? "is-active" : ""} key={item.id}>
+            {item.category}
+          </span>
+        ))}
+      </div>
+      <div className="nex-creative-sequence-copy">
+        <small>{showcase.caption}</small>
+        <h3>{showcase.line}</h3>
+        <p>{showcase.subline}</p>
+        <strong>{showcase.proof}</strong>
+      </div>
+      <motion.div className="nex-creative-sequence-image" style={{ x: imageX, rotate: imageRotate, scale: imageScale }}>
+        <CreativeImagePanel showcase={showcase} variant="sequence" />
+      </motion.div>
+    </motion.article>
+  );
+}
+
+function CreativeEyeFinale({ progress }: { progress: MotionValue<number> }) {
+  const opacity = useTransform(progress, [0.79, 0.83, 0.94, 0.99], [0, 1, 1, 0]);
+  const scale = useTransform(progress, [0.79, 0.87, 0.99], [0.68, 1, 1.85]);
+  const y = useTransform(progress, [0.79, 0.87, 0.99], ["14vh", "0vh", "-18vh"]);
+  const rotate = useTransform(progress, [0.79, 0.87, 0.99], ["-7deg", "-1deg", "2deg"]);
+  const filter = useTransform(progress, [0.79, 0.83, 0.95, 0.99], ["blur(22px)", "blur(0px)", "blur(0px)", "blur(18px)"]);
+
+  return (
+    <motion.div className="nex-creative-eye-scene" style={{ opacity, scale, y, rotate, filter }}>
       <div className="nex-creative-eye-card">
         <div className="nex-eye-orbits" aria-hidden="true">
           <span />
           <span />
           <span />
         </div>
+        <div className="nex-eye-globe" aria-hidden="true" />
         <div className="nex-eye-core" aria-hidden="true">
           <i />
           <b />
         </div>
-        <h3>Built for forward revenue momentum.</h3>
+        <h3>Built around <em>forward</em> revenue momentum.</h3>
       </div>
+    </motion.div>
+  );
+}
+
+function CreativeFinalCTA({ progress }: { progress: MotionValue<number> }) {
+  const opacity = useTransform(progress, [0.93, 0.98, 1], [0, 1, 1]);
+  const y = useTransform(progress, [0.93, 1], ["18vh", "0vh"]);
+  const filter = useTransform(progress, [0.93, 0.98], ["blur(18px)", "blur(0px)"]);
+
+  return (
+    <motion.div className="nex-creative-final-cta" style={{ opacity, y, filter }}>
+      <p>Unlimited coding clarity & revenue-cycle follow-through</p>
+      <strong>AI coding + transcription + anesthesia logic + attached team review</strong>
+      <Link href="/signup">View portfolio <ArrowRight size={16} /></Link>
     </motion.div>
   );
 }
@@ -1572,36 +1832,36 @@ function CreativeEyeFinale({ progress }: { progress: MotionValue<number> }) {
 function SolutionsSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
-  const introOpacity = useTransform(scrollYProgress, [0, 0.14, 0.26], [1, 1, 0]);
-  const introY = useTransform(scrollYProgress, [0, 0.24], ["0vh", "-8vh"]);
-  const stageOpacity = useTransform(scrollYProgress, [0, 0.08, 0.9, 1], [0.86, 1, 1, 0.86]);
+  const stageOpacity = useTransform(scrollYProgress, [0, 0.04, 0.98, 1], [0.94, 1, 1, 0.98]);
 
   return (
     <section className="nex-solutions nex-creative-tools" id="solutions" ref={sectionRef}>
       <motion.div className="nex-creative-sticky" style={{ opacity: stageOpacity }}>
+        <div className="nex-creative-progress" aria-hidden="true">
+          <motion.span style={{ scaleX: scrollYProgress }} />
+        </div>
         <div className="nex-creative-canvas-bg" aria-hidden="true">
           <span />
           <span />
           <span />
         </div>
-        <motion.div className="nex-creative-intro" style={{ opacity: introOpacity, y: introY }}>
-          <span>AI-powered solutions</span>
-          <h2>Smarter tools for modern revenue cycle teams.</h2>
-          <p>Scroll through Codical Health's core tools as they stack into one operating system for coding, audio, payment logic and team review.</p>
-        </motion.div>
 
         <div className="nex-creative-stage">
-          <div className="nex-creative-card-field">
-            {CREATIVE_TOOLS.map((tool, index) => (
-              <CreativeToolCard key={tool.id} tool={tool} index={index} progress={scrollYProgress} />
-            ))}
+          <div className="nex-creative-scatter-field" aria-label="Codical Health tool visuals">
+            {CREATIVE_SCATTER_LAYOUTS.map((_, index) => {
+              const showcase = CREATIVE_SHOWCASES[index % CREATIVE_SHOWCASES.length];
+              return <CreativeScatterImage key={`${showcase.id}-${index}`} showcase={showcase} index={index} progress={scrollYProgress} />;
+            })}
           </div>
-          <div className="nex-creative-copy-field">
-            {CREATIVE_TOOLS.map((tool, index) => (
-              <CreativeToolNarrative key={tool.id} tool={tool} index={index} progress={scrollYProgress} />
+          <CreativeStackIntro progress={scrollYProgress} />
+          <CreativeEmptyPrompt progress={scrollYProgress} />
+          <div className="nex-creative-sequence-field">
+            {CREATIVE_SHOWCASES.map((showcase, index) => (
+              <CreativeSequenceMoment key={showcase.id} showcase={showcase} index={index} progress={scrollYProgress} />
             ))}
           </div>
           <CreativeEyeFinale progress={scrollYProgress} />
+          <CreativeFinalCTA progress={scrollYProgress} />
         </div>
       </motion.div>
     </section>
