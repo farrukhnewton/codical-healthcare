@@ -1,23 +1,18 @@
 import "@/styles/landing-stitch.css";
 
 import heroLaptopPremierFrame from "@/assets/landing/hero-concept-laptop-clean-premier.png";
-import heroWaveLeftFinal from "@/assets/landing/hero-wave-left-final.png";
-import heroWaveRightFinal from "@/assets/landing/hero-wave-right-final.png";
+import creativeEyeballVideo from "@/assets/landing/creative-eyeball.mp4";
 import aetnaLogo from "@/assets/landing/partners/aetna.svg";
-import availityLogo from "@/assets/landing/partners/availity.svg";
-import changeHealthcareLogo from "@/assets/landing/partners/change-healthcare.png";
-import cignaLogo from "@/assets/landing/partners/cigna.png";
-import elevanceLogo from "@/assets/landing/partners/elevance-health.svg";
 import humanaLogo from "@/assets/landing/partners/humana.svg";
-import kaiserLogo from "@/assets/landing/partners/kaiser-permanente.png";
 import optumLogo from "@/assets/landing/partners/optum.svg";
-import unitedHealthcareLogo from "@/assets/landing/partners/unitedhealthcare.svg";
 import {
   motion,
   type MotionValue,
   type MotionStyle,
+  useMotionValue,
   useReducedMotion,
   useScroll,
+  useSpring,
   useTransform,
 } from "framer-motion";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -220,19 +215,19 @@ const LOGO_GROUPS: LogoGroup[] = [
   {
     label: "Insurers",
     logos: [
-      { name: "UnitedHealthcare", domain: "uhc.com", logo: unitedHealthcareLogo, color: "#1f3570", size: "wide" },
+      { name: "UnitedHealthcare", domain: "uhc.com", logo: "/assets/logos/insurers/unitedhealthcare.svg", color: "#1f3570", size: "wide" },
       { name: "Aetna", domain: "aetna.com", logo: aetnaLogo, color: "#7d3f98", size: "compact" },
-      { name: "Cigna", domain: "cigna.com", logo: cignaLogo, color: "#1188c9", size: "wide" },
+      { name: "Cigna", domain: "cigna.com", logo: "/assets/logos/insurers/cigna.png", color: "#1188c9", size: "wide" },
       { name: "Humana", domain: "humana.com", logo: humanaLogo, color: "#4e8416", size: "wide" },
-      { name: "Elevance Health", domain: "elevancehealth.com", logo: elevanceLogo, color: "#1a3673", size: "wide" },
-      { name: "Kaiser Permanente", domain: "kp.org", logo: kaiserLogo, color: "#0087b4", size: "wide" },
+      { name: "Elevance Health", domain: "elevancehealth.com", logo: "/assets/logos/insurers/elevance-health.svg", color: "#1a3673", size: "wide" },
+      { name: "Kaiser Permanente", domain: "kp.org", logo: "/assets/logos/insurers/kaiser.png", color: "#0087b4", size: "wide" },
     ],
   },
   {
     label: "Clearinghouses",
     logos: [
-      { name: "Availity", domain: "availity.com", logo: availityLogo, color: "#f7941e", size: "wide" },
-      { name: "Change Healthcare", domain: "changehealthcare.com", logo: changeHealthcareLogo, color: "#f72b55", size: "wide" },
+      { name: "Availity", domain: "availity.com", logo: "/assets/logos/insurers/availity.svg", color: "#f7941e", size: "wide" },
+      { name: "Change Healthcare", domain: "changehealthcare.com", logo: "/assets/logos/insurers/change-healthcare.png", color: "#f72b55", size: "wide" },
       { name: "Optum", domain: "optum.com", logo: optumLogo, color: "#ff612b", size: "wide" },
     ],
   },
@@ -1147,86 +1142,129 @@ function HeroLaptopFrame() {
 }
 
 function HeroSection() {
-  const {
-    heroRef,
-    clipPath,
-    laptopY,
-    laptopScale,
-    laptopOpacity,
-    waveY,
-    waveScale,
-    waveOpacity,
-    waveFilter,
-    copyY,
-    copyOpacity,
-    copyScale,
-    copyFilter,
-    scrimOpacity,
-  } = useHeroScrollTimeline();
+  const heroRef = useRef<HTMLElement | null>(null);
+  const prefersReducedMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const laptopY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, -120]);
+  const laptopScale = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [1, 1] : [1, 0.96]);
+  const laptopOpacity = useTransform(scrollYProgress, [0, 0.82], [1, 0.48]);
+  const copyY = useTransform(scrollYProgress, [0, 0.72], prefersReducedMotion ? [0, 0] : [0, -46]);
+  const copyOpacity = useTransform(scrollYProgress, [0, 0.62], [1, 0.38]);
+  const copyFilter = useTransform(scrollYProgress, [0, 0.7], ["blur(0px)", "blur(8px)"]);
 
   return (
-    <section className="nex-hero" id="top" ref={heroRef}>
-      <motion.div
-        className="nex-hero-stage"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ amount: 0.35 }}
+    <section className="nex-hero-premier" id="top" ref={heroRef}>
+      <div className="nex-hero-premier-radial" aria-hidden="true" />
+      <video
+        className="nex-hero-premier-video"
+        autoPlay
+        muted
+        loop
+        playsInline
+        poster="/assets/videos/hero-poster.jpg"
+        aria-hidden="true"
       >
-        <motion.div className="nex-hero-background-layer" aria-hidden="true" style={{ clipPath }} />
-        <motion.div className="nex-hero-motion-field" aria-hidden="true" style={{ clipPath }}>
-          <div className="nex-concept-composition">
-            <motion.div
-              className="nex-concept-wave-stage"
-              style={{
-                y: waveY,
-                scale: waveScale,
-                opacity: waveOpacity,
-                filter: waveFilter,
-              }}
-            >
-              <img className="nex-concept-wave nex-concept-wave-right" src={heroWaveRightFinal} alt="" />
-              <img className="nex-concept-wave nex-concept-wave-left" src={heroWaveLeftFinal} alt="" />
-            </motion.div>
-            <motion.div
-              className="nex-concept-laptop-stage"
-              style={{
-                y: laptopY,
-                scale: laptopScale,
-                opacity: laptopOpacity,
-              }}
-            >
-              <HeroLaptopFrame />
-            </motion.div>
-          </div>
-        </motion.div>
-        <motion.div className="nex-hero-soft-scrim" aria-hidden="true" style={{ opacity: scrimOpacity }} />
-        <div className="nex-hero-grid">
-          <motion.div
-            className="nex-hero-copy"
-            variants={HERO_COPY_VARIANTS}
-            style={{
-              y: copyY,
-              opacity: copyOpacity,
-              scale: copyScale,
-              filter: copyFilter,
-            }}
-          >
-            <motion.div className="nex-hero-pill" variants={HERO_COPY_ITEM_VARIANTS}>
-              <i />
-              AI-powered medical coding platform
-            </motion.div>
-            <motion.h1 variants={HERO_COPY_ITEM_VARIANTS}>Precision in coding, <span>Power in revenue.</span></motion.h1>
-            <motion.p variants={HERO_COPY_ITEM_VARIANTS}>
-              Codical Health unifies AI medical coding, transcription, anesthesia calculations and team collaboration in one calm,
-              intelligent revenue cycle workspace.
-            </motion.p>
-            <motion.div className="nex-hero-actions" variants={HERO_COPY_ITEM_VARIANTS}>
-              <CtaButton href="/signup">Request a demo</CtaButton>
-            </motion.div>
-          </motion.div>
+        <source src="/assets/videos/hero-loop-healthcare.mp4" type="video/mp4" />
+        <source src="/assets/videos/loop_optimized.mp4" type="video/mp4" />
+      </video>
+      <div className="nex-hero-premier-texture" aria-hidden="true" />
+      <div className="nex-hero-premier-grid" aria-hidden="true" />
+      <img className="nex-hero-premier-orb is-left" src="/assets/hero-orb-left.svg" alt="" aria-hidden="true" />
+      <img className="nex-hero-premier-orb is-right" src="/assets/hero-orb-right.svg" alt="" aria-hidden="true" />
+      <div className="nex-hero-premier-vignette" aria-hidden="true" />
 
-        </div>
-      </motion.div>
+      <div className="nex-hero-premier-inner">
+        <motion.div
+          className="nex-hero-premier-copy"
+          initial="hidden"
+          animate="visible"
+          style={{
+            y: copyY,
+            opacity: copyOpacity,
+            filter: copyFilter,
+          }}
+        >
+          <motion.div className="nex-hero-premier-badge" variants={HERO_COPY_ITEM_VARIANTS}>
+            <i />
+            AI-powered medical coding platform
+          </motion.div>
+          <motion.h1 className="nex-hero-premier-title" variants={HERO_COPY_VARIANTS}>
+            <motion.span variants={HERO_COPY_ITEM_VARIANTS}>Precision in coding, </motion.span>
+            <motion.span className="is-serif" variants={HERO_COPY_ITEM_VARIANTS}>
+              Power in revenue.
+            </motion.span>
+          </motion.h1>
+          <motion.p className="nex-hero-premier-subtitle" variants={HERO_COPY_ITEM_VARIANTS}>
+            Codical Health unifies AI medical coding, transcription, anesthesia calculations and team collaboration in one calm,
+            intelligent revenue cycle workspace.
+          </motion.p>
+          <motion.div className="nex-hero-premier-actions" variants={HERO_COPY_ITEM_VARIANTS}>
+            <Link className="nex-hero-premier-primary" href="/signup">
+              <strong>Request a demo</strong>
+              <span>
+                <ArrowRight size={17} />
+              </span>
+            </Link>
+            <a className="nex-hero-premier-secondary" href="#command-center">
+              See platform
+            </a>
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          className="nex-hero-premier-macbook"
+          initial={{ opacity: 0, y: 44, scale: 0.96, filter: "blur(10px)" }}
+          animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+          transition={{ duration: 1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            y: laptopY,
+            scale: laptopScale,
+            opacity: laptopOpacity,
+          }}
+        >
+          <span className="nex-hero-premier-macbook-glow" aria-hidden="true" />
+          <picture>
+            <source
+              srcSet="/assets/macbook-codical-hero@1x.webp 1200w, /assets/macbook-codical-hero@2x.webp 2400w"
+              type="image/webp"
+              sizes="(max-width: 768px) 96vw, 1120px"
+            />
+            <img
+              className="nex-hero-premier-macbook-image"
+              src="/assets/macbook-codical-hero@2x.png"
+              alt="Codical Health platform running on a laptop"
+              width={2400}
+              height={1453}
+              fetchPriority="high"
+            />
+          </picture>
+          <div className="nex-hero-premier-screen" aria-hidden="true">
+            <HeroDashboardScreen />
+            <span className="nex-hero-screen-glaze" />
+            <span className="nex-hero-screen-sweep" />
+            <span className="nex-hero-screen-cursor" />
+            <span className="nex-hero-click-ring is-one" />
+            <span className="nex-hero-click-ring is-two" />
+            <span className="nex-hero-click-ring is-three" />
+            <span className="nex-hero-action-badge is-coding">AI code accepted</span>
+            <span className="nex-hero-action-badge is-transcript">Transcript finalized</span>
+            <span className="nex-hero-action-badge is-claim">Claim validated</span>
+          </div>
+          <motion.img
+            className="nex-hero-premier-trust-badge"
+            src="/assets/badge-hipaa-soc2.svg"
+            alt="HIPAA and SOC 2 ready"
+            width={180}
+            height={72}
+            initial={{ opacity: 0, y: 12, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.6, delay: 1, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </motion.div>
+      </div>
     </section>
   );
 }
@@ -1691,6 +1729,127 @@ function CreativeImagePanel({
   );
 }
 
+function CreativeFlowWaveBackground({ light = false }: { light?: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const prefersReducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    const parent = canvas?.parentElement;
+
+    if (!canvas || !context || !parent) return;
+
+    const layers: Array<[number, number, number, number]> = light
+      ? [
+          [255, 255, 255, 0.06],
+          [198, 201, 220, 0.04],
+          [107, 125, 235, 0.03],
+        ]
+      : [
+          [200, 79, 232, 0.1],
+          [155, 63, 230, 0.07],
+          [107, 125, 235, 0.05],
+          [198, 201, 220, 0.03],
+        ];
+
+    let width = 0;
+    let height = 0;
+    let time = 0;
+    let frameId = 0;
+    let disposed = false;
+
+    const resize = () => {
+      const rect = parent.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      width = Math.max(1, rect.width);
+      height = Math.max(1, rect.height);
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    const drawLayer = ([red, green, blue, alpha]: [number, number, number, number], layerIndex: number) => {
+      const frequency = 0.003 + layerIndex * 0.001;
+      const phase = layerIndex * 1.1;
+      const amplitude = 45 + layerIndex * 10;
+      const baseY = height * 0.5 + layerIndex * 20;
+
+      context.beginPath();
+      context.moveTo(0, height);
+
+      for (let x = 0; x <= width; x += 3) {
+        const y =
+          baseY +
+          Math.sin(x * frequency + time + phase) * amplitude +
+          Math.sin(x * frequency * 2.2 + time * 1.3 + phase) * amplitude * 0.2;
+        context.lineTo(x, y);
+      }
+
+      context.lineTo(width, height);
+      context.closePath();
+      context.fillStyle = `rgba(${red},${green},${blue},${alpha})`;
+      context.fill();
+
+      if (layerIndex === 0) {
+        context.beginPath();
+        for (let x = 0; x <= width; x += 3) {
+          const y =
+            baseY +
+            Math.sin(x * frequency + time + phase) * amplitude +
+            Math.sin(x * frequency * 2.2 + time * 1.3 + phase) * amplitude * 0.2;
+          if (x === 0) {
+            context.moveTo(x, y);
+          } else {
+            context.lineTo(x, y);
+          }
+        }
+        context.strokeStyle = `rgba(${red},${green},${blue},0.22)`;
+        context.lineWidth = 1.5;
+        context.stroke();
+      }
+    };
+
+    const draw = () => {
+      context.clearRect(0, 0, width, height);
+      if (!prefersReducedMotion) {
+        time += 0.005;
+      }
+
+      layers.forEach(drawLayer);
+
+      if (!prefersReducedMotion && !disposed) {
+        frameId = window.requestAnimationFrame(draw);
+      }
+    };
+
+    resize();
+    draw();
+
+    const resizeObserver = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(() => {
+          resize();
+          if (prefersReducedMotion) draw();
+        })
+      : null;
+    resizeObserver?.observe(parent);
+
+    return () => {
+      disposed = true;
+      if (frameId) window.cancelAnimationFrame(frameId);
+      resizeObserver?.disconnect();
+    };
+  }, [light, prefersReducedMotion]);
+
+  return (
+    <div className={`nex-creative-canvas-bg${light ? " is-light" : " is-dark"}`} aria-hidden="true">
+      <canvas ref={canvasRef} className="nex-creative-flow-canvas" />
+    </div>
+  );
+}
+
 function CreativeScatterImage({
   showcase,
   index,
@@ -1790,35 +1949,71 @@ function CreativeSequenceMoment({
 }
 
 function CreativeEyeFinale({ progress }: { progress: MotionValue<number> }) {
-  const opacity = useTransform(progress, [0.79, 0.83, 0.94, 0.99], [0, 1, 1, 0]);
-  const scale = useTransform(progress, [0.79, 0.87, 0.99], [0.68, 1, 1.85]);
-  const y = useTransform(progress, [0.79, 0.87, 0.99], ["14vh", "0vh", "-18vh"]);
-  const rotate = useTransform(progress, [0.79, 0.87, 0.99], ["-7deg", "-1deg", "2deg"]);
-  const filter = useTransform(progress, [0.79, 0.83, 0.95, 0.99], ["blur(22px)", "blur(0px)", "blur(0px)", "blur(18px)"]);
+  const prefersReducedMotion = useReducedMotion();
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const smoothMouseX = useSpring(mouseX, { stiffness: 70, damping: 20, mass: 0.35 });
+  const smoothMouseY = useSpring(mouseY, { stiffness: 70, damping: 20, mass: 0.35 });
+  const layerOpacity = useTransform(progress, [0.82, 0.855, 0.985, 1], [0, 1, 1, 0]);
+  const cardScale = useTransform(progress, [0.84, 0.9, 0.965, 1], [0.85, 0.85, 2.5, 2.5]);
+  const cardRotateY = useTransform(progress, [0.84, 0.89], ["15deg", "0deg"]);
+  const cardOpacity = useTransform(progress, [0.9, 0.98, 1], [1, 0.15, 0.15]);
+  const dissolveOpacity = useTransform(progress, [0.935, 0.988, 1], [0, 0.95, 0.98]);
+  const captionOpacity = useTransform(progress, [0.845, 0.875, 0.94, 0.985], [0, 1, 0.78, 0]);
+  const captionY = useTransform(progress, [0.845, 0.875, 0.985], ["30px", "0px", "-18px"]);
+  const captionFilter = useTransform(progress, [0.845, 0.875, 0.985], ["blur(16px)", "blur(0px)", "blur(12px)"]);
+  const parallaxX = useTransform(smoothMouseX, [-1, 1], prefersReducedMotion ? [0, 0] : [-10, 10]);
+  const parallaxY = useTransform(smoothMouseY, [-1, 1], prefersReducedMotion ? [0, 0] : [-8, 8]);
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      mouseX.set((event.clientX / window.innerWidth - 0.5) * 2);
+      mouseY.set((event.clientY / window.innerHeight - 0.5) * 2);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    return () => window.removeEventListener("pointermove", handlePointerMove);
+  }, [mouseX, mouseY, prefersReducedMotion]);
 
   return (
-    <motion.div className="nex-creative-eye-scene" style={{ opacity, scale, y, rotate, filter }}>
-      <div className="nex-creative-eye-card">
-        <div className="nex-eye-orbits" aria-hidden="true">
-          <span />
-          <span />
-          <span />
+    <motion.div className="nex-creative-eye-scene" style={{ opacity: layerOpacity }}>
+      <motion.div
+        className="nex-creative-eye-video-wrap"
+        style={{
+          scale: cardScale,
+          rotateY: cardRotateY,
+          x: parallaxX,
+          y: parallaxY,
+          opacity: cardOpacity,
+        }}
+      >
+        <div className="nex-creative-eye-card">
+          <video
+            src={creativeEyeballVideo}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-label="Animated eye with orbiting glass waves"
+          />
+          <motion.div className="nex-creative-eyeball-dissolve" style={{ opacity: dissolveOpacity }} aria-hidden="true" />
         </div>
-        <div className="nex-eye-globe" aria-hidden="true" />
-        <div className="nex-eye-core" aria-hidden="true">
-          <i />
-          <b />
-        </div>
-        <h3>Built around <em>forward</em> revenue momentum.</h3>
-      </div>
+      </motion.div>
+      <motion.h3 className="nex-creative-eyeball-caption" style={{ opacity: captionOpacity, y: captionY, filter: captionFilter }}>
+        Built around <em>forward</em> revenue momentum.
+      </motion.h3>
+      <motion.div className="nex-creative-eyeball-wash" style={{ opacity: dissolveOpacity }} aria-hidden="true" />
     </motion.div>
   );
 }
 
 function CreativeFinalCTA({ progress }: { progress: MotionValue<number> }) {
-  const opacity = useTransform(progress, [0.93, 0.98, 1], [0, 1, 1]);
-  const y = useTransform(progress, [0.93, 1], ["18vh", "0vh"]);
-  const filter = useTransform(progress, [0.93, 0.98], ["blur(18px)", "blur(0px)"]);
+  const opacity = useTransform(progress, [0.97, 0.992, 1], [0, 1, 1]);
+  const y = useTransform(progress, [0.97, 1], ["18vh", "0vh"]);
+  const filter = useTransform(progress, [0.97, 0.992], ["blur(18px)", "blur(0px)"]);
 
   return (
     <motion.div className="nex-creative-final-cta" style={{ opacity, y, filter }}>
@@ -1840,11 +2035,7 @@ function SolutionsSection() {
         <div className="nex-creative-progress" aria-hidden="true">
           <motion.span style={{ scaleX: scrollYProgress }} />
         </div>
-        <div className="nex-creative-canvas-bg" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
+        <CreativeFlowWaveBackground />
 
         <div className="nex-creative-stage">
           <div className="nex-creative-scatter-field" aria-label="Codical Health tool visuals">
