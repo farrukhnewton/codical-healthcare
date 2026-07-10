@@ -7047,30 +7047,217 @@
   pointer-events: none;
 }
 
-.nex-hero-premier-screen .nex-hero-dashboard-screen {
+.nex-hero-clean-screen {
+  position: relative;
   width: 100%;
   height: 100%;
-  min-height: 0;
-  transform: translateZ(0);
-  transform-origin: 50% 50%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 24% 22%, rgba(27, 224, 229, 0.14), transparent 24%),
+    radial-gradient(circle at 70% 68%, rgba(157, 78, 221, 0.22), transparent 30%),
+    linear-gradient(135deg, #f9fbff 0%, #edf1ff 46%, #ffffff 100%);
 }
 
-.nex-hero-premier-screen .nex-product-tabs .is-active {
-  animation: nex-hero-tab-workflow 7.2s ease-in-out infinite;
+.nex-hero-clean-screen::before {
+  content: "";
+  position: absolute;
+  inset: 18% 6% 8%;
+  border-radius: 22px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.48)),
+    repeating-linear-gradient(90deg, rgba(83, 51, 203, 0.08) 0 1px, transparent 1px 86px),
+    repeating-linear-gradient(0deg, rgba(83, 51, 203, 0.06) 0 1px, transparent 1px 62px);
+  box-shadow:
+    inset 0 0 0 1px rgba(77, 52, 156, 0.08),
+    0 32px 80px rgba(38, 24, 92, 0.08);
 }
 
-.nex-hero-premier-screen .nex-software-kpis article:nth-child(2),
-.nex-hero-premier-screen .nex-hero-transcription,
-.nex-hero-premier-screen .nex-hero-right-rail section:first-child {
-  animation: nex-hero-screen-focus 7.2s ease-in-out infinite;
+.nex-hero-clean-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0) 34%, rgba(255, 255, 255, 0.54) 45%, rgba(157, 78, 221, 0.12) 52%, rgba(255, 255, 255, 0) 66%, transparent 100%);
+  transform: translateX(-80%) skewX(-10deg);
+  animation: nex-hero-clean-glaze 5.6s cubic-bezier(0.42, 0, 0.18, 1) infinite;
+  pointer-events: none;
 }
 
-.nex-hero-premier-screen .nex-hero-transcription {
-  animation-delay: 2.15s;
+.nex-hero-clean-top {
+  position: relative;
+  z-index: 2;
+  height: 16%;
+  display: flex;
+  align-items: center;
+  gap: 2.4%;
+  padding: 0 4.2%;
+  background:
+    radial-gradient(circle at 52% 0%, rgba(157, 78, 221, 0.2), transparent 38%),
+    linear-gradient(180deg, #090a18 0%, #151427 100%);
 }
 
-.nex-hero-premier-screen .nex-hero-right-rail section:first-child {
-  animation-delay: 4.1s;
+.nex-hero-clean-top > span:not(.nex-hero-clean-brand) {
+  width: 9%;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.nex-hero-clean-top > span:nth-child(4) {
+  margin-left: auto;
+  width: 24%;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.nex-hero-clean-brand {
+  width: 54px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.nex-hero-clean-brand i {
+  width: 6px;
+  border-radius: 999px;
+  background: #1838d0;
+}
+
+.nex-hero-clean-brand i:nth-child(1) {
+  height: 14px;
+  background: #ff6b2b;
+}
+
+.nex-hero-clean-brand i:nth-child(2) {
+  height: 20px;
+}
+
+.nex-hero-clean-brand i:nth-child(3) {
+  height: 17px;
+  background: #ce62e8;
+}
+
+.nex-hero-clean-brand i:nth-child(4) {
+  height: 22px;
+  background: #ffc14d;
+}
+
+.nex-hero-clean-grid {
+  position: absolute;
+  z-index: 3;
+  inset: 22% 8% 10%;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 3%;
+}
+
+.nex-hero-clean-grid span {
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.6)),
+    linear-gradient(90deg, rgba(75, 51, 207, 0.1), transparent);
+  box-shadow:
+    inset 0 0 0 1px rgba(72, 54, 148, 0.07),
+    0 10px 24px rgba(45, 33, 92, 0.04);
+}
+
+.nex-hero-clean-grid span:nth-child(1),
+.nex-hero-clean-grid span:nth-child(2),
+.nex-hero-clean-grid span:nth-child(3),
+.nex-hero-clean-grid span:nth-child(4) {
+  min-height: 76px;
+}
+
+.nex-hero-clean-grid span:nth-child(5) {
+  grid-column: span 2;
+}
+
+.nex-hero-clean-grid span:nth-child(7) {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.nex-hero-clean-grid span:nth-child(9) {
+  grid-column: span 2;
+}
+
+.nex-hero-clean-grid span:nth-child(11) {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.nex-hero-clean-grid span:nth-child(14) {
+  grid-column: span 3;
+}
+
+.nex-hero-clean-grid span:nth-child(15) {
+  grid-column: span 3;
+}
+
+.nex-hero-clean-orbit,
+.nex-hero-clean-pulse {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.nex-hero-clean-orbit {
+  border-radius: 999px;
+  border: 2px solid rgba(123, 47, 190, 0.2);
+  box-shadow: 0 0 34px rgba(123, 47, 190, 0.08);
+}
+
+.nex-hero-clean-orbit.is-one {
+  left: 49%;
+  top: 42%;
+  width: 128px;
+  height: 128px;
+  border-color: rgba(20, 184, 166, 0.26);
+  animation: nex-hero-clean-orbit 7.4s ease-in-out infinite;
+}
+
+.nex-hero-clean-orbit.is-two {
+  left: 63%;
+  top: 49%;
+  width: 108px;
+  height: 108px;
+  animation: nex-hero-clean-orbit 8s ease-in-out infinite reverse;
+}
+
+.nex-hero-clean-orbit.is-three {
+  left: 36%;
+  top: 63%;
+  width: 96px;
+  height: 96px;
+  border-color: rgba(29, 181, 235, 0.24);
+  animation: nex-hero-clean-orbit 8.8s ease-in-out infinite;
+}
+
+.nex-hero-clean-pulse {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #8b3fe2;
+  box-shadow: 0 0 22px rgba(139, 63, 226, 0.5);
+  animation: nex-hero-clean-pulse 4.8s ease-in-out infinite;
+}
+
+.nex-hero-clean-pulse.is-one {
+  left: 28%;
+  top: 34%;
+}
+
+.nex-hero-clean-pulse.is-two {
+  left: 71%;
+  top: 38%;
+  animation-delay: 1.2s;
+}
+
+.nex-hero-clean-pulse.is-three {
+  left: 54%;
+  top: 72%;
+  animation-delay: 2.4s;
 }
 
 .nex-hero-premier-trust-badge {
@@ -7107,6 +7294,23 @@
 @keyframes nex-hero-premier-orb-right {
   0%, 100% { transform: translate3d(0, 0, 0) rotate(2deg); }
   50% { transform: translate3d(-38px, 28px, 0) rotate(-3deg); }
+}
+
+@keyframes nex-hero-clean-glaze {
+  0% { transform: translateX(-80%) skewX(-10deg); opacity: 0; }
+  16% { opacity: 0.72; }
+  58% { opacity: 0.58; }
+  100% { transform: translateX(86%) skewX(-10deg); opacity: 0; }
+}
+
+@keyframes nex-hero-clean-orbit {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.72; }
+  50% { transform: translate3d(10px, -6px, 0) scale(1.04); opacity: 1; }
+}
+
+@keyframes nex-hero-clean-pulse {
+  0%, 100% { opacity: 0.34; transform: scale(0.88); }
+  50% { opacity: 1; transform: scale(1.14); }
 }
 
 @media (max-width: 980px) {
@@ -7195,10 +7399,9 @@
   .nex-hero-premier-orb,
   .nex-hero-premier-macbook-image,
   .nex-hero-premier-screen,
-  .nex-hero-premier-screen .nex-product-tabs .is-active,
-  .nex-hero-premier-screen .nex-software-kpis article:nth-child(2),
-  .nex-hero-premier-screen .nex-hero-transcription,
-  .nex-hero-premier-screen .nex-hero-right-rail section:first-child,
+  .nex-hero-clean-screen::after,
+  .nex-hero-clean-orbit,
+  .nex-hero-clean-pulse,
   .nex-hero-premier-badge i {
     animation: none !important;
   }

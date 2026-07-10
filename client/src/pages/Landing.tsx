@@ -2,9 +2,6 @@ import "@/styles/landing-stitch.css";
 
 import heroLaptopPremierFrame from "@/assets/landing/hero-concept-laptop-clean-premier.png";
 import creativeEyeballVideo from "@/assets/landing/creative-eyeball.mp4";
-import aetnaLogo from "@/assets/landing/partners/aetna.svg";
-import humanaLogo from "@/assets/landing/partners/humana.svg";
-import optumLogo from "@/assets/landing/partners/optum.svg";
 import {
   motion,
   type MotionValue,
@@ -44,7 +41,6 @@ import {
   Sparkles,
   Stethoscope,
   UsersRound,
-  Volume2,
   Workflow,
   X,
 } from "lucide-react";
@@ -216,9 +212,9 @@ const LOGO_GROUPS: LogoGroup[] = [
     label: "Insurers",
     logos: [
       { name: "UnitedHealthcare", domain: "uhc.com", logo: "/assets/logos/insurers/unitedhealthcare.svg", color: "#1f3570", size: "wide" },
-      { name: "Aetna", domain: "aetna.com", logo: aetnaLogo, color: "#7d3f98", size: "compact" },
+      { name: "Aetna", domain: "aetna.com", logo: "/assets/logos/insurers/aetna.svg", color: "#7d3f98", size: "compact" },
       { name: "Cigna", domain: "cigna.com", logo: "/assets/logos/insurers/cigna.png", color: "#1188c9", size: "wide" },
-      { name: "Humana", domain: "humana.com", logo: humanaLogo, color: "#4e8416", size: "wide" },
+      { name: "Humana", domain: "humana.com", logo: "/assets/logos/insurers/humana.svg", color: "#4e8416", size: "wide" },
       { name: "Elevance Health", domain: "elevancehealth.com", logo: "/assets/logos/insurers/elevance-health.svg", color: "#1a3673", size: "wide" },
       { name: "Kaiser Permanente", domain: "kp.org", logo: "/assets/logos/insurers/kaiser.png", color: "#0087b4", size: "wide" },
     ],
@@ -228,7 +224,7 @@ const LOGO_GROUPS: LogoGroup[] = [
     logos: [
       { name: "Availity", domain: "availity.com", logo: "/assets/logos/insurers/availity.svg", color: "#f7941e", size: "wide" },
       { name: "Change Healthcare", domain: "changehealthcare.com", logo: "/assets/logos/insurers/change-healthcare.png", color: "#f72b55", size: "wide" },
-      { name: "Optum", domain: "optum.com", logo: optumLogo, color: "#ff612b", size: "wide" },
+      { name: "Optum", domain: "optum.com", logo: "/assets/logos/insurers/optum.svg", color: "#ff612b", size: "wide" },
     ],
   },
 ];
@@ -708,212 +704,31 @@ function Header() {
   );
 }
 
-function HeroDashboardScreen() {
-  const kpis = [
-    ["Coding margin", "$315,041", "+8.4%"],
-    ["Codes automated", "347", "+9%"],
-    ["Claim edits", "32", "Clear"],
-    ["Est. revenue impact", "$128k", "+14%"],
-  ];
-  const worklist = [
-    ["CH-78291", "Jacob Jones", "98%", "Low"],
-    ["CH-78292", "Mary Smith", "95%", "Low"],
-    ["CH-78293", "Ethan Brown", "92%", "Medium"],
-    ["CH-78294", "Olivia Davis", "88%", "High"],
-    ["CH-78295", "Noah Wilson", "93%", "Low"],
-  ];
-  const railItems = [
-    ["AI invoices", "9"],
-    ["Coder review", "10"],
-    ["Missing docs", "2"],
-    ["Payer checks", "0"],
-  ];
-
+function HeroCleanProductScreen() {
   return (
-    <div className="nex-hero-dashboard-screen">
-      <div className="nex-mac-bar" aria-hidden="true">
-        <div className="nex-mac-brand">
-          <BrandMark compact />
-          <strong>Codical</strong>
-        </div>
-        <span>File</span>
-        <span>Edit</span>
-        <span>View</span>
-        <span>Go</span>
-        <span>Window</span>
-        <span>Help</span>
-        <div className="nex-mac-status">
+    <div className="nex-hero-clean-screen">
+      <div className="nex-hero-clean-top" aria-hidden="true">
+        <span className="nex-hero-clean-brand">
           <i />
           <i />
-          <Search size={11} />
-          <Volume2 size={11} />
-          <strong>Mon Jun 22</strong>
-          <strong>9:41 AM</strong>
-        </div>
+          <i />
+          <i />
+        </span>
+        <span />
+        <span />
+        <span />
       </div>
-
-      <div className="nex-product-toolbar">
-        <div className="nex-product-mark">
-          <BrandMark compact />
-          <strong>CODICAL</strong>
-        </div>
-        <div className="nex-product-select">
-          <span>Organization</span>
-          <strong>Northstar Health</strong>
-        </div>
-        <div className="nex-product-select is-small">
-          <span>Type</span>
-          <strong>RCM</strong>
-        </div>
-        <label className="nex-product-search">
-          <Search size={13} />
-          <span>Search claims, codes, notes...</span>
-        </label>
-        <div className="nex-product-avatar">AA</div>
+      <div className="nex-hero-clean-grid" aria-hidden="true">
+        {Array.from({ length: 18 }).map((_, index) => (
+          <span key={index} />
+        ))}
       </div>
-
-      <div className="nex-product-tabs">
-        <span>Home</span>
-        <span className="is-active">AI Coding Dashboard</span>
-        <span>Anesthesia Review</span>
-        <span>Transcript Queue</span>
-      </div>
-
-      <div className="nex-product-shell">
-        <aside className="nex-product-rail" aria-hidden="true">
-          {[Menu, Activity, ClipboardCheck, Calculator, MessageSquareText].map((Icon, index) => (
-            <i className={index === 0 ? "is-active" : ""} key={index}>
-              <Icon size={13} />
-            </i>
-          ))}
-        </aside>
-
-        <main className="nex-product-board">
-          <div className="nex-product-filters">
-            {["Specialty", "Cardiology", "Coder", "Priya Raman", "Start", "06-01-2026", "Payer", "Aetna"].map((item, index) => (
-              <span className={index % 2 === 0 ? "is-label" : ""} key={`${item}-${index}`}>
-                {item}
-              </span>
-            ))}
-          </div>
-
-          <div className="nex-hero-software-grid">
-            <section className="nex-software-kpis">
-              {kpis.map(([label, value, trend]) => (
-                <article key={label}>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                  <em>{trend}</em>
-                </article>
-              ))}
-            </section>
-
-            <section className="nex-software-bars">
-              <div className="nex-software-head">
-                <strong>Documentation utilization</strong>
-                <span>75%</span>
-              </div>
-              {["Labour", "Clinical notes", "Subcontractors", "Equipment", "Overhead"].map((label, index) => (
-                <div className="nex-budget-row" key={label}>
-                  <span>{label}</span>
-                  <i style={{ "--bar-width": `${34 + index * 12}%` } as CSSProperties} />
-                </div>
-              ))}
-            </section>
-
-            <section className="nex-donut-card">
-              <strong>Pending edits</strong>
-              <div className="nex-donut is-teal">
-                <span>$181k</span>
-              </div>
-            </section>
-
-            <section className="nex-donut-card">
-              <strong>Claim validation</strong>
-              <div className="nex-donut is-purple">
-                <span>98%</span>
-              </div>
-            </section>
-
-            <section className="nex-hero-worklist">
-              <div className="nex-software-head">
-                <strong>AI medical coding worklist</strong>
-                <span>View all</span>
-              </div>
-              {worklist.map(([code, patient, confidence, risk]) => (
-                <div className="nex-hero-case" data-risk={risk.toLowerCase()} key={code}>
-                  <span>{code}</span>
-                  <strong>{patient}</strong>
-                  <em>{confidence}</em>
-                  <small>{risk}</small>
-                </div>
-              ))}
-            </section>
-
-            <section className="nex-hero-transcription">
-              <div className="nex-software-head">
-                <strong>AI transcription</strong>
-                <span>Live</span>
-              </div>
-              <div className="nex-hero-wave" aria-hidden="true">
-                {Array.from({ length: 32 }).map((_, index) => (
-                  <i key={index} style={{ animationDelay: `${index * 36}ms` }} />
-                ))}
-              </div>
-              <div className="nex-hero-audio">
-                <span>00:03:18</span>
-                <button type="button">Pause</button>
-                <button type="button">Finalize</button>
-              </div>
-            </section>
-
-            <section className="nex-hero-anesthesia">
-              <div className="nex-software-head">
-                <strong>Anesthesia calculator</strong>
-                <span>CY 2026</span>
-              </div>
-              <div>
-                <span>Base units</span>
-                <strong>6</strong>
-              </div>
-              <div>
-                <span>Time units</span>
-                <strong>3</strong>
-              </div>
-              <div>
-                <span>Est. payment</span>
-                <strong>$635.85</strong>
-              </div>
-            </section>
-
-            <aside className="nex-hero-right-rail">
-              <section>
-                <strong>Awaiting approval</strong>
-                {railItems.map(([label, value]) => (
-                  <p key={label}>
-                    <span>{label}</span>
-                    <em>{value}</em>
-                  </p>
-                ))}
-              </section>
-              <section>
-                <strong>Outstanding items</strong>
-                {["RFIs", "Submittals", "Meeting actions"].map((label, index) => (
-                  <p key={label}>
-                    <span>{label}</span>
-                    <em>{index + 3}</em>
-                  </p>
-                ))}
-              </section>
-              <section className="nex-hero-chat-mini">
-                <strong>Team chat</strong>
-                <p>Modifier rationale confirmed.</p>
-                <p className="is-own">Route final note to payer review.</p>
-              </section>
-            </aside>
-          </div>
-        </main>
-      </div>
+      <span className="nex-hero-clean-orbit is-one" aria-hidden="true" />
+      <span className="nex-hero-clean-orbit is-two" aria-hidden="true" />
+      <span className="nex-hero-clean-orbit is-three" aria-hidden="true" />
+      <span className="nex-hero-clean-pulse is-one" aria-hidden="true" />
+      <span className="nex-hero-clean-pulse is-two" aria-hidden="true" />
+      <span className="nex-hero-clean-pulse is-three" aria-hidden="true" />
     </div>
   );
 }
@@ -1124,23 +939,6 @@ function LaptopHardwareFrame({
   );
 }
 
-function HeroLaptopFrame() {
-  return (
-    <LaptopHardwareFrame decorative alt="Codical Health dashboard running on a laptop">
-      <HeroDashboardScreen />
-      <span className="nex-hero-screen-glaze" />
-      <span className="nex-hero-screen-sweep" />
-      <span className="nex-hero-screen-cursor" />
-      <span className="nex-hero-click-ring is-one" />
-      <span className="nex-hero-click-ring is-two" />
-      <span className="nex-hero-click-ring is-three" />
-      <span className="nex-hero-action-badge is-coding">AI code accepted</span>
-      <span className="nex-hero-action-badge is-transcript">Transcript finalized</span>
-      <span className="nex-hero-action-badge is-claim">Claim validated</span>
-    </LaptopHardwareFrame>
-  );
-}
-
 function HeroSection() {
   const heroRef = useRef<HTMLElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -1239,19 +1037,13 @@ function HeroSection() {
               width={2400}
               height={1453}
               fetchPriority="high"
+              decoding="async"
             />
           </picture>
           <div className="nex-hero-premier-screen" aria-hidden="true">
-            <HeroDashboardScreen />
+            <HeroCleanProductScreen />
             <span className="nex-hero-screen-glaze" />
             <span className="nex-hero-screen-sweep" />
-            <span className="nex-hero-screen-cursor" />
-            <span className="nex-hero-click-ring is-one" />
-            <span className="nex-hero-click-ring is-two" />
-            <span className="nex-hero-click-ring is-three" />
-            <span className="nex-hero-action-badge is-coding">AI code accepted</span>
-            <span className="nex-hero-action-badge is-transcript">Transcript finalized</span>
-            <span className="nex-hero-action-badge is-claim">Claim validated</span>
           </div>
           <motion.img
             className="nex-hero-premier-trust-badge"
