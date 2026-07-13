@@ -6062,19 +6062,25 @@
 }
 
 /* Real partner-logo assets: PremierCS-style monochrome idle, color hover */
-.nex-logo-track {
-  gap: clamp(76px, 6.4vw, 116px);
+.nex-logo-board {
+  width: min(1200px, calc(100% - 32px));
+  margin-inline: auto;
 }
 
-.nex-logo-row {
-  min-height: 126px;
+.nex-logo-static-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(28px, 4vw, 58px);
+  padding: clamp(22px, 3vw, 34px);
 }
 
 .nex-logo-tile {
-  width: clamp(230px, 19vw, 340px);
-  height: 92px;
-  opacity: 0.42;
-  filter: grayscale(1) saturate(0) contrast(0.92);
+  width: clamp(118px, 12vw, 164px);
+  height: 56px;
+  opacity: 0.48;
+  filter: grayscale(1) saturate(0) contrast(0.94);
   mix-blend-mode: multiply;
 }
 
@@ -6120,33 +6126,26 @@
 }
 
 @media (max-width: 920px) {
-  .nex-logo-track {
-    gap: 48px;
-  }
-
-  .nex-logo-row {
-    min-height: 96px;
-  }
-
   .nex-logo-tile {
-    width: 230px;
-    height: 76px;
+    width: 136px;
+    height: 52px;
   }
 
   .nex-logo-tile .nex-partner-logo-image {
-    max-width: 218px;
-    height: 58px;
-    max-height: 58px;
+    max-width: 132px;
+    height: 48px;
+    max-height: 48px;
   }
 }
 
 @media (max-width: 620px) {
-  .nex-logo-track {
-    gap: 34px;
+  .nex-logo-static-row {
+    gap: 18px 24px;
+    padding: 22px 18px;
   }
 
   .nex-logo-tile {
-    width: 204px;
+    width: 116px;
   }
 }
 
@@ -6796,9 +6795,10 @@
 .nex-hero-premier-texture {
   inset: 0;
   z-index: 2;
-  opacity: 0.16;
+  opacity: 0.12;
   mix-blend-mode: screen;
   background:
+    url("/reference/anim-frame-original.jpg") center / cover no-repeat,
     radial-gradient(ellipse at 50% 22%, rgba(109, 146, 255, 0.26), transparent 32%),
     radial-gradient(ellipse at 68% 38%, rgba(157, 78, 221, 0.18), transparent 36%),
     repeating-linear-gradient(112deg, rgba(255, 255, 255, 0.032) 0 1px, transparent 1px 14px);
@@ -6890,19 +6890,23 @@
   animation: nex-hero-premier-dot 1.8s ease-in-out infinite;
 }
 
+.nex-hero-premier-badge span {
+  display: inline-block;
+}
+
 .nex-hero-premier-title {
-  max-width: 930px;
+  max-width: 900px;
   margin: 32px auto 0;
   color: #fff;
   font-size: clamp(44px, 6.4vw, 84px);
-  font-weight: 850;
+  font-weight: 800;
   line-height: 0.88;
   letter-spacing: -0.06em !important;
   text-align: center;
 }
 
 .nex-hero-premier-title span {
-  display: block;
+  display: inline-block;
   letter-spacing: inherit !important;
 }
 
@@ -6943,11 +6947,10 @@
 }
 
 .nex-hero-premier-primary {
-  gap: 12px;
-  padding: 0 8px 0 28px;
+  padding: 0 32px;
   color: #080c14 !important;
   background: #fff;
-  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15), 0 18px 44px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
   font-weight: 800;
 }
 
@@ -6989,11 +6992,18 @@
   position: relative;
   width: 1120px;
   max-width: 92vw;
-  margin-top: clamp(22px, 3vw, 34px);
+  margin-top: clamp(64px, 5vw, 80px);
   margin-bottom: -72px;
   line-height: 0;
   transform-origin: center center;
   will-change: transform, opacity;
+}
+
+.nex-hero-premier-macbook-stage {
+  position: relative;
+  line-height: 0;
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
 }
 
 .nex-hero-premier-macbook-glow {
@@ -7267,6 +7277,8 @@
   width: 180px;
   max-width: 18vw;
   height: auto;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
   filter: drop-shadow(0 22px 38px rgba(0, 0, 0, 0.32));
 }
 

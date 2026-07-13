@@ -418,16 +418,6 @@ const PROFILE_STORIES: ProfileStory[] = [
   },
 ];
 
-const HERO_COPY_VARIANTS = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.12,
-    },
-  },
-};
-
 const HERO_COPY_ITEM_VARIANTS = {
   hidden: {
     opacity: 0,
@@ -748,28 +738,21 @@ function EcosystemMarquee() {
           <small>Public ecosystem references, not customer claims.</small>
         </div>
         <div className="nex-logo-board">
-          {LOGO_GROUPS.map((group, groupIndex) => (
-            <div className="nex-logo-row" data-category={group.label.toLowerCase()} key={group.label}>
-              <div className="nex-logo-label">{group.label}</div>
-              <div className="nex-logo-track-window">
-                <div className="nex-logo-track" data-reverse={groupIndex % 2 === 1 ? "true" : "false"}>
-                  {[...group.logos, ...group.logos, ...group.logos].map((logo, index) => (
-                    <a
-                      className="nex-logo-tile"
-                      href={`https://${logo.domain}`}
-                      key={`${group.label}-${logo.name}-${index}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`${logo.name} public website`}
-                      style={{ "--brand": logo.color } as CSSProperties}
-                    >
-                      <PartnerLogo logo={logo} />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
+          <div className="nex-logo-static-row">
+            {LOGO_GROUPS[0].logos.map((logo) => (
+              <a
+                className="nex-logo-tile"
+                href={`https://${logo.domain}`}
+                key={logo.name}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`${logo.name} public website`}
+                style={{ "--brand": logo.color } as CSSProperties}
+              >
+                <PartnerLogo logo={logo} />
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -962,6 +945,8 @@ function HeroSection() {
         muted
         loop
         playsInline
+        crossOrigin="anonymous"
+        preload="auto"
         poster="/assets/videos/hero-poster.jpg"
         aria-hidden="true"
       >
@@ -987,11 +972,22 @@ function HeroSection() {
         >
           <motion.div className="nex-hero-premier-badge" variants={HERO_COPY_ITEM_VARIANTS}>
             <i />
-            AI-powered medical coding platform
+            <span>AI-powered medical coding platform</span>
           </motion.div>
-          <motion.h1 className="nex-hero-premier-title" variants={HERO_COPY_VARIANTS}>
-            <motion.span variants={HERO_COPY_ITEM_VARIANTS}>Precision in coding, </motion.span>
-            <motion.span className="is-serif" variants={HERO_COPY_ITEM_VARIANTS}>
+          <motion.h1 className="nex-hero-premier-title">
+            <motion.span
+              initial={{ y: 28, opacity: 0, filter: "blur(8px)" }}
+              animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+              transition={{ duration: 0.82, ease: [0.2, 0.8, 0.2, 1], delay: 0.06 }}
+            >
+              Precision in coding,
+            </motion.span>{" "}
+            <motion.span
+              className="is-serif"
+              initial={{ y: 28, opacity: 0, filter: "blur(8px)" }}
+              animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+              transition={{ duration: 0.82, ease: [0.2, 0.8, 0.2, 1], delay: 0.15 }}
+            >
               Power in revenue.
             </motion.span>
           </motion.h1>
@@ -1002,9 +998,6 @@ function HeroSection() {
           <motion.div className="nex-hero-premier-actions" variants={HERO_COPY_ITEM_VARIANTS}>
             <Link className="nex-hero-premier-primary" href="/signup">
               <strong>Request a demo</strong>
-              <span>
-                <ArrowRight size={17} />
-              </span>
             </Link>
             <a className="nex-hero-premier-secondary" href="#command-center">
               See platform
@@ -1014,47 +1007,47 @@ function HeroSection() {
 
         <motion.div
           className="nex-hero-premier-macbook"
-          initial={{ opacity: 0, y: 44, scale: 0.96, filter: "blur(10px)" }}
-          animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-          transition={{ duration: 1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
           style={{
             y: laptopY,
             scale: laptopScale,
             opacity: laptopOpacity,
           }}
         >
-          <span className="nex-hero-premier-macbook-glow" aria-hidden="true" />
-          <picture>
-            <source
-              srcSet="/assets/macbook-codical-hero@1x.webp 1200w, /assets/macbook-codical-hero@2x.webp 2400w"
-              type="image/webp"
-              sizes="(max-width: 768px) 96vw, 1120px"
+          <motion.div
+            className="nex-hero-premier-macbook-stage"
+            initial={{ opacity: 0, y: 44, scale: 0.96, filter: "blur(10px)" }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+            transition={{ duration: 1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <span className="nex-hero-premier-macbook-glow" aria-hidden="true" />
+            <picture>
+              <source srcSet="/assets/macbook-codical-hero@1x.webp 1x, /assets/macbook-codical-hero@2x.webp 2x" type="image/webp" />
+              <img
+                className="nex-hero-premier-macbook-image"
+                src="/assets/macbook-codical-hero@2x.png"
+                alt="Codical Health platform running on a laptop"
+                width={2400}
+                height={1453}
+                fetchPriority="high"
+                decoding="async"
+              />
+            </picture>
+            <div className="nex-hero-premier-screen" aria-hidden="true">
+              <HeroCleanProductScreen />
+              <span className="nex-hero-screen-glaze" />
+              <span className="nex-hero-screen-sweep" />
+            </div>
+            <motion.img
+              className="nex-hero-premier-trust-badge"
+              src="/assets/badge-hipaa-soc2.svg"
+              alt="HIPAA SOC2 Compliant"
+              width={180}
+              height={72}
+              initial={{ opacity: 0, y: 12, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.6, delay: 1, ease: [0.16, 1, 0.3, 1] }}
             />
-            <img
-              className="nex-hero-premier-macbook-image"
-              src="/assets/macbook-codical-hero@2x.png"
-              alt="Codical Health platform running on a laptop"
-              width={2400}
-              height={1453}
-              fetchPriority="high"
-              decoding="async"
-            />
-          </picture>
-          <div className="nex-hero-premier-screen" aria-hidden="true">
-            <HeroCleanProductScreen />
-            <span className="nex-hero-screen-glaze" />
-            <span className="nex-hero-screen-sweep" />
-          </div>
-          <motion.img
-            className="nex-hero-premier-trust-badge"
-            src="/assets/badge-hipaa-soc2.svg"
-            alt="HIPAA and SOC 2 ready"
-            width={180}
-            height={72}
-            initial={{ opacity: 0, y: 12, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, delay: 1, ease: [0.16, 1, 0.3, 1] }}
-          />
+          </motion.div>
         </motion.div>
       </div>
     </section>
