@@ -10484,4 +10484,431 @@ html {
   }
 }
 
+/* Premier live-audit hero correction: inset dark panel, static nav, preserved MacBook hardware */
+html {
+  min-height: 100%;
+  overflow: visible !important;
+}
+
+body {
+  min-height: 100%;
+  overflow: visible !important;
+}
+
+.nex-page {
+  overflow: visible !important;
+}
+
+.nex-header {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  width: min(calc(100% - 64px), 1360px) !important;
+  min-height: 70px !important;
+  margin: 10px auto 10px !important;
+  grid-template-columns: 300px minmax(0, 1fr) auto !important;
+  padding: 8px 12px 8px 18px !important;
+  z-index: 80;
+}
+
+.nex-header .nex-brand {
+  min-width: 260px;
+}
+
+.nex-header .nex-brand .co-brand {
+  gap: 12px;
+}
+
+.nex-header .nex-brand .co-logo-bars {
+  width: 58px;
+  height: 58px;
+}
+
+.nex-header .nex-brand .co-wordmark span,
+.nex-header .nex-brand .co-wordmark small {
+  font-size: 19px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.nex-hero-premier {
+  min-height: 184vh !important;
+  height: 184vh !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+.nex-hero-premier-sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 100svh;
+  padding: clamp(28px, 4.4vh, 42px) 24px 0 !important;
+  overflow: hidden;
+  background: transparent !important;
+}
+
+.nex-hero-premier-panel {
+  position: absolute;
+  top: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: #05070a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 44px 110px rgba(8, 8, 18, 0.18);
+  will-change: left, right, bottom, border-radius;
+}
+
+.nex-hero-premier-panel .nex-hero-premier-radial,
+.nex-hero-premier-panel .nex-hero-premier-video,
+.nex-hero-premier-panel .nex-hero-premier-texture,
+.nex-hero-premier-panel .nex-hero-premier-grid,
+.nex-hero-premier-panel .nex-hero-premier-vignette {
+  inset: 0;
+}
+
+.nex-hero-premier-panel .nex-hero-premier-radial {
+  background:
+    radial-gradient(95% 74% at 50% 8%, rgba(51, 28, 102, 0.74), rgba(12, 10, 24, 0.78) 38%, #020204 82%),
+    linear-gradient(180deg, #05070a 0%, #020204 100%);
+}
+
+.nex-hero-premier-panel .nex-hero-premier-video {
+  opacity: 0.44;
+  filter: saturate(0.96) contrast(1.08) brightness(0.96);
+}
+
+.nex-hero-premier-panel .nex-hero-premier-texture {
+  opacity: 0.3;
+  background:
+    url("/reference/anim-frame-original.jpg") center 36% / cover no-repeat,
+    radial-gradient(ellipse at 43% 52%, rgba(84, 0, 233, 0.3), transparent 34%),
+    repeating-linear-gradient(112deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 14px);
+}
+
+.nex-hero-premier-panel .nex-hero-premier-orb {
+  z-index: 2;
+  width: min(900px, 72vw);
+  opacity: 0.56;
+  filter: saturate(0.98) contrast(1.08) brightness(0.72);
+}
+
+.nex-hero-premier-panel .nex-hero-premier-orb.is-left {
+  left: max(-170px, -11vw);
+  top: 43%;
+}
+
+.nex-hero-premier-panel .nex-hero-premier-orb.is-right {
+  right: max(-150px, -10vw);
+  top: 20%;
+}
+
+.nex-hero-premier-panel .nex-hero-premier-vignette {
+  height: auto;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.38), transparent 24%, rgba(0, 0, 0, 0.42) 100%),
+    radial-gradient(ellipse at 50% 11%, transparent 0%, rgba(0, 0, 0, 0.54) 78%);
+}
+
+.nex-hero-premier-inner {
+  max-width: none !important;
+  height: 100% !important;
+}
+
+.nex-hero-premier-copy {
+  top: 0 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.nex-hero-premier-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #ffffff;
+  backdrop-filter: none !important;
+}
+
+.nex-hero-premier-badge i {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  display: block;
+  background: transparent !important;
+  animation: none !important;
+}
+
+.nex-hero-premier-badge i::before,
+.nex-hero-premier-badge i::after {
+  content: "";
+  position: absolute;
+  background: #ffffff;
+}
+
+.nex-hero-premier-badge i::before {
+  left: 0;
+  bottom: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.nex-hero-premier-badge i::after {
+  right: 0;
+  bottom: 1px;
+  width: 24px;
+  height: 14px;
+  border-radius: 999px 999px 5px 5px;
+  clip-path: polygon(0 100%, 100% 100%, 100% 48%, 82% 48%, 72% 18%, 48% 0, 27% 14%, 17% 48%, 0 48%);
+}
+
+.nex-hero-premier-badge span {
+  font-size: 20px !important;
+  line-height: 1.1;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  text-transform: none !important;
+  color: rgba(255, 255, 255, 0.94) !important;
+}
+
+.nex-hero-premier-title {
+  max-width: 940px !important;
+  margin-top: 26px !important;
+  font-size: clamp(48px, 4.55vw, 64px) !important;
+  font-weight: 400 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.022em !important;
+}
+
+.nex-hero-premier-title .is-serif {
+  color: #ffffff !important;
+  font-style: normal !important;
+  font-weight: 400 !important;
+}
+
+.nex-hero-premier-subtitle {
+  max-width: 860px !important;
+  margin-top: 18px !important;
+  font-size: 20px !important;
+  line-height: 1.45 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.nex-hero-premier-actions {
+  margin-top: 30px !important;
+}
+
+.nex-hero-premier-secondary {
+  display: none !important;
+}
+
+.nex-hero-premier-primary .nex-hero-premier-primary-text,
+.nex-hero-premier-primary .nex-hero-premier-primary-arrow {
+  font-size: 16px;
+  font-weight: 500;
+  background: #5400e9;
+  box-shadow: none;
+}
+
+.nex-hero-premier-macbook {
+  top: clamp(462px, 52vh, 475px) !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: min(1290px, calc(100vw - 100px)) !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  translate: -50% 0;
+  overflow: visible !important;
+  box-shadow: none !important;
+  transform-origin: center top !important;
+}
+
+.nex-hero-premier-macbook-stage {
+  overflow: visible !important;
+  border-radius: 0 !important;
+}
+
+.nex-hero-premier-frame {
+  width: 100%;
+  filter:
+    drop-shadow(0 36px 78px rgba(0, 0, 0, 0.56))
+    drop-shadow(0 2px 0 rgba(255, 255, 255, 0.1));
+}
+
+.nex-hero-premier-frame::before {
+  opacity: 0.62;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.56), transparent 68%);
+}
+
+.nex-hero-premier-frame .nex-hero-laptop-frame-image {
+  filter: saturate(1.03) contrast(1.04) brightness(0.98);
+}
+
+.nex-hero-premier-frame .nex-hero-laptop-screen {
+  left: 10.08%;
+  top: 6.85%;
+  width: 79.84%;
+  height: 82.1%;
+  border-radius: 0 0 3px 3px;
+  background: #f3f6ff;
+}
+
+.nex-hero-premier-frame .nex-dashboard-screen,
+.nex-hero-premier-frame .nex-dashboard-screen * {
+  font-family: Inter, "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  letter-spacing: 0 !important;
+}
+
+.nex-hero-premier-frame .nex-dashboard-screen {
+  height: 100%;
+  min-height: 0;
+  grid-template-columns: 116px 1fr;
+  background: linear-gradient(135deg, #f8faff 0%, #eef3ff 100%);
+}
+
+.nex-hero-premier-frame .nex-screen-main {
+  min-height: 0;
+  padding: 22px;
+}
+
+.nex-hero-premier-frame .nex-screen-top {
+  margin-bottom: 16px;
+}
+
+.nex-hero-premier-frame .nex-screen-top small {
+  display: none;
+}
+
+.nex-hero-premier-frame .nex-kpi-grid {
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.nex-hero-premier-frame .nex-kpi-grid article {
+  min-height: 70px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  overflow: hidden;
+  animation: none !important;
+}
+
+.nex-hero-premier-frame .nex-kpi-grid span,
+.nex-hero-premier-frame .nex-kpi-grid strong,
+.nex-hero-premier-frame .nex-kpi-grid em {
+  margin: 0;
+  line-height: 1.05;
+  white-space: nowrap;
+  transform: none !important;
+  text-shadow: none !important;
+}
+
+.nex-hero-premier-frame .nex-kpi-grid strong {
+  font-size: 18px;
+}
+
+.nex-hero-premier-frame .nex-dashboard-grid {
+  gap: 12px;
+}
+
+.nex-hero-premier-frame .nex-dashboard-grid section {
+  padding: 14px;
+}
+
+.nex-hero-premier-frame .nex-calc-result {
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.nex-hero-premier-frame .nex-calc-result span,
+.nex-hero-premier-frame .nex-calc-result strong,
+.nex-hero-premier-frame .nex-calc-result em {
+  margin: 0;
+  line-height: 1.05;
+  white-space: nowrap;
+  transform: none !important;
+  text-shadow: none !important;
+}
+
+.nex-hero-premier-frame .nex-calc-result strong {
+  font-size: 20px;
+}
+
+@media (max-width: 980px) {
+  .nex-header {
+    width: min(calc(100% - 32px), 920px) !important;
+    grid-template-columns: 1fr auto !important;
+  }
+
+  .nex-hero-premier-sticky {
+    padding-top: 76px !important;
+  }
+
+  .nex-hero-premier-macbook {
+    top: 540px !important;
+    max-width: none;
+    min-width: 860px !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .nex-header {
+    margin-top: 8px !important;
+    min-height: 64px !important;
+  }
+
+  .nex-brand-logo-image {
+    width: min(184px, 48vw);
+    max-height: 52px;
+  }
+
+  .nex-hero-premier {
+    min-height: 174vh !important;
+    height: 174vh !important;
+  }
+
+  .nex-hero-premier-sticky {
+    padding: 58px 14px 0 !important;
+  }
+
+  .nex-hero-premier-badge span {
+    font-size: 14px !important;
+  }
+
+  .nex-hero-premier-title {
+    width: min(100%, 310px) !important;
+    font-size: clamp(34px, 10vw, 40px) !important;
+    line-height: 1.06 !important;
+  }
+
+  .nex-hero-premier-subtitle {
+    max-width: 340px !important;
+    font-size: 15px !important;
+  }
+
+  .nex-hero-premier-macbook {
+    top: 650px !important;
+    min-width: 760px !important;
+  }
+}
 
