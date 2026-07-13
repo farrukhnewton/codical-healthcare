@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" role="img" aria-labelledby="title desc">
+  <title id="title">Codical Health</title>
+  <desc id="desc">Codical Health logo with five rounded bars and the tagline Precision in coding, power in revenue.</desc>
+  <g transform="translate(64 48)">
+    <rect x="0" y="76" width="28" height="72" rx="14" fill="#FF6E3A"/>
+    <rect x="44" y="28" width="38" height="172" rx="19" fill="#1020A8"/>
+    <rect x="102" y="62" width="34" height="108" rx="17" fill="#FF7E3A"/>
+    <rect x="154" y="18" width="38" height="184" rx="19" fill="#FFB03A"/>
+    <rect x="214" y="76" width="32" height="72" rx="16" fill="#1E2AB8"/>
+  </g>
+  <g fill="#0A1E8C" font-family="Outfit, Inter, Arial, sans-serif">
+    <text x="64" y="278" font-size="76" font-weight="800" letter-spacing="1">CODICAL</text>
+    <text x="64" y="350" font-size="76" font-weight="800" letter-spacing="1">HEALTH</text>
+    <text x="64" y="386" font-size="24" font-weight="800" letter-spacing="3.2">PRECISION IN CODING, POWER IN REVENUE</text>
+  </g>
+</svg>

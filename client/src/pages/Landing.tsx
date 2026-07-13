@@ -577,7 +577,13 @@ function Header() {
         }}
       >
         <a className="nex-brand" href="#top" aria-label="Codical Health home">
-          <BrandMark />
+          <img
+            className="nex-brand-logo-image"
+            src="/assets/codical-health-logo.svg"
+            alt="Codical Health"
+            width={180}
+            height={90}
+          />
         </a>
 
         <nav className="nex-nav" aria-label="Landing navigation">
@@ -738,21 +744,28 @@ function EcosystemMarquee() {
           <small>Public ecosystem references, not customer claims.</small>
         </div>
         <div className="nex-logo-board">
-          <div className="nex-logo-static-row">
-            {LOGO_GROUPS[0].logos.map((logo) => (
-              <a
-                className="nex-logo-tile"
-                href={`https://${logo.domain}`}
-                key={logo.name}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`${logo.name} public website`}
-                style={{ "--brand": logo.color } as CSSProperties}
-              >
-                <PartnerLogo logo={logo} />
-              </a>
-            ))}
-          </div>
+          {LOGO_GROUPS.map((group, groupIndex) => (
+            <div className="nex-logo-row" data-category={group.label.toLowerCase()} key={group.label}>
+              <div className="nex-logo-label">{group.label}</div>
+              <div className="nex-logo-track-window">
+                <div className="nex-logo-track" data-reverse={groupIndex % 2 === 1 ? "true" : "false"}>
+                  {[...group.logos, ...group.logos, ...group.logos].map((logo, index) => (
+                    <a
+                      className="nex-logo-tile"
+                      href={`https://${logo.domain}`}
+                      key={`${group.label}-${logo.name}-${index}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`${logo.name} public website`}
+                      style={{ "--brand": logo.color } as CSSProperties}
+                    >
+                      <PartnerLogo logo={logo} />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -929,37 +942,43 @@ function HeroSection() {
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const laptopY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, -120]);
-  const laptopScale = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [1, 1] : [1, 0.96]);
-  const laptopOpacity = useTransform(scrollYProgress, [0, 0.82], [1, 0.48]);
-  const copyY = useTransform(scrollYProgress, [0, 0.72], prefersReducedMotion ? [0, 0] : [0, -46]);
-  const copyOpacity = useTransform(scrollYProgress, [0, 0.62], [1, 0.38]);
-  const copyFilter = useTransform(scrollYProgress, [0, 0.7], ["blur(0px)", "blur(8px)"]);
+  const laptopScale = useTransform(scrollYProgress, [0, 0.44], prefersReducedMotion ? [0.88, 0.88] : [0.88, 1.22]);
+  const laptopWidth = useTransform(scrollYProgress, [0, 0.44], prefersReducedMotion ? ["72%", "72%"] : ["72%", "98%"]);
+  const laptopY = useTransform(scrollYProgress, [0, 0.44], prefersReducedMotion ? [80, 80] : [80, -10]);
+  const laptopRadius = useTransform(scrollYProgress, [0, 0.3, 0.44], prefersReducedMotion ? [24, 24, 24] : [24, 16, 0]);
+  const laptopShadow = useTransform(scrollYProgress, [0, 0.44], [
+    "0 40px 100px rgba(0,0,0,0.75)",
+    "0 10px 40px rgba(0,0,0,0.4)",
+  ]);
+  const copyY = useTransform(scrollYProgress, [0, 0.25], prefersReducedMotion ? [0, 0] : [0, -60]);
+  const copyOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
+  const copyFilter = useTransform(scrollYProgress, [0, 0.3], ["blur(0px)", "blur(8px)"]);
 
   return (
     <section className="nex-hero-premier" id="top" ref={heroRef}>
-      <div className="nex-hero-premier-radial" aria-hidden="true" />
-      <video
-        className="nex-hero-premier-video"
-        autoPlay
-        muted
-        loop
-        playsInline
-        crossOrigin="anonymous"
-        preload="auto"
-        poster="/assets/videos/hero-poster.jpg"
-        aria-hidden="true"
-      >
-        <source src="/assets/videos/hero-loop-healthcare.mp4" type="video/mp4" />
-        <source src="/assets/videos/loop_optimized.mp4" type="video/mp4" />
-      </video>
-      <div className="nex-hero-premier-texture" aria-hidden="true" />
-      <div className="nex-hero-premier-grid" aria-hidden="true" />
-      <img className="nex-hero-premier-orb is-left" src="/assets/hero-orb-left.svg" alt="" aria-hidden="true" />
-      <img className="nex-hero-premier-orb is-right" src="/assets/hero-orb-right.svg" alt="" aria-hidden="true" />
-      <div className="nex-hero-premier-vignette" aria-hidden="true" />
+      <div className="nex-hero-premier-sticky">
+        <div className="nex-hero-premier-radial" aria-hidden="true" />
+        <video
+          className="nex-hero-premier-video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          crossOrigin="anonymous"
+          preload="auto"
+          poster="/assets/videos/hero-poster.jpg"
+          aria-hidden="true"
+        >
+          <source src="/assets/videos/hero-loop-healthcare.mp4" type="video/mp4" />
+          <source src="/assets/videos/loop_optimized.mp4" type="video/mp4" />
+        </video>
+        <div className="nex-hero-premier-texture" aria-hidden="true" />
+        <div className="nex-hero-premier-grid" aria-hidden="true" />
+        <img className="nex-hero-premier-orb is-left" src="/assets/hero-orb-left.svg" alt="" aria-hidden="true" />
+        <img className="nex-hero-premier-orb is-right" src="/assets/hero-orb-right.svg" alt="" aria-hidden="true" />
+        <div className="nex-hero-premier-vignette" aria-hidden="true" />
 
-      <div className="nex-hero-premier-inner">
+        <div className="nex-hero-premier-inner">
         <motion.div
           className="nex-hero-premier-copy"
           initial="hidden"
@@ -997,7 +1016,12 @@ function HeroSection() {
           </motion.p>
           <motion.div className="nex-hero-premier-actions" variants={HERO_COPY_ITEM_VARIANTS}>
             <Link className="nex-hero-premier-primary" href="/signup">
-              <strong>Request a demo</strong>
+              <span className="nex-hero-premier-primary-text">Request a demo</span>
+              <span className="nex-hero-premier-primary-arrow">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M6 3L11 8L6 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
             </Link>
             <a className="nex-hero-premier-secondary" href="#command-center">
               See platform
@@ -1008,47 +1032,43 @@ function HeroSection() {
         <motion.div
           className="nex-hero-premier-macbook"
           style={{
+            width: laptopWidth,
             y: laptopY,
             scale: laptopScale,
-            opacity: laptopOpacity,
+            borderRadius: laptopRadius,
+            boxShadow: laptopShadow,
           }}
         >
           <motion.div
             className="nex-hero-premier-macbook-stage"
-            initial={{ opacity: 0, y: 44, scale: 0.96, filter: "blur(10px)" }}
-            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-            transition={{ duration: 1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: 44, filter: "blur(10px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 1.1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
             <span className="nex-hero-premier-macbook-glow" aria-hidden="true" />
             <picture>
-              <source srcSet="/assets/macbook-codical-hero@1x.webp 1x, /assets/macbook-codical-hero@2x.webp 2x" type="image/webp" />
+              <source
+                srcSet="/assets/macbook-codical-hero@1x.webp 1x, /assets/macbook-codical-hero@2x.webp 2x, /assets/macbook-codical-hero@4k.webp 4x"
+                type="image/webp"
+              />
               <img
                 className="nex-hero-premier-macbook-image"
-                src="/assets/macbook-codical-hero@2x.png"
+                src="/assets/macbook-codical-hero@4k.png"
                 alt="Codical Health platform running on a laptop"
-                width={2400}
-                height={1453}
+                width={3840}
+                height={2323}
                 fetchPriority="high"
                 decoding="async"
               />
             </picture>
-            <div className="nex-hero-premier-screen" aria-hidden="true">
-              <HeroCleanProductScreen />
+            <div className="nex-hero-premier-screen is-hero-laptop" aria-hidden="true">
+              <DashboardScreen compact />
               <span className="nex-hero-screen-glaze" />
               <span className="nex-hero-screen-sweep" />
             </div>
-            <motion.img
-              className="nex-hero-premier-trust-badge"
-              src="/assets/badge-hipaa-soc2.svg"
-              alt="HIPAA SOC2 Compliant"
-              width={180}
-              height={72}
-              initial={{ opacity: 0, y: 12, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.6, delay: 1, ease: [0.16, 1, 0.3, 1] }}
-            />
           </motion.div>
         </motion.div>
+        </div>
       </div>
     </section>
   );

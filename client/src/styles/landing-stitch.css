@@ -9968,5 +9968,520 @@ html {
   }
 }
 
+/* Fourth pass final: Premier-style pinned hero zoom and partner marquee */
+.nex-brand-logo-image {
+  display: block;
+  width: min(224px, 28vw);
+  height: auto;
+  max-height: 70px;
+  object-fit: contain;
+}
+
+.nex-hero-premier {
+  min-height: 180vh;
+  height: 180vh;
+  padding: 0;
+  overflow: visible;
+  background: #05070a;
+}
+
+.nex-hero-premier-sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: clamp(118px, 15vh, 140px) 24px 0;
+  color: #ffffff;
+}
+
+.nex-hero-premier-inner {
+  z-index: 8;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  position: relative;
+  display: block;
+}
+
+.nex-hero-premier-copy,
+.nex-hero-premier-badge,
+.nex-hero-premier-title,
+.nex-hero-premier-subtitle,
+.nex-hero-premier-actions,
+.nex-hero-premier-primary,
+.nex-hero-premier-secondary {
+  font-family: "Outfit", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.nex-hero-premier-copy {
+  position: absolute;
+  inset: 0 0 auto;
+}
+
+.nex-hero-premier-title {
+  max-width: 960px;
+  margin-top: 30px;
+  font-size: clamp(44px, 6.2vw, 78px);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.04em !important;
+}
+
+.nex-hero-premier-title .is-serif {
+  color: rgba(255, 255, 255, 0.92);
+  font-family: "Outfit", Inter, system-ui, sans-serif;
+  font-style: italic;
+  font-weight: 300;
+}
+
+.nex-hero-premier-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.nex-hero-premier-primary,
+.nex-hero-premier-secondary {
+  height: 44px;
+  min-height: 44px;
+  border-radius: 14px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.nex-hero-premier-primary {
+  gap: 2px;
+  padding: 0;
+  color: #ffffff !important;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.nex-hero-premier-primary:hover,
+.nex-hero-premier-primary:focus-visible {
+  background: transparent;
+  transform: translateY(-1px) scale(1.015);
+}
+
+.nex-hero-premier-primary .nex-hero-premier-primary-text,
+.nex-hero-premier-primary .nex-hero-premier-primary-arrow {
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  color: #ffffff;
+  background: #5400e9;
+  box-shadow: 0 14px 34px rgba(84, 0, 233, 0.28);
+  transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.nex-hero-premier-primary .nex-hero-premier-primary-text {
+  width: auto;
+  padding: 0 24px;
+}
+
+.nex-hero-premier-primary .nex-hero-premier-primary-arrow {
+  width: 44px;
+  padding: 0;
+}
+
+.nex-hero-premier-primary:hover .nex-hero-premier-primary-text,
+.nex-hero-premier-primary:hover .nex-hero-premier-primary-arrow,
+.nex-hero-premier-primary:focus-visible .nex-hero-premier-primary-text,
+.nex-hero-premier-primary:focus-visible .nex-hero-premier-primary-arrow {
+  background: #5941ff;
+  box-shadow: 0 18px 42px rgba(89, 65, 255, 0.36);
+}
+
+.nex-hero-premier-primary:active .nex-hero-premier-primary-text,
+.nex-hero-premier-primary:active .nex-hero-premier-primary-arrow {
+  background: #4600bb;
+}
+
+.nex-hero-premier-secondary {
+  padding: 0 24px;
+  border-radius: 14px;
+}
+
+.nex-hero-premier-macbook {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -170px;
+  max-width: none;
+  min-width: min(760px, 72vw);
+  margin: 0 auto;
+  line-height: 0;
+  transform-origin: center center;
+  will-change: width, transform, border-radius, box-shadow;
+}
+
+.nex-hero-premier-macbook-stage {
+  width: 100%;
+  border-radius: inherit;
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
+}
+
+.nex-hero-premier-macbook-image {
+  width: 100%;
+  height: auto;
+  max-width: none;
+  filter: none;
+  animation: none;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.nex-hero-premier-screen {
+  animation: none;
+}
+
+.nex-hero-premier-screen .nex-dashboard-screen,
+.nex-hero-premier-screen .nex-dashboard-screen * {
+  font-family: Inter, "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  letter-spacing: 0 !important;
+}
+
+.nex-hero-premier-screen .nex-dashboard-screen {
+  grid-template-columns: 116px 1fr;
+  background: linear-gradient(135deg, #f8faff 0%, #eef3ff 100%);
+}
+
+.nex-hero-premier-screen .nex-app-sidebar {
+  gap: 8px;
+  padding: 18px 10px;
+}
+
+.nex-hero-premier-screen .nex-app-sidebar .co-logo-bars {
+  width: 34px;
+  height: 34px;
+}
+
+.nex-hero-premier-screen .nex-app-sidebar > span {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.nex-hero-premier-screen .nex-screen-main {
+  padding: 24px;
+}
+
+.nex-hero-premier-screen .nex-screen-top {
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.nex-hero-premier-screen .nex-screen-top small {
+  display: none;
+}
+
+.nex-hero-premier-screen .nex-screen-top strong {
+  margin-top: 0;
+  font-size: clamp(18px, 1.7vw, 28px);
+  line-height: 1;
+}
+
+.nex-hero-premier-screen .nex-screen-top button {
+  min-height: 34px;
+  border-radius: 9px;
+  padding: 0 16px;
+  font-size: 11px;
+}
+
+.nex-hero-premier-screen .nex-kpi-grid {
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.nex-hero-premier-screen .nex-kpi-grid article {
+  min-height: 72px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding: 13px 14px;
+}
+
+.nex-hero-premier-screen .nex-kpi-grid span,
+.nex-hero-premier-screen .nex-kpi-grid strong,
+.nex-hero-premier-screen .nex-kpi-grid em {
+  display: block;
+  margin: 0;
+  line-height: 1;
+}
+
+.nex-hero-premier-screen .nex-kpi-grid span,
+.nex-hero-premier-screen .nex-panel-head a,
+.nex-hero-premier-screen .nex-case-row em,
+.nex-hero-premier-screen .nex-calc-result span,
+.nex-hero-premier-screen .nex-calc-result em {
+  font-size: 11px;
+}
+
+.nex-hero-premier-screen .nex-kpi-grid strong {
+  font-size: clamp(18px, 1.55vw, 25px);
+}
+
+.nex-hero-premier-screen .nex-dashboard-grid {
+  gap: 14px;
+}
+
+.nex-hero-premier-screen .nex-dashboard-grid section {
+  padding: 16px;
+}
+
+.nex-hero-premier-screen .nex-panel-head {
+  margin-bottom: 12px;
+}
+
+.nex-hero-premier-screen .nex-panel-head strong {
+  font-size: 14px;
+}
+
+.nex-hero-premier-screen .nex-case-row {
+  grid-template-columns: 72px 1fr 62px;
+  min-height: 38px;
+}
+
+.nex-hero-premier-screen .nex-case-row span,
+.nex-hero-premier-screen .nex-case-row strong {
+  font-size: 12px;
+}
+
+.nex-hero-premier-screen .nex-calc-result {
+  min-height: 92px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+}
+
+.nex-hero-premier-screen .nex-calc-result strong {
+  font-size: clamp(24px, 2vw, 34px);
+  line-height: 1;
+}
+
+.nex-hero-premier-screen .nex-chat-panel p {
+  margin-top: 8px;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.nex-hero-premier-trust-badge {
+  display: none !important;
+}
+
+.nex-ecosystem-strip {
+  background:
+    radial-gradient(circle at 8% 4%, rgba(123, 47, 190, 0.12), transparent 28%),
+    radial-gradient(circle at 92% 0%, rgba(157, 78, 221, 0.17), transparent 31%),
+    radial-gradient(circle at 76% 44%, rgba(178, 145, 239, 0.16), transparent 34%),
+    linear-gradient(135deg, #f8fbff 0%, #eef3ff 31%, #e5dcf8 64%, #d9c9f0 100%);
+}
+
+.nex-logo-board {
+  width: min(1200px, calc(100% - 32px));
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.76), transparent 30%),
+    linear-gradient(135deg, rgba(248, 250, 255, 0.72), rgba(225, 232, 255, 0.56));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    0 36px 90px rgba(72, 73, 150, 0.13);
+  backdrop-filter: blur(22px) saturate(140%);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+
+.nex-logo-board::before,
+.nex-logo-board::after {
+  display: none;
+}
+
+.nex-logo-row {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: center;
+  min-height: 106px;
+  border-top: 1px solid rgba(91, 36, 143, 0.09);
+}
+
+.nex-logo-row:first-child {
+  border-top: 0;
+}
+
+.nex-logo-label {
+  position: relative;
+  z-index: 3;
+  width: auto;
+  height: auto;
+  clip: auto;
+  overflow: visible;
+  padding: 0 0 0 26px;
+  color: rgba(23, 16, 72, 0.48);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.nex-logo-track-window {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.nex-logo-track {
+  display: flex;
+  width: max-content;
+  gap: clamp(44px, 5vw, 88px);
+  padding: 0 clamp(28px, 4vw, 54px) 0 0;
+  animation: nex-logo-scroll 34s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+}
+
+.nex-logo-track[data-reverse="true"] {
+  animation-direction: reverse;
+  animation-duration: 40s;
+}
+
+.nex-logo-row:hover .nex-logo-track {
+  animation-play-state: paused;
+}
+
+.nex-logo-tile {
+  flex: 0 0 auto;
+  width: clamp(150px, 14vw, 220px);
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.38;
+  filter: grayscale(1) saturate(0) contrast(0.94);
+  mix-blend-mode: multiply;
+  transform: translateZ(0);
+  transition: opacity 260ms ease, filter 260ms ease, transform 260ms ease;
+}
+
+.nex-logo-tile:hover,
+.nex-logo-tile:focus-visible {
+  opacity: 1;
+  filter: grayscale(0) saturate(1.12) contrast(1.02);
+  mix-blend-mode: normal;
+  background: transparent;
+  box-shadow: none;
+  transform: translateY(-4px) scale(1.035);
+}
+
+.nex-logo-tile .nex-partner-logo-image {
+  display: block;
+  width: 100%;
+  height: 58px;
+  max-width: 100%;
+  max-height: 58px;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  filter: none;
+}
+
+@keyframes nex-logo-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-33.333%, 0, 0); }
+}
+
+@media (max-width: 980px) {
+  .nex-brand-logo-image {
+    width: min(196px, 46vw);
+  }
+
+  .nex-hero-premier {
+    min-height: 170vh;
+    height: 170vh;
+    padding: 0;
+  }
+
+  .nex-hero-premier-sticky {
+    padding: 126px 18px 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .nex-hero-premier {
+    min-height: 170vh;
+    height: 170vh;
+    padding: 0;
+  }
+
+  .nex-hero-premier-sticky {
+    padding: 118px 14px 0;
+  }
+
+  .nex-hero-premier-title {
+    font-size: clamp(42px, 13vw, 52px);
+    line-height: 0.98;
+  }
+
+  .nex-hero-premier-primary,
+  .nex-hero-premier-secondary {
+    width: auto;
+  }
+
+  .nex-hero-premier-macbook {
+    min-width: 760px;
+    bottom: -170px;
+    margin-left: 0;
+  }
+
+  .nex-logo-board {
+    width: min(100%, calc(100% - 20px));
+    mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  }
+
+  .nex-logo-row {
+    grid-template-columns: 78px minmax(0, 1fr);
+    min-height: 92px;
+  }
+
+  .nex-logo-label {
+    padding-left: 16px;
+    font-size: 10px;
+  }
+
+  .nex-logo-track {
+    gap: 34px;
+    animation-duration: 30s;
+  }
+
+  .nex-logo-track[data-reverse="true"] {
+    animation-duration: 35s;
+  }
+
+  .nex-logo-tile {
+    width: 136px;
+  }
+}
 
 
