@@ -932,30 +932,27 @@ function LaptopHardwareFrame({
 function HeroSection() {
   const heroRef = useRef<HTMLElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  });
-  const panelInsetX = useTransform(scrollYProgress, [0, 0.44], prefersReducedMotion ? ["32px", "32px"] : ["32px", "0px"]);
-  const panelInsetBottom = useTransform(scrollYProgress, [0, 0.44], prefersReducedMotion ? ["32px", "32px"] : ["32px", "0px"]);
-  const panelRadius = useTransform(scrollYProgress, [0, 0.24, 0.44], prefersReducedMotion ? [30, 30, 30] : [30, 18, 0]);
-  const laptopScale = useTransform(scrollYProgress, [0, 0.44], prefersReducedMotion ? [1, 1] : [1, 1]);
+  const { scrollY } = useScroll();
+  const panelInsetX = useTransform(scrollY, [0, 720], prefersReducedMotion ? ["32px", "32px"] : ["32px", "0px"]);
+  const panelInsetBottom = useTransform(scrollY, [0, 720], prefersReducedMotion ? ["32px", "32px"] : ["32px", "0px"]);
+  const panelRadius = useTransform(scrollY, [0, 390, 720], prefersReducedMotion ? [30, 30, 30] : [30, 18, 0]);
+  const laptopScale = useTransform(scrollY, [0, 720], prefersReducedMotion ? [1, 1] : [1, 1]);
   const laptopWidth = useTransform(
-    scrollYProgress,
-    [0, 0.44],
+    scrollY,
+    [0, 720],
     prefersReducedMotion
       ? ["min(1290px, calc(100vw - 100px))", "min(1290px, calc(100vw - 100px))"]
       : ["min(1290px, calc(100vw - 100px))", "min(1290px, calc(100vw - 100px))"],
   );
-  const laptopY = useTransform(scrollYProgress, [0, 0.44], prefersReducedMotion ? [0, 0] : [0, -390]);
-  const laptopRadius = useTransform(scrollYProgress, [0, 0.44], [0, 0]);
-  const laptopShadow = useTransform(scrollYProgress, [0, 0.44], [
+  const laptopY = useTransform(scrollY, [0, 720], prefersReducedMotion ? [0, 0] : [0, -390]);
+  const laptopRadius = useTransform(scrollY, [0, 720], [0, 0]);
+  const laptopShadow = useTransform(scrollY, [0, 720], [
     "0 40px 100px rgba(0,0,0,0.75)",
     "0 10px 40px rgba(0,0,0,0.4)",
   ]);
-  const copyY = useTransform(scrollYProgress, [0, 0.25], prefersReducedMotion ? [0, 0] : [0, -60]);
-  const copyOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
-  const copyFilter = useTransform(scrollYProgress, [0, 0.3], ["blur(0px)", "blur(8px)"]);
+  const copyY = useTransform(scrollY, [0, 520], prefersReducedMotion ? [0, 0] : [0, -86]);
+  const copyOpacity = useTransform(scrollY, [0, 280, 520], [1, 0.18, 0]);
+  const copyFilter = useTransform(scrollY, [0, 520], ["blur(0px)", "blur(10px)"]);
 
   return (
     <section className="nex-hero-premier" id="top" ref={heroRef}>
