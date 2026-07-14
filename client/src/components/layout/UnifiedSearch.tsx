@@ -460,6 +460,7 @@ export function UnifiedSearch({ open, onClose }: UnifiedSearchProps) {
           {[
             { key: "↑↓", label: "navigate" },
             { key: "Enter", label: "open" },
+            { key: "Cmd K", label: "search" },
             { key: "ESC", label: "close" },
           ].map((k) => (
             <div key={k.key} className="flex items-center gap-2">

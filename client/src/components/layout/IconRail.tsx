@@ -93,6 +93,11 @@ export function IconRail() {
   const NavContent = ({ mobile = false }: { mobile?: boolean }) => (
     <div className="app-sidebar-inner">
       <div className="app-sidebar-brand">
+        <div className="app-sidebar-window-controls" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
         <Link href="/dashboard" onClick={() => mobile && setMobileOpen(false)} aria-label="Codical Health dashboard" className="app-sidebar-brand-link">
           <BrandMark />
         </Link>

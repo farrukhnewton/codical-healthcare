@@ -116,6 +116,9 @@ const HERO_SIGNALS = [
   { icon: UserRoundCheck, label: "Certified review", value: "Ready to route" },
 ];
 
+const WORKFLOW_TOTAL = WORKFLOW_COLUMNS.reduce((total, column) => total + column.count, 0);
+const WORKFLOW_MAX = Math.max(...WORKFLOW_COLUMNS.map((column) => column.count));
+
 export function Home() {
   const [, setLocation] = useLocation();
   const [time, setTime] = useState(new Date());
@@ -129,16 +132,16 @@ export function Home() {
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
-    <div className="dash-page">
-      <section className="dash-hero-band dash-command-hero">
-        <div className="dash-hero-copy">
-          <span className="dash-hero-chip"><CalendarCheck2 size={16} /> {greeting}</span>
+    <div className="macos-dashboard">
+      <section className="macos-dashboard-hero">
+        <div className="macos-hero-copy">
+          <span className="macos-hero-chip"><CalendarCheck2 size={16} /> {greeting}</span>
           <h2>Cleaner claim review, from code search to payer checks.</h2>
           <p>
             Move documentation through ICD/CPT suggestions, NCCI edits, payer policy,
             NPI verification and certified review without losing the evidence trail.
           </p>
-          <div className="dash-hero-actions">
+          <div className="macos-hero-actions">
             <button type="button" onClick={() => setLocation("/workspace")}>
               <Brain size={17} />
               Analyze note
@@ -150,8 +153,8 @@ export function Home() {
           </div>
         </div>
 
-        <div className="dash-review-console" aria-label="Live coding review preview">
-          <div className="dash-console-top">
+        <div className="macos-hero-console" aria-label="Live coding review preview">
+          <div className="macos-console-top">
             <div>
               <strong>Case #C-48291</strong>
               <span>Outpatient claim packet</span>
@@ -159,7 +162,7 @@ export function Home() {
             <em>Live</em>
           </div>
 
-          <div className="dash-console-code">
+          <div className="macos-console-code">
             <div>
               <span>Claim review</span>
               <strong>Ready</strong>
@@ -167,7 +170,7 @@ export function Home() {
             <p>98% source-linked rationale</p>
           </div>
 
-          <div className="dash-console-signals">
+          <div className="macos-console-signals">
             {HERO_SIGNALS.map((signal) => (
               <article key={signal.label}>
                 <signal.icon size={15} />
@@ -179,7 +182,7 @@ export function Home() {
             ))}
           </div>
 
-          <div className="dash-console-progress" aria-hidden="true">
+          <div className="macos-console-progress" aria-hidden="true">
             {["Upload", "Suggest", "Validate", "Review"].map((step, index) => (
               <span className={index < 3 ? "is-done" : ""} key={step}>{step}</span>
             ))}
@@ -187,10 +190,10 @@ export function Home() {
         </div>
       </section>
 
-      <section className="dash-kpi-grid" aria-label="Dashboard metrics">
+      <section className="macos-kpi-grid" aria-label="Dashboard metrics">
         {KPI_CARDS.map((card) => (
-          <article className="dash-kpi-card" key={card.label}>
-            <span className={`dash-kpi-icon dash-trend-${card.trend}`}>
+          <article className="macos-kpi-card" key={card.label}>
+            <span className={`macos-kpi-icon dash-trend-${card.trend}`}>
               <card.icon size={20} />
             </span>
             <div>
@@ -205,29 +208,92 @@ export function Home() {
         ))}
       </section>
 
-      <div className="dash-main-grid">
-        <div className="dash-left-column">
-          <section className="dash-card">
-            <div className="dash-section-head">
+      <div className="macos-dashboard-grid">
+        <div className="macos-dashboard-main">
+          <section className="macos-panel">
+            <div className="macos-panel-head">
               <div>
-                <h3>Coding workflow</h3>
-                <p>Track routed cases, reviews, queries and finalized claims.</p>
+                <h3>Revenue cycle funnel</h3>
+                <p>{WORKFLOW_TOTAL} active encounters across routed, review, query and finalized stages.</p>
               </div>
-              <button type="button" onClick={() => setLocation("/workspace")}>
+              <button type="button" className="macos-panel-action" onClick={() => setLocation("/workspace")}>
                 View worklist <ArrowRight size={15} />
               </button>
             </div>
 
-            <div className="dash-workflow-board">
+            <div className="macos-funnel-list">
               {WORKFLOW_COLUMNS.map((column) => (
-                <div className="dash-workflow-column" key={column.title}>
-                  <div className="dash-column-head">
+                <div className="macos-funnel-row" key={column.title}>
+                  <strong>{column.title}</strong>
+                  <div className="macos-funnel-track" aria-hidden="true">
+                    <div
+                      className="macos-funnel-fill"
+                      style={{ width: `${Math.max(12, (column.count / WORKFLOW_MAX) * 100)}%` }}
+                    />
+                  </div>
+                  <span>{column.count}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="macos-panel">
+            <div className="macos-panel-head">
+              <div>
+                <h3>Coding activity</h3>
+                <p>Last 7 days</p>
+              </div>
+              <div className="macos-chart-legend" aria-hidden="true">
+                <span className="is-blue">Encounters</span>
+                <span className="is-teal">Codes assigned</span>
+                <span className="is-violet">Queries</span>
+              </div>
+            </div>
+            <div className="macos-chart-wrap">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={WEEK_DATA} margin={{ top: 12, right: 18, bottom: 0, left: -18 }}>
+                  <CartesianGrid stroke="var(--mac-separator)" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fill: "var(--mac-text-tertiary)", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "var(--mac-text-tertiary)", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--mac-elevated-bg)",
+                      border: "1px solid var(--mac-separator)",
+                      borderRadius: "12px",
+                      boxShadow: "var(--mac-shadow-md)",
+                      color: "var(--mac-text-primary)",
+                      fontSize: 12,
+                    }}
+                  />
+                  <Line type="monotone" dataKey="encounters" stroke="#0071e3" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="codes" stroke="#00a7a0" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="queries" stroke="#af52de" strokeWidth={3} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+
+          <section className="macos-panel">
+            <div className="macos-panel-head">
+              <div>
+                <h3>Coding workflow</h3>
+                <p>Track routed cases, reviews, queries and finalized claims.</p>
+              </div>
+              <button type="button" className="macos-panel-action" onClick={() => setLocation("/workspace")}>
+                Open workspace <ArrowRight size={15} />
+              </button>
+            </div>
+
+            <div className="macos-workflow-board">
+              {WORKFLOW_COLUMNS.map((column) => (
+                <div className="macos-workflow-column" key={column.title}>
+                  <div className="macos-column-head">
                     <strong>{column.title}</strong>
                     <span>{column.count}</span>
                   </div>
-                  <div className="dash-column-list">
+                  <div className="macos-column-list">
                     {column.items.map(([mrn, label, status]) => (
-                      <article className="dash-case-card" key={mrn}>
+                      <article className="macos-case-card" key={mrn}>
                         <strong>{mrn}</strong>
                         <p>{label}</p>
                         <div>
@@ -237,56 +303,22 @@ export function Home() {
                       </article>
                     ))}
                   </div>
-                  <button type="button" className="dash-column-more">+ {column.count - 3} more</button>
+                  <button type="button" className="macos-column-more">+ {column.count - 3} more</button>
                 </div>
               ))}
             </div>
           </section>
-
-          <section className="dash-card dash-chart-card">
-            <div className="dash-section-head">
-              <div>
-                <h3>Coding activity</h3>
-                <p>Last 7 days</p>
-              </div>
-              <div className="dash-chart-legend" aria-hidden="true">
-                <span className="is-blue">Encounters</span>
-                <span className="is-teal">Codes assigned</span>
-                <span className="is-violet">Queries</span>
-              </div>
-            </div>
-            <div className="dash-chart-wrap">
-              <ResponsiveContainer width="100%" height={236}>
-                <LineChart data={WEEK_DATA} margin={{ top: 12, right: 18, bottom: 0, left: -18 }}>
-                  <CartesianGrid stroke="#e5eef8" vertical={false} />
-                  <XAxis dataKey="day" tick={{ fill: "#60758f", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#60758f", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      border: "1px solid #c9dcec",
-                      borderRadius: 8,
-                      boxShadow: "0 18px 40px rgba(16, 69, 119, 0.14)",
-                      fontSize: 12,
-                    }}
-                  />
-                  <Line type="monotone" dataKey="encounters" stroke="#0b5ee8" strokeWidth={3} dot={false} />
-                  <Line type="monotone" dataKey="codes" stroke="#0f8f83" strokeWidth={3} dot={false} />
-                  <Line type="monotone" dataKey="queries" stroke="#6d5bdc" strokeWidth={3} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </section>
         </div>
 
-        <aside className="dash-right-column">
-          <section className="dash-card">
-            <div className="dash-section-head compact">
+        <aside className="macos-dashboard-aside">
+          <section className="macos-panel">
+            <div className="macos-panel-head compact">
               <h3>Recent activity</h3>
               <button type="button">View all</button>
             </div>
-            <div className="dash-activity-list">
+            <div className="macos-activity-list">
               {ACTIVITY.map(([label, value, tone]) => (
-                <article className={`dash-activity-item tone-${tone}`} key={label}>
+                <article className={`macos-activity-item tone-${tone}`} key={label}>
                   <span><CheckCircle2 size={16} /></span>
                   <div>
                     <strong>{label}</strong>
@@ -298,12 +330,29 @@ export function Home() {
             </div>
           </section>
 
-          <section className="dash-card">
-            <div className="dash-section-head compact">
+          <section className="macos-panel">
+            <div className="macos-panel-head compact">
+              <h3>Review packet</h3>
+            </div>
+            <div className="macos-grouped-list">
+              {HERO_SIGNALS.map((signal) => (
+                <article className="macos-grouped-row" key={signal.label}>
+                  <signal.icon size={15} />
+                  <div>
+                    <strong>{signal.label}</strong>
+                    <span>{signal.value}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="macos-panel">
+            <div className="macos-panel-head compact">
               <h3>Trending codes</h3>
               <p>7 days</p>
             </div>
-            <div className="dash-code-list">
+            <div className="macos-code-list">
               {TRENDING_CODES.map(([code, label, delta]) => (
                 <button type="button" key={code} onClick={() => setLocation(`/intel/${code}`)}>
                   <strong>{code}</strong>
@@ -314,11 +363,11 @@ export function Home() {
             </div>
           </section>
 
-          <section className="dash-card">
-            <div className="dash-section-head compact">
+          <section className="macos-panel">
+            <div className="macos-panel-head compact">
               <h3>Quick actions</h3>
             </div>
-            <div className="dash-action-list">
+            <div className="macos-action-list">
               {QUICK_ACTIONS.map((action) => (
                 <button type="button" key={action.href} onClick={() => setLocation(action.href)}>
                   <action.icon size={17} />

@@ -37,7 +37,7 @@ function getPageMeta(pathname: string) {
 
 export function TopBar() {
   const [location, setLocation] = useLocation();
-  const { theme, toggle: toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
 
   const page = useMemo(() => getPageMeta(location), [location]);
@@ -51,6 +51,14 @@ export function TopBar() {
       const target = event.target as HTMLElement | null;
       const tag = target?.tagName?.toLowerCase();
       const typing = tag === "input" || tag === "textarea" || target?.isContentEditable;
+      const commandK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
+
+      if (commandK) {
+        event.preventDefault();
+        setSearchOpen(true);
+        return;
+      }
+
       if (typing) return;
 
       if (event.key === "/") {
@@ -74,7 +82,7 @@ export function TopBar() {
       <button type="button" onClick={() => setSearchOpen(true)} className="app-global-search" aria-label="Open search">
         <Search size={18} />
         <span>Search codes, descriptions, guidelines, docs...</span>
-        <kbd><Command size={12} /> /</kbd>
+        <kbd><Command size={12} /> K</kbd>
       </button>
 
       <div className="app-topbar-status" aria-label="Validation system status">
@@ -91,11 +99,28 @@ export function TopBar() {
           <Sparkles size={16} />
           <span>New review</span>
         </button>
+        <div className={`macos-theme-segment${theme === "dark" ? " is-dark" : ""}`} role="group" aria-label="Theme">
+          <button
+            type="button"
+            onClick={() => setTheme("light")}
+            className={theme === "light" ? "is-active" : ""}
+            aria-label="Use light appearance"
+            aria-pressed={theme === "light"}
+          >
+            <Sun size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme("dark")}
+            className={theme === "dark" ? "is-active" : ""}
+            aria-label="Use dark appearance"
+            aria-pressed={theme === "dark"}
+          >
+            <Moon size={16} />
+          </button>
+        </div>
         <button type="button" onClick={() => setSearchOpen(true)} className="app-icon-button app-mobile-search" aria-label="Open search">
           <Search size={18} />
-        </button>
-        <button type="button" onClick={toggleTheme} className="app-icon-button" aria-label="Toggle theme">
-          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
         </button>
         <button type="button" className="app-icon-button app-notification-button" aria-label="Notifications">
           <Bell size={18} />
