@@ -1,12 +1,9 @@
-import { useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { useMemo, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { Link } from "wouter";
 import {
-  ArrowLeft,
-  Activity,
   BadgeCheck,
   CheckCircle2,
   ClipboardCheck,
-  FileText,
   FileCheck2,
   LockKeyhole,
   Search,
@@ -15,8 +12,15 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
+import "@/styles/auth-phase2.css";
 
 export type AuthMode = "password" | "magic";
+
+type AuthShellProps = {
+  children: ReactNode;
+  compact?: boolean;
+  title?: string;
+};
 
 type AuthCardProps = {
   title: string;
@@ -43,90 +47,44 @@ type AuthModeSwitchProps = {
 const PROOF_ITEMS = [
   {
     icon: Search,
-    title: "Code intelligence",
-    text: "ICD, CPT, HCPCS and RVU context stays tied to source documentation.",
+    title: "Source-linked coding",
+    text: "Evidence stays attached to every code recommendation.",
   },
   {
     icon: ClipboardCheck,
     title: "Claim validation",
-    text: "NCCI, payer and modifier checks happen before the handoff.",
+    text: "NCCI, modifier and denial-risk checks run before handoff.",
   },
   {
     icon: UserRoundCheck,
-    title: "Certified review",
-    text: "Edge cases route to human review with a complete audit trail.",
+    title: "Reviewer-ready trails",
+    text: "Confidence, evidence and status remain reviewer-ready.",
   },
 ];
 
-export function AuthShell({ children }: { children: ReactNode }) {
+export function AuthShell({ children, compact = false, title = "Codical Health" }: AuthShellProps) {
   return (
-    <div className="codical-auth-shell auth-shell-v2">
-      <div className="auth-cinematic-bg" aria-hidden="true">
-        <span className="auth-orbit auth-orbit-one" />
-        <span className="auth-orbit auth-orbit-two" />
-        <span className="auth-float-pill pill-report"><FileText size={16} /> Report</span>
-        <span className="auth-float-pill pill-codes"><Sparkles size={16} /> Codes</span>
-        <span className="auth-float-pill pill-claim"><ClipboardCheck size={16} /> Claim</span>
-        <span className="auth-float-pill pill-review"><BadgeCheck size={16} /> Review</span>
-      </div>
+    <div className="auth-phase2-shell">
+      <div className="auth-aurora-stage" aria-hidden="true" />
+      <div className="auth-grain" aria-hidden="true" />
 
-      <header className="auth-topbar">
-        <Link className="auth-brand-link" href="/" aria-label="Codical Health home">
-          <BrandMark />
-        </Link>
-        <Link className="auth-back-link" href="/">
-          <ArrowLeft size={17} />
-          Back to product
-        </Link>
-      </header>
-
-      <main className="auth-layout">
-        <section className="auth-story" aria-label="Codical Health security overview">
-          <div className="auth-story-copy">
-            <span className="auth-story-chip"><ShieldCheck size={16} /> Secure coding access</span>
-            <h1>
-              Sign in to cleaner claims and defensible coding review.
-            </h1>
-            <p>
-              Codical Health brings code intelligence, claim validation, payer context,
-              and certified review into one controlled healthcare workflow.
-            </p>
+      <main className={`auth-mac-window${compact ? " is-compact" : ""}`} aria-label={title}>
+        <div className="auth-titlebar">
+          <div className="auth-traffic" aria-hidden="true">
+            <span />
+            <span />
+            <span />
           </div>
+          <p>{title}</p>
+          <Link href="/" className="auth-titlebar-link">Back to product</Link>
+        </div>
 
-          <div className="auth-proof-list">
-            {PROOF_ITEMS.map((item) => (
-              <div className="auth-proof-item" key={item.title}>
-                <span>
-                  <item.icon size={19} />
-                </span>
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <AuthWorkspacePreview />
-
-          <div className="auth-metric-strip" aria-label="Codical Health workflow highlights">
-            <strong>42%<span>fewer preventable denials</span></strong>
-            <strong>24h<span>reviewer SLA</span></strong>
-            <strong>NCCI<span>plus payer checks</span></strong>
-          </div>
-
-          <div className="auth-request-strip">
-            <div>
-              <strong>Request access</strong>
-              <p>Bring documentation, validation checks and certified review into one secure workspace.</p>
-            </div>
-            <Link href="/signup">Request access</Link>
-          </div>
-        </section>
-
-        <section className="auth-panel" aria-label="Account access">
-          {children}
-        </section>
+        <div className="auth-window-body">
+          {!compact ? <AuthShowcase /> : null}
+          <section className={compact ? "auth-center-side" : "auth-form-side"} aria-label="Account access">
+            {children}
+          </section>
+        </div>
       </main>
     </div>
   );
@@ -257,77 +215,84 @@ export function AuthNotice({
   );
 }
 
-function AuthWorkspacePreview() {
+export function AuthPasswordStrength({ password }: { password: string }) {
+  const checks = useMemo(
+    () => [
+      { label: "8+ characters", met: password.length >= 8 },
+      { label: "Upper and lower case", met: /[a-z]/.test(password) && /[A-Z]/.test(password) },
+      { label: "Number", met: /\d/.test(password) },
+      { label: "Symbol", met: /[^A-Za-z0-9]/.test(password) },
+    ],
+    [password],
+  );
+  const score = checks.filter((check) => check.met).length;
+  const label = score <= 1 ? "Weak" : score === 2 ? "Fair" : score === 3 ? "Good" : "Strong";
+
   return (
-    <div className="auth-workspace-preview" aria-label="Code review workspace preview">
-      <div className="auth-preview-top">
-        <div>
-          <strong>Codical review workspace</strong>
-          <span>Case packet #8912</span>
-        </div>
-        <em>Ready for review</em>
+    <div className="auth-password-meter" data-score={score}>
+      <div>
+        <span>Password strength</span>
+        <strong>{label}</strong>
       </div>
-
-      <div className="auth-preview-tabs" aria-hidden="true">
-        <span className="is-active">Summary</span>
-        <span>Codes</span>
-        <span>Documentation</span>
-        <span>History</span>
-      </div>
-
-      <div className="auth-preview-grid">
-        <section>
-          <h3><FileText size={14} /> Clinical notes</h3>
-          {[
-            ["Source", "Encounter summary"],
-            ["Context", "Moderate complexity"],
-            ["Payer", "Policy linked"],
-            ["NPI", "Verified"],
-          ].map(([label, value]) => (
-            <div className="auth-preview-row" key={label}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </div>
-          ))}
-        </section>
-
-        <section>
-          <h3><Sparkles size={14} /> Suggested codes</h3>
-          {[
-            ["99214", "98% match"],
-            ["J7613", "94% match"],
-            ["J44.1", "Review"],
-          ].map(([code, status]) => (
-            <div className="auth-code-row" key={code}>
-              <strong>{code}</strong>
-              <span>{status}</span>
-            </div>
-          ))}
-        </section>
-
-        <section>
-          <h3><Activity size={14} /> Claim checks</h3>
-          {[
-            ["NCCI edits", "Clear"],
-            ["Modifier 25", "Review"],
-            ["Audit trail", "Ready"],
-          ].map(([label, status]) => (
-            <div className="auth-code-row" key={label}>
-              <strong>{label}</strong>
-              <span>{status}</span>
-            </div>
-          ))}
-        </section>
-      </div>
-
-      <div className="auth-preview-progress" aria-hidden="true">
-        {["Upload", "Suggest", "Validate", "Review", "Export"].map((step, index) => (
-          <div className={index < 3 ? "is-done" : ""} key={step}>
+      <div className="auth-meter-track" aria-hidden="true"><span /></div>
+      <ul>
+        {checks.map((check) => (
+          <li className={check.met ? "is-met" : ""} key={check.label}>
             <CheckCircle2 size={14} />
-            <span>{step}</span>
+            {check.label}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function AuthShowcase() {
+  return (
+    <aside className="auth-showcase" aria-label="Codical Health secure access overview">
+      <div className="auth-showcase-bg" aria-hidden="true" />
+      <div className="auth-showcase-copy">
+        <span className="auth-story-chip"><ShieldCheck size={16} /> Secure coding access</span>
+        <h1>Cleaner claims begin with controlled access.</h1>
+        <p>
+          Sign in to the Codical Health workspace for coding intelligence, transcription review,
+          claim validation and team handoff in one protected operating view.
+        </p>
+      </div>
+
+      <div className="auth-proof-list">
+        {PROOF_ITEMS.map((item) => (
+          <div className="auth-proof-item" key={item.title}>
+            <span>
+              <item.icon size={18} />
+            </span>
+            <div>
+              <strong>{item.title}</strong>
+              <p>{item.text}</p>
+            </div>
           </div>
         ))}
       </div>
-    </div>
+
+      <div className="auth-preview-card">
+        <div className="auth-preview-top">
+          <div>
+            <strong>Codical review workspace</strong>
+            <span>Case packet #8912</span>
+          </div>
+          <em>Ready</em>
+        </div>
+        <div className="auth-preview-grid">
+          <span><Sparkles size={14} /> 98% code confidence</span>
+          <span><BadgeCheck size={14} /> NCCI clear</span>
+          <span><ClipboardCheck size={14} /> Payer policy linked</span>
+        </div>
+        <div className="auth-preview-bars" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
+    </aside>
   );
 }

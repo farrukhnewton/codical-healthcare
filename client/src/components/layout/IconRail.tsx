@@ -1,70 +1,47 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
-  Activity,
-  BarChart2,
-  BadgeCheck,
-  BookOpen,
-  Brain,
-  Calculator,
-  ClipboardCheck,
-  FileBarChart,
-  LayoutDashboard,
+  Ban,
+  Boxes,
+  ChevronDown,
+  Database,
+  Home,
   LogOut,
   Menu,
-  MessageSquare,
-  Mic,
-  Pill,
-  PlusCircle,
   Search,
+  Send,
   Settings,
-  Shield,
-  Tag,
-  User,
+  Table2,
+  TrendingUp,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { BrandMark } from "@/components/BrandMark";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 
-type NavSection = "MAIN" | "TOOLS";
-type NavTone = "blue" | "teal" | "orange" | "violet" | "mint" | "slate";
+type NavSection = "WORKSPACE" | "DATA OPS" | "CONFIGURATION";
 
 type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
   section: NavSection;
-  hint: string;
-  tone: NavTone;
   badge?: string;
+  live?: string;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, section: "MAIN", hint: "Live command", tone: "blue" },
-  { href: "/intelligence", label: "Coverage & Guidelines", icon: BookOpen, section: "MAIN", hint: "MCD, payer, crosswalk", tone: "teal", badge: "Live" },
-  { href: "/search", label: "Code Search", icon: Search, section: "MAIN", hint: "ICD, CPT, HCPCS", tone: "violet" },
-  { href: "/workspace", label: "AI Coder", icon: Brain, section: "MAIN", hint: "Review workspace", tone: "orange" },
-  { href: "/voice-transcription", label: "Clinical Transcription", icon: Mic, section: "MAIN", hint: "Voice to note", tone: "mint" },
-  { href: "/chat", label: "Team Chat", icon: MessageSquare, section: "MAIN", hint: "Coder collaboration", tone: "slate" },
-  { href: "/analytics", label: "Analytics", icon: BarChart2, section: "MAIN", hint: "Revenue signals", tone: "blue" },
-  { href: "/compliance", label: "Compliance", icon: Shield, section: "MAIN", hint: "Audit controls", tone: "teal" },
-  { href: "/ncci", label: "NCCI Checker", icon: Shield, section: "TOOLS", hint: "Edit conflicts", tone: "orange" },
-  { href: "/claim-validator", label: "Claim Validator", icon: ClipboardCheck, section: "TOOLS", hint: "Payer readiness", tone: "blue" },
-  { href: "/rvu", label: "RVU Calculator", icon: Calculator, section: "TOOLS", hint: "Fee schedule", tone: "violet" },
-  { href: "/anesthesia", label: "Anesthesia Calculator", icon: Activity, section: "TOOLS", hint: "Base + time units", tone: "mint" },
-  { href: "/npi", label: "NPI Lookup", icon: User, section: "TOOLS", hint: "NPPES registry", tone: "teal" },
-  { href: "/codelookup", label: "POS & Modifiers", icon: Tag, section: "TOOLS", hint: "Claim metadata", tone: "slate" },
-  { href: "/druglookup", label: "Drug Lookup", icon: Pill, section: "TOOLS", hint: "NDC database", tone: "orange" },
-  { href: "/reports", label: "Reports", icon: FileBarChart, section: "TOOLS", hint: "Export packets", tone: "blue" },
+  { href: "/dashboard", label: "Overview", icon: Home, section: "WORKSPACE" },
+  { href: "/search", label: "Leads", icon: Table2, section: "WORKSPACE", badge: "8,214" },
+  { href: "/analytics", label: "Enrichment Waterfall", icon: TrendingUp, section: "WORKSPACE" },
+  { href: "/chat", label: "Sequences", icon: Send, section: "WORKSPACE", live: "3 live" },
+  { href: "/workspace", label: "Segments", icon: Boxes, section: "WORKSPACE" },
+  { href: "/intelligence", label: "Sources", icon: Database, section: "DATA OPS", badge: "32" },
+  { href: "/compliance", label: "Suppression", icon: Ban, section: "DATA OPS" },
+  { href: "/settings", label: "Settings", icon: Settings, section: "CONFIGURATION" },
 ];
 
-const SECTIONS: NavSection[] = ["MAIN", "TOOLS"];
-const SECTION_LABELS: Record<NavSection, string> = {
-  MAIN: "Command center",
-  TOOLS: "Validation tools",
-};
+const SECTIONS: NavSection[] = ["WORKSPACE", "DATA OPS", "CONFIGURATION"];
 
 function isActiveRoute(location: string, href: string) {
   return location === href || (href !== "/dashboard" && location.startsWith(href));
@@ -85,22 +62,14 @@ export function IconRail() {
     toast({ title: "Signed out", description: "See you next time." });
   };
 
-  const startNewClaim = (mobile = false) => {
-    setLocation("/workspace");
-    if (mobile) setMobileOpen(false);
-  };
-
   const NavContent = ({ mobile = false }: { mobile?: boolean }) => (
     <div className="app-sidebar-inner">
-      <div className="app-sidebar-brand">
+      <div className="app-sidebar-titlebar">
         <div className="app-sidebar-window-controls" aria-hidden="true">
           <span />
           <span />
           <span />
         </div>
-        <Link href="/dashboard" onClick={() => mobile && setMobileOpen(false)} aria-label="Codical Health dashboard" className="app-sidebar-brand-link">
-          <BrandMark />
-        </Link>
         {mobile ? (
           <button type="button" onClick={() => setMobileOpen(false)} className="app-sidebar-close" aria-label="Close navigation">
             <X size={18} />
@@ -108,34 +77,46 @@ export function IconRail() {
         ) : null}
       </div>
 
-      <div className="app-sidebar-status" aria-label="Coding operations status">
-        <span><BadgeCheck size={15} /> Operations live</span>
-        <strong>72 claims in review</strong>
-        <p>NCCI, payer policy, crosswalk and NPI checks synced 2 min ago.</p>
-      </div>
+      <Link href="/dashboard" onClick={() => mobile && setMobileOpen(false)} aria-label="Codical dashboard" className="app-sidebar-brand">
+        <span className="app-sidebar-mark" aria-hidden="true">CH</span>
+        <span className="app-sidebar-brand-copy">
+          <strong>Codical</strong>
+          <em>Revenue Intelligence OS</em>
+        </span>
+      </Link>
 
-      <button type="button" className="app-sidebar-claim-cta" onClick={() => startNewClaim(mobile)}>
-        <PlusCircle size={17} />
-        <span>Start claim review</span>
+      <button type="button" className="app-workspace-switch" onClick={() => setLocation("/dashboard")}>
+        <span aria-hidden="true" />
+        <strong>New Jersey — RCM Q3</strong>
+        <ChevronDown size={14} />
       </button>
 
-      <nav className="app-sidebar-nav" aria-label="Main navigation">
+      <button type="button" className="app-sidebar-search" onClick={() => setLocation("/search")} aria-label="Open search">
+        <Search size={15} />
+        <span>Search or jump to...</span>
+        <kbd>⌘K</kbd>
+      </button>
+
+      <nav className="app-sidebar-scroll" aria-label="Main navigation">
         {groupedItems.map(({ section, items }) => (
           <section className="app-nav-section" key={section}>
-            <p>{SECTION_LABELS[section]}</p>
+            <p>{section}</p>
             <div className="app-nav-list">
               {items.map((item) => {
                 const active = isActiveRoute(location, item.href);
                 return (
-                  <Link key={item.href} href={item.href} onClick={() => mobile && setMobileOpen(false)} className={`app-nav-item${active ? " is-active" : ""}`}>
-                    <span className={`app-nav-icon tone-${item.tone}`} aria-hidden="true">
-                      <item.icon size={17} />
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => mobile && setMobileOpen(false)}
+                    className={`app-nav-item${active ? " is-active" : ""}`}
+                  >
+                    <span className="app-nav-glyph" aria-hidden="true">
+                      <item.icon size={15} />
                     </span>
-                    <span className="app-nav-copy">
-                      <span className="app-nav-label">{item.label}</span>
-                      <small>{item.hint}</small>
-                    </span>
+                    <span className="app-nav-text">{item.label}</span>
                     {item.badge ? <em>{item.badge}</em> : null}
+                    {item.live ? <b>{item.live}</b> : null}
                   </Link>
                 );
               })}
@@ -145,38 +126,33 @@ export function IconRail() {
       </nav>
 
       <div className="app-sidebar-footer">
-        <div className="app-sidebar-user-card">
-          <User size={15} />
-          <div>
-            <strong>Certified coder</strong>
-            <span>Coding operations</span>
+        <div className="app-sidebar-usage">
+          <div className="app-sidebar-usage-head">
+            <strong>AI credits used</strong>
+            <span>6,420 / 10,000</span>
           </div>
+          <div className="app-sidebar-meter" aria-hidden="true"><span /></div>
+          <p>Free plan resets in 12 days. Upgrade for unlimited enrichment + live sending.</p>
+          <button type="button" onClick={() => setLocation("/settings")}>Upgrade Plan</button>
         </div>
-        <Link href="/settings" onClick={() => mobile && setMobileOpen(false)} className={`app-nav-item${isActiveRoute(location, "/settings") ? " is-active" : ""}`}>
-          <span className="app-nav-icon tone-slate" aria-hidden="true">
-            <Settings size={17} />
-          </span>
-          <span className="app-nav-copy">
-            <span className="app-nav-label">Settings</span>
-            <small>Account controls</small>
-          </span>
-        </Link>
-        <button
-          type="button"
-          onClick={() => {
-            handleLogout();
-            if (mobile) setMobileOpen(false);
-          }}
-          className="app-nav-item app-nav-logout"
-        >
-          <span className="app-nav-icon tone-slate" aria-hidden="true">
-            <LogOut size={17} />
-          </span>
-          <span className="app-nav-copy">
-            <span className="app-nav-label">Sign out</span>
-            <small>End session</small>
-          </span>
-        </button>
+
+        <div className="app-sidebar-profile">
+          <span aria-hidden="true">FY</span>
+          <div>
+            <strong>Farrukh Yaqoob</strong>
+            <em>Teksoft Solutions</em>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              handleLogout();
+              if (mobile) setMobileOpen(false);
+            }}
+            aria-label="Sign out"
+          >
+            <LogOut size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );

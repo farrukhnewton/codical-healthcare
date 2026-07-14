@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, Eye, EyeOff, Link2, Lock } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Link2, Lock } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { AuthCard, AuthField, AuthNotice, AuthShell } from "@/components/auth/AuthShell";
+import { AuthCard, AuthField, AuthNotice, AuthPasswordStrength, AuthShell } from "@/components/auth/AuthShell";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,6 +13,7 @@ export function ResetPassword() {
   const [show, setShow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [updated, setUpdated] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -46,15 +47,17 @@ export function ResetPassword() {
         return;
       }
 
+      setUpdated(true);
       toast({ title: "Password updated", description: "You can now continue to your dashboard." });
-      setLocation("/dashboard");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const passwordStrongEnough = password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password);
+
   return (
-    <AuthShell>
+    <AuthShell compact title="Codical Health — New password">
       <AuthCard
         title="Create a new password"
         subtitle="Choose a strong password to secure your account."
@@ -64,7 +67,17 @@ export function ResetPassword() {
           </div>
         }
       >
-        {!ready ? (
+        {updated ? (
+          <>
+            <AuthNotice icon={<CheckCircle2 size={20} />} title="Password updated" tone="success">
+              Your account password has been updated. Continue to the Codical dashboard when ready.
+            </AuthNotice>
+            <button type="button" className="auth-submit-button" onClick={() => setLocation("/dashboard")}>
+              <span>Open dashboard</span>
+              <ArrowRight size={18} />
+            </button>
+          </>
+        ) : !ready ? (
           <AuthNotice icon={<Link2 size={20} />} title="Open the reset link">
             Please open the password reset link from your email. If you already did, wait a moment and try again.
           </AuthNotice>
@@ -92,8 +105,9 @@ export function ResetPassword() {
                 </button>
               }
             />
+            <AuthPasswordStrength password={password} />
 
-            <button type="submit" disabled={isLoading} className="auth-submit-button">
+            <button type="submit" disabled={isLoading || !passwordStrongEnough} className="auth-submit-button">
               <span>{isLoading ? "Updating..." : "Update password"}</span>
               {!isLoading ? <ArrowRight size={18} /> : null}
             </button>

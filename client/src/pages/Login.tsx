@@ -13,6 +13,7 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [remember, setRemember] = useState(true);
 
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
@@ -117,7 +118,7 @@ export function Login() {
   };
 
   return (
-    <AuthShell>
+    <AuthShell title="Codical Health — Sign in">
       <AuthCard
         title="Sign in to Codical Health"
         subtitle="Access your coding workspace securely."
@@ -174,8 +175,15 @@ export function Login() {
             />
           ) : null}
 
-          <div className="auth-form-row">
-            <span>{mode === "magic" ? "We will email a secure sign-in link." : ""}</span>
+          <div className={mode === "magic" ? "auth-form-row" : "auth-check-row"}>
+            {mode === "magic" ? (
+              <span>We will email a secure sign-in link.</span>
+            ) : (
+              <label>
+                <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} />
+                Remember me
+              </label>
+            )}
             <Link href="/forgot-password">Forgot password?</Link>
           </div>
 

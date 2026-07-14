@@ -68,7 +68,7 @@ export function AuthCallback() {
   }, [setLocation, toast]);
 
   return (
-    <AuthShell>
+    <AuthShell compact title="Codical Health — Completing sign-in">
       <AuthCard title="Signing you in" subtitle={message}>
         <div className="flex items-center justify-center py-8">
           <div className="h-9 w-9 rounded-full border-2 border-[rgba(74,222,128,0.30)] border-t-[rgba(74,222,128,0.95)] animate-spin" />

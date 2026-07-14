@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2, Mail } from "lucide-react";
 import { Link } from "wouter";
 import { AuthCard, AuthField, AuthNotice, AuthShell } from "@/components/auth/AuthShell";
@@ -9,11 +9,21 @@ import { useToast } from "@/hooks/use-toast";
 export function ForgotPassword() {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
+  const [submittedEmail, setSubmittedEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
-  const sendReset = async (event: FormEvent) => {
-    event.preventDefault();
+  useEffect(() => {
+    if (!cooldown) return undefined;
+    const timer = window.setInterval(() => {
+      setCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldown]);
+
+  const sendReset = async (event?: FormEvent) => {
+    event?.preventDefault();
     if (isLoading) return;
 
     setIsLoading(true);
@@ -28,6 +38,8 @@ export function ForgotPassword() {
       }
 
       setSent(true);
+      setSubmittedEmail(email);
+      setCooldown(30);
       toast({ title: "Check your email", description: "We sent a password reset link." });
     } finally {
       setIsLoading(false);
@@ -35,7 +47,7 @@ export function ForgotPassword() {
   };
 
   return (
-    <AuthShell>
+    <AuthShell compact title="Codical Health — Reset password">
       <AuthCard
         title="Reset your password"
         subtitle="Enter your email and we will send you a secure reset link."
@@ -46,9 +58,17 @@ export function ForgotPassword() {
         }
       >
         {sent ? (
-          <AuthNotice icon={<CheckCircle2 size={20} />} title="Email sent" tone="success">
-            If an account exists for <strong>{email}</strong>, you will receive a reset link shortly.
-          </AuthNotice>
+          <>
+            <AuthNotice icon={<CheckCircle2 size={20} />} title="Email sent" tone="success">
+              If an account exists for <strong>{submittedEmail}</strong>, you will receive a reset link shortly.
+            </AuthNotice>
+            <div className="auth-resend-row">
+              <span>Did not receive it?</span>
+              <button type="button" disabled={isLoading || cooldown > 0} onClick={() => sendReset()}>
+                {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend email"}
+              </button>
+            </div>
+          </>
         ) : (
           <form onSubmit={sendReset} className="auth-form">
             <AuthField

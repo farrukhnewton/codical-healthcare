@@ -13,11 +13,11 @@
   --mac-ease: cubic-bezier(.22, 1, .36, 1);
   --mac-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Inter, "Segoe UI", Roboto, sans-serif;
   --mac-font-mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --mac-accent: #0071e3;
-  --mac-accent-2: #147ce5;
-  --mac-accent-soft: #e8f2ff;
-  --mac-accent-soft-2: #d7ebff;
-  --mac-window-bg: #ececef;
+  --mac-accent: #8937d8;
+  --mac-accent-2: #9f4be9;
+  --mac-accent-soft: rgba(137, 55, 216, .12);
+  --mac-accent-soft-2: rgba(137, 55, 216, .18);
+  --mac-window-bg: #f2effd;
   --mac-sidebar-bg: rgba(246, 246, 248, .82);
   --mac-content-bg: #ffffff;
   --mac-toolbar-bg: rgba(255, 255, 255, .78);
@@ -31,7 +31,7 @@
   --mac-green: #34c759;
   --mac-orange: #ff9500;
   --mac-red: #ff3b30;
-  --mac-purple: #af52de;
+  --mac-purple: #8937d8;
   --mac-teal: #00a7a0;
   --mac-shadow-sm: 0 8px 22px rgba(31, 34, 40, .08);
   --mac-shadow-md: 0 20px 54px rgba(31, 34, 40, .12);
@@ -65,8 +65,9 @@
 .landingAurora.appShellMacOS,
 .landingAurora.appShell.appShellMacOS {
   background:
-    radial-gradient(circle at 18% -12%, rgba(10, 113, 227, .08), transparent 34%),
-    radial-gradient(circle at 84% 4%, rgba(175, 82, 222, .10), transparent 30%),
+    radial-gradient(circle at 18% -12%, rgba(255, 255, 255, .82), transparent 35%),
+    radial-gradient(circle at 74% -2%, rgba(159, 75, 233, .22), transparent 34%),
+    linear-gradient(120deg, rgba(255, 255, 255, .72), rgba(224, 211, 250, .78)),
     var(--mac-window-bg) !important;
 }
 
@@ -76,10 +77,11 @@
 
 .appShellMacOS .appShellMain {
   background:
-    linear-gradient(rgba(60, 60, 67, .045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(60, 60, 67, .045) 1px, transparent 1px),
-    radial-gradient(circle at 82% 4%, rgba(10, 113, 227, .08), transparent 32%),
-    radial-gradient(circle at 36% 0%, rgba(175, 82, 222, .07), transparent 34%),
+    linear-gradient(rgba(89, 48, 140, .055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(89, 48, 140, .055) 1px, transparent 1px),
+    radial-gradient(circle at 78% 0%, rgba(159, 75, 233, .22), transparent 35%),
+    radial-gradient(circle at 20% 12%, rgba(255, 255, 255, .86), transparent 34%),
+    linear-gradient(135deg, #faf9ff 0%, #f1edff 46%, #deccf5 100%),
     var(--mac-window-bg) !important;
   background-size: 74px 74px, 74px 74px, auto, auto, auto;
 }
@@ -1791,5 +1793,479 @@
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+  }
+}
+
+/* Reference sidebar + command-center dashboard shell */
+.appShellMacOS {
+  --dash-ink: #211546;
+  --dash-muted: #756a8f;
+  --dash-soft: #f6f3ff;
+  --dash-line: rgba(106, 70, 160, .16);
+  --dash-line-strong: rgba(106, 70, 160, .24);
+  --dash-lavender: #8e39df;
+  --dash-lavender-light: #f0e4ff;
+  --dash-lavender-hover: rgba(142, 57, 223, .10);
+  --dash-lavender-active: rgba(142, 57, 223, .16);
+  --dash-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, "Helvetica Neue", Arial, sans-serif;
+}
+
+.appShellMacOS .appShellMain,
+.appShellMacOS .app-route-transition {
+  color: var(--dash-ink);
+}
+
+.appShellMacOS .app-topbar {
+  color: var(--dash-ink);
+  border-color: rgba(151, 106, 205, .20);
+  background: rgba(247, 244, 255, .76);
+  box-shadow: 0 18px 54px rgba(105, 67, 160, .10), inset 0 1px 0 rgba(255, 255, 255, .82);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+}
+
+.appShellMacOS .app-page-title h1,
+.appShellMacOS .macos-hero-copy h2,
+.appShellMacOS .macos-panel-head h3,
+.appShellMacOS .macos-kpi-card strong {
+  color: var(--dash-ink);
+}
+
+.appShellMacOS .app-page-title p,
+.appShellMacOS .macos-hero-copy p,
+.appShellMacOS .macos-panel-head p {
+  color: var(--dash-muted);
+}
+
+.appShellMacOS .app-sidebar {
+  width: 250px !important;
+  flex: 0 0 250px !important;
+  height: 100vh;
+  margin: 0 !important;
+  color: var(--dash-ink);
+  border: 0 !important;
+  border-right: 1px solid var(--dash-line) !important;
+  border-radius: 0 !important;
+  background: rgba(248, 247, 252, .86) !important;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, .60) !important;
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+}
+
+.appShellMacOS .app-sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 0 10px 12px !important;
+  font-family: var(--dash-font);
+}
+
+.appShellMacOS .app-sidebar-titlebar {
+  display: flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 6px;
+}
+
+.appShellMacOS .app-sidebar-window-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.appShellMacOS .app-sidebar-window-controls span {
+  width: 12px;
+  height: 12px;
+}
+
+.appShellMacOS .app-sidebar-close {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  color: var(--dash-ink);
+  border: 1px solid var(--dash-line);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .72);
+}
+
+.appShellMacOS .app-sidebar-brand {
+  display: grid !important;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 0 !important;
+  padding: 0 6px 12px !important;
+  color: var(--dash-ink);
+  border: 0 !important;
+  text-decoration: none;
+}
+
+.appShellMacOS .app-sidebar-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: #fff;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6d5cff 0%, #a543df 60%, #ff7a45 100%);
+  box-shadow: 0 12px 28px rgba(112, 64, 204, .22);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.appShellMacOS .app-sidebar-brand-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.appShellMacOS .app-sidebar-brand-copy strong {
+  overflow: hidden;
+  color: #07070a;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.05;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appShellMacOS .app-sidebar-brand-copy em {
+  overflow: hidden;
+  color: #8d849d;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 560;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appShellMacOS .app-workspace-switch,
+.appShellMacOS .app-sidebar-search {
+  display: grid;
+  align-items: center;
+  width: 100%;
+  min-height: 38px;
+  margin: 0 0 10px;
+  padding: 0 10px;
+  color: #050507;
+  border: 1px solid var(--dash-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .70);
+  box-shadow: 0 8px 22px rgba(64, 42, 99, .05);
+  transition: border-color 180ms var(--mac-ease), background 180ms var(--mac-ease), box-shadow 180ms var(--mac-ease), transform 180ms var(--mac-ease);
+}
+
+.appShellMacOS .app-workspace-switch {
+  grid-template-columns: 8px minmax(0, 1fr) 14px;
+  gap: 9px;
+}
+
+.appShellMacOS .app-workspace-switch > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.appShellMacOS .app-workspace-switch strong {
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 760;
+  letter-spacing: 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appShellMacOS .app-sidebar-search {
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  gap: 8px;
+  min-height: 44px;
+  color: #8c849c;
+  font-size: 12px;
+  text-align: left;
+}
+
+.appShellMacOS .app-workspace-switch:hover,
+.appShellMacOS .app-sidebar-search:hover {
+  border-color: rgba(142, 57, 223, .34);
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 12px 28px rgba(112, 64, 204, .10);
+  transform: translateY(-1px);
+}
+
+.appShellMacOS .app-sidebar-search kbd {
+  min-width: 46px;
+  padding: 4px 8px;
+  color: #7d7191;
+  border: 1px solid var(--dash-line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .70);
+  font-family: var(--mac-font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.appShellMacOS .app-sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 0 10px;
+}
+
+.appShellMacOS .app-sidebar-scroll::-webkit-scrollbar {
+  width: 0;
+}
+
+.appShellMacOS .app-nav-section {
+  margin: 0 0 16px;
+}
+
+.appShellMacOS .app-nav-section p {
+  margin: 0 0 7px;
+  padding: 0 6px;
+  color: #9a92a8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.appShellMacOS .app-nav-list {
+  display: grid;
+  gap: 2px;
+}
+
+.appShellMacOS .app-nav-item {
+  display: grid !important;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 31px;
+  padding: 0 8px;
+  color: var(--dash-ink);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1;
+  text-decoration: none;
+  transition: color 180ms var(--mac-ease), border-color 180ms var(--mac-ease), background 180ms var(--mac-ease), box-shadow 180ms var(--mac-ease), transform 180ms var(--mac-ease);
+}
+
+.appShellMacOS .app-nav-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+
+.appShellMacOS .app-nav-glyph svg {
+  width: 15px;
+  height: 15px;
+  color: #7d7890;
+  stroke-width: 1.9;
+  transition: color 180ms var(--mac-ease), transform 180ms var(--mac-ease);
+}
+
+.appShellMacOS .app-nav-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appShellMacOS .app-nav-item em,
+.appShellMacOS .app-nav-item b {
+  min-width: 0;
+  padding: 3px 7px;
+  border-radius: var(--mac-radius-pill);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.appShellMacOS .app-nav-item em {
+  color: #85799b;
+  background: rgba(126, 113, 150, .10);
+}
+
+.appShellMacOS .app-nav-item b {
+  color: #f04438;
+  background: rgba(255, 83, 83, .13);
+}
+
+.appShellMacOS .app-nav-item:hover {
+  color: var(--dash-lavender);
+  border-color: rgba(142, 57, 223, .20);
+  background: var(--dash-lavender-hover);
+  box-shadow: 0 10px 24px rgba(142, 57, 223, .08);
+  transform: translateY(-1px);
+}
+
+.appShellMacOS .app-nav-item:hover .app-nav-glyph svg {
+  color: var(--dash-lavender);
+  transform: translateX(1px);
+}
+
+.appShellMacOS .app-nav-item.is-active {
+  color: #4338ca;
+  border-color: rgba(142, 57, 223, .18);
+  background: var(--dash-lavender-active);
+}
+
+.appShellMacOS .app-nav-item.is-active .app-nav-glyph svg {
+  color: #5b4cff;
+}
+
+.appShellMacOS .app-sidebar-footer {
+  display: grid !important;
+  gap: 12px;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.appShellMacOS .app-sidebar-usage {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--dash-line);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .72);
+  box-shadow: 0 14px 34px rgba(64, 42, 99, .07);
+}
+
+.appShellMacOS .app-sidebar-usage-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.appShellMacOS .app-sidebar-usage-head strong {
+  color: #060609;
+  font-size: 11.5px;
+  font-weight: 850;
+}
+
+.appShellMacOS .app-sidebar-usage-head span {
+  color: #8d849d;
+  font-size: 10.5px;
+  font-weight: 650;
+}
+
+.appShellMacOS .app-sidebar-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--mac-radius-pill);
+  background: #e8e4ef;
+}
+
+.appShellMacOS .app-sidebar-meter span {
+  display: block;
+  width: 64%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5f5cf6, #f241b7);
+}
+
+.appShellMacOS .app-sidebar-usage p {
+  margin: 0;
+  color: #746b88;
+  font-size: 10.6px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.appShellMacOS .app-sidebar-usage button {
+  min-height: 30px;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  background: #07070b;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.appShellMacOS .app-sidebar-profile {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px;
+}
+
+.appShellMacOS .app-sidebar-profile > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: #fff;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6d5cff, #b445e9);
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.appShellMacOS .app-sidebar-profile div {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.appShellMacOS .app-sidebar-profile strong,
+.appShellMacOS .app-sidebar-profile em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appShellMacOS .app-sidebar-profile strong {
+  color: #07070a;
+  font-size: 11.5px;
+  font-weight: 850;
+}
+
+.appShellMacOS .app-sidebar-profile em {
+  color: #9a92a8;
+  font-size: 10px;
+  font-style: normal;
+}
+
+.appShellMacOS .app-sidebar-profile button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #8a8299;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.appShellMacOS .app-sidebar-profile button:hover {
+  color: var(--dash-lavender);
+  background: var(--dash-lavender-hover);
+}
+
+@media (max-width: 1023px) {
+  .appShellMacOS .app-sidebar-mobile {
+    width: min(250px, calc(100vw - 28px)) !important;
+    height: calc(100vh - 28px);
+    margin: 14px !important;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 30px 80px rgba(37, 21, 68, .22) !important;
   }
 }
