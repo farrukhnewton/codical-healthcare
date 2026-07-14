@@ -1,17 +1,11 @@
 import { useMemo, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { Link } from "wouter";
 import {
-  BadgeCheck,
   CheckCircle2,
-  ClipboardCheck,
   FileCheck2,
   LockKeyhole,
-  Search,
   ShieldCheck,
-  Sparkles,
-  UserRoundCheck,
 } from "lucide-react";
-import { BrandMark } from "@/components/BrandMark";
 import "@/styles/auth-phase2.css";
 
 export type AuthMode = "password" | "magic";
@@ -44,24 +38,6 @@ type AuthModeSwitchProps = {
   magicLabel?: string;
 };
 
-const PROOF_ITEMS = [
-  {
-    icon: Search,
-    title: "Source-linked coding",
-    text: "Evidence stays attached to every code recommendation.",
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Claim validation",
-    text: "NCCI, modifier and denial-risk checks run before handoff.",
-  },
-  {
-    icon: UserRoundCheck,
-    title: "Reviewer-ready trails",
-    text: "Confidence, evidence and status remain reviewer-ready.",
-  },
-];
-
 export function AuthShell({ children, compact = false, title = "Codical Health" }: AuthShellProps) {
   return (
     <div className="auth-phase2-shell">
@@ -71,9 +47,15 @@ export function AuthShell({ children, compact = false, title = "Codical Health" 
       <main className={`auth-mac-window${compact ? " is-compact" : ""}`} aria-label={title}>
         <div className="auth-titlebar">
           <div className="auth-traffic" aria-hidden="true">
-            <span />
-            <span />
-            <span />
+            <span>
+              <svg viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M1.5 1.5l5 5M6.5 1.5l-5 5" /></svg>
+            </span>
+            <span>
+              <svg viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M1.5 4h5" /></svg>
+            </span>
+            <span>
+              <svg viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M1 4.5V6a.5.5 0 0 0 .5.5H3M7 3.5V2a.5.5 0 0 0-.5-.5H5" /></svg>
+            </span>
           </div>
           <p>{title}</p>
           <Link href="/" className="auth-titlebar-link">Back to product</Link>
@@ -94,7 +76,6 @@ export function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
   return (
     <div className="auth-card">
       <div className="auth-card-head">
-        <BrandMark compact />
         <h2>{title}</h2>
         {subtitle ? <p>{subtitle}</p> : null}
       </div>
@@ -250,47 +231,44 @@ export function AuthPasswordStrength({ password }: { password: string }) {
 function AuthShowcase() {
   return (
     <aside className="auth-showcase" aria-label="Codical Health secure access overview">
-      <div className="auth-showcase-bg" aria-hidden="true" />
+      <div className="auth-showcase-noise" aria-hidden="true" />
+      <div className="auth-showcase-brand">
+        <span>CH</span>
+        <b>Codical Health</b>
+      </div>
+
       <div className="auth-showcase-copy">
-        <span className="auth-story-chip"><ShieldCheck size={16} /> Secure coding access</span>
+        <span className="auth-story-chip"><span aria-hidden="true" /> Secure coding access</span>
         <h1>Cleaner claims begin with controlled access.</h1>
         <p>
-          Sign in to the Codical Health workspace for coding intelligence, transcription review,
-          claim validation and team handoff in one protected operating view.
+          Access coding intelligence, transcription review, claim validation and team handoff
+          inside one protected operating view.
         </p>
       </div>
 
-      <div className="auth-proof-list">
-        {PROOF_ITEMS.map((item) => (
-          <div className="auth-proof-item" key={item.title}>
-            <span>
-              <item.icon size={18} />
-            </span>
-            <div>
-              <strong>{item.title}</strong>
-              <p>{item.text}</p>
-            </div>
-          </div>
-        ))}
+      <div className="auth-metric-row" aria-label="Security metrics">
+        <div>
+          <strong>98%</strong>
+          <span>code confidence</span>
+        </div>
+        <div>
+          <strong>24/7</strong>
+          <span>audit trail</span>
+        </div>
+        <div>
+          <strong>4</strong>
+          <span>review paths</span>
+        </div>
       </div>
 
-      <div className="auth-preview-card">
-        <div className="auth-preview-top">
+      <div className="auth-showcase-quote">
+        <p>"Every recommendation stays linked to the source note, payer context, and reviewer handoff."</p>
+        <div>
+          <span>CO</span>
           <div>
-            <strong>Codical review workspace</strong>
-            <span>Case packet #8912</span>
+            <strong>Coding operations</strong>
+            <em>Revenue integrity team</em>
           </div>
-          <em>Ready</em>
-        </div>
-        <div className="auth-preview-grid">
-          <span><Sparkles size={14} /> 98% code confidence</span>
-          <span><BadgeCheck size={14} /> NCCI clear</span>
-          <span><ClipboardCheck size={14} /> Payer policy linked</span>
-        </div>
-        <div className="auth-preview-bars" aria-hidden="true">
-          <span />
-          <span />
-          <span />
         </div>
       </div>
     </aside>

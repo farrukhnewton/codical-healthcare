@@ -4,7 +4,7 @@ import {
   Upload, FileText, Copy, Check, ClipboardCheck, Download,
   AlertCircle, ChevronDown, ChevronUp, Zap, Brain,
   Hash, Activity, Pill, MapPin, BookOpen, X,
-  Building2, ChevronRight, ShieldCheck
+  Building2, ChevronRight, ShieldCheck, Info
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -105,6 +105,15 @@ function CopyBtn({ text }: { text: string }) {
     >
       {copied ? <Check size={12} color="#16A34A" /> : <Copy size={12} />}
     </button>
+  );
+}
+
+function InfoHint({ label }: { label: string }) {
+  return (
+    <span className="ui-info-hint" tabIndex={0} aria-label={label}>
+      <Info size={13} />
+      <span role="tooltip">{label}</span>
+    </span>
   );
 }
 
@@ -400,8 +409,10 @@ export function Workspace() {
         <div className="workspace-hero-title">
           <span className="workspace-hero-icon"><Brain size={19} /></span>
           <div>
-            <h1>Coding Assistant</h1>
-            <p>Paste or upload a clinical document to draft CPT, ICD-10, and HCPCS code suggestions.</p>
+            <h1>
+              Coding Assistant
+              <InfoHint label="Paste or upload a clinical document to draft CPT, ICD-10, and HCPCS code suggestions." />
+            </h1>
           </div>
         </div>
         <div className="search-header-meta">
@@ -416,8 +427,8 @@ export function Workspace() {
             <h2>
               <Building2 size={17} />
               Payer context
+              <InfoHint label="Choose the policy set to include while generating coding suggestions." />
             </h2>
-            <p>Choose the policy set to include while generating coding suggestions.</p>
           </div>
           <ShieldCheck size={17} />
         </div>
@@ -442,10 +453,6 @@ export function Workspace() {
             </button>
           ))}
         </div>
-        <div className="tool-callout compact" data-tone="info">
-          <ClipboardCheck size={15} />
-          Certified coder review required before final submission.
-        </div>
       </section>
 
       <section className="workspace-assistant-grid">
@@ -456,8 +463,8 @@ export function Workspace() {
               <h2>
                 <FileText size={17} />
                 Clinical Note
+                <InfoHint label="Upload a document or paste note text directly." />
               </h2>
-              <p>Upload a document or paste note text directly.</p>
             </div>
           </div>
 
@@ -543,7 +550,10 @@ ANESTHESIA: General`}
           <div className="workspace-ai-panel-header">
             <div>
               <span className="workspace-ai-eyebrow">Suggested Coding</span>
-              <h2>Review window</h2>
+              <h2>
+                Review window
+                <InfoHint label="Certified coder review required before submission." />
+              </h2>
             </div>
             <span className="workspace-ai-pill">{result ? "Complete" : loading ? "Scanning" : "Waiting"}</span>
           </div>
@@ -583,11 +593,6 @@ ANESTHESIA: General`}
                 </div>
               ))
             )}
-          </div>
-
-          <div className="tool-callout compact" data-tone="warning">
-            <ShieldCheck size={15} />
-            Certified coder review required before submission.
           </div>
         </div>
 

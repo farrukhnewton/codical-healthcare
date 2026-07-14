@@ -2269,3 +2269,165 @@
     box-shadow: 0 30px 80px rgba(37, 21, 68, .22) !important;
   }
 }
+
+/* Dashboard polish pass: shared purple motion language from the landing command/creative sections. */
+.appShellMacOS .macos-dashboard-hero {
+  isolation: isolate;
+  border-color: rgba(255, 255, 255, .32);
+  background:
+    radial-gradient(circle at 16% 16%, rgba(255, 255, 255, .24), transparent 32%),
+    radial-gradient(circle at 76% 22%, rgba(255, 62, 247, .18), transparent 30%),
+    linear-gradient(131deg, #6e32e1 8%, #9b3fe6 90%) !important;
+  box-shadow:
+    0 28px 70px rgba(62, 24, 138, .20),
+    inset 0 1px 0 rgba(255, 255, 255, .34);
+}
+
+.appShellMacOS .macos-dashboard-hero::before {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  opacity: .72;
+  transform: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='620' viewBox='0 0 1600 620'%3E%3Cpath d='M-90 350 C 170 270 320 475 590 385 C 870 292 1020 270 1260 355 C 1410 410 1535 392 1690 320' fill='none' stroke='%23ffffff' stroke-opacity='.24' stroke-width='2'/%3E%3Cpath d='M-100 438 C 155 372 330 520 565 455 C 830 382 1018 347 1275 418 C 1450 465 1540 452 1708 390' fill='none' stroke='%23ffffff' stroke-opacity='.12' stroke-width='1.3'/%3E%3Cpath d='M-80 250 C 176 210 332 318 562 282 C 838 238 1034 188 1288 252 C 1455 294 1545 280 1680 236' fill='none' stroke='%23ffffff' stroke-opacity='.14' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-position: 48% 58%;
+  background-repeat: no-repeat;
+  background-size: 116% 100%;
+  filter: blur(.2px);
+  animation: macosHeroWaveDrift 10s cubic-bezier(.16, 1, .3, 1) infinite alternate;
+  z-index: 0;
+}
+
+.appShellMacOS .macos-dashboard-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  border-radius: inherit;
+  background:
+    linear-gradient(rgba(255, 255, 255, .075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .065) 1px, transparent 1px),
+    radial-gradient(circle at 50% 90%, rgba(255, 255, 255, .20), transparent 42%);
+  background-size: 72px 72px, 72px 72px, 100% 100%;
+  opacity: .55;
+  z-index: 0;
+}
+
+.appShellMacOS .macos-hero-chip {
+  color: rgba(255, 255, 255, .92);
+  background: rgba(255, 255, 255, .13);
+  border-color: rgba(255, 255, 255, .26);
+}
+
+.appShellMacOS .macos-hero-copy h2 {
+  color: #ffffff;
+}
+
+.appShellMacOS .macos-hero-copy p {
+  color: rgba(255, 255, 255, .76);
+}
+
+.appShellMacOS .macos-hero-actions button:first-child {
+  color: #7b2fe2;
+  box-shadow: 0 16px 34px rgba(54, 18, 127, .22);
+}
+
+.appShellMacOS .macos-hero-actions button:last-child {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, .30);
+  background: rgba(255, 255, 255, .12);
+}
+
+.appShellMacOS .macos-hero-console {
+  box-shadow: 0 26px 64px rgba(40, 10, 112, .22);
+}
+
+.appShellMacOS .macos-console-code strong {
+  color: #8937d8;
+}
+
+.appShellMacOS .app-sidebar-usage {
+  display: none !important;
+}
+
+.workspace-hero-title h1,
+.tool-section-head h2,
+.workspace-ai-panel-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ui-info-hint {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  color: #8937d8;
+  border: 1px solid rgba(137, 55, 216, .18);
+  border-radius: 50%;
+  background: rgba(239, 228, 255, .74);
+  cursor: help;
+  vertical-align: middle;
+  transition: transform 180ms var(--mac-ease), background 180ms var(--mac-ease), border-color 180ms var(--mac-ease), box-shadow 180ms var(--mac-ease);
+}
+
+.ui-info-hint:hover,
+.ui-info-hint:focus-visible {
+  color: #6e32e1;
+  border-color: rgba(137, 55, 216, .34);
+  background: #f2e7ff;
+  box-shadow: 0 12px 26px rgba(137, 55, 216, .16);
+  outline: 0;
+  transform: translateY(-1px);
+}
+
+.ui-info-hint > span {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  z-index: 30;
+  width: max-content;
+  max-width: min(280px, 70vw);
+  padding: 9px 11px;
+  color: #4d2e71;
+  border: 1px solid rgba(137, 55, 216, .18);
+  border-radius: 12px;
+  background: rgba(252, 249, 255, .96);
+  box-shadow: 0 18px 40px rgba(64, 42, 99, .16);
+  font-size: 11.5px;
+  font-weight: 620;
+  line-height: 1.38;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  text-align: left;
+  transform: translate(-50%, 4px);
+  transition: opacity 160ms var(--mac-ease), transform 160ms var(--mac-ease), visibility 0s linear 160ms;
+}
+
+.ui-info-hint:hover > span,
+.ui-info-hint:focus-visible > span {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  transition-delay: 0s;
+}
+
+@keyframes macosHeroWaveDrift {
+  from {
+    transform: translate3d(-2%, 1%, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(2%, -1%, 0) scale(1.05);
+  }
+}
