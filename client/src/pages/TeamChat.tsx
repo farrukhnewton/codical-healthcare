@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Plus, Send, Paperclip, Smile, MoreVertical, Search, Users } from 'lucide-react';
+import { Plus, Send, Paperclip, Smile, MoreVertical, Search, Users, Mic } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -167,7 +167,7 @@ export function TeamChat() {
       <section className="tool-panel tool-page-header">
         <div>
           <h1>Team Chat</h1>
-          <p>Coordinate coding work with team conversations, attachments, and assistant-ready context.</p>
+          <p>Case handoffs and team review.</p>
         </div>
         <div className="search-header-meta">
           <span>{conversations.length} conversations</span>
@@ -184,9 +184,9 @@ export function TeamChat() {
             <div>
               <h2>
                 <MessageSquare size={18} />
-                Conversations
+                Inbox
             </h2>
-              <p>Recent coding discussions and direct messages.</p>
+              <p>Recent threads.</p>
             </div>
             <div className="team-chat-head-actions">
               <Button onClick={() => setIsFriendsModalOpen(true)} size="icon" variant="ghost" className="tool-icon-action" aria-label="Manage contacts">
@@ -205,6 +205,11 @@ export function TeamChat() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="tool-input"
             />
+          </div>
+          <div className="team-chat-tabs" role="tablist" aria-label="Conversation filters">
+            <button type="button" className="is-active">Primary</button>
+            <button type="button">Groups</button>
+            <button type="button">Archive</button>
           </div>
         <ScrollArea className="team-chat-list-scroll">
           {filteredConversations.length === 0 ? (
@@ -264,7 +269,7 @@ export function TeamChat() {
               <div className="team-chat-context-card">
                 <span>Read Status</span>
                 <strong>{(selectedConversation.unread || 0) > 0 ? `${selectedConversation.unread} unread` : "Current"}</strong>
-                <small>Updates sync while this page is open.</small>
+                <small>Live sync enabled.</small>
               </div>
               <div className="tool-callout compact" data-tone="info">
                 <ShieldCheck size={15} />
@@ -714,6 +719,16 @@ function ChatWindow({
             aria-label={showEmojiPicker ? "Close emoji picker" : "Open emoji picker"}
           >
             <Smile className="w-5 h-5" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="tool-icon-action team-chat-audio-button"
+            aria-label="Record audio note"
+          >
+            <Mic className="w-5 h-5" />
           </Button>
 
           <Button

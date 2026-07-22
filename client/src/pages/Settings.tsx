@@ -5,6 +5,7 @@ import { useTheme } from "@/lib/theme";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient } from "@/lib/queryClient";
+import { InfoHint } from "@/components/ui/info-hint";
 
 export function Settings() {
   const [email, setEmail] = useState("");
@@ -78,50 +79,65 @@ export function Settings() {
 
         <div className="tool-panel settings-card">
           <div className="settings-card-head">
-            <span><Palette size={17} /> Appearance</span>
+            <span>
+              <Palette size={17} />
+              Appearance
+              <InfoHint label="Switch the authenticated workspace between light and dark theme." />
+            </span>
             <button type="button" onClick={toggle} className="tool-secondary-button">
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
               {theme === "dark" ? "Light Mode" : "Dark Mode"}
             </button>
           </div>
-          <p>Switch the authenticated workspace between light and dark theme.</p>
         </div>
 
         <div className="tool-panel settings-card">
           <div className="settings-card-head">
-            <span><Shield size={17} /> Administrative Access</span>
+            <span>
+              <Shield size={17} />
+              Administrative Access
+              <InfoHint label="Control access to compliance and audit workflows for this account." />
+            </span>
             <button type="button" onClick={toggleAdminMode} className={isAdmin ? "settings-mode-button is-active" : "settings-mode-button"}>
               {isAdmin ? "Admin Enabled" : "Enable Admin"}
             </button>
           </div>
-          <p>Control access to compliance and audit workflows for this account.</p>
         </div>
 
         <div className="tool-panel settings-card">
           <div className="settings-card-head">
-            <span><Bell size={17} /> Notifications</span>
+            <span>
+              <Bell size={17} />
+              Notifications
+              <InfoHint label="Account, collaboration, and report notifications use the workspace defaults." />
+            </span>
             <span className="secondary-status-pill" data-tone="info">Configured</span>
           </div>
-          <p>Account, collaboration, and report notifications use the workspace defaults.</p>
         </div>
 
         <div className="tool-panel settings-card">
           <div className="settings-card-head">
-            <span><Lock size={17} /> Security</span>
+            <span>
+              <Lock size={17} />
+              Security
+              <InfoHint label="Session controls, audit logging, and encrypted transport remain active." />
+            </span>
             <span className="secondary-status-pill" data-tone="success">HIPAA Ready</span>
           </div>
-          <p>Session controls, audit logging, and encrypted transport remain active.</p>
         </div>
 
         <div className="tool-panel settings-card settings-danger-card">
           <div className="settings-card-head">
-            <span><User size={17} /> Session</span>
+            <span>
+              <User size={17} />
+              Session
+              <InfoHint label="Sign out when you are finished using this workstation." />
+            </span>
             <button type="button" onClick={handleLogout} className="settings-signout-button">
               <LogOut size={16} />
               Sign Out
             </button>
           </div>
-          <p>Sign out when you are finished using this workstation.</p>
         </div>
       </section>
 

@@ -2043,14 +2043,14 @@
 
 .appShellMacOS .app-nav-item {
   display: grid !important;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
-  min-height: 31px;
-  padding: 0 8px;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 7px;
   color: var(--dash-ink);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
   box-shadow: none;
   font-size: 12.5px;
@@ -2061,19 +2061,52 @@
 }
 
 .appShellMacOS .app-nav-glyph {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  color: #6f6682;
+  border: 1px solid rgba(118, 104, 151, .16);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, .92) 0%, rgba(244, 239, 255, .84) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .92),
+    0 7px 14px rgba(58, 38, 88, .05);
+  transition:
+    color 180ms var(--mac-ease),
+    border-color 180ms var(--mac-ease),
+    background 180ms var(--mac-ease),
+    box-shadow 180ms var(--mac-ease),
+    transform 180ms var(--mac-ease);
+}
+
+.appShellMacOS .app-nav-glyph::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(circle at 28% 20%, rgba(255, 255, 255, .55), transparent 46%);
+  transition: opacity 180ms var(--mac-ease);
 }
 
 .appShellMacOS .app-nav-glyph svg {
-  width: 15px;
-  height: 15px;
-  color: #7d7890;
-  stroke-width: 1.9;
-  transition: color 180ms var(--mac-ease), transform 180ms var(--mac-ease);
+  position: relative;
+  z-index: 1;
+  width: 14px !important;
+  height: 14px !important;
+  color: currentColor;
+  opacity: 1;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  stroke-width: 2.15;
+  transition: transform 180ms var(--mac-ease);
 }
 
 .appShellMacOS .app-nav-text {
@@ -2112,9 +2145,22 @@
   transform: translateY(-1px);
 }
 
-.appShellMacOS .app-nav-item:hover .app-nav-glyph svg {
+.appShellMacOS .app-nav-item:hover .app-nav-glyph {
   color: var(--dash-lavender);
-  transform: translateX(1px);
+  border-color: rgba(137, 55, 216, .24);
+  background: linear-gradient(145deg, rgba(255, 255, 255, .98) 0%, rgba(239, 228, 255, .95) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .98),
+    0 10px 22px rgba(137, 55, 216, .12);
+  transform: translateX(1px) scale(1.04);
+}
+
+.appShellMacOS .app-nav-item:hover .app-nav-glyph::before {
+  opacity: 1;
+}
+
+.appShellMacOS .app-nav-item:hover .app-nav-glyph svg {
+  transform: scale(1.06);
 }
 
 .appShellMacOS .app-nav-item.is-active {
@@ -2123,8 +2169,17 @@
   background: var(--dash-lavender-active);
 }
 
+.appShellMacOS .app-nav-item.is-active .app-nav-glyph {
+  color: #fff;
+  border-color: rgba(137, 55, 216, .42);
+  background: linear-gradient(135deg, #7a42e8 0%, #a844df 72%, #c56cf0 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .28),
+    0 10px 22px rgba(137, 55, 216, .22);
+}
+
 .appShellMacOS .app-nav-item.is-active .app-nav-glyph svg {
-  color: #5b4cff;
+  transform: scale(1.04);
 }
 
 .appShellMacOS .app-sidebar-footer {
@@ -2362,10 +2417,13 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  overflow: visible;
 }
 
 .ui-info-hint {
   position: relative;
+  z-index: 25;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2395,7 +2453,7 @@
   position: absolute;
   left: 50%;
   bottom: calc(100% + 10px);
-  z-index: 30;
+  z-index: 10000;
   width: max-content;
   max-width: min(280px, 70vw);
   padding: 9px 11px;
@@ -2415,6 +2473,13 @@
   transition: opacity 160ms var(--mac-ease), transform 160ms var(--mac-ease), visibility 0s linear 160ms;
 }
 
+.tool-section-head,
+.workspace-ai-panel-header,
+.workspace-hero-title,
+.tool-page-header {
+  overflow: visible;
+}
+
 .ui-info-hint:hover > span,
 .ui-info-hint:focus-visible > span {
   opacity: 1;
@@ -2423,11 +2488,1128 @@
   transition-delay: 0s;
 }
 
+/* Shared app-page treatment: keep every authenticated tool page on the same
+   lavender glass system as the crosswalk page. */
+.appShellMacOS .tool-page {
+  width: min(100% - 40px, 1260px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 0 42px;
+  color: #231057;
+}
+
+.appShellMacOS .tool-panel,
+.appShellMacOS .code-detail-surface > .tool-panel:not(.code-detail-hero),
+.appShellMacOS .workspace-result-section,
+.appShellMacOS .analytics-metric-card,
+.appShellMacOS .settings-card,
+.appShellMacOS .report-template-card,
+.appShellMacOS .validation-input-panel,
+.appShellMacOS .calculator-summary-panel,
+.appShellMacOS .claim-result-panel,
+.appShellMacOS .npi-results-panel,
+.appShellMacOS .provider-detail-panel,
+.appShellMacOS .saved-library-panel,
+.appShellMacOS .saved-library-card,
+.appShellMacOS .workspace-output-item,
+.appShellMacOS .workspace-flow-rail div {
+  border-color: rgba(124, 47, 230, .15) !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, .64) !important;
+  box-shadow: 0 24px 70px rgba(76, 35, 150, .11) !important;
+  overflow: visible !important;
+  backdrop-filter: blur(20px) saturate(1.16);
+  -webkit-backdrop-filter: blur(20px) saturate(1.16);
+}
+
+.appShellMacOS .settings-card-head > span:first-child,
+.appShellMacOS .transcription-card-title,
+.appShellMacOS .crosswalk-alphabet-head strong,
+.appShellMacOS .crosswalk-side-header > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.appShellMacOS .tool-page-header {
+  position: relative;
+  min-height: 156px;
+  overflow: visible;
+  isolation: isolate;
+  padding: clamp(1.35rem, 3vw, 2rem);
+  border-color: rgba(124, 47, 230, .16) !important;
+  background:
+    linear-gradient(rgba(66, 48, 123, .055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(66, 48, 123, .055) 1px, transparent 1px),
+    radial-gradient(circle at 82% 10%, rgba(164, 84, 243, .22), transparent 34%),
+    radial-gradient(circle at 12% 88%, rgba(124, 47, 230, .12), transparent 38%),
+    linear-gradient(120deg, rgba(255, 255, 255, .84), rgba(238, 229, 255, .72)) !important;
+  background-size: 48px 48px, 48px 48px, auto, auto, auto;
+  box-shadow: 0 28px 80px rgba(76, 35, 150, .16) !important;
+}
+
+.appShellMacOS .tool-page-header::before {
+  content: "";
+  position: absolute;
+  right: -12%;
+  top: -28%;
+  width: min(50vw, 620px);
+  height: 118%;
+  border: 1px solid rgba(124, 47, 230, .13);
+  border-radius: 999px;
+  background: linear-gradient(100deg, rgba(124, 47, 230, .08), rgba(255, 255, 255, .42), rgba(164, 84, 243, .13));
+  filter: blur(2px);
+  transform: rotate(-16deg);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.appShellMacOS .tool-page-header > * {
+  position: relative;
+  z-index: 2;
+}
+
+.appShellMacOS .tool-page-header h1 {
+  color: #231057;
+  font-family: "Outfit", var(--mac-font-ui);
+  font-size: clamp(2.15rem, 4vw, 4.4rem);
+  font-weight: 520;
+  line-height: .98;
+  letter-spacing: 0;
+}
+
+.appShellMacOS .tool-page-header p {
+  max-width: 690px;
+  margin-top: 10px;
+  color: rgba(54, 45, 88, .66);
+  font-size: 14px;
+  font-weight: 620;
+  line-height: 1.5;
+}
+
+.appShellMacOS .coverage-hero-panel {
+  display: flex !important;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.appShellMacOS .coverage-hero-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.appShellMacOS .coverage-hero-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.appShellMacOS .coverage-hero-icon {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(124, 47, 230, .18);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #7c2fe6, #a454f3);
+  box-shadow: 0 16px 34px rgba(124, 47, 230, .22);
+}
+
+.appShellMacOS .coverage-hero-panel h1 {
+  color: #231057 !important;
+  font-family: "Outfit", var(--mac-font-ui) !important;
+  font-size: clamp(2.15rem, 4vw, 4.4rem) !important;
+  font-weight: 520 !important;
+  line-height: .98 !important;
+  letter-spacing: 0 !important;
+}
+
+.appShellMacOS .coverage-tab-list {
+  width: fit-content;
+  max-width: 100%;
+  border-color: rgba(124, 47, 230, .16) !important;
+  background: rgba(255, 255, 255, .58) !important;
+  box-shadow: 0 18px 42px rgba(76, 35, 150, .09);
+}
+
+.appShellMacOS .coverage-tab-list button {
+  color: #38216e !important;
+}
+
+.appShellMacOS .coverage-tab-list button[class*="bg-emerald"] {
+  color: #fff !important;
+  background: linear-gradient(135deg, #7c2fe6, #a454f3) !important;
+  box-shadow: 0 14px 30px rgba(124, 47, 230, .18) !important;
+}
+
+.appShellMacOS .crosswalk-hero-copy h1 {
+  font-family: "Outfit", var(--mac-font-ui);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.appShellMacOS .crosswalk-hero-copy p {
+  color: rgba(54, 45, 88, .66);
+  font-weight: 620;
+}
+
+.appShellMacOS .tool-section-head p,
+.appShellMacOS .secondary-section-panel > header p,
+.appShellMacOS .secondary-command-panel p,
+.appShellMacOS .calculator-summary-panel p,
+.appShellMacOS .calculator-detail-panel p,
+.appShellMacOS .calculator-breakdown-panel p,
+.appShellMacOS .validation-input-panel p,
+.appShellMacOS .validation-results-panel p,
+.appShellMacOS .search-results-panel p,
+.appShellMacOS .tool-filter-panel p,
+.appShellMacOS .npi-results-panel p,
+.appShellMacOS .saved-library-panel p {
+  color: rgba(54, 45, 88, .64);
+  font-weight: 560;
+}
+
 @keyframes macosHeroWaveDrift {
   from {
     transform: translate3d(-2%, 1%, 0) scale(1.02);
   }
   to {
     transform: translate3d(2%, -1%, 0) scale(1.05);
+  }
+}
+
+/* Sidebar reference pass: compact typography and plain outline icons. */
+.appShellMacOS .app-sidebar {
+  width: 230px !important;
+  flex: 0 0 230px !important;
+  color: #1d1932;
+  border-right: 1px solid #e8e3ef !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.appShellMacOS .app-sidebar-inner {
+  padding: 20px 8px 12px !important;
+}
+
+.appShellMacOS .app-sidebar-titlebar {
+  display: none !important;
+}
+
+.appShellMacOS .app-sidebar-brand {
+  grid-template-columns: 31px minmax(0, 1fr);
+  gap: 9px;
+  padding: 0 5px 14px !important;
+}
+
+.appShellMacOS .app-sidebar-mark {
+  width: 31px;
+  height: 31px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #6867ff 0%, #9b4ce7 100%);
+  box-shadow: 0 10px 20px rgba(111, 88, 219, .22);
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.appShellMacOS .app-sidebar-brand-copy strong {
+  color: #090816;
+  font-size: 13px;
+  font-weight: 820;
+  line-height: 1.04;
+}
+
+.appShellMacOS .app-sidebar-brand-copy em {
+  color: #7c7690;
+  font-size: 11px;
+  font-weight: 520;
+  line-height: 1.08;
+}
+
+.appShellMacOS .app-workspace-switch,
+.appShellMacOS .app-sidebar-search {
+  margin: 0 0 12px;
+  border-color: #e7e2ed;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.appShellMacOS .app-workspace-switch {
+  min-height: 36px;
+  grid-template-columns: 8px minmax(0, 1fr) 14px;
+  gap: 8px;
+  padding: 0 10px;
+}
+
+.appShellMacOS .app-workspace-switch > span {
+  width: 7px;
+  height: 7px;
+  background: #10b981;
+}
+
+.appShellMacOS .app-workspace-switch strong {
+  color: #11101b;
+  font-size: 12.5px;
+  font-weight: 760;
+}
+
+.appShellMacOS .app-workspace-switch svg,
+.appShellMacOS .app-sidebar-search svg {
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.appShellMacOS .app-workspace-switch svg {
+  width: 13px !important;
+  height: 13px !important;
+  color: #9a94a8;
+}
+
+.appShellMacOS .app-sidebar-search {
+  min-height: 48px;
+  grid-template-columns: 15px minmax(0, 1fr) 58px;
+  gap: 8px;
+  padding: 0 9px;
+  color: #8e899d;
+  font-size: 12px;
+}
+
+.appShellMacOS .app-sidebar-search svg {
+  width: 15px !important;
+  height: 15px !important;
+  color: #9b96aa;
+}
+
+.appShellMacOS .app-sidebar-search span {
+  max-width: 88px;
+  line-height: 1.12;
+  white-space: normal;
+}
+
+.appShellMacOS .app-sidebar-search kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  height: 24px;
+  padding: 0 8px;
+  color: #7d7890;
+  border-color: #e3dfea;
+  border-radius: 6px;
+  background: #ffffff;
+  font-family: var(--mac-font-mono);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.appShellMacOS .app-workspace-switch:hover,
+.appShellMacOS .app-sidebar-search:hover {
+  border-color: #dcd5eb;
+  background: #ffffff;
+  box-shadow: none;
+  transform: none;
+}
+
+.appShellMacOS .app-sidebar-scroll {
+  padding: 16px 0 8px;
+}
+
+.appShellMacOS .app-nav-section {
+  margin: 0 0 18px;
+}
+
+.appShellMacOS .app-nav-section p {
+  margin: 0 0 9px;
+  padding: 0 7px;
+  color: #9d96aa;
+  font-size: 10px;
+  font-weight: 820;
+  letter-spacing: .105em;
+  text-transform: uppercase;
+}
+
+.appShellMacOS .app-nav-list {
+  gap: 3px;
+}
+
+.appShellMacOS .app-nav-item {
+  grid-template-columns: 16px minmax(0, 1fr) auto !important;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 8px;
+  color: #201b38;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 540;
+  letter-spacing: 0;
+  transition: color 160ms var(--mac-ease), background 160ms var(--mac-ease), transform 160ms var(--mac-ease);
+}
+
+.appShellMacOS .app-nav-text {
+  font-weight: 540 !important;
+}
+
+.appShellMacOS .app-nav-glyph {
+  width: 16px;
+  height: 16px;
+  overflow: visible;
+  color: #85869a;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.appShellMacOS .app-nav-glyph::before {
+  display: none;
+}
+
+.appShellMacOS .app-nav-glyph svg {
+  width: 15px !important;
+  height: 15px !important;
+  color: currentColor !important;
+  stroke: currentColor !important;
+  stroke-width: 1.85;
+}
+
+.appShellMacOS .app-nav-item:hover {
+  color: #3530d9;
+  background: #f4f2ff;
+  box-shadow: none;
+  transform: none;
+}
+
+.appShellMacOS .app-nav-item:hover .app-nav-glyph {
+  color: #4a46dd;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.appShellMacOS .app-nav-item:hover .app-nav-glyph svg {
+  transform: none;
+  color: currentColor !important;
+  stroke: currentColor !important;
+}
+
+.appShellMacOS .app-nav-item.is-active {
+  color: #3045ff;
+  border: 0;
+  background: #ececff;
+  box-shadow: none;
+}
+
+.appShellMacOS .app-nav-item.is-active .app-nav-glyph {
+  color: #3045ff;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.appShellMacOS .app-nav-item.is-active .app-nav-glyph svg {
+  color: currentColor !important;
+  stroke: currentColor !important;
+  transform: none;
+}
+
+.appShellMacOS .app-nav-item em,
+.appShellMacOS .app-nav-item b {
+  padding: 3px 7px;
+  font-size: 9.5px;
+  font-weight: 820;
+}
+
+.appShellMacOS .app-nav-item em {
+  color: #8d879b;
+  background: #efedf5;
+}
+
+.appShellMacOS .app-nav-item[href="/settings"] {
+  margin-top: 2px;
+  color: #7b3fd4;
+  border: 1px solid rgba(133, 75, 216, .18);
+  border-radius: 999px;
+  background: rgba(143, 86, 221, .08);
+}
+
+.appShellMacOS .app-nav-item[href="/settings"] .app-nav-glyph {
+  color: #874ade;
+}
+
+.appShellMacOS .app-nav-item[href="/settings"]:hover,
+.appShellMacOS .app-nav-item[href="/settings"].is-active {
+  color: #6f31c7;
+  border-color: rgba(133, 75, 216, .30);
+  background: rgba(143, 86, 221, .13);
+}
+
+.appShellMacOS .app-nav-item[href="/settings"]:hover .app-nav-glyph,
+.appShellMacOS .app-nav-item[href="/settings"].is-active .app-nav-glyph {
+  color: #6f31c7;
+}
+
+.appShellMacOS .app-sidebar-profile {
+  min-height: 38px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.appShellMacOS .app-sidebar-profile > span {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #6967ff, #b247e8);
+  box-shadow: none;
+  font-size: 10px;
+}
+
+/* Codical lavender workspace refresh: shared page surfaces, AI coding, transcription, and chat. */
+.appShellMacOS .tool-page-header {
+  min-height: clamp(190px, 24vw, 285px) !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, .34) !important;
+  border-radius: 30px !important;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, .24), transparent 32%),
+    radial-gradient(circle at 78% 22%, rgba(255, 62, 247, .20), transparent 30%),
+    linear-gradient(131deg, #6e32e1 8%, #9b3fe6 90%) !important;
+  box-shadow:
+    0 30px 86px rgba(62, 24, 138, .22),
+    inset 0 1px 0 rgba(255, 255, 255, .34) !important;
+}
+
+.appShellMacOS .tool-page-header::before {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  opacity: .72;
+  transform: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='620' viewBox='0 0 1600 620'%3E%3Cpath d='M-90 350 C 170 270 320 475 590 385 C 870 292 1020 270 1260 355 C 1410 410 1535 392 1690 320' fill='none' stroke='%23ffffff' stroke-opacity='.24' stroke-width='2'/%3E%3Cpath d='M-100 438 C 155 372 330 520 565 455 C 830 382 1018 347 1275 418 C 1450 465 1540 452 1708 390' fill='none' stroke='%23ffffff' stroke-opacity='.12' stroke-width='1.3'/%3E%3Cpath d='M-80 250 C 176 210 332 318 562 282 C 838 238 1034 188 1288 252 C 1455 294 1545 280 1680 236' fill='none' stroke='%23ffffff' stroke-opacity='.14' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-position: 48% 58%;
+  background-repeat: no-repeat;
+  background-size: 116% 100%;
+  filter: blur(.2px);
+  animation: macosHeroWaveDrift 10s cubic-bezier(.16, 1, .3, 1) infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.appShellMacOS .tool-page-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(rgba(255, 255, 255, .075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .065) 1px, transparent 1px),
+    radial-gradient(circle at 76% 62%, rgba(255, 255, 255, .18), transparent 42%);
+  background-size: 72px 72px, 72px 72px, auto;
+  opacity: .9;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.appShellMacOS .tool-page-header > * {
+  position: relative;
+  z-index: 2;
+}
+
+.appShellMacOS .tool-page-header h1,
+.appShellMacOS .tool-page-header h1 * {
+  color: #ffffff !important;
+}
+
+.appShellMacOS .tool-page-header h1 {
+  max-width: 880px;
+  font-family: "Outfit", var(--mac-font-ui);
+  font-size: clamp(2.45rem, 5vw, 5.25rem) !important;
+  font-weight: 650 !important;
+  line-height: .96 !important;
+  letter-spacing: 0 !important;
+}
+
+.appShellMacOS .tool-page-header p,
+.appShellMacOS .tool-page-header .tool-page-kicker,
+.appShellMacOS .tool-page-header .tool-section-eyebrow {
+  color: rgba(255, 255, 255, .82) !important;
+}
+
+.appShellMacOS .tool-page-header .search-header-meta span,
+.appShellMacOS .tool-page-header .tool-status-pill,
+.appShellMacOS .tool-page-header [class*="badge"],
+.appShellMacOS .tool-page-header [class*="Badge"] {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, .28) !important;
+  background: rgba(255, 255, 255, .15) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+
+.appShellMacOS .tool-panel:not(.tool-page-header):not(.macos-dashboard-hero) {
+  border: 1px solid rgba(124, 47, 230, .16) !important;
+  border-radius: 24px !important;
+  background:
+    radial-gradient(circle at 84% 8%, rgba(164, 84, 243, .14), transparent 32%),
+    linear-gradient(135deg, rgba(255, 255, 255, .78), rgba(247, 241, 255, .72)) !important;
+  box-shadow: 0 24px 70px rgba(73, 35, 136, .11) !important;
+}
+
+.appShellMacOS .tool-primary-button,
+.appShellMacOS .tool-segmented-control button.is-active,
+.appShellMacOS .team-chat-tabs button.is-active,
+.appShellMacOS .coverage-tab-list button[class*="bg-emerald"],
+.appShellMacOS [role="tab"][data-state="active"] {
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, .32) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, #7a2fe0 0%, #b04cf0 100%) !important;
+  box-shadow: 0 14px 32px rgba(126, 47, 224, .30), inset 0 1px 0 rgba(255, 255, 255, .25) !important;
+}
+
+.appShellMacOS .tool-primary-button:hover,
+.appShellMacOS .tool-segmented-control button.is-active:hover,
+.appShellMacOS .team-chat-tabs button.is-active:hover,
+.appShellMacOS [role="tab"][data-state="active"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 40px rgba(126, 47, 224, .38), 0 0 0 4px rgba(161, 85, 242, .10), inset 0 1px 0 rgba(255, 255, 255, .30) !important;
+}
+
+.appShellMacOS .tool-secondary-button,
+.appShellMacOS .tool-segmented-control button,
+.appShellMacOS .team-chat-tabs button,
+.appShellMacOS .tool-icon-action {
+  color: #5f22bc !important;
+  border-color: rgba(124, 47, 230, .18) !important;
+  background: rgba(255, 255, 255, .70) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72);
+}
+
+.appShellMacOS .tool-secondary-button:hover,
+.appShellMacOS .tool-segmented-control button:hover,
+.appShellMacOS .team-chat-tabs button:hover,
+.appShellMacOS .tool-icon-action:hover {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, .30) !important;
+  background: linear-gradient(135deg, rgba(122, 47, 224, .86), rgba(176, 76, 240, .86)) !important;
+  box-shadow: 0 12px 28px rgba(126, 47, 224, .22), inset 0 1px 0 rgba(255, 255, 255, .28);
+}
+
+.appShellMacOS [data-radix-popper-content-wrapper] [role="menu"],
+.appShellMacOS [data-radix-menu-content],
+.appShellMacOS [data-radix-select-content],
+.appShellMacOS .team-chat-menu {
+  border: 1px solid rgba(124, 47, 230, .16) !important;
+  border-radius: 20px !important;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(164, 84, 243, .16), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, .94), rgba(246, 240, 255, .92)) !important;
+  box-shadow: 0 26px 70px rgba(50, 22, 94, .18) !important;
+  backdrop-filter: blur(18px);
+}
+
+.appShellMacOS .workspace-coding-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.appShellMacOS .workspace-flow-rail {
+  display: none !important;
+}
+
+.appShellMacOS .workspace-note-panel,
+.appShellMacOS .workspace-ai-output-panel,
+.appShellMacOS .workspace-saved-compact > * {
+  min-width: 0;
+}
+
+.appShellMacOS .workspace-analysis-progress,
+.appShellMacOS .transcription-progress-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(124, 47, 230, .16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .70);
+}
+
+.appShellMacOS .workspace-analysis-progress > div:first-child,
+.appShellMacOS .transcription-progress-card > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  color: #75698e;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.appShellMacOS .workspace-analysis-progress strong,
+.appShellMacOS .transcription-progress-card strong {
+  color: #351276;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.appShellMacOS .workspace-analysis-track,
+.appShellMacOS .transcription-progress-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(124, 47, 230, .10);
+  box-shadow: inset 0 1px 2px rgba(55, 25, 102, .10);
+}
+
+.appShellMacOS .workspace-analysis-track span,
+.appShellMacOS .transcription-progress-track span {
+  display: block;
+  height: 100%;
+  min-width: 8%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6e32e1, #b04cf0, #12c6df);
+  box-shadow: 0 0 20px rgba(176, 76, 240, .34);
+  transition: width .55s cubic-bezier(.16, 1, .3, 1);
+}
+
+.appShellMacOS .workspace-page .workspace-ai-output-panel,
+.appShellMacOS .workspace-ai-output-panel {
+  color: #24124f !important;
+  border-color: rgba(124, 47, 230, .16) !important;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(164, 84, 243, .14), transparent 36%),
+    linear-gradient(135deg, rgba(255, 255, 255, .82), rgba(247, 241, 255, .78)) !important;
+}
+
+.appShellMacOS .workspace-ai-output-panel .workspace-output-item,
+.appShellMacOS .transcription-field-card,
+.appShellMacOS .transcription-file-card {
+  border: 1px solid rgba(124, 47, 230, .14) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, .64) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .78);
+}
+
+.appShellMacOS .workspace-ai-output-panel .workspace-output-item small,
+.appShellMacOS .workspace-ai-output-panel .workspace-output-item span,
+.appShellMacOS .workspace-ai-output-panel .workspace-ai-pill,
+.appShellMacOS .workspace-ai-output-panel .workspace-ai-eyebrow {
+  color: #75698e !important;
+}
+
+.appShellMacOS .workspace-ai-output-panel .workspace-output-item strong,
+.appShellMacOS .workspace-ai-output-panel .workspace-ai-panel-header h2,
+.appShellMacOS .workspace-ai-output-panel h3,
+.appShellMacOS .workspace-ai-output-panel h4 {
+  color: #25105b !important;
+}
+
+.appShellMacOS .workspace-saved-compact {
+  max-width: 860px;
+  width: 100%;
+}
+
+.appShellMacOS .transcription-upload-content {
+  display: grid;
+  gap: 14px;
+}
+
+.appShellMacOS .transcription-field-grid {
+  gap: 12px;
+  padding: 14px;
+}
+
+.appShellMacOS .transcription-field-card:nth-child(odd) {
+  border-right: 1px solid rgba(124, 47, 230, .14) !important;
+}
+
+.appShellMacOS .team-chat-shell {
+  height: clamp(620px, calc(100vh - 250px), 780px) !important;
+  display: grid;
+  grid-template-columns: minmax(250px, 300px) minmax(420px, 1fr) minmax(220px, 260px);
+  gap: 16px;
+  padding: 16px !important;
+  border-radius: 30px !important;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, .24), transparent 32%),
+    radial-gradient(circle at 80% 16%, rgba(255, 62, 247, .18), transparent 30%),
+    linear-gradient(131deg, #6e32e1 8%, #9b3fe6 90%) !important;
+  box-shadow: 0 30px 86px rgba(62, 24, 138, .22) !important;
+}
+
+.appShellMacOS .team-chat-list-pane,
+.appShellMacOS .team-chat-thread-pane,
+.appShellMacOS .team-chat-context-pane {
+  overflow: hidden;
+  border: 1px solid rgba(124, 47, 230, .14) !important;
+  border-radius: 24px !important;
+  background:
+    radial-gradient(circle at 86% 12%, rgba(164, 84, 243, .12), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, .82), rgba(247, 241, 255, .78)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .78), 0 18px 48px rgba(43, 18, 94, .12) !important;
+}
+
+.appShellMacOS .team-chat-list-head,
+.appShellMacOS .team-chat-thread-head {
+  margin: 10px;
+  padding: 14px !important;
+  border: 1px solid rgba(255, 255, 255, .24) !important;
+  border-radius: 20px !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, rgba(58, 35, 100, .96), rgba(118, 48, 219, .92)) !important;
+  box-shadow: 0 16px 34px rgba(43, 18, 94, .20) !important;
+}
+
+.appShellMacOS .team-chat-list-head h2,
+.appShellMacOS .team-chat-list-head p,
+.appShellMacOS .team-chat-thread-head h3,
+.appShellMacOS .team-chat-thread-head p,
+.appShellMacOS .team-chat-thread-name h3 {
+  color: #ffffff !important;
+}
+
+.appShellMacOS .team-chat-search {
+  margin: 0 10px 10px;
+}
+
+.appShellMacOS .team-chat-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 10px 10px;
+  padding: 5px;
+  border: 1px solid rgba(124, 47, 230, .12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .48);
+}
+
+.appShellMacOS .team-chat-tabs button {
+  min-height: 34px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.appShellMacOS .team-chat-list-scroll,
+.appShellMacOS .team-chat-message-scroll {
+  background: transparent !important;
+}
+
+.appShellMacOS .team-chat-message-list {
+  padding: 12px 16px 18px;
+}
+
+.appShellMacOS .team-chat-message-bubble {
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, .72) !important;
+  box-shadow: 0 10px 26px rgba(43, 18, 94, .10);
+}
+
+.appShellMacOS .team-chat-message-bubble.is-own {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #6e32e1, #9b3fe6) !important;
+}
+
+.appShellMacOS .team-chat-composer {
+  margin: 10px;
+  padding: 10px !important;
+  border: 1px solid rgba(255, 255, 255, .22) !important;
+  border-radius: 20px !important;
+  background: linear-gradient(135deg, rgba(58, 35, 100, .95), rgba(118, 48, 219, .92)) !important;
+  box-shadow: 0 16px 34px rgba(43, 18, 94, .18) !important;
+}
+
+.appShellMacOS .team-chat-compose-form {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px 42px 46px;
+  align-items: center;
+  gap: 8px;
+}
+
+.appShellMacOS .team-chat-message-input {
+  color: #25105b !important;
+  border-color: rgba(255, 255, 255, .36) !important;
+  background: rgba(255, 255, 255, .84) !important;
+}
+
+.appShellMacOS .team-chat-send-button,
+.appShellMacOS .team-chat-audio-button {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+}
+
+@media (max-width: 1180px) {
+  .appShellMacOS .team-chat-shell {
+    grid-template-columns: minmax(260px, 320px) minmax(360px, 1fr);
+  }
+
+  .appShellMacOS .team-chat-context-pane {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .appShellMacOS .tool-page-header {
+    min-height: 180px !important;
+  }
+
+  .appShellMacOS .team-chat-shell {
+    height: calc(100dvh - 188px) !important;
+    grid-template-columns: 1fr;
+    padding: 10px !important;
+  }
+}
+
+/* Final dashboard system pass: apply the landing/command-center visual language across tool pages. */
+.appShellMacOS .tool-page {
+  color: #25105b;
+  font-family: "Outfit", var(--mac-font-ui);
+}
+
+.appShellMacOS .tool-page h2,
+.appShellMacOS .tool-page h3,
+.appShellMacOS .tool-page h4,
+.appShellMacOS .tool-section-head h2,
+.appShellMacOS .saved-library-title-block h2 {
+  color: #25105b !important;
+  font-family: "Outfit", var(--mac-font-ui);
+  font-weight: 650 !important;
+  letter-spacing: 0 !important;
+}
+
+.appShellMacOS .tool-page p,
+.appShellMacOS .tool-page span,
+.appShellMacOS .tool-page small,
+.appShellMacOS .tool-page label,
+.appShellMacOS .tool-page [class*="CardDescription"],
+.appShellMacOS .saved-library-title-block p {
+  letter-spacing: 0 !important;
+}
+
+.appShellMacOS .tool-page-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 22px !important;
+  padding: clamp(28px, 4vw, 44px) !important;
+}
+
+.appShellMacOS .tool-page-header h1 {
+  margin: 0 !important;
+  text-wrap: balance;
+  text-shadow: 0 16px 42px rgba(45, 17, 93, .24);
+}
+
+.appShellMacOS .tool-page-header p {
+  max-width: 760px;
+  font-size: clamp(1rem, 1.5vw, 1.22rem) !important;
+  font-weight: 560 !important;
+  line-height: 1.45 !important;
+}
+
+.appShellMacOS .search-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.appShellMacOS .tool-page-header .search-header-meta span {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px !important;
+  padding: 8px 14px !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+}
+
+.appShellMacOS .tool-page-header .ui-info-hint {
+  margin-left: 10px;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, .18) !important;
+  border-color: rgba(255, 255, 255, .26) !important;
+}
+
+.appShellMacOS .ui-info-hint {
+  position: relative;
+  z-index: 40;
+  color: #6f2fe0 !important;
+  border: 1px solid rgba(124, 47, 230, .18) !important;
+  background: rgba(246, 240, 255, .86) !important;
+  box-shadow: 0 10px 24px rgba(75, 35, 128, .12);
+}
+
+.appShellMacOS .ui-info-hint [role="tooltip"] {
+  z-index: 9999 !important;
+  width: max-content;
+  max-width: min(320px, 78vw);
+  color: #25105b !important;
+  border: 1px solid rgba(124, 47, 230, .18) !important;
+  background:
+    radial-gradient(circle at 90% 12%, rgba(164, 84, 243, .15), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, .98), rgba(247, 241, 255, .96)) !important;
+  box-shadow: 0 22px 52px rgba(43, 18, 94, .18) !important;
+}
+
+.appShellMacOS .tool-page :is(input, textarea, select, .tool-input, [cmdk-input]) {
+  color: #25105b !important;
+  border-color: rgba(124, 47, 230, .16) !important;
+  background: rgba(255, 255, 255, .68) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72);
+}
+
+.appShellMacOS .tool-page :is(input, textarea, select, .tool-input, [cmdk-input])::placeholder {
+  color: rgba(68, 53, 99, .48) !important;
+}
+
+.appShellMacOS .tool-page .tool-section-head,
+.appShellMacOS .tool-page .saved-library-head,
+.appShellMacOS .tool-page .transcription-result-head > div {
+  border-radius: 20px;
+}
+
+.appShellMacOS .tool-page .tool-empty-state.compact {
+  color: #75698e;
+  border: 1px solid rgba(124, 47, 230, .14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .58);
+}
+
+.appShellMacOS .workspace-page .workspace-result-hero,
+.appShellMacOS .workspace-page .workspace-results-stack > div,
+.appShellMacOS .transcription-result-panel .border-t,
+.appShellMacOS .transcription-result-panel .rounded-2xl,
+.appShellMacOS .saved-library-card,
+.appShellMacOS .team-chat-context-card {
+  border-color: rgba(124, 47, 230, .14) !important;
+  background:
+    radial-gradient(circle at 86% 10%, rgba(164, 84, 243, .11), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, .72), rgba(248, 242, 255, .68)) !important;
+}
+
+.appShellMacOS .workspace-page .workspace-results-stack {
+  gap: 14px;
+}
+
+.appShellMacOS .workspace-saved-compact,
+.appShellMacOS .transcription-saved-compact {
+  width: min(100%, 900px);
+}
+
+.appShellMacOS .workspace-saved-compact .saved-library-panel,
+.appShellMacOS .transcription-saved-compact .saved-library-panel {
+  padding: 16px !important;
+}
+
+.appShellMacOS .workspace-saved-compact .saved-library-grid,
+.appShellMacOS .transcription-saved-compact .saved-library-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.appShellMacOS .workspace-saved-compact .saved-library-card,
+.appShellMacOS .transcription-saved-compact .saved-library-card {
+  padding: 12px !important;
+  border-radius: 16px !important;
+}
+
+.appShellMacOS .transcription-result-panel .border-t {
+  border-radius: 20px;
+  margin: 12px;
+  border: 1px solid rgba(124, 47, 230, .12) !important;
+}
+
+.appShellMacOS .transcription-result-panel .grid.gap-3 > div {
+  border-radius: 18px !important;
+}
+
+.appShellMacOS .team-chat-list-head h2 {
+  font-size: 21px;
+}
+
+.appShellMacOS .team-chat-list-head p,
+.appShellMacOS .team-chat-thread-head p {
+  font-size: 12px;
+  opacity: .84;
+}
+
+.appShellMacOS .team-chat-context-pane .tool-section-head {
+  margin: 10px;
+  padding: 14px;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, .24);
+  background: linear-gradient(135deg, rgba(58, 35, 100, .96), rgba(118, 48, 219, .92));
+}
+
+.appShellMacOS .team-chat-context-pane .tool-section-head h2,
+.appShellMacOS .team-chat-context-pane .tool-section-head p {
+  color: #ffffff !important;
+}
+
+.appShellMacOS .team-chat-context-stack {
+  padding: 0 10px 12px;
+}
+
+.appShellMacOS .team-chat-message-row.is-own {
+  justify-content: flex-end;
+}
+
+.appShellMacOS .team-chat-message-bubble {
+  max-width: min(72%, 520px);
+}
+
+.appShellMacOS .team-chat-attach-control .team-chat-attach-icon,
+.appShellMacOS .team-chat-composer .tool-icon-action {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, .22) !important;
+  background: rgba(255, 255, 255, .14) !important;
+}
+
+.appShellMacOS .team-chat-send-button {
+  color: #7a2fe0 !important;
+  background: rgba(255, 255, 255, .92) !important;
+}
+
+.appShellMacOS .team-chat-send-button:hover {
+  color: #ffffff !important;
+}
+
+@media (max-width: 980px) {
+  .appShellMacOS .tool-page-header {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .appShellMacOS .search-header-meta {
+    justify-content: flex-start;
   }
 }

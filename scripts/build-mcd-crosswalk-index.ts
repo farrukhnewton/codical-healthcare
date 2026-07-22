@@ -54,6 +54,11 @@ type CrosswalkAggregate = {
   evidence: CrosswalkEvidence[];
 };
 
+type CrosswalkAlphabetItem = {
+  letter: string;
+  count: number;
+};
+
 type CrosswalkEntry = {
   code: string;
   normalizedCode: string;
@@ -62,6 +67,7 @@ type CrosswalkEntry = {
   coveredCount: number;
   noncoveredCount: number;
   mixedCount: number;
+  alphabet: CrosswalkAlphabetItem[];
   results: CrosswalkAggregate[];
 };
 
@@ -80,6 +86,10 @@ const bucket = process.env.R2_BUCKET_MCD_RAW || "codical-mcd-raw";
 const prefix = normalizePrefix(readFlag("--prefix") || process.env.MCD_CROSSWALK_PREFIX || "mcd/current/v1/crosswalk");
 const uploadConcurrency = Number(readFlag("--concurrency") || process.env.MCD_CROSSWALK_UPLOAD_CONCURRENCY || 16);
 const version = readFlag("--version") || "current-v1";
+const configuredResultLimit = Number(readFlag("--result-limit") || process.env.MCD_CROSSWALK_RESULT_LIMIT || 500);
+const resultLimit = Number.isFinite(configuredResultLimit) && configuredResultLimit > 0
+  ? Math.min(Math.floor(configuredResultLimit), 5000)
+  : 500;
 
 function readFlag(flag: string) {
   const index = process.argv.indexOf(flag);
@@ -108,6 +118,59 @@ function codeDescription(row: CodeRow) {
 
 function shardPrefix(normalizedCode: string) {
   return (normalizedCode.slice(0, 4) || "____").padEnd(4, "_");
+}
+
+function codeLetter(value: unknown) {
+  const normalized = String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return normalized ? normalized[0] : "";
+}
+
+function buildAlphabet(results: CrosswalkAggregate[]) {
+  const counts = new Map<string, number>();
+  for (const result of results) {
+    const letter = codeLetter(result.code || result.normalizedCode);
+    if (!letter) continue;
+    counts.set(letter, (counts.get(letter) || 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([letter, count]) => ({ letter, count }))
+    .sort((a, b) => a.letter.localeCompare(b.letter));
+}
+
+function selectRepresentedResults(results: CrosswalkAggregate[], maxResults: number) {
+  if (results.length <= maxResults) return results;
+
+  const byLetter = new Map<string, CrosswalkAggregate[]>();
+  for (const result of results) {
+    const letter = codeLetter(result.code || result.normalizedCode) || "_";
+    const list = byLetter.get(letter) || [];
+    list.push(result);
+    byLetter.set(letter, list);
+  }
+
+  const letters = Array.from(byLetter.keys()).sort((a, b) => a.localeCompare(b));
+  const picked = new Map<string, CrosswalkAggregate>();
+
+  for (const letter of letters) {
+    const list = byLetter.get(letter) || [];
+    const minimumPerLetter = Math.min(list.length, Math.max(4, Math.floor(maxResults / Math.max(letters.length, 1) / 2)));
+    for (let index = 0; index < minimumPerLetter; index++) {
+      picked.set(list[index].normalizedCode, list[index]);
+    }
+  }
+
+  for (const result of results) {
+    if (picked.size >= maxResults) break;
+    picked.set(result.normalizedCode, result);
+  }
+
+  return Array.from(picked.values()).sort((a, b) => {
+    if (a.status !== b.status) return a.status === "covered" ? -1 : b.status === "covered" ? 1 : a.status.localeCompare(b.status);
+    if (b.confidenceScore !== a.confidenceScore) return b.confidenceScore - a.confidenceScore;
+    if (b.evidenceCount !== a.evidenceCount) return b.evidenceCount - a.evidenceCount;
+    return a.code.localeCompare(b.code);
+  });
 }
 
 function statusFromCounts(covered: number, noncovered: number): CoverageStatus {
@@ -144,6 +207,7 @@ function ensureAggregate(map: Map<string, MutableCrosswalkEntry>, code: string, 
       coveredCount: 0,
       noncoveredCount: 0,
       mixedCount: 0,
+      alphabet: [],
       results: [],
       resultMap: new Map<string, CrosswalkAggregate>(),
     };
@@ -181,7 +245,7 @@ function addPair(
   aggregate.evidence.push(evidence);
 }
 
-function finalizeEntry(entry: MutableCrosswalkEntry, resultLimit = 20) {
+function finalizeEntry(entry: MutableCrosswalkEntry, maxResults = resultLimit) {
   entry.results = Array.from(entry.resultMap.values());
 
   for (const result of entry.results) {
@@ -200,19 +264,20 @@ function finalizeEntry(entry: MutableCrosswalkEntry, resultLimit = 20) {
       .slice(0, 1);
   }
 
-  entry.results = entry.results
+  const sortedResults = entry.results
     .sort((a, b) => {
       if (a.status !== b.status) return a.status === "covered" ? -1 : b.status === "covered" ? 1 : a.status.localeCompare(b.status);
       if (b.confidenceScore !== a.confidenceScore) return b.confidenceScore - a.confidenceScore;
       if (b.evidenceCount !== a.evidenceCount) return b.evidenceCount - a.evidenceCount;
       return a.code.localeCompare(b.code);
-    })
-    .slice(0, resultLimit);
+    });
 
-  entry.resultCount = entry.results.length;
-  entry.coveredCount = entry.results.filter((item) => item.status === "covered").length;
-  entry.noncoveredCount = entry.results.filter((item) => item.status === "noncovered").length;
-  entry.mixedCount = entry.results.filter((item) => item.status === "mixed").length;
+  entry.resultCount = sortedResults.length;
+  entry.coveredCount = sortedResults.filter((item) => item.status === "covered").length;
+  entry.noncoveredCount = sortedResults.filter((item) => item.status === "noncovered").length;
+  entry.mixedCount = sortedResults.filter((item) => item.status === "mixed").length;
+  entry.alphabet = buildAlphabet(sortedResults);
+  entry.results = selectRepresentedResults(sortedResults, maxResults);
   delete (entry as Partial<MutableCrosswalkEntry>).resultMap;
 }
 
@@ -322,6 +387,7 @@ function buildIndex() {
     prefix,
     sourceArticleShards: files.length,
     sourcePairs,
+    resultLimit,
     icd,
     procedure,
   };

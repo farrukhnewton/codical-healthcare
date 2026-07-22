@@ -10,6 +10,7 @@ import { CodeCard } from "@/components/codes/CodeCard";
 import { CodeDetails } from "@/components/codes/CodeDetails";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { InfoHint } from "@/components/ui/info-hint";
 import { MedicalCode } from "shared/schema";
 
 const CODE_TYPES = ["All", "ICD-10-CM", "CPT", "HCPCS"];
@@ -74,7 +75,7 @@ export function Search() {
       <section className="tool-page-header tool-panel">
         <div>
           <h1>Code Directory</h1>
-          <p>Search CPT, ICD-10-CM, and HCPCS references with coding context in one view.</p>
+          <p>CPT, ICD-10-CM, and HCPCS references.</p>
         </div>
 
         <div className="search-header-meta">
@@ -117,8 +118,10 @@ export function Search() {
         <aside className="tool-filter-panel tool-panel">
           <div className="tool-section-head">
             <div>
-              <h2>Filters</h2>
-              <p>Refine the working result set.</p>
+              <h2>
+                Filters
+                <InfoHint label="Refine the working result set." />
+              </h2>
             </div>
             <SlidersHorizontal size={17} />
           </div>
@@ -153,7 +156,7 @@ export function Search() {
           <div className="tool-section-head">
             <div>
               <h2>Search results</h2>
-              <p>{debouncedSearch ? `Exact and related matches for "${debouncedSearch}"` : "Commonly used codes and recent references"}</p>
+              <p>{debouncedSearch ? `Matches for "${debouncedSearch}"` : "Common references"}</p>
             </div>
             <Filter size={17} />
           </div>

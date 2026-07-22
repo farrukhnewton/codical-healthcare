@@ -11,6 +11,7 @@ import {
   Shield,
   XCircle,
 } from "lucide-react";
+import { InfoHint } from "@/components/ui/info-hint";
 
 interface NcciResult {
   hasEdit: boolean;
@@ -197,7 +198,7 @@ export function NcciChecker() {
       <section className="tool-panel tool-page-header">
         <div>
           <h1>NCCI Checker</h1>
-          <p>Check procedure pairs and batch CPT/HCPCS sets for correct coding edits.</p>
+          <p>Procedure-pair edits and batch checks.</p>
         </div>
         <div className="search-header-meta">
           <span>Practitioner</span>
@@ -209,8 +210,10 @@ export function NcciChecker() {
         <section className="tool-panel validation-input-panel">
           <div className="tool-section-head">
             <div>
-              <h2>Procedure pair</h2>
-              <p>Enter the ordered code pair for a single edit lookup.</p>
+              <h2>
+                Procedure pair
+                <InfoHint label="Enter the ordered code pair for a single edit lookup." />
+              </h2>
             </div>
             <Shield size={17} />
           </div>
@@ -293,8 +296,10 @@ export function NcciChecker() {
         <section className="tool-panel validation-input-panel">
           <div className="tool-section-head">
             <div>
-              <h2>Batch procedure set</h2>
-              <p>Enter up to eight codes. Every unique pair is checked.</p>
+              <h2>
+                Batch procedure set
+                <InfoHint label="Enter up to eight codes. Every unique pair is checked." />
+              </h2>
             </div>
             <ClipboardList size={17} />
           </div>
@@ -354,8 +359,10 @@ export function NcciChecker() {
       <section className="tool-panel validation-results-panel">
         <div className="tool-section-head">
           <div>
-            <h2>Results</h2>
-            <p>Single-pair status and batch edit summary.</p>
+            <h2>
+              Results
+              <InfoHint label="Single-pair status and batch edit summary." />
+            </h2>
           </div>
           <Info size={17} />
         </div>

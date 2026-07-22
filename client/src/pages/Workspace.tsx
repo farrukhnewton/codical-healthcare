@@ -4,11 +4,12 @@ import {
   Upload, FileText, Copy, Check, ClipboardCheck, Download,
   AlertCircle, ChevronDown, ChevronUp, Zap, Brain,
   Hash, Activity, Pill, MapPin, BookOpen, X,
-  Building2, ChevronRight, ShieldCheck, Info
+  Building2, ChevronRight, ShieldCheck
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { SavedAiFilesLibrary } from "@/components/saved-ai/SavedAiFilesLibrary";
+import { InfoHint } from "@/components/ui/info-hint";
 import { writeClaimValidatorHandoff } from "@/lib/claim-validator-handoff";
 
 interface CodeResult {
@@ -105,15 +106,6 @@ function CopyBtn({ text }: { text: string }) {
     >
       {copied ? <Check size={12} color="#16A34A" /> : <Copy size={12} />}
     </button>
-  );
-}
-
-function InfoHint({ label }: { label: string }) {
-  return (
-    <span className="ui-info-hint" tabIndex={0} aria-label={label}>
-      <Info size={13} />
-      <span role="tooltip">{label}</span>
-    </span>
   );
 }
 
@@ -396,12 +388,24 @@ export function Workspace() {
   const wordCount = text.split(/\s+/).filter(Boolean).length;
   const canAnalyze = text.trim().length >= 20 && !loading;
   const payerLabel = selectedPayer?.shortName || "Standard";
-  const workflowSteps = [
-    { label: "Extract", detail: "Upload or paste clinical note.", active: !result },
-    { label: "Review", detail: "Review suggested codes and details.", active: Boolean(result) },
-    { label: "Validate", detail: "Open claim validation when ready.", active: canOpenClaimValidator },
-    { label: "Save", detail: "Save report to the library.", active: Boolean(currentSavedFile) },
-  ];
+  const analysisProgress = loading
+    ? 68
+    : result
+      ? 100
+      : text.trim().length >= 20
+        ? 36
+        : file
+          ? 24
+          : 8;
+  const analysisStage = loading
+    ? loadingMsg || "Analyzing clinical note"
+    : result
+      ? "Coding review ready"
+      : text.trim().length >= 20
+        ? "Ready to analyze"
+        : file
+          ? "Document loaded"
+          : "Waiting for note";
 
   return (
     <div className="tool-page assistant-workspace-page workspace-page">
@@ -455,7 +459,7 @@ export function Workspace() {
         </div>
       </section>
 
-      <section className="workspace-assistant-grid">
+      <section className="workspace-coding-stack">
         <div className="tool-panel workspace-note-panel">
           {loading && <div className="co-scan-line" />}
           <div className="tool-section-head">
@@ -509,6 +513,16 @@ export function Workspace() {
                 <span>TXT, PDF, DOC supported</span>
               </>
             )}
+          </div>
+
+          <div className="workspace-analysis-progress" aria-label="AI coding analysis progress">
+            <div>
+              <span>AI progress</span>
+              <strong>{analysisStage}</strong>
+            </div>
+            <div className="workspace-analysis-track">
+              <span style={{ width: `${analysisProgress}%` }} />
+            </div>
           </div>
 
           <textarea
@@ -596,15 +610,6 @@ ANESTHESIA: General`}
           </div>
         </div>
 
-        <aside className="tool-panel workspace-flow-rail" aria-label="Coding workflow">
-          {workflowSteps.map((step, index) => (
-            <div key={step.label} className={step.active ? "is-active" : ""}>
-              <strong>{index + 1}</strong>
-              <span>{step.label}</span>
-              <small>{step.detail}</small>
-            </div>
-          ))}
-        </aside>
       </section>
 
       {/* Loading state */}
@@ -613,7 +618,6 @@ ANESTHESIA: General`}
           <span className="tool-spinner dark" />
           <strong>Document analysis is running</strong>
           <span>{loadingMsg}</span>
-          <small>This may take 10-20 seconds for complex documents.</small>
         </motion.div>
       )}
 
@@ -858,11 +862,11 @@ ANESTHESIA: General`}
         </motion.div>
       )}
 
-      <div style={{ marginTop: "20px" }}>
+      <div className="workspace-saved-compact">
         <SavedAiFilesLibrary
           module="op_report_coding"
-          title="Saved Outpatient Coding Reports"
-          description="Save outpatient coding reports for 30 days, rename them, edit report text, and download permanent PDFs."
+          title="Saved Coding Reports"
+          description="30-day report library."
           currentFile={currentSavedFile}
         />
       </div>

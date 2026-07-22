@@ -12,6 +12,7 @@ import {
   Tag,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { InfoHint } from "@/components/ui/info-hint";
 
 interface Locality {
   id: number;
@@ -153,7 +154,7 @@ export function AnesthesiaCalculator() {
       <section className="tool-panel tool-page-header">
         <div>
           <h1>Anesthesia Calculator</h1>
-          <p>Calculate anesthesia payment from base units, time units, locality, and modifier policy.</p>
+          <p>Base units, time, locality, and modifiers.</p>
         </div>
         <div className="search-header-meta">
           <span>CY 2026</span>
@@ -166,8 +167,10 @@ export function AnesthesiaCalculator() {
         <section className="tool-panel validation-input-panel">
           <div className="tool-section-head">
             <div>
-              <h2>Calculation parameters</h2>
-              <p>Enter the anesthesia code, time, locality, and optional modifier.</p>
+              <h2>
+                Calculation parameters
+                <InfoHint label="Enter the anesthesia code, time, locality, and optional modifier." />
+              </h2>
             </div>
             <Activity size={17} />
           </div>
@@ -293,8 +296,10 @@ export function AnesthesiaCalculator() {
         <section className="tool-panel calculator-summary-panel">
           <div className="tool-section-head">
             <div>
-              <h2>Payment summary</h2>
-              <p>Base units plus time units, adjusted by conversion factor and modifier.</p>
+              <h2>
+                Payment summary
+                <InfoHint label="Base units plus time units, adjusted by conversion factor and modifier." />
+              </h2>
             </div>
             <Calculator size={17} />
           </div>
@@ -374,8 +379,10 @@ export function AnesthesiaCalculator() {
         <section className="tool-panel">
           <div className="tool-section-head">
             <div>
-              <h2>Anesthesia modifiers</h2>
-              <p>Payment adjustments available for the current calculator.</p>
+              <h2>
+                Anesthesia modifiers
+                <InfoHint label="Payment adjustments available for the current calculator." />
+              </h2>
             </div>
             <Tag size={17} />
           </div>

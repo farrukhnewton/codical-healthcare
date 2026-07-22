@@ -7567,18 +7567,21 @@ html.dark {
 /* Premium shared tool sections for the upgraded authenticated workspace. */
 .appShellPremium .tool-page {
   width: min(100% - 40px, 1260px);
+  display: flex;
+  flex-direction: column;
   gap: 20px;
   padding: 24px 0 42px;
+  color: #231057;
 }
 
 .appShellPremium .tool-panel,
 .appShellPremium .code-detail-surface > .tool-panel:not(.code-detail-hero),
 .appShellPremium .workspace-result-section,
 .appShellPremium .saved-library-dialog {
-  border-color: rgba(202, 218, 235, 0.88) !important;
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.88) !important;
-  box-shadow: 0 24px 70px rgba(18, 48, 91, 0.10) !important;
+  border-color: rgba(124, 47, 230, 0.15) !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.64) !important;
+  box-shadow: 0 24px 70px rgba(76, 35, 150, 0.11) !important;
   backdrop-filter: blur(20px) saturate(1.16);
   -webkit-backdrop-filter: blur(20px) saturate(1.16);
 }
@@ -7586,46 +7589,52 @@ html.dark {
 .appShellPremium .tool-page-header {
   position: relative;
   min-height: 156px;
-  overflow: hidden;
-  padding: 24px;
+  overflow: visible;
+  padding: clamp(1.35rem, 3vw, 2rem);
   background:
-    radial-gradient(circle at 92% 0%, rgba(255, 122, 61, 0.14), transparent 28%),
-    radial-gradient(circle at 42% 18%, rgba(33, 55, 255, 0.11), transparent 34%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 247, 255, 0.9)) !important;
+    linear-gradient(rgba(66, 48, 123, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(66, 48, 123, 0.055) 1px, transparent 1px),
+    radial-gradient(circle at 82% 10%, rgba(164, 84, 243, 0.22), transparent 34%),
+    radial-gradient(circle at 12% 88%, rgba(124, 47, 230, 0.12), transparent 38%),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.84), rgba(238, 229, 255, 0.72)) !important;
+  background-size: 48px 48px, 48px 48px, auto, auto, auto;
 }
 
 .appShellPremium .tool-page-header::before {
   content: "";
   position: absolute;
-  right: -8%;
-  top: -62%;
-  width: min(46vw, 620px);
-  height: 138%;
-  border: 1px solid rgba(33, 55, 255, 0.14);
-  border-radius: 50%;
-  transform: rotate(10deg);
+  right: -12%;
+  top: -28%;
+  width: min(50vw, 620px);
+  height: 118%;
+  border: 1px solid rgba(124, 47, 230, 0.13);
+  border-radius: 999px;
+  background: linear-gradient(100deg, rgba(124, 47, 230, 0.08), rgba(255, 255, 255, 0.42), rgba(164, 84, 243, 0.13));
+  filter: blur(2px);
+  transform: rotate(-16deg);
   pointer-events: none;
 }
 
 .appShellPremium .tool-page-header > * {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .appShellPremium .tool-page-header h1 {
-  color: var(--app-ink);
-  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
-  font-size: clamp(30px, 3.5vw, 48px);
-  font-weight: 850;
+  color: #231057;
+  font-family: "Outfit", var(--font-sans);
+  font-size: clamp(2.15rem, 4vw, 4.4rem);
+  font-weight: 520;
   line-height: 0.98;
+  letter-spacing: 0;
 }
 
 .appShellPremium .tool-page-header p {
   max-width: 690px;
   margin-top: 10px;
-  color: #4c5f78;
-  font-size: 15px;
-  font-weight: 720;
+  color: rgba(54, 45, 88, 0.66);
+  font-size: 14px;
+  font-weight: 620;
   line-height: 1.5;
 }
 
@@ -8977,6 +8986,606 @@ html.dark {
   }
   to {
     transform: translate3d(1.5%, -1%, 0) rotate(2deg) scale(1.04);
+  }
+}
+
+.appShellPremium .crosswalk-page {
+  --cw-ink: #170c3f;
+  --cw-purple: #7c2fe6;
+  --cw-purple-2: #a454f3;
+  --cw-muted: rgba(54, 45, 88, 0.68);
+  color: var(--cw-ink);
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.appShellPremium .crosswalk-page-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 300px;
+  display: block;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid rgba(124, 47, 230, 0.16);
+  border-radius: 34px;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.82), rgba(238, 229, 255, 0.72)),
+    radial-gradient(circle at 78% 12%, rgba(164, 84, 243, 0.28), transparent 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.75), rgba(215, 200, 255, 0.72));
+  box-shadow: 0 28px 80px rgba(76, 35, 150, 0.16);
+}
+
+.appShellPremium .crosswalk-page-hero::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background-image:
+    linear-gradient(rgba(66, 48, 123, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(66, 48, 123, 0.075) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.8), transparent 86%);
+  pointer-events: none;
+}
+
+.appShellPremium .crosswalk-page-hero::after {
+  content: "";
+  position: absolute;
+  width: 68%;
+  height: 72%;
+  right: -10%;
+  bottom: -18%;
+  background: radial-gradient(ellipse at center, rgba(124, 47, 230, 0.22), transparent 64%);
+  filter: blur(24px);
+  transform: rotate(-10deg);
+  pointer-events: none;
+}
+
+.appShellPremium .crosswalk-hero-orb {
+  position: absolute;
+  width: 420px;
+  height: 160px;
+  right: 8%;
+  top: 20%;
+  border-radius: 999px;
+  background: linear-gradient(100deg, rgba(124, 47, 230, 0.12), rgba(255, 255, 255, 0.46), rgba(164, 84, 243, 0.18));
+  transform: rotate(-18deg);
+  filter: blur(1px);
+  animation: crosswalkOrbFloat 9s cubic-bezier(.16, 1, .3, 1) infinite alternate;
+  pointer-events: none;
+}
+
+.appShellPremium .crosswalk-hero-copy,
+.appShellPremium .crosswalk-control-panel,
+.appShellPremium .crosswalk-results-layout {
+  position: relative;
+  z-index: 1;
+}
+
+.appShellPremium .crosswalk-source-badge {
+  width: max-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-color: rgba(124, 47, 230, 0.24);
+  background: rgba(255, 255, 255, 0.58);
+  color: #5b20ba;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.appShellPremium .crosswalk-hero-copy h1 {
+  max-width: 950px;
+  margin: 1rem 0 0;
+  font-family: "Outfit", var(--font-sans);
+  font-size: clamp(3.2rem, 7.4vw, 7.2rem);
+  line-height: 0.92;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: #231057;
+}
+
+.appShellPremium .crosswalk-hero-copy p {
+  max-width: 720px;
+  margin-top: 1.25rem;
+  font-size: clamp(1rem, 1.4vw, 1.25rem);
+  line-height: 1.65;
+  color: var(--cw-muted);
+  font-weight: 560;
+}
+
+.appShellPremium .crosswalk-context-card > div > span,
+.appShellPremium .crosswalk-side-header > span,
+.appShellPremium .crosswalk-side-metrics div > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(43, 31, 82, 0.62);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.appShellPremium .crosswalk-control-panel {
+  margin-top: 1rem;
+  padding: 1.1rem;
+  border-radius: 28px;
+  border: 1px solid rgba(124, 47, 230, 0.16);
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: 0 22px 70px rgba(87, 54, 160, 0.12);
+}
+
+.appShellPremium .crosswalk-direction-tabs,
+.appShellPremium .crosswalk-filter-row,
+.appShellPremium .crosswalk-alphabet-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.appShellPremium .crosswalk-direction-tabs button,
+.appShellPremium .crosswalk-filter-row button,
+.appShellPremium .crosswalk-alphabet-rail button {
+  border: 1px solid rgba(124, 47, 230, 0.16);
+  background: rgba(255, 255, 255, 0.7);
+  color: #38216e;
+  border-radius: 999px;
+  font-weight: 760;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.appShellPremium .crosswalk-direction-tabs button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 1rem;
+}
+
+.appShellPremium .crosswalk-direction-tabs button:hover,
+.appShellPremium .crosswalk-filter-row button:hover,
+.appShellPremium .crosswalk-alphabet-rail button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(124, 47, 230, 0.34);
+  box-shadow: 0 14px 30px rgba(124, 47, 230, 0.12);
+}
+
+.appShellPremium .crosswalk-direction-tabs button.is-active,
+.appShellPremium .crosswalk-filter-row button.is-active,
+.appShellPremium .crosswalk-alphabet-rail button.is-active {
+  color: white;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--cw-purple), var(--cw-purple-2));
+  box-shadow: 0 18px 34px rgba(124, 47, 230, 0.22);
+}
+
+.appShellPremium .crosswalk-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: end;
+  margin-top: 1rem;
+}
+
+.appShellPremium .crosswalk-search-row label {
+  display: block;
+}
+
+.appShellPremium .crosswalk-search-row label > span {
+  display: block;
+  margin: 0 0 0.45rem 0.2rem;
+  color: rgba(43, 31, 82, 0.64);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.appShellPremium .crosswalk-search-row label > div {
+  position: relative;
+}
+
+.appShellPremium .crosswalk-search-row label svg {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  z-index: 1;
+  transform: translateY(-50%);
+  color: rgba(58, 37, 110, 0.58);
+}
+
+.appShellPremium .crosswalk-search-row input {
+  height: 52px;
+  padding-left: 2.8rem;
+  border-radius: 18px;
+  border-color: rgba(124, 47, 230, 0.18);
+  background: rgba(255, 255, 255, 0.76);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 760;
+  color: #1b123d;
+}
+
+.appShellPremium .crosswalk-run-button,
+.appShellPremium .crosswalk-side-action {
+  min-height: 52px;
+  border-radius: 999px;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--cw-purple), var(--cw-purple-2));
+  color: white;
+  box-shadow: 0 18px 36px rgba(124, 47, 230, 0.22);
+}
+
+.appShellPremium .crosswalk-filter-row {
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.appShellPremium .crosswalk-filter-row > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: 0.25rem;
+  color: rgba(43, 31, 82, 0.58);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.appShellPremium .crosswalk-filter-row button {
+  min-height: 34px;
+  padding: 0 0.82rem;
+  font-size: 0.8rem;
+}
+
+.appShellPremium .crosswalk-alphabet-panel {
+  margin-top: 1rem;
+  padding: 0.95rem;
+  border: 1px solid rgba(124, 47, 230, 0.13);
+  border-radius: 22px;
+  background: rgba(246, 240, 255, 0.66);
+}
+
+.appShellPremium .crosswalk-alphabet-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.appShellPremium .crosswalk-alphabet-head strong {
+  color: #251351;
+  font-weight: 820;
+}
+
+.appShellPremium .crosswalk-alphabet-head span {
+  color: rgba(54, 45, 88, 0.62);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.appShellPremium .crosswalk-alphabet-rail button {
+  min-width: 44px;
+  height: 38px;
+  padding: 0 0.7rem;
+  font-family: var(--font-mono);
+  font-weight: 820;
+}
+
+.appShellPremium .crosswalk-alphabet-rail button span {
+  margin-left: 0.35rem;
+  color: currentColor;
+  opacity: 0.7;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.appShellPremium .crosswalk-error {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(225, 29, 72, 0.2);
+  border-radius: 18px;
+  color: #9f1239;
+  background: rgba(255, 241, 242, 0.76);
+  font-weight: 650;
+}
+
+.appShellPremium .crosswalk-results-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.appShellPremium .crosswalk-results-main,
+.appShellPremium .crosswalk-card-list,
+.appShellPremium .crosswalk-side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.appShellPremium .crosswalk-context-card,
+.appShellPremium .crosswalk-code-card,
+.appShellPremium .crosswalk-side-panel,
+.appShellPremium .crosswalk-empty {
+  border-radius: 24px;
+  border: 1px solid rgba(124, 47, 230, 0.14);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: 0 20px 55px rgba(68, 42, 126, 0.09);
+}
+
+.appShellPremium .crosswalk-context-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.7fr);
+  gap: 1rem;
+  padding: 1.1rem;
+}
+
+.appShellPremium .crosswalk-context-card strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: #201046;
+  font-family: "Outfit", var(--font-sans);
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  font-weight: 580;
+}
+
+.appShellPremium .crosswalk-context-card p {
+  margin-top: 0.25rem;
+  color: var(--cw-muted);
+  font-weight: 600;
+}
+
+.appShellPremium .crosswalk-code-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.appShellPremium .crosswalk-code-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: rgba(124, 47, 230, 0.35);
+}
+
+.appShellPremium .crosswalk-code-card.is-covered::before {
+  background: #10b981;
+}
+
+.appShellPremium .crosswalk-code-card.is-noncovered::before {
+  background: #f43f5e;
+}
+
+.appShellPremium .crosswalk-code-card.is-mixed::before {
+  background: #f59e0b;
+}
+
+.appShellPremium .crosswalk-code-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.appShellPremium .crosswalk-code-title strong {
+  color: #170c3f;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 850;
+}
+
+.appShellPremium .crosswalk-confidence {
+  border-radius: 999px;
+  border-color: rgba(124, 47, 230, 0.16);
+  background: rgba(246, 240, 255, 0.82);
+  color: #5b20ba;
+}
+
+.appShellPremium .crosswalk-code-main > p {
+  margin-top: 0.55rem;
+  color: rgba(54, 45, 88, 0.78);
+  font-size: 0.94rem;
+  line-height: 1.55;
+  font-weight: 600;
+}
+
+.appShellPremium .crosswalk-code-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.appShellPremium .crosswalk-code-meta span {
+  padding: 0.32rem 0.55rem;
+  border: 1px solid rgba(124, 47, 230, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: rgba(54, 45, 88, 0.7);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.appShellPremium .crosswalk-evidence-strip {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 0.45rem;
+  align-items: center;
+  margin-top: 0.8rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(124, 47, 230, 0.12);
+  border-radius: 16px;
+  background: rgba(246, 240, 255, 0.58);
+}
+
+.appShellPremium .crosswalk-evidence-strip span {
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.66);
+  color: #4f1aa8;
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-weight: 850;
+}
+
+.appShellPremium .crosswalk-evidence-strip p {
+  min-width: 0;
+  color: rgba(54, 45, 88, 0.72);
+  font-size: 0.78rem;
+  font-weight: 620;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.appShellPremium .crosswalk-source-link {
+  border-radius: 999px;
+  border-color: rgba(124, 47, 230, 0.18);
+  color: #4f1aa8;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.appShellPremium .crosswalk-side-panel {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  padding: 1rem;
+}
+
+.appShellPremium .crosswalk-side-header strong {
+  display: block;
+  margin-top: 0.5rem;
+  color: #201046;
+  font-family: "Outfit", var(--font-sans);
+  font-size: 1.8rem;
+  font-weight: 580;
+}
+
+.appShellPremium .crosswalk-side-header p,
+.appShellPremium .crosswalk-disclaimer {
+  margin-top: 0.5rem;
+  color: rgba(54, 45, 88, 0.72);
+  line-height: 1.6;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.appShellPremium .crosswalk-side-metrics {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.appShellPremium .crosswalk-side-metrics div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(124, 47, 230, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.appShellPremium .crosswalk-side-metrics strong {
+  color: #4f1aa8;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.appShellPremium .crosswalk-side-action {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.appShellPremium .crosswalk-empty {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  color: rgba(54, 45, 88, 0.68);
+}
+
+.appShellPremium .crosswalk-empty strong {
+  margin-top: 0.9rem;
+  color: #201046;
+  font-size: 1.1rem;
+}
+
+.appShellPremium .crosswalk-empty p {
+  max-width: 440px;
+  margin-top: 0.35rem;
+  line-height: 1.55;
+  font-weight: 600;
+}
+
+@keyframes crosswalkOrbFloat {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-18deg) scale(1);
+    opacity: 0.72;
+  }
+  100% {
+    transform: translate3d(-38px, 18px, 0) rotate(-12deg) scale(1.08);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 1180px) {
+  .appShellPremium .crosswalk-page-hero,
+  .appShellPremium .crosswalk-results-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .appShellPremium .crosswalk-side-panel {
+    position: relative;
+    top: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .appShellPremium .crosswalk-page {
+    padding: 1rem;
+  }
+
+  .appShellPremium .crosswalk-page-hero {
+    padding: 1.25rem;
+    border-radius: 26px;
+  }
+
+  .appShellPremium .crosswalk-hero-copy h1 {
+    font-size: clamp(2.6rem, 13vw, 4rem);
+  }
+
+  .appShellPremium .crosswalk-search-row,
+  .appShellPremium .crosswalk-context-card,
+  .appShellPremium .crosswalk-code-card {
+    grid-template-columns: 1fr;
+  }
+
+  .appShellPremium .crosswalk-run-button {
+    width: 100%;
+  }
+
+  .appShellPremium .crosswalk-evidence-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .appShellPremium .crosswalk-evidence-strip p {
+    white-space: normal;
   }
 }
 

@@ -727,7 +727,7 @@ export function ClaimValidator() {
         <SavedAiFilesLibrary
           module="claim_validation"
           title="Saved Claim Validations"
-          description="Save claim validation reports for 30 days, reopen prior code sets, edit report text, and download permanent PDFs."
+          description="30-day validation library."
           currentFile={currentSavedFile}
           onUseFile={restoreSavedValidation}
         />

@@ -25,6 +25,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { SavedAiFilesLibrary } from "@/components/saved-ai/SavedAiFilesLibrary";
+import { InfoHint } from "@/components/ui/info-hint";
 import { useToast } from "@/hooks/use-toast";
 import { writeClaimValidatorHandoff } from "@/lib/claim-validator-handoff";
 import { apiUrl } from "@/lib/queryClient";
@@ -471,13 +472,24 @@ export function VoiceTranscription() {
   };
 
   const isLoading = mutation.isPending;
+  const transcriptionProgress = isLoading ? 64 : result ? 100 : selectedFile ? 28 : 8;
+  const transcriptionStage = isLoading
+    ? "Transcribing audio"
+    : result
+      ? "Structured notes ready"
+      : selectedFile
+        ? "Audio loaded"
+        : "Waiting for audio";
 
   return (
     <div className="tool-page collaboration-page transcription-page">
       <section className="tool-panel tool-page-header">
         <div>
-          <h1>Clinical Transcription</h1>
-          <p>Upload consultation audio, review the structured record, and send suggested codes to claim validation.</p>
+          <h1>
+            Clinical Transcription
+            <InfoHint label="Upload consultation audio, review the structured record, and send suggested codes to claim validation." />
+          </h1>
+          <p>Audio to structured clinical record.</p>
         </div>
         <div className="search-header-meta">
           <span>Audio to record</span>
@@ -490,8 +502,9 @@ export function VoiceTranscription() {
           <CardTitle className="transcription-card-title">
             <FileAudio className="size-5 text-primary" />
             Audio Upload
+            <InfoHint label="Audio is processed after upload and returned as a structured medical record." />
           </CardTitle>
-          <CardDescription>WAV, MP3, FLAC, M4A, AAC, AIFF, and OGG files up to 25MB.</CardDescription>
+          <CardDescription>Upload audio up to 25MB.</CardDescription>
         </CardHeader>
         <CardContent className="transcription-upload-content">
           <div
@@ -526,12 +539,22 @@ export function VoiceTranscription() {
             </div>
             <div>
               <strong>Drop audio file here</strong>
-              <span>Supported formats: WAV, MP3, FLAC, M4A, AAC, AIFF, OGG</span>
+              <span>WAV, MP3, FLAC, M4A, AAC, AIFF, OGG</span>
             </div>
             <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="tool-secondary-button">
               <Upload data-icon="inline-start" />
               Browse files
             </Button>
+          </div>
+
+          <div className="transcription-progress-card" aria-label="Clinical transcription progress">
+            <div>
+              <span>Transcription progress</span>
+              <strong>{transcriptionStage}</strong>
+            </div>
+            <div className="transcription-progress-track">
+              <span style={{ width: `${transcriptionProgress}%` }} />
+            </div>
           </div>
 
           {selectedFile && (
@@ -550,9 +573,7 @@ export function VoiceTranscription() {
           )}
         </CardContent>
         <CardFooter className="transcription-upload-footer">
-          <p>
-            Audio is processed after upload and returned as a structured medical record.
-          </p>
+          <p>Ready when audio is loaded.</p>
           <Button
             type="button"
             disabled={!selectedFile || isLoading}
@@ -589,7 +610,7 @@ export function VoiceTranscription() {
               <div>
                 <CardTitle className="transcription-card-title">
                   <ClipboardList className="size-5 text-primary" />
-                  Medical Transcription Record
+                  Transcribed Notes
                 </CardTitle>
                 <CardDescription>
                   Saved record #{result.id}
@@ -630,7 +651,7 @@ export function VoiceTranscription() {
                   <div>
                     <p className="text-xs font-black uppercase tracking-wide text-muted-foreground">Coding Suggestions</p>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Assistive candidates from the transcript, pending coder review.
+                      Coder review required.
                     </p>
                   </div>
                   <div className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
@@ -745,9 +766,7 @@ export function VoiceTranscription() {
                     <p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-muted-foreground">
                       <ShieldCheck className="size-4 text-emerald-600" />
                       CMS Coverage Evidence
-                    </p>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Coverage-derived intelligence from CMS article groups, not an official CMS crosswalk.
+                      <InfoHint label="Coverage-derived intelligence from CMS article groups, not an official CMS crosswalk." />
                     </p>
                   </div>
                   <div className="text-xs font-bold text-muted-foreground">
@@ -835,12 +854,14 @@ export function VoiceTranscription() {
         </Card>
       )}
 
-      <SavedAiFilesLibrary
-        module="transcription"
-        title="Saved Transcriptions"
-        description="Save medical transcription records for 30 days, rename them, edit the text, and download permanent PDFs."
-        currentFile={currentSavedFile}
-      />
+      <div className="transcription-saved-compact">
+        <SavedAiFilesLibrary
+          module="transcription"
+          title="Saved Transcriptions"
+          description="30-day library."
+          currentFile={currentSavedFile}
+        />
+      </div>
     </div>
   );
 }

@@ -23,6 +23,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/druglookup": { title: "Drug / NDC Lookup", subtitle: "FDA NDC drug database" },
   "/voice-transcription": { title: "Clinical Transcription", subtitle: "Medical voice-to-record transcription" },
   "/intelligence": { title: "Coverage & Guidelines", subtitle: "Medicare LCD/NCD, payer policies and coding guidelines" },
+  "/crosswalk": { title: "ICD/CPT Crosswalk", subtitle: "Coverage-derived CPT, HCPCS and ICD-10 relationships" },
   "/coverage": { title: "Coverage & Guidelines", subtitle: "Medicare LCD/NCD, payer policies and coding guidelines" },
   "/favorites": { title: "Saved Workspace", subtitle: "Curated codes and coding references" },
   "/settings": { title: "Settings", subtitle: "Profile, preferences and account controls" },

@@ -20,6 +20,7 @@ const CodeIntel = lazy(() => import("@/pages/CodeIntel").then((module) => ({ def
 const Compliance = lazy(() => import("@/pages/Compliance").then((module) => ({ default: module.Compliance })));
 const Search = lazy(() => import("@/pages/Search").then((module) => ({ default: module.Search })));
 const IntelligenceHub = lazy(() => import("@/pages/IntelligenceHub").then((module) => ({ default: module.IntelligenceHub })));
+const CoverageCrosswalk = lazy(() => import("@/pages/CoverageCrosswalk").then((module) => ({ default: module.CoverageCrosswalk })));
 const Favorites = lazy(() => import("@/pages/Favorites").then((module) => ({ default: module.Favorites })));
 const Reports = lazy(() => import("@/pages/Reports").then((module) => ({ default: module.Reports })));
 const Analytics = lazy(() => import("@/pages/Analytics").then((module) => ({ default: module.Analytics })));
@@ -77,6 +78,7 @@ function AuthenticatedRoutes() {
       <Route path="/compliance">{() => <AppPage><Compliance /></AppPage>}</Route>
       <Route path="/search">{() => <AppPage><Search /></AppPage>}</Route>
       <Route path="/intelligence">{() => <AppPage><IntelligenceHub /></AppPage>}</Route>
+      <Route path="/crosswalk">{() => <AppPage><CoverageCrosswalk /></AppPage>}</Route>
       <Route path="/guidelines">{() => <Redirect to="/intelligence" />}</Route>
       <Route path="/payers">{() => <Redirect to="/intelligence" />}</Route>
       <Route path="/favorites">{() => <AppPage><Favorites /></AppPage>}</Route>

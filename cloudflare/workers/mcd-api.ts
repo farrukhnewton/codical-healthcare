@@ -4,6 +4,45 @@ type Env = {
 };
 
 const COVERAGE_PREFIX = "mcd/current/v1/coverage/articles";
+const CROSSWALK_PREFIX = "mcd/current/v1/crosswalk";
+
+type CrosswalkDirection = "icd-to-cpt" | "cpt-to-icd";
+type IndexDirection = "icd" | "procedure";
+type CoverageStatus = "covered" | "noncovered" | "mixed" | "unknown";
+
+type CrosswalkResult = {
+  code: string;
+  normalizedCode: string;
+  description: string;
+  status: CoverageStatus;
+  evidenceCount: number;
+  coveredEvidenceCount: number;
+  noncoveredEvidenceCount: number;
+  articleCount: number;
+  confidenceScore: number;
+  evidence: unknown[];
+};
+
+type CrosswalkEntry = {
+  code: string;
+  normalizedCode: string;
+  description: string;
+  resultCount: number;
+  coveredCount: number;
+  noncoveredCount: number;
+  mixedCount: number;
+  alphabet?: Array<{ letter: string; count: number }>;
+  results: CrosswalkResult[];
+};
+
+type CrosswalkShard = {
+  version: string;
+  direction: IndexDirection;
+  prefix: string;
+  generatedAt: string;
+  source: string;
+  entries: Record<string, CrosswalkEntry>;
+};
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -20,6 +59,55 @@ function json(data: unknown, status = 200) {
 
 function normalizeCode(value: string | null) {
   return (value || "").trim().toUpperCase();
+}
+
+function normalizeProcedureCode(value: string | null) {
+  return normalizeCode(value).replace(/[^A-Z0-9]/g, "");
+}
+
+function normalizeIcdCode(value: string | null) {
+  return normalizeCode(value).replace(/\./g, "").replace(/[^A-Z0-9]/g, "");
+}
+
+function normalizeCrosswalkDirection(value: string | null): CrosswalkDirection {
+  const normalized = (value || "").trim().toLowerCase();
+  if (["cpt-to-icd", "procedure-to-icd", "hcpcs-to-icd", "procedure"].includes(normalized)) {
+    return "cpt-to-icd";
+  }
+  return "icd-to-cpt";
+}
+
+function normalizeCoverageStatus(value: string | null): CoverageStatus | null {
+  const normalized = (value || "").trim().toLowerCase();
+  if (["covered", "noncovered", "mixed", "unknown"].includes(normalized)) {
+    return normalized as CoverageStatus;
+  }
+  return null;
+}
+
+function normalizeLetter(value: string | null) {
+  const normalized = normalizeCode(value).replace(/[^A-Z0-9]/g, "");
+  return normalized ? normalized[0] : "";
+}
+
+function shardPrefix(normalizedCode: string) {
+  return (normalizedCode.slice(0, 4) || "____").padEnd(4, "_");
+}
+
+function resultLetter(result: CrosswalkResult) {
+  return normalizeLetter(result.code || result.normalizedCode || "");
+}
+
+function buildAlphabet(results: CrosswalkResult[]) {
+  const counts = new Map<string, number>();
+  for (const result of results) {
+    const letter = resultLetter(result);
+    if (!letter) continue;
+    counts.set(letter, (counts.get(letter) || 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([letter, count]) => ({ letter, count }))
+    .sort((a, b) => a.letter.localeCompare(b.letter));
 }
 
 function limitParam(value: string | null, fallback = 25, max = 100) {
@@ -151,6 +239,72 @@ async function handleArticleCoverage(env: Env, url: URL) {
   return json(await object.json());
 }
 
+async function handleCrosswalk(env: Env, url: URL) {
+  const direction = normalizeCrosswalkDirection(url.searchParams.get("direction"));
+  const indexDirection: IndexDirection = direction === "icd-to-cpt" ? "icd" : "procedure";
+  const rawCode = normalizeCode(url.searchParams.get("code"));
+  const normalizedCode = direction === "icd-to-cpt"
+    ? normalizeIcdCode(rawCode)
+    : normalizeProcedureCode(rawCode);
+  const limit = limitParam(url.searchParams.get("limit"), 24, 60);
+  const requestedLetter = normalizeLetter(url.searchParams.get("letter"));
+  const statusFilter = normalizeCoverageStatus(url.searchParams.get("status"));
+
+  if (!normalizedCode) return json({ message: "A code is required for crosswalk lookup" }, 400);
+
+  const key = `${CROSSWALK_PREFIX}/${indexDirection}/${shardPrefix(normalizedCode)}.json`;
+  const object = await env.MCD_RAW_BUCKET.get(key);
+  if (!object) return json({ message: "Medicare crosswalk index is temporarily unavailable." }, 404);
+
+  const shard = await object.json<CrosswalkShard>();
+  const entry = shard.entries?.[normalizedCode] || null;
+  const indexedResults = entry?.results || [];
+  const statusFilteredResults = statusFilter
+    ? indexedResults.filter((result) => result.status === statusFilter)
+    : indexedResults;
+  const alphabet = !statusFilter && entry?.alphabet?.length
+    ? entry.alphabet
+    : buildAlphabet(statusFilteredResults);
+  const availableLetters = alphabet.map((item) => item.letter);
+  const activeLetter = requestedLetter && availableLetters.includes(requestedLetter) ? requestedLetter : "";
+  const filteredResults = activeLetter
+    ? statusFilteredResults.filter((result) => resultLetter(result) === activeLetter)
+    : statusFilteredResults;
+  const results = filteredResults.slice(0, limit);
+  const totalIndexedCount = entry?.resultCount || indexedResults.length;
+  const fullAlphabetCount = activeLetter ? alphabet.find((item) => item.letter === activeLetter)?.count : null;
+  const filteredCount = statusFilter
+    ? filteredResults.length
+    : activeLetter
+      ? fullAlphabetCount || filteredResults.length
+      : totalIndexedCount;
+
+  return json({
+    source: "cloudflare-r2-crosswalk",
+    indexVersion: shard.version || null,
+    generatedAt: shard.generatedAt || null,
+    direction,
+    code: rawCode,
+    normalizedCode,
+    resultCount: entry?.resultCount || 0,
+    totalIndexedCount,
+    storedResultCount: indexedResults.length,
+    filteredCount,
+    returnedCount: results.length,
+    resultsCapped: totalIndexedCount > indexedResults.length,
+    coveredCount: entry?.coveredCount || 0,
+    noncoveredCount: entry?.noncoveredCount || 0,
+    mixedCount: entry?.mixedCount || 0,
+    statusFilter,
+    activeLetter,
+    availableLetters,
+    alphabet,
+    description: entry?.description || "",
+    results,
+    note: "Coverage-derived intelligence from CMS article same-group relationships. Verify final billing decisions against source coverage documents.",
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
@@ -165,6 +319,7 @@ export default {
       if (url.pathname === "/api/mcd/code") return handleCode(env, url);
       if (url.pathname === "/api/mcd/document") return handleDocument(env, url);
       if (url.pathname === "/api/mcd/article-coverage") return handleArticleCoverage(env, url);
+      if (url.pathname === "/api/mcd/crosswalk") return handleCrosswalk(env, url);
       return json({ message: "Not found" }, 404);
     } catch (error) {
       return json({ message: error instanceof Error ? error.message : "Unexpected MCD API error" }, 500);

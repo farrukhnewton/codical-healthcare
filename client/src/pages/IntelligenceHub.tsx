@@ -8,8 +8,7 @@ import {
   BookMarked, Stethoscope, Tag,
   ChevronDown, Building2, ShieldAlert,
   AlertTriangle, RefreshCw, CheckCircle2,
-  Loader2, Link2, DatabaseZap, ClipboardList,
-  ArrowLeftRight
+  Loader2, Link2, DatabaseZap, ClipboardList
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,7 +19,6 @@ import { supabase } from "@/lib/supabase";
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 const TABS = [
   { id: "guidelines",  label: "National Guidelines",   icon: BookOpen   },
-  { id: "crosswalk",   label: "ICD/CPT Crosswalk",      icon: ArrowLeftRight },
   { id: "medicare",    label: "Medicare (LCD/NCD)",     icon: Shield     },
   { id: "commercial",  label: "Commercial Carriers",    icon: Building2  },
   { id: "resources",   label: "Official Resources",     icon: Globe      },
@@ -77,7 +75,6 @@ const TYPE_COLORS: Record<string, { icon: string; bg: string }> = {
 
 type CoverageMode = "lcd" | "ncd" | "article";
 type CoveragePairStatus = "covered" | "noncovered" | "mixed" | "not_found";
-type CrosswalkDirection = "icd-to-cpt" | "cpt-to-icd";
 
 interface CoveragePairEvidence {
   icdCode: string;
@@ -110,49 +107,6 @@ interface CoverageBatchResult {
     evidence: number;
   };
   pairs: CoveragePairEvidence[];
-}
-
-interface CrosswalkEvidence {
-  displayId: string;
-  articleId: string;
-  articleVersion: string;
-  title: string;
-  groupNumber: string;
-  status: "covered" | "noncovered" | "mixed" | "unknown";
-  effectiveDate: string | null;
-  endDate: string | null;
-  relatedLcd: Array<Record<string, string>>;
-  relatedNcd: Array<Record<string, string>>;
-}
-
-interface CrosswalkResultItem {
-  code: string;
-  normalizedCode: string;
-  description: string;
-  status: "covered" | "noncovered" | "mixed" | "unknown";
-  evidenceCount: number;
-  coveredEvidenceCount: number;
-  noncoveredEvidenceCount: number;
-  articleCount: number;
-  confidenceScore: number;
-  evidence: CrosswalkEvidence[];
-}
-
-interface CrosswalkLookupResult {
-  source: string;
-  indexVersion: string | null;
-  generatedAt: string | null;
-  direction: CrosswalkDirection;
-  code: string;
-  normalizedCode: string;
-  resultCount: number;
-  returnedCount: number;
-  coveredCount: number;
-  noncoveredCount: number;
-  mixedCount: number;
-  description: string;
-  results: CrosswalkResultItem[];
-  note: string;
 }
 
 function getCoverageId(item: any) {
@@ -428,292 +382,6 @@ function CoveragePairChecker() {
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function crosswalkStatusStyle(status: CrosswalkResultItem["status"]) {
-  if (status === "covered") {
-    return {
-      label: "Covered evidence",
-      badge: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-      card: "border-emerald-500/25 bg-emerald-500/5",
-    };
-  }
-
-  if (status === "noncovered") {
-    return {
-      label: "Noncovered evidence",
-      badge: "bg-red-500/15 text-red-300 border-red-500/30",
-      card: "border-red-500/25 bg-red-500/5",
-    };
-  }
-
-  if (status === "mixed") {
-    return {
-      label: "Mixed evidence",
-      badge: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-      card: "border-amber-500/25 bg-amber-500/5",
-    };
-  }
-
-  return {
-    label: "Evidence found",
-    badge: "bg-slate-500/15 text-slate-300 border-slate-500/30",
-    card: "border-white/15 bg-white/[0.03]",
-  };
-}
-
-function CrosswalkWorkbench() {
-  const [direction, setDirection] = useState<CrosswalkDirection>("icd-to-cpt");
-  const [code, setCode] = useState("M17.0");
-  const [result, setResult] = useState<CrosswalkLookupResult | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const normalizedCode = code.trim().toUpperCase();
-  const canSearch = normalizedCode.length > 0 && !loading;
-  const targetLabel = direction === "icd-to-cpt" ? "CPT/HCPCS candidates" : "ICD-10 candidates";
-  const sourceLabel = direction === "icd-to-cpt" ? "ICD-10 diagnosis" : "CPT/HCPCS procedure";
-
-  const runLookup = async () => {
-    if (!canSearch) return;
-
-    setLoading(true);
-    setError("");
-    setResult(null);
-
-    try {
-      const params = new URLSearchParams({
-        direction,
-        code: normalizedCode,
-        limit: "30",
-      });
-      const response = await fetch(`/api/coverage/crosswalk?${params.toString()}`, {
-        credentials: "include",
-      });
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.message || "Crosswalk lookup failed");
-      }
-
-      setResult(data);
-    } catch (err: any) {
-      setError(err?.message || "Crosswalk lookup failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadExample = (nextDirection = direction) => {
-    setDirection(nextDirection);
-    setCode(nextDirection === "icd-to-cpt" ? "M17.0" : "29877");
-    setResult(null);
-    setError("");
-  };
-
-  const leadResult = result?.results?.[0];
-  const leadEvidence = leadResult?.evidence?.[0];
-
-  return (
-    <div className="space-y-5">
-      <div className="crosswalk-hero appGlass appCard border border-blue-500/20">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex gap-4">
-            <div className="w-11 h-11 rounded-xl bg-blue-500/15 flex items-center justify-center flex-shrink-0">
-              <ArrowLeftRight className="w-5 h-5 text-blue-300" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <Badge variant="outline" className="rounded-full bg-white/10 text-[10px] font-black">
-                  Cloudflare MCD
-                </Badge>
-                <Badge variant="outline" className="rounded-full bg-white/10 text-[10px] font-black">
-                  CMS article groups
-                </Badge>
-              </div>
-              <h3 className="font-black text-foreground text-lg">Bidirectional ICD/CPT coverage crosswalk</h3>
-              <p className="mt-1 text-sm text-muted-foreground leading-relaxed max-w-3xl">
-                Find procedure codes linked to an ICD-10 diagnosis, or diagnosis codes linked to a CPT/HCPCS code, using same article/version/group evidence from Codical's Medicare coverage index.
-              </p>
-            </div>
-          </div>
-
-          <div className="crosswalk-mode-switch">
-            {([
-              ["icd-to-cpt", "ICD to CPT/HCPCS"],
-              ["cpt-to-icd", "CPT/HCPCS to ICD"],
-            ] as const).map(([item, label]) => (
-              <button
-                key={item}
-                onClick={() => loadExample(item)}
-                className={direction === item ? "is-active" : ""}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="crosswalk-search-panel appGlass appCard border border-white/15">
-        <div className="grid gap-3 lg:grid-cols-[1fr_auto_auto] lg:items-end">
-          <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-              {sourceLabel}
-            </label>
-            <div className="relative mt-1">
-              <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={code}
-                onChange={(event) => setCode(event.target.value.toUpperCase())}
-                onKeyDown={(event) => event.key === "Enter" && runLookup()}
-                placeholder={direction === "icd-to-cpt" ? "M17.0" : "29877"}
-                className="pl-10 h-12 font-mono text-base"
-              />
-            </div>
-          </div>
-          <Button variant="outline" onClick={() => loadExample()} className="h-12 rounded-full gap-2">
-            <DatabaseZap size={15} />
-            Load example
-          </Button>
-          <Button onClick={runLookup} disabled={!canSearch} className="h-12 rounded-full gap-2">
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowLeftRight size={16} />}
-            Run crosswalk
-          </Button>
-        </div>
-
-        <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
-          This is coverage-derived intelligence, not an official CMS or AMA crosswalk. Use the linked source articles for final billing verification.
-        </p>
-      </div>
-
-      {error && (
-        <div className="p-4 rounded-xl border border-red-500/25 bg-red-500/10 text-sm text-red-200">
-          {error}
-        </div>
-      )}
-
-      {result && (
-        <div className="space-y-4">
-          <div className="crosswalk-summary-grid">
-            {[
-              { label: "Returned", value: result.returnedCount, tone: "text-blue-300" },
-              { label: "Covered", value: result.coveredCount, tone: "text-emerald-300" },
-              { label: "Noncovered", value: result.noncoveredCount, tone: "text-red-300" },
-              { label: "Mixed", value: result.mixedCount, tone: "text-amber-300" },
-            ].map((item) => (
-              <div key={item.label} className="crosswalk-stat appGlass appCard border border-white/15">
-                <div className={`text-2xl font-black ${item.tone}`}>{item.value}</div>
-                <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{item.label}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="crosswalk-workspace-grid">
-            <div className="crosswalk-workspace-main">
-              <div className="p-4 rounded-xl appGlass appCard border border-white/15 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{sourceLabel}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-lg font-black text-foreground">{result.code}</span>
-                    {result.description && <span className="text-sm text-muted-foreground">{result.description}</span>}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                  <span>{targetLabel}</span>
-                  {result.generatedAt && <span>Indexed {new Date(result.generatedAt).toLocaleDateString()}</span>}
-                </div>
-              </div>
-
-              {result.results.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground appGlass appCard rounded-xl border border-white/15">
-                  <Link2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No coverage-derived crosswalk evidence found for {result.code}.</p>
-                </div>
-              ) : (
-                <div className="grid gap-3">
-                  {result.results.map((item) => {
-                    const style = crosswalkStatusStyle(item.status);
-                    const topEvidence = item.evidence[0];
-
-                    return (
-                      <div key={item.normalizedCode} className={`crosswalk-result-card rounded-xl border p-4 ${style.card}`}>
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-mono text-base font-black text-foreground">{item.code}</span>
-                              <Badge variant="outline" className={`${style.badge} rounded-full`}>
-                                {style.label}
-                              </Badge>
-                              <Badge variant="outline" className="rounded-full bg-white/5 text-[10px]">
-                                {(item.confidenceScore * 100).toFixed(0)}% confidence
-                              </Badge>
-                            </div>
-                            {item.description && (
-                              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{item.description}</p>
-                            )}
-
-                            <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-muted-foreground">
-                              <span>{item.evidenceCount} evidence row{item.evidenceCount === 1 ? "" : "s"}</span>
-                              <span>{item.articleCount} source article{item.articleCount === 1 ? "" : "s"}</span>
-                              <span>{item.coveredEvidenceCount} covered</span>
-                              <span>{item.noncoveredEvidenceCount} noncovered</span>
-                            </div>
-
-                            {topEvidence && (
-                              <div className="crosswalk-evidence-snippet mt-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="font-mono text-xs font-black text-foreground">{topEvidence.displayId}</span>
-                                  <Badge variant="outline" className="rounded-full bg-white/5 text-[10px]">
-                                    Group {topEvidence.groupNumber}
-                                  </Badge>
-                                </div>
-                                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{topEvidence.title}</p>
-                              </div>
-                            )}
-                          </div>
-
-                          {topEvidence && (
-                            <Button asChild size="sm" variant="outline" className="gap-1.5 flex-shrink-0">
-                              <a href={getCoverageUrl({ document_display_id: topEvidence.displayId, article_version: topEvidence.articleVersion }, "article")} target="_blank" rel="noreferrer noopener">
-                                <ExternalLink size={12} /> CMS source
-                              </a>
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <aside className="crosswalk-evidence-panel appGlass appCard border border-white/15">
-              <div className="crosswalk-evidence-panel-head">
-                <span><Shield size={14} /> CMS MCD evidence</span>
-                <strong>{leadEvidence?.displayId || "No source selected"}</strong>
-                <p>{leadEvidence?.title || "Run a crosswalk lookup to preview the strongest source article and evidence group."}</p>
-              </div>
-
-              <div className="crosswalk-evidence-checklist">
-                <span className={leadEvidence ? "is-done" : ""}>Article group linked</span>
-                <span className={leadResult?.confidenceScore ? "is-done" : ""}>Confidence scored</span>
-                <span className={result.returnedCount > 0 ? "is-done" : ""}>Coverage candidates ranked</span>
-              </div>
-
-              {leadEvidence && (
-                <Button asChild className="w-full gap-1.5 rounded-full">
-                  <a href={getCoverageUrl({ document_display_id: leadEvidence.displayId, article_version: leadEvidence.articleVersion }, "article")} target="_blank" rel="noreferrer noopener">
-                    <ExternalLink size={13} /> Open CMS evidence
-                  </a>
-                </Button>
-              )}
-            </aside>
           </div>
         </div>
       )}
@@ -1160,7 +828,7 @@ function CommercialPayerList() {
             <div className="py-14 text-center appGlass appCard rounded-2xl border border-white/15">
               <ShieldAlert className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
               <p className="text-sm font-bold text-foreground">No indexed commercial policies yet.</p>
-              <p className="mt-1 text-xs text-muted-foreground">Use Sync on a carrier to ingest official policy sources into Supabase.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Use Sync to ingest official policy sources.</p>
             </div>
           ) : (
             policies.map((policy: any) => (
@@ -1204,7 +872,7 @@ function CommercialPayerList() {
       <div className="p-4 appGlass appCard border border-white/15 dark:border-white/10 flex gap-4">
         <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0" />
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Commercial policy sources remain carrier-controlled and can change without notice. Codical stores indexed source metadata and searchable excerpts with source links so teams can verify final coverage requirements against the official carrier document.
+          Carrier-controlled policies can change. Verify final requirements against the official source document.
         </p>
       </div>
     </div>
@@ -1264,17 +932,19 @@ export function IntelligenceHub() {
   return (
     <div className="coverage-hub-page tool-page">
       {/* Sticky header with tabs */}
-      <div className="tool-panel coverage-hero-panel">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-sky-700 flex items-center justify-center shadow-lg shadow-black/10">
-            <BookOpen size={20} color="white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-foreground">Coverage & Guidelines</h1>
-            <p className="text-xs text-muted-foreground">Live Medicare LCD/NCD/article search, Supabase payer policies, and coding guidelines</p>
+      <div className="tool-panel tool-page-header coverage-hero-panel">
+        <div className="coverage-hero-topline">
+          <div className="coverage-hero-title-row">
+            <div className="coverage-hero-icon">
+              <BookOpen size={20} color="white" />
+            </div>
+            <div>
+              <h1>Coverage & Guidelines</h1>
+              <p>Medicare coverage, payer policies, and coding guidelines.</p>
+            </div>
           </div>
           {statsData && (
-            <div className="ml-auto hidden md:flex items-center gap-4 text-[10px] text-muted-foreground/70">
+            <div className="search-header-meta">
               <span className="font-bold">{statsData.totalGuidelines} guidelines</span>
               <span>{statsData.icdChapters} ICD chapters</span>
               <span>{statsData.cptGuidelines} CPT</span>
@@ -1396,7 +1066,6 @@ export function IntelligenceHub() {
               </div>
             )}
 
-            {activeTab === "crosswalk" && <CrosswalkWorkbench />}
             {activeTab === "medicare"   && <LiveMedicarePolicyList />}
             {activeTab === "commercial" && <CommercialPayerList />}
 

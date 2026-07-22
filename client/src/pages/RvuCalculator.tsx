@@ -114,7 +114,7 @@ export function RvuCalculator() {
       <section className="tool-panel tool-page-header">
         <div>
           <h1>RVU Calculator</h1>
-          <p>Calculate Medicare physician fee schedule payment from CPT RVU components.</p>
+          <p>Medicare fee schedule payment estimate.</p>
         </div>
         <div className="search-header-meta">
           <span>CY 2026</span>

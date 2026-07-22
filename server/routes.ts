@@ -1348,6 +1348,8 @@ export async function registerRoutes(
         direction: req.query.direction,
         code: req.query.code,
         limit: req.query.limit,
+        letter: req.query.letter,
+        status: req.query.status,
       });
 
       if (result.source === "unavailable") {

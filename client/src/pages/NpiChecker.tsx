@@ -136,7 +136,7 @@ export function NpiChecker() {
       <section className="tool-panel tool-page-header">
         <div>
           <h1>NPI Lookup</h1>
-          <p>Search the NPPES registry by provider number, individual, or organization.</p>
+          <p>NPPES provider registry lookup.</p>
         </div>
         <div className="search-header-meta">
           <span>Registry search</span>
