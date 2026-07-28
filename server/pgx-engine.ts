@@ -45,7 +45,7 @@ export type PgxCptCode = {
   description: string;
   tier: "pla" | "panel" | "tier1" | "tier2" | "unlisted";
   minGenes?: number;
-  rate2026: number;
+  referenceRate: number | null;
 };
 
 export type PgxGeneDrugPair = {
@@ -81,7 +81,7 @@ export type PgxAnalysisResult = {
   };
   icd10: Array<{
     code: string;
-    status: "covered" | "review";
+    status: "supported" | "manual_review";
     groupNumber?: number;
     rationale: string;
   }>;
@@ -104,24 +104,24 @@ export const PGX_CPT_CODES: PgxCptCode[] = [
     description: "Drug metabolism genomic sequence panel, >=6 genes, includes CYP2C19, CYP2D6 and copy-number analysis",
     tier: "panel",
     minGenes: 6,
-    rate2026: 917.08,
+    referenceRate: null,
   },
-  { code: "81225", description: "CYP2C19 gene analysis", tier: "tier1", rate2026: 150 },
-  { code: "81226", description: "CYP2D6 gene analysis", tier: "tier1", rate2026: 150 },
-  { code: "81227", description: "CYP2C9 gene analysis", tier: "tier1", rate2026: 150 },
-  { code: "81231", description: "CYP3A5 gene analysis", tier: "tier1", rate2026: 150 },
-  { code: "81232", description: "DPYD gene analysis", tier: "tier1", rate2026: 150 },
-  { code: "81241", description: "Factor V Leiden analysis", tier: "tier1", rate2026: 100 },
-  { code: "81247", description: "G6PD gene analysis", tier: "tier1", rate2026: 100 },
-  { code: "81283", description: "IFNL3 gene analysis", tier: "tier1", rate2026: 100 },
-  { code: "81306", description: "NUDT15 gene analysis", tier: "tier1", rate2026: 100 },
-  { code: "81328", description: "SLCO1B1 gene analysis", tier: "tier1", rate2026: 100 },
-  { code: "81335", description: "TPMT gene analysis", tier: "tier1", rate2026: 100 },
-  { code: "81350", description: "UGT1A1 gene analysis", tier: "tier1", rate2026: 100 },
-  { code: "81355", description: "VKORC1 gene analysis", tier: "tier1", rate2026: 100 },
-  { code: "81401", description: "Molecular pathology procedure, Level 2", tier: "tier2", rate2026: 80 },
-  { code: "81406", description: "Molecular pathology procedure, Level 7", tier: "tier2", rate2026: 150 },
-  { code: "81479", description: "Unlisted molecular pathology procedure", tier: "unlisted", rate2026: 0 },
+  { code: "81225", description: "CYP2C19 gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81226", description: "CYP2D6 gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81227", description: "CYP2C9 gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81231", description: "CYP3A5 gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81232", description: "DPYD gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81241", description: "Factor V Leiden analysis", tier: "tier1", referenceRate: null },
+  { code: "81247", description: "G6PD gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81283", description: "IFNL3 gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81306", description: "NUDT15 gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81328", description: "SLCO1B1 gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81335", description: "TPMT gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81350", description: "UGT1A1 gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81355", description: "VKORC1 gene analysis", tier: "tier1", referenceRate: null },
+  { code: "81401", description: "Molecular pathology procedure, Level 2", tier: "tier2", referenceRate: null },
+  { code: "81406", description: "Molecular pathology procedure, Level 7", tier: "tier2", referenceRate: null },
+  { code: "81479", description: "Unlisted molecular pathology procedure", tier: "unlisted", referenceRate: null },
 ];
 
 export const PGX_TIER_1_MAP: Record<string, string> = {
@@ -291,10 +291,7 @@ export function extractPgxDataFromText(rawText: string): PgxExtractedData {
   });
 
   const diagnosisCodes = unique(Array.from(text.matchAll(/\b[A-TV-Z][0-9][0-9A-Z](?:\.[0-9A-Z]{1,4})?\b/gi)).map((match) => match[0].toUpperCase()));
-  if (diagnosisCodes.length === 0) {
-    if (/depress|ssri|snri|anxiety/i.test(text)) diagnosisCodes.push("F33.2");
-    diagnosisCodes.push("Z13.79");
-  }
+  if (diagnosisCodes.length === 0) warnings.push("No source-documented ICD-10-CM code was detected; diagnosis selection requires manual, source-backed review.");
 
   const hasDupDel = /\b(?:duplication|deletion|copy number|copy-number|dup\/del|dup|del|xN|x\d+)\b/i.test(text);
   if (!hasDupDel && genes.length >= 6) warnings.push("Copy-number or dup/del language was not detected; verify before using 81418.");
@@ -446,11 +443,11 @@ export function analyzePgxCoding(input: {
     const validation = cptSelection.codes.map((cpt) => validateIcd10ForCpt(cpt.code, code)).find((result) => result.isValid);
     return {
       code,
-      status: groupMatch ? "covered" as const : "review" as const,
+      status: groupMatch ? "supported" as const : "manual_review" as const,
       groupNumber: validation?.groupNumber,
       rationale: groupMatch
-        ? "CPT/ICD pair appears in the local A59915 starter group seed."
-        : "No local starter group match. Verify against current CMS MCD article and payer policy.",
+        ? "The CPT/ICD relationship is present in a verified, versioned source group."
+        : "No verified jurisdiction/date-qualified source relationship is active; manual review is required.",
     };
   });
 
@@ -466,7 +463,7 @@ export function analyzePgxCoding(input: {
     {
       id: "golden-triangle",
       label: "Diagnosis + medication + gene",
-      passed: medicalNecessity.isMet && icd10.some((row) => row.status === "covered"),
+      passed: medicalNecessity.isMet && icd10.some((row) => row.status === "supported"),
       message: medicalNecessity.isMet
         ? "Actionable gene-drug evidence found with diagnosis context."
         : "Add active medication context tied to a tested gene.",
@@ -523,13 +520,16 @@ export function analyzePgxCoding(input: {
 }
 
 export function buildPgxClaimPreview(analysis: PgxAnalysisResult) {
-  const coveredIcd = analysis.icd10.filter((row) => row.status === "covered").map((row) => row.code);
-  const reviewIcd = analysis.icd10.filter((row) => row.status !== "covered").map((row) => row.code);
+  const supportedIcd = analysis.icd10.filter((row) => row.status === "supported").map((row) => row.code);
+  const reviewIcd = analysis.icd10.filter((row) => row.status !== "supported").map((row) => row.code);
 
   return {
     claimType: "CMS-1500",
-    articleId: "A59915",
-    diagnosisPointers: coveredIcd.length > 0 ? coveredIcd : analysis.icd10.map((row) => row.code),
+    previewOnly: true,
+    submissionEnabled: false,
+    articleId: null,
+    coverageDecision: "jurisdiction_not_configured",
+    diagnosisPointers: supportedIcd,
     reviewDiagnosisCodes: reviewIcd,
     serviceLines: analysis.cptSelection.codes.map((code, index) => ({
       line: index + 1,
@@ -537,7 +537,7 @@ export function buildPgxClaimPreview(analysis: PgxAnalysisResult) {
       units: code.units,
       diagnosisPointer: "A",
       charge: null,
-      referenceRate: code.rate2026,
+      referenceRate: code.referenceRate,
       rateDisclaimer: "Reference only; look up the applicable date-of-service fee schedule and payer contract.",
       modifiers: [],
       narrative: analysis.narrative,

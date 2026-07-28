@@ -1,4 +1,5 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
 
 const ALLOWED_STORAGE_ENVIRONMENTS = new Set(["development", "staging", "production"]);
@@ -53,10 +54,12 @@ export function getPgxBucketName() {
   return process.env.R2_BUCKET_PGX || null;
 }
 
-function publicObjectUrl(bucket: string, key: string) {
-  const base = process.env.R2_PUBLIC_BASE_URL?.replace(/\/+$/, "");
-  if (base) return `${base}/${key}`;
-  return `r2://${bucket}/${key}`;
+export function isPgxObjectKeyOwnedBy(key: string, userId: string | number) {
+  const environment = getPgxStorageEnvironment();
+  const tenantId = safePathSegment(process.env.PGX_DEFAULT_TENANT_ID || "");
+  const safeUserId = safePathSegment(userId);
+  if (!environment || !tenantId || !safeUserId || key.includes("..") || key.includes("\\")) return false;
+  return key.startsWith(`pgx/${environment}/${tenantId}/${safeUserId}/`);
 }
 
 export async function uploadPgxObject(
@@ -80,17 +83,20 @@ export async function uploadPgxObject(
     }),
   );
 
+  const url = await getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 300 });
+
   return {
     bucket,
     key,
-    url: publicObjectUrl(bucket, key),
+    url,
+    expiresInSeconds: 300,
   };
 }
 
-export async function getPgxObject(key: string) {
+export async function getPgxObject(key: string, userId: string | number) {
   const client = getR2Client();
   const bucket = getPgxBucketName();
-  if (!client || !bucket) return null;
+  if (!client || !bucket || !isPgxObjectKeyOwnedBy(key, userId)) return null;
 
   const response = await client.send(
     new GetObjectCommand({
@@ -100,4 +106,12 @@ export async function getPgxObject(key: string) {
   );
 
   return response.Body || null;
+}
+
+export async function deletePgxObject(key: string, userId: string | number) {
+  const client = getR2Client();
+  const bucket = getPgxBucketName();
+  if (!client || !bucket || !isPgxObjectKeyOwnedBy(key, userId)) return false;
+  await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  return true;
 }

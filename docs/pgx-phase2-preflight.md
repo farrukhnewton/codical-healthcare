@@ -116,3 +116,15 @@ The repository is linked to the Vercel project `codical-healthcare`, but no depl
 - browser session authentication for end-to-end QA is not available yet.
 
 These conditions block the corresponding remote or production operation. They do not block local compilation, fixture tests, disposable migration tests, or documentation.
+
+## Authorization follow-up and verified state
+
+The user selected all source MACs and all US service areas and authorized Cloudflare/Supabase inspection. These are represented by `PGX_TARGET_MAC=ALL_SOURCE_MACS` and `PGX_TARGET_STATES=ALL_US_SERVICE_AREAS` in `.env.example`; each coverage review must still choose one applicable service jurisdiction.
+
+Read-only Supabase verification succeeded. `cpt_codes` contains 9,657 rows. The five Phase 1 PGx tables exist, contain the expected reference seed, and have RLS enabled. No Phase 2 remote migration was applied.
+
+R2 S3 verification can read the configured private `codical-mcd-raw` and `codical-user-files` buckets, but the credential cannot enumerate buckets. Wrangler is not authenticated and requires `CLOUDFLARE_API_TOKEN` or interactive login. Therefore bucket privacy/lifecycle configuration and D1 cannot yet be independently inspected or changed.
+
+Vercel is authenticated and linked to project `codical-healthcare`. The official-source research supports an isolated persistent staging database plus Vercel preview/staging deployment before production. Production remains ambiguous until a final in-session confirmation occurs after staging gates.
+
+Phase 2 local migration `0006_pgx_phase2_evidence_workflow.sql` applies idempotently in PostgreSQL 16 and yields 27 PGx tables, RLS on all 27, and two immutable-history triggers. The authoritative CMS dry-run processed all MAC/jurisdiction source rows with zero quarantine. See `pgx-phase2-completion-report.md` for remaining gates.

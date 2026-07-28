@@ -38,7 +38,7 @@ type PgxAnalysis = {
     codes: Array<{ code: string; description: string; units: number; gene?: string }>;
     notes: string[];
   };
-  icd10: Array<{ code: string; status: "covered" | "review"; groupNumber?: number; rationale: string }>;
+  icd10: Array<{ code: string; status: "supported" | "manual_review"; groupNumber?: number; rationale: string }>;
   medicalNecessity: {
     isMet: boolean;
     reason: string;

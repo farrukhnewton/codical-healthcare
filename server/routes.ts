@@ -43,6 +43,7 @@ import {
   type PgxAnalysisResult,
 } from "./pgx-engine";
 import { createPgxObjectKey, isPgxR2Configured, uploadPgxObject } from "./pgx-r2";
+import { PgxIntakeError, validatePgxIntakeFile } from "./pgx-phase2";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -261,38 +262,46 @@ function sanitizePgxFileName(value: string) {
 
 async function extractTextFromPgxFile(file: UploadedPgxFile) {
   const fileName = sanitizePgxFileName(file.originalname || "pgx-document");
-  const mimeType = file.mimetype || "";
-  const lowerName = fileName.toLowerCase();
+  let validation;
+  try {
+    validation = validatePgxIntakeFile({
+      name: fileName,
+      mimeType: file.mimetype || "application/octet-stream",
+      buffer: file.buffer,
+    });
+  } catch (error) {
+    if (error instanceof PgxIntakeError) throw new RouteError(400, error.message);
+    throw error;
+  }
 
-  if (mimeType === "text/plain" || lowerName.endsWith(".txt")) {
+  if (validation.kind === "txt") {
     return {
       fileName,
-      mimeType: mimeType || "text/plain",
+      mimeType: validation.canonicalMimeType,
       text: file.buffer.toString("utf-8").replace(/\u0000/g, "").trim(),
       warning: "",
+      validation,
     };
   }
 
-  if (mimeType === "application/pdf" || lowerName.endsWith(".pdf")) {
+  if (validation.kind === "pdf") {
     const parsed = await pdfParse(file.buffer);
     return {
       fileName,
-      mimeType: mimeType || "application/pdf",
+      mimeType: validation.canonicalMimeType,
       text: (parsed.text || "").replace(/\u0000/g, "").trim(),
       warning: "",
+      validation,
     };
   }
 
-  if (/^image\//i.test(mimeType) || /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i.test(lowerName)) {
-    return {
-      fileName,
-      mimeType,
-      text: "",
-      warning: "Images are not OCR-extracted in Phase 1. Upload a readable PDF/TXT or paste the lab text.",
-    };
-  }
-
-  throw new RouteError(400, "Unsupported PGx document type. Use PDF or TXT for extraction.");
+  return {
+    fileName,
+    mimeType: validation.canonicalMimeType,
+    text: "",
+    warning: validation.warnings.join(" "),
+    validation,
+  };
 }
 
 function parseManualDrugNames(value: unknown) {
@@ -860,8 +869,9 @@ export async function registerRoutes(
 
   // ============ PGx SPECIALTY CODING ROUTES ============
 
-  app.get("/api/pgx/knowledge/genes", async (_req, res) => {
+  app.get("/api/pgx/knowledge/genes", async (req, res) => {
     try {
+      await getAuthenticatedChatUser(req);
       const rows = await db.select().from(pgxGenes).orderBy(asc(pgxGenes.symbol));
       res.json({
         genes: rows.length > 0
@@ -882,6 +892,7 @@ export async function registerRoutes(
 
   app.get("/api/pgx/knowledge/drugs", async (req, res) => {
     try {
+      await getAuthenticatedChatUser(req);
       const q = String(req.query.q || "").trim().toLowerCase();
       const rows = await db.select().from(pgxGeneDrugPairs).orderBy(asc(pgxGeneDrugPairs.drug));
       const sourceRows = rows.length > 0 ? rows : PGX_GENE_DRUG_PAIRS.map((pair) => ({
@@ -908,6 +919,7 @@ export async function registerRoutes(
 
   app.get("/api/pgx/knowledge/gene-drug/:gene/:drug", async (req, res) => {
     try {
+      await getAuthenticatedChatUser(req);
       const gene = req.params.gene.toUpperCase();
       const drug = req.params.drug.toLowerCase();
       const row = await db.query.pgxGeneDrugPairs.findFirst({
@@ -923,6 +935,7 @@ export async function registerRoutes(
 
   app.get("/api/pgx/knowledge/cms-groups", async (req, res) => {
     try {
+      await getAuthenticatedChatUser(req);
       const cpt = String(req.query.cpt || "").trim().toUpperCase();
       const rows = await db.select().from(pgxCmsGroups).orderBy(asc(pgxCmsGroups.groupNumber), asc(pgxCmsGroups.groupType), asc(pgxCmsGroups.code));
       const sourceRows = rows.length > 0 ? rows : PGX_CMS_GROUPS.map((group) => ({
