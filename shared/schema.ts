@@ -94,6 +94,78 @@ export const savedAiFiles = pgTable("saved_ai_files", {
   expiresAtIdx: index("saved_ai_files_expires_at_idx").on(table.expiresAt),
 }));
 
+export const pgxCmsArticles = pgTable("pgx_cms_articles", {
+  id: text("id").primaryKey(),
+  articleId: text("article_id").notNull().unique(),
+  title: text("title").notNull(),
+  lcdId: text("lcd_id"),
+  version: text("version"),
+  sourceUrl: text("source_url"),
+  lastSyncedAt: timestamp("last_synced_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const pgxCmsGroups = pgTable("pgx_cms_groups", {
+  id: text("id").primaryKey(),
+  articleId: text("article_id").notNull().references(() => pgxCmsArticles.articleId, { onUpdate: "cascade", onDelete: "restrict" }),
+  groupNumber: integer("group_number").notNull(),
+  groupType: text("group_type").notNull(),
+  code: text("code").notNull(),
+  description: text("description"),
+  sourceUrl: text("source_url"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  articleCodeIdx: index("pgx_cms_groups_article_code_idx").on(table.articleId, table.code),
+  articleGroupIdx: index("pgx_cms_groups_article_group_idx").on(table.articleId, table.groupNumber, table.groupType),
+  uniqueRowIdx: uniqueIndex("pgx_cms_groups_unique_row_idx").on(table.articleId, table.groupNumber, table.groupType, table.code),
+}));
+
+export const pgxGenes = pgTable("pgx_genes", {
+  id: text("id").primaryKey(),
+  symbol: text("symbol").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  defaultCpt: text("default_cpt"),
+  phenotypeNotes: text("phenotype_notes"),
+  sourceUrl: text("source_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const pgxGeneDrugPairs = pgTable("pgx_gene_drug_pairs", {
+  id: text("id").primaryKey(),
+  gene: text("gene").notNull(),
+  drug: text("drug").notNull(),
+  drugClass: text("drug_class"),
+  cpicLevel: text("cpic_level").notNull(),
+  cptCodes: jsonb("cpt_codes").$type<string[]>().notNull().default([]),
+  tableSource: text("table_source").notNull(),
+  recommendation: text("recommendation").notNull(),
+  sourceUrl: text("source_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  geneDrugIdx: uniqueIndex("pgx_gene_drug_pairs_gene_drug_idx").on(table.gene, table.drug),
+}));
+
+export const pgxAnalyses = pgTable("pgx_analyses", {
+  id: text("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  patientName: text("patient_name"),
+  labName: text("lab_name"),
+  primaryIcd10: text("primary_icd10"),
+  drugNames: jsonb("drug_names").$type<string[]>().notNull().default([]),
+  extractedData: jsonb("extracted_data").$type<Record<string, any>>().notNull().default({}),
+  analysisResult: jsonb("analysis_result").$type<Record<string, any>>().notNull().default({}),
+  claimJson: jsonb("claim_json").$type<Record<string, any>>().notNull().default({}),
+  claimNarrative: text("claim_narrative"),
+  r2Objects: jsonb("r2_objects").$type<Array<{ key: string; url: string; contentType?: string }>>().notNull().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userCreatedIdx: index("pgx_analyses_user_created_idx").on(table.userId, table.createdAt),
+}));
+
 export const assignments = pgTable("assignments", {
   id: serial("id").primaryKey(),
   encounterId: integer("encounter_id").notNull(),
@@ -310,6 +382,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   reactions: many(messageReactions),
   assignments: many(assignments),
   savedAiFiles: many(savedAiFiles),
+  pgxAnalyses: many(pgxAnalyses),
 }));
 
 export const patientsRelations = relations(patients, ({ many }) => ({
@@ -374,6 +447,10 @@ export const savedAiFilesRelations = relations(savedAiFiles, ({ one }) => ({
   user: one(users, { fields: [savedAiFiles.userId], references: [users.id] }),
 }));
 
+export const pgxAnalysesRelations = relations(pgxAnalyses, ({ one }) => ({
+  user: one(users, { fields: [pgxAnalyses.userId], references: [users.id] }),
+}));
+
 // ============ ZOD SCHEMAS ============
 
 export const insertUserSchema = createInsertSchema(users);
@@ -406,6 +483,11 @@ export type Encounter = typeof encounters.$inferSelect;
 export type ClinicalNote = typeof clinicalNotes.$inferSelect;
 export type VoiceTranscription = typeof voiceTranscriptions.$inferSelect;
 export type SavedAiFile = typeof savedAiFiles.$inferSelect;
+export type PgxCmsArticle = typeof pgxCmsArticles.$inferSelect;
+export type PgxCmsGroup = typeof pgxCmsGroups.$inferSelect;
+export type PgxGene = typeof pgxGenes.$inferSelect;
+export type PgxGeneDrugPair = typeof pgxGeneDrugPairs.$inferSelect;
+export type PgxAnalysis = typeof pgxAnalyses.$inferSelect;
 export type Assignment = typeof assignments.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type CommercialPayer = typeof commercialPayers.$inferSelect;

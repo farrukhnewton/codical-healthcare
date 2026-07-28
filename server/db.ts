@@ -1,9 +1,10 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "@shared/schema";
+import { PGX_CMS_GROUPS, PGX_CPT_CODES, PGX_GENE_DRUG_PAIRS, PGX_GENES, PGX_TIER_1_MAP } from "./pgx-engine";
 
 const { Pool } = pg;
-const BOOTSTRAP_SCHEMA_VERSION = "2026-05-07-saved-ai-files";
+const BOOTSTRAP_SCHEMA_VERSION = "2026-07-22-pgx-phase1";
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -484,6 +485,178 @@ async function ensurePerformanceIndexes() {
   }
 }
 
+async function ensurePgxSchema() {
+  await pool.query(`
+    create table if not exists "pgx_cms_articles" (
+      "id" text primary key not null,
+      "article_id" text not null unique,
+      "title" text not null,
+      "lcd_id" text,
+      "version" text,
+      "source_url" text,
+      "last_synced_at" timestamp,
+      "created_at" timestamp default now(),
+      "updated_at" timestamp default now()
+    );
+
+    create table if not exists "pgx_cms_groups" (
+      "id" text primary key not null,
+      "article_id" text not null references "pgx_cms_articles" ("article_id") on update cascade on delete restrict,
+      "group_number" integer not null,
+      "group_type" text not null,
+      "code" text not null,
+      "description" text,
+      "source_url" text,
+      "updated_at" timestamp default now()
+    );
+
+    create table if not exists "pgx_genes" (
+      "id" text primary key not null,
+      "symbol" text not null unique,
+      "display_name" text not null,
+      "default_cpt" text,
+      "phenotype_notes" text,
+      "source_url" text,
+      "created_at" timestamp default now(),
+      "updated_at" timestamp default now()
+    );
+
+    create table if not exists "pgx_gene_drug_pairs" (
+      "id" text primary key not null,
+      "gene" text not null,
+      "drug" text not null,
+      "drug_class" text,
+      "cpic_level" text not null,
+      "cpt_codes" jsonb default '[]'::jsonb not null,
+      "table_source" text not null,
+      "recommendation" text not null,
+      "source_url" text,
+      "created_at" timestamp default now(),
+      "updated_at" timestamp default now()
+    );
+
+    create table if not exists "pgx_analyses" (
+      "id" text primary key not null,
+      "user_id" integer not null references "users" ("id") on delete cascade,
+      "patient_name" text,
+      "lab_name" text,
+      "primary_icd10" text,
+      "drug_names" jsonb default '[]'::jsonb not null,
+      "extracted_data" jsonb default '{}'::jsonb not null,
+      "analysis_result" jsonb default '{}'::jsonb not null,
+      "claim_json" jsonb default '{}'::jsonb not null,
+      "claim_narrative" text,
+      "r2_objects" jsonb default '[]'::jsonb not null,
+      "created_at" timestamp default now(),
+      "updated_at" timestamp default now()
+    );
+
+    create index if not exists "pgx_cms_groups_article_code_idx" on "pgx_cms_groups" ("article_id", "code");
+    create index if not exists "pgx_cms_groups_article_group_idx" on "pgx_cms_groups" ("article_id", "group_number", "group_type");
+    create unique index if not exists "pgx_cms_groups_unique_row_idx" on "pgx_cms_groups" ("article_id", "group_number", "group_type", "code");
+    create unique index if not exists "pgx_gene_drug_pairs_gene_drug_idx" on "pgx_gene_drug_pairs" ("gene", "drug");
+    create index if not exists "pgx_analyses_user_created_idx" on "pgx_analyses" ("user_id", "created_at" desc);
+  `);
+}
+
+export async function seedPgxReferenceData() {
+  await pool.query(
+    `insert into "pgx_cms_articles" ("id", "article_id", "title", "lcd_id", "version", "source_url", "last_synced_at", "updated_at")
+     values ($1, $2, $3, $4, $5, $6, now(), now())
+     on conflict ("id") do update
+     set "title" = excluded."title",
+         "lcd_id" = excluded."lcd_id",
+         "version" = excluded."version",
+         "source_url" = excluded."source_url",
+         "last_synced_at" = excluded."last_synced_at",
+         "updated_at" = now()`,
+    [
+      "a59915",
+      "A59915",
+      "Billing and Coding: Pharmacogenomics Testing",
+      "L39995",
+      "starter-local",
+      "https://www.cms.gov/medicare-coverage-database/",
+    ],
+  );
+
+  for (const group of PGX_CMS_GROUPS) {
+    const id = `${group.articleId.toLowerCase()}-${group.groupNumber}-${group.groupType}-${group.code.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+    await pool.query(
+      `insert into "pgx_cms_groups" ("id", "article_id", "group_number", "group_type", "code", "description", "source_url", "updated_at")
+       values ($1, $2, $3, $4, $5, $6, $7, now())
+       on conflict ("id") do update
+       set "description" = excluded."description",
+           "source_url" = excluded."source_url",
+           "updated_at" = now()`,
+      [id, group.articleId, group.groupNumber, group.groupType, group.code, group.description || null, "https://www.cms.gov/medicare-coverage-database/"],
+    );
+  }
+
+  for (const gene of PGX_GENES) {
+    await pool.query(
+      `insert into "pgx_genes" ("id", "symbol", "display_name", "default_cpt", "phenotype_notes", "source_url", "updated_at")
+       values ($1, $2, $3, $4, $5, $6, now())
+       on conflict ("id") do update
+       set "display_name" = excluded."display_name",
+           "default_cpt" = excluded."default_cpt",
+           "phenotype_notes" = excluded."phenotype_notes",
+           "source_url" = excluded."source_url",
+           "updated_at" = now()`,
+      [
+        gene.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        gene,
+        gene,
+        PGX_TIER_1_MAP[gene] || null,
+        "Pharmacogenomics starter gene. Verify current CPIC/FDA and payer guidance before final billing.",
+        "https://cpicpgx.org/guidelines/",
+      ],
+    );
+  }
+
+  for (const pair of PGX_GENE_DRUG_PAIRS) {
+    const id = `${pair.gene.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${pair.drug.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+    await pool.query(
+      `insert into "pgx_gene_drug_pairs"
+       ("id", "gene", "drug", "drug_class", "cpic_level", "cpt_codes", "table_source", "recommendation", "source_url", "updated_at")
+       values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, now())
+       on conflict ("id") do update
+       set "drug_class" = excluded."drug_class",
+           "cpic_level" = excluded."cpic_level",
+           "cpt_codes" = excluded."cpt_codes",
+           "table_source" = excluded."table_source",
+           "recommendation" = excluded."recommendation",
+           "source_url" = excluded."source_url",
+           "updated_at" = now()`,
+      [
+        id,
+        pair.gene,
+        pair.drug,
+        pair.drugClass,
+        pair.cpicLevel,
+        JSON.stringify(pair.cptCodes),
+        pair.tableSource,
+        pair.recommendation,
+        pair.sourceUrl,
+      ],
+    );
+  }
+
+  for (const item of PGX_CPT_CODES) {
+    await pool.query(
+      `insert into "cpt_codes" ("id", "code", "description", "category", "type")
+       select $1, $2, $3, $4, '2026'
+       where not exists (
+         select 1 from "cpt_codes" where "code" = $2
+       )
+       and not exists (
+         select 1 from "cpt_codes" where "id" = $1
+       )`,
+      [Number(item.code), item.code, item.description, "Molecular Pathology / Pharmacogenomics"],
+    );
+  }
+}
+
 export async function seedReferenceData() {
   await pool.query(
     `insert into "users" ("username", "role")
@@ -588,12 +761,15 @@ export async function ensureDatabaseSchema() {
   await ensureBootstrapStateTable();
 
   if (await hasCurrentBootstrapVersion()) {
+    await ensurePgxSchema();
+    await seedPgxReferenceData();
     return;
   }
 
   await createBaseTables();
   await ensureSerialDefaults();
   await ensurePerformanceIndexes();
+  await ensurePgxSchema();
 
   await pool.query(`
     create table if not exists "voice_transcriptions" (
@@ -691,5 +867,6 @@ export async function ensureDatabaseSchema() {
   `);
 
   await seedReferenceData();
+  await seedPgxReferenceData();
   await markCurrentBootstrapVersion();
 }

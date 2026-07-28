@@ -11,6 +11,7 @@ import { eq, and, desc, asc, inArray, ne, or, ilike, sql } from "drizzle-orm";
 import multer from "multer";
 import path from "node:path";
 import fs from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import pdfParse from "pdf-parse";
 import PDFDocument from "pdfkit";
 import {
@@ -30,7 +31,18 @@ import {
 import { getMcdCrosswalk } from "./mcd-crosswalk-service";
 import { discoverPayerPolicies } from "./services/payer-policy-ingestion";
 import { DrChronoService } from "./services/emr/drchrono";
-import { patients, encounters, assignments, clinicalNotes, auditLogs, commercialPayers, payerPolicies } from "@shared/schema";
+import { patients, encounters, assignments, clinicalNotes, auditLogs, commercialPayers, payerPolicies, pgxAnalyses, pgxCmsGroups, pgxGenes, pgxGeneDrugPairs } from "@shared/schema";
+import {
+  PGX_CMS_GROUPS,
+  PGX_GENE_DRUG_PAIRS,
+  PGX_GENES,
+  PGX_TIER_1_MAP,
+  analyzePgxCoding,
+  buildPgxClaimPreview,
+  extractPgxDataFromText,
+  type PgxAnalysisResult,
+} from "./pgx-engine";
+import { createPgxObjectKey, isPgxR2Configured, uploadPgxObject } from "./pgx-r2";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -230,6 +242,98 @@ async function getAuthenticatedChatUser(req: Request) {
   }
 
   return appUser;
+}
+
+type UploadedPgxFile = {
+  originalname?: string;
+  mimetype?: string;
+  buffer: Buffer;
+  size?: number;
+};
+
+function sanitizePgxFileName(value: string) {
+  return value
+    .replace(/[\u0000-\u001f<>:"/\\|?*]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120) || "pgx-document";
+}
+
+async function extractTextFromPgxFile(file: UploadedPgxFile) {
+  const fileName = sanitizePgxFileName(file.originalname || "pgx-document");
+  const mimeType = file.mimetype || "";
+  const lowerName = fileName.toLowerCase();
+
+  if (mimeType === "text/plain" || lowerName.endsWith(".txt")) {
+    return {
+      fileName,
+      mimeType: mimeType || "text/plain",
+      text: file.buffer.toString("utf-8").replace(/\u0000/g, "").trim(),
+      warning: "",
+    };
+  }
+
+  if (mimeType === "application/pdf" || lowerName.endsWith(".pdf")) {
+    const parsed = await pdfParse(file.buffer);
+    return {
+      fileName,
+      mimeType: mimeType || "application/pdf",
+      text: (parsed.text || "").replace(/\u0000/g, "").trim(),
+      warning: "",
+    };
+  }
+
+  if (/^image\//i.test(mimeType) || /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i.test(lowerName)) {
+    return {
+      fileName,
+      mimeType,
+      text: "",
+      warning: "Images are not OCR-extracted in Phase 1. Upload a readable PDF/TXT or paste the lab text.",
+    };
+  }
+
+  throw new RouteError(400, "Unsupported PGx document type. Use PDF or TXT for extraction.");
+}
+
+function parseManualDrugNames(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || "").trim().toLowerCase()).filter(Boolean);
+  }
+
+  return String(value || "")
+    .split(/[,;\n]+/)
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function generatePgxPdfBuffer(analysis: PgxAnalysisResult, claimJson: Record<string, any>) {
+  return new Promise<Buffer>((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 42 });
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    doc.fontSize(18).text("Codical Health PGx Coding Review", { underline: false });
+    doc.moveDown(0.4);
+    doc.fontSize(9).fillColor("#5f527a").text(analysis.disclaimer);
+    doc.moveDown();
+    doc.fillColor("#170a42").fontSize(12).text("Suggested CPT Strategy", { continued: false });
+    doc.fontSize(10).fillColor("#2b205f").text(`${analysis.cptSelection.type.toUpperCase()} - ${analysis.cptSelection.codes.map((code) => `${code.code} x${code.units}`).join(", ") || "No code"}`);
+    doc.moveDown(0.6);
+    doc.fontSize(12).fillColor("#170a42").text("Diagnosis Candidates");
+    doc.fontSize(10).fillColor("#2b205f").text(analysis.icd10.map((row) => `${row.code} (${row.status})`).join(", ") || "None");
+    doc.moveDown(0.6);
+    doc.fontSize(12).fillColor("#170a42").text("Medical Necessity");
+    doc.fontSize(10).fillColor("#2b205f").text(analysis.medicalNecessity.reason);
+    doc.moveDown(0.6);
+    doc.fontSize(12).fillColor("#170a42").text("Claim Narrative");
+    doc.fontSize(10).fillColor("#2b205f").text(analysis.narrative);
+    doc.moveDown(0.6);
+    doc.fontSize(12).fillColor("#170a42").text("Claim JSON");
+    doc.fontSize(8).fillColor("#4d4166").text(JSON.stringify(claimJson, null, 2), { width: 500 });
+    doc.end();
+  });
 }
 
 function normalizeSavedAiFileModule(value: unknown) {
@@ -753,6 +857,299 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ============ PGx SPECIALTY CODING ROUTES ============
+
+  app.get("/api/pgx/knowledge/genes", async (_req, res) => {
+    try {
+      const rows = await db.select().from(pgxGenes).orderBy(asc(pgxGenes.symbol));
+      res.json({
+        genes: rows.length > 0
+          ? rows
+          : PGX_GENES.map((gene) => ({
+              id: gene.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+              symbol: gene,
+              displayName: gene,
+              defaultCpt: PGX_TIER_1_MAP[gene] || null,
+              phenotypeNotes: "Starter PGx gene. Verify current CPIC/FDA and payer guidance.",
+              sourceUrl: "https://cpicpgx.org/guidelines/",
+            })),
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to load PGx genes");
+    }
+  });
+
+  app.get("/api/pgx/knowledge/drugs", async (req, res) => {
+    try {
+      const q = String(req.query.q || "").trim().toLowerCase();
+      const rows = await db.select().from(pgxGeneDrugPairs).orderBy(asc(pgxGeneDrugPairs.drug));
+      const sourceRows = rows.length > 0 ? rows : PGX_GENE_DRUG_PAIRS.map((pair) => ({
+        id: `${pair.gene}-${pair.drug}`,
+        gene: pair.gene,
+        drug: pair.drug,
+        drugClass: pair.drugClass,
+        cpicLevel: pair.cpicLevel,
+        cptCodes: pair.cptCodes,
+        tableSource: pair.tableSource,
+        recommendation: pair.recommendation,
+        sourceUrl: pair.sourceUrl,
+        createdAt: null,
+        updatedAt: null,
+      }));
+      const filtered = q
+        ? sourceRows.filter((row) => row.drug.toLowerCase().includes(q) || row.gene.toLowerCase().includes(q))
+        : sourceRows;
+      res.json({ drugs: filtered.slice(0, 80) });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to load PGx drugs");
+    }
+  });
+
+  app.get("/api/pgx/knowledge/gene-drug/:gene/:drug", async (req, res) => {
+    try {
+      const gene = req.params.gene.toUpperCase();
+      const drug = req.params.drug.toLowerCase();
+      const row = await db.query.pgxGeneDrugPairs.findFirst({
+        where: and(eq(pgxGeneDrugPairs.gene, gene), eq(pgxGeneDrugPairs.drug, drug)),
+      });
+      const fallback = PGX_GENE_DRUG_PAIRS.find((pair) => pair.gene === gene && pair.drug === drug);
+      if (!row && !fallback) return res.status(404).json({ message: "Gene-drug pair not found" });
+      res.json(row || fallback);
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to load gene-drug pair");
+    }
+  });
+
+  app.get("/api/pgx/knowledge/cms-groups", async (req, res) => {
+    try {
+      const cpt = String(req.query.cpt || "").trim().toUpperCase();
+      const rows = await db.select().from(pgxCmsGroups).orderBy(asc(pgxCmsGroups.groupNumber), asc(pgxCmsGroups.groupType), asc(pgxCmsGroups.code));
+      const sourceRows = rows.length > 0 ? rows : PGX_CMS_GROUPS.map((group) => ({
+        id: `${group.articleId}-${group.groupNumber}-${group.groupType}-${group.code}`,
+        articleId: group.articleId,
+        groupNumber: group.groupNumber,
+        groupType: group.groupType,
+        code: group.code,
+        description: group.description || null,
+        sourceUrl: "https://www.cms.gov/medicare-coverage-database/",
+        updatedAt: null,
+      }));
+      const groupsWithCpt = cpt
+        ? new Set(sourceRows.filter((group) => group.groupType === "cpt" && group.code === cpt).map((group) => group.groupNumber))
+        : null;
+      res.json({
+        groups: groupsWithCpt
+          ? sourceRows.filter((group) => groupsWithCpt.has(group.groupNumber))
+          : sourceRows,
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to load PGx CMS groups");
+    }
+  });
+
+  app.post("/api/pgx/extract", upload.fields([
+    { name: "labReport", maxCount: 1 },
+    { name: "requisition", maxCount: 1 },
+  ]), async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const files = (req.files || {}) as Record<string, UploadedPgxFile[]>;
+      const uploadedFiles = [...(files.labReport || []), ...(files.requisition || [])];
+      const textParts = [
+        String(req.body?.labText || ""),
+        String(req.body?.requisitionText || ""),
+      ];
+      const r2Objects: Array<{ key: string; url: string; contentType?: string }> = [];
+      const warnings: string[] = [];
+
+      for (const file of uploadedFiles) {
+        if ((file.size || 0) > 20 * 1024 * 1024) {
+          throw new RouteError(400, "PGx files must be 20MB or smaller.");
+        }
+
+        const extracted = await extractTextFromPgxFile(file);
+        if (extracted.warning) warnings.push(`${extracted.fileName}: ${extracted.warning}`);
+        if (extracted.text) textParts.push(extracted.text);
+
+        const uploadResult = await uploadPgxObject(
+          createPgxObjectKey(user.id),
+          file.buffer,
+          extracted.mimeType || "application/octet-stream",
+        );
+        if (uploadResult) r2Objects.push({ key: uploadResult.key, url: uploadResult.url, contentType: extracted.mimeType });
+      }
+
+      const combinedText = textParts.join("\n\n").trim();
+      if (combinedText.length < 20) {
+        throw new RouteError(400, "Add readable PGx lab text or upload a TXT/PDF document.");
+      }
+
+      const extracted = extractPgxDataFromText(combinedText);
+      extracted.warnings.push(...warnings);
+      res.json({
+        success: true,
+        extracted,
+        r2: {
+          configured: isPgxR2Configured(),
+          objects: r2Objects,
+        },
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to extract PGx data");
+    }
+  });
+
+  app.post("/api/pgx/analyze", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const extracted = req.body?.extracted;
+      if (!extracted || !Array.isArray(extracted.genes)) {
+        throw new RouteError(400, "extracted PGx data is required.");
+      }
+
+      const analysis = analyzePgxCoding({
+        extracted,
+        primaryIcd10: req.body?.primaryIcd10,
+        drugNames: parseManualDrugNames(req.body?.drugNames),
+        payerAcceptsPanel: req.body?.payerAcceptsPanel !== false,
+      });
+
+      res.json({ success: true, analysis });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to analyze PGx data");
+    }
+  });
+
+  app.post("/api/pgx/generate-claim", async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const analysis = req.body?.analysis as PgxAnalysisResult | undefined;
+      if (!analysis?.cptSelection || !analysis?.extracted) {
+        throw new RouteError(400, "analysis is required.");
+      }
+
+      const claimJson = buildPgxClaimPreview(analysis);
+      const pdf = await generatePgxPdfBuffer(analysis, claimJson);
+      const uploadResult = await uploadPgxObject(
+        createPgxObjectKey(user.id),
+        pdf,
+        "application/pdf",
+      );
+
+      res.json({
+        success: true,
+        claimJson,
+        narrative: analysis.narrative,
+        downloadUrl: uploadResult?.url || null,
+        filename: "PGx_Coding_Review.pdf",
+        pdfBase64: pdf.toString("base64"),
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to generate PGx claim");
+    }
+  });
+
+  app.get("/api/pgx/analyses", async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+
+      const rows = await db.select()
+        .from(pgxAnalyses)
+        .where(eq(pgxAnalyses.userId, user.id))
+        .orderBy(desc(pgxAnalyses.createdAt))
+        .limit(30);
+      res.json({ analyses: rows });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to list PGx analyses");
+    }
+  });
+
+  app.post("/api/pgx/analyses", async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const analysis = req.body?.analysis as PgxAnalysisResult | undefined;
+      if (!analysis?.extracted) throw new RouteError(400, "analysis is required.");
+
+      const claimJson = req.body?.claimJson || buildPgxClaimPreview(analysis);
+      const [created] = await db.insert(pgxAnalyses)
+        .values({
+          id: randomUUID(),
+          userId: user.id,
+          patientName: analysis.extracted.patient?.name || null,
+          labName: analysis.extracted.lab?.name || null,
+          primaryIcd10: analysis.icd10?.[0]?.code || null,
+          drugNames: analysis.extracted.medications?.map((medication) => medication.name) || [],
+          extractedData: analysis.extracted as any,
+          analysisResult: analysis as any,
+          claimJson: claimJson as any,
+          claimNarrative: analysis.narrative,
+          r2Objects: req.body?.r2Objects || [],
+        })
+        .returning();
+
+      res.status(201).json({ success: true, analysis: created });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to save PGx analysis");
+    }
+  });
+
+  app.get("/api/pgx/analyses/:id", async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const row = await db.query.pgxAnalyses.findFirst({
+        where: and(eq(pgxAnalyses.id, req.params.id), eq(pgxAnalyses.userId, user.id)),
+      });
+      if (!row) return res.status(404).json({ message: "PGx analysis not found" });
+      res.json(row);
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to load PGx analysis");
+    }
+  });
+
+  app.put("/api/pgx/analyses/:id", async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const [updated] = await db.update(pgxAnalyses)
+        .set({
+          analysisResult: req.body?.analysisResult || req.body?.analysis || {},
+          claimJson: req.body?.claimJson || {},
+          claimNarrative: req.body?.claimNarrative || req.body?.analysis?.narrative || null,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(pgxAnalyses.id, req.params.id), eq(pgxAnalyses.userId, user.id)))
+        .returning();
+      if (!updated) return res.status(404).json({ message: "PGx analysis not found" });
+      res.json({ success: true, analysis: updated });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to update PGx analysis");
+    }
+  });
+
+  app.delete("/api/pgx/analyses/:id", async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const deleted = await db.delete(pgxAnalyses)
+        .where(and(eq(pgxAnalyses.id, req.params.id), eq(pgxAnalyses.userId, user.id)))
+        .returning({ id: pgxAnalyses.id });
+      if (deleted.length === 0) return res.status(404).json({ message: "PGx analysis not found" });
+      res.json({ success: true });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to delete PGx analysis");
+    }
+  });
+
+  app.post("/api/admin/sync-cms-pgx", async (req, res) => {
+    const user = await getAuthenticatedChatUser(req);
+    if (user.role !== "admin") {
+      return res.status(403).json({ message: "Administrator access required." });
+    }
+    res.json({
+      success: true,
+      status: "starter-seed",
+      message: "Phase 1 PGx uses the local starter A59915/L39995 seed. Full CMS current_article.zip import is reserved for the scheduled sync phase.",
+    });
+  });
 
   // ============ VOICE TRANSCRIPTION ROUTES ============
 

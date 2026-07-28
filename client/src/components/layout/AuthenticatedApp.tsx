@@ -1,6 +1,7 @@
 import "@/styles/app-shell.css";
 import "@/styles/codical-redesign.css";
 import "@/styles/dashboard-macos.css";
+import "@/styles/specialty.css";
 
 import { lazy, Suspense, type ReactNode } from "react";
 import { Redirect, Route, Switch } from "wouter";
@@ -32,6 +33,8 @@ const NpiChecker = lazy(() => import("@/pages/NpiChecker").then((module) => ({ d
 const CodeLookup = lazy(() => import("@/pages/CodeLookup").then((module) => ({ default: module.CodeLookup })));
 const Settings = lazy(() => import("@/pages/Settings").then((module) => ({ default: module.Settings })));
 const DrugLookup = lazy(() => import("@/pages/DrugLookup").then((module) => ({ default: module.DrugLookup })));
+const SpecialtyHub = lazy(() => import("@/pages/SpecialtyHub").then((module) => ({ default: module.SpecialtyHub })));
+const PgxWorkspace = lazy(() => import("@/pages/PgxWorkspace").then((module) => ({ default: module.PgxWorkspace })));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const ChatRealtimeBridge = lazy(() =>
   import("@/components/chat/ChatRealtimeBridge").then((module) => ({ default: module.ChatRealtimeBridge })),
@@ -93,6 +96,8 @@ function AuthenticatedRoutes() {
       <Route path="/codelookup">{() => <AppPage><CodeLookup /></AppPage>}</Route>
       <Route path="/settings">{() => <AppPage><Settings /></AppPage>}</Route>
       <Route path="/druglookup">{() => <AppPage><DrugLookup /></AppPage>}</Route>
+      <Route path="/specialty">{() => <AppPage><SpecialtyHub /></AppPage>}</Route>
+      <Route path="/specialty/pgx">{() => <AppPage><PgxWorkspace /></AppPage>}</Route>
       <Route>{() => <AppPage><NotFound /></AppPage>}</Route>
     </Switch>
   );

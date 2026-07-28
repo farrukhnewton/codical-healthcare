@@ -10,6 +10,7 @@ import {
   ClipboardCheck,
   FileChartColumnIncreasing,
   FileCode2,
+  Dna,
   GitCompareArrows,
   Home,
   LogOut,
@@ -26,8 +27,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { SPECIALTY_MODULES } from "@shared/specialty-registry";
 
-type NavSection = "MAIN" | "TOOLS";
+type NavSection = "MAIN" | "TOOLS" | "ACCOUNT";
 
 type NavItem = {
   href: string;
@@ -54,14 +56,15 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/npi", label: "NPI Lookup", icon: BadgeInfo, section: "TOOLS" },
   { href: "/codelookup", label: "POS & Modifiers", icon: Tag, section: "TOOLS" },
   { href: "/druglookup", label: "Drug Lookup", icon: Pill, section: "TOOLS" },
-  { href: "/reports", label: "Reports", icon: FileChartColumnIncreasing, section: "TOOLS" },
-  { href: "/settings", label: "Settings", icon: Settings, section: "TOOLS" },
+  { href: "/reports", label: "Reports", icon: FileChartColumnIncreasing, section: "ACCOUNT" },
+  { href: "/settings", label: "Settings", icon: Settings, section: "ACCOUNT" },
 ];
 
-const SECTIONS: NavSection[] = ["MAIN", "TOOLS"];
+const SECTIONS: NavSection[] = ["MAIN", "TOOLS", "ACCOUNT"];
 const SECTION_LABELS: Record<NavSection, string> = {
   MAIN: "Command center",
   TOOLS: "Validation tools",
+  ACCOUNT: "Workspace",
 };
 
 function isActiveRoute(location: string, href: string) {
@@ -71,6 +74,7 @@ function isActiveRoute(location: string, href: string) {
 export function IconRail() {
   const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [specialtyOpen, setSpecialtyOpen] = useState(() => location.startsWith("/specialty"));
   const { toast } = useToast();
 
   const groupedItems = useMemo(
@@ -120,28 +124,74 @@ export function IconRail() {
 
       <nav className="app-sidebar-scroll" aria-label="Main navigation">
         {groupedItems.map(({ section, items }) => (
-          <section className="app-nav-section" key={section}>
-            <p>{SECTION_LABELS[section]}</p>
-            <div className="app-nav-list">
-              {items.map((item) => {
-                const active = isActiveRoute(location, item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => mobile && setMobileOpen(false)}
-                    className={`app-nav-item${active ? " is-active" : ""}`}
-                  >
-                    <span className="app-nav-glyph" aria-hidden="true">
-                      <item.icon size={15} />
-                    </span>
-                    <span className="app-nav-text">{item.label}</span>
-                    {item.badge ? <em>{item.badge}</em> : null}
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
+          <div key={section}>
+            {section === "ACCOUNT" ? (
+              <section className="app-nav-section app-specialty-nav-section">
+                <button
+                  type="button"
+                  className={`app-specialty-toggle${location.startsWith("/specialty") ? " is-active" : ""}`}
+                  onClick={() => setSpecialtyOpen((open) => !open)}
+                  aria-expanded={specialtyOpen}
+                  aria-controls="specialty-nav-items"
+                >
+                  <span><Dna size={14} /> Specialty coding</span>
+                  <ChevronDown size={14} className={specialtyOpen ? "is-open" : ""} />
+                </button>
+                {specialtyOpen ? (
+                  <div className="app-specialty-nav-list" id="specialty-nav-items">
+                    <Link
+                      href="/specialty"
+                      onClick={() => mobile && setMobileOpen(false)}
+                      className={`app-specialty-hub-link${location === "/specialty" ? " is-active" : ""}`}
+                    >
+                      All specialty modules
+                    </Link>
+                    {SPECIALTY_MODULES.map((module) => module.status === "active" ? (
+                      <Link
+                        key={module.id}
+                        href={module.href}
+                        onClick={() => mobile && setMobileOpen(false)}
+                        className={`app-specialty-nav-item${isActiveRoute(location, module.href) ? " is-active" : ""}`}
+                      >
+                        <span className="app-specialty-dot" style={{ background: module.color }} />
+                        <span>{module.shortTitle}</span>
+                        {module.badge && module.badge !== "coming-soon" ? <em>{module.badge}</em> : null}
+                      </Link>
+                    ) : (
+                      <span key={module.id} className="app-specialty-nav-item is-disabled" aria-disabled="true">
+                        <span className="app-specialty-dot" style={{ background: module.color }} />
+                        <span>{module.shortTitle}</span>
+                        <em>Soon</em>
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
+
+            <section className="app-nav-section">
+              <p>{SECTION_LABELS[section]}</p>
+              <div className="app-nav-list">
+                {items.map((item) => {
+                  const active = isActiveRoute(location, item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => mobile && setMobileOpen(false)}
+                      className={`app-nav-item${active ? " is-active" : ""}`}
+                    >
+                      <span className="app-nav-glyph" aria-hidden="true">
+                        <item.icon size={15} />
+                      </span>
+                      <span className="app-nav-text">{item.label}</span>
+                      {item.badge ? <em>{item.badge}</em> : null}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
         ))}
       </nav>
 

@@ -12,6 +12,7 @@ declare namespace Express {
 
   interface Request {
     file?: Multer.File;
+    files?: Record<string, Multer.File[]> | Multer.File[];
   }
 }
 
@@ -22,6 +23,7 @@ declare module "multer" {
 
   interface Multer {
     single(fieldName: string): RequestHandler;
+    fields(fields: ReadonlyArray<{ name: string; maxCount?: number }>): RequestHandler;
   }
 
   interface Options {
