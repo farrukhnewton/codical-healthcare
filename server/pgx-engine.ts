@@ -162,6 +162,9 @@ export const PGX_GENES = [
   "CYP4F2",
   "COMT",
   "OPRM1",
+  "CYP3A4",
+  "UGT2B15",
+  "GLP1R",
 ];
 
 export const PGX_GENE_DRUG_PAIRS: PgxGeneDrugPair[] = [

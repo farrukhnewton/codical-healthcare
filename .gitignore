@@ -40,3 +40,6 @@ client/.env.*
 *.bak*
 
 .vercel
+
+# Supabase CLI local link/cache data
+supabase/.temp/

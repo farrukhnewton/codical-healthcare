@@ -38,10 +38,27 @@ try {
   const phase2 = fs.readFileSync("migrations/0006_pgx_phase2_evidence_workflow.sql", "utf8");
   psql(phase2);
   psql(phase2);
+  const referenceSeedSchema = fs.readFileSync("migrations/0007_pgx_reference_seed_schema.sql", "utf8");
+  psql(referenceSeedSchema);
+  psql(referenceSeedSchema);
+  const seedFiles = [
+    "supabase/seed/pgx/001_pgx_cpt_codes.sql",
+    "supabase/seed/pgx/002_pgx_genes.sql",
+    "supabase/seed/pgx/003_pgx_gene_drug_pairs.sql",
+    "supabase/seed/pgx/004_pgx_cms_groups.sql",
+    "supabase/seed/pgx/005_pgx_article.sql",
+  ];
+  for (const seedFile of seedFiles) psql(fs.readFileSync(seedFile, "utf8"));
+  for (const seedFile of seedFiles) psql(fs.readFileSync(seedFile, "utf8"));
   const result = psql(`
     select 'tables=' || count(*) from pg_tables where schemaname='public' and tablename like 'pgx_%';
     select 'rls=' || count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname like 'pgx_%' and c.relkind='r' and c.relrowsecurity;
     select 'triggers=' || count(*) from pg_trigger where not tgisinternal and tgname like 'pgx_%';
+    select 'genes=' || count(*) from pgx_genes;
+    select 'pairs=' || count(*) from pgx_gene_drug_pairs;
+    select 'cpts=' || count(*) from pgx_cpt_codes;
+    select 'groups=' || count(*) from pgx_cms_groups;
+    select 'articles=' || count(*) from pgx_cms_articles;
   `);
   process.stdout.write(result.stdout);
 } finally {

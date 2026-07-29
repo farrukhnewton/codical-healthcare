@@ -5,6 +5,25 @@ import { PGX_CMS_GROUPS, PGX_CPT_CODES, PGX_GENE_DRUG_PAIRS, PGX_GENES, PGX_TIER
 
 const { Pool } = pg;
 const BOOTSTRAP_SCHEMA_VERSION = "2026-07-22-pgx-phase1";
+const PGX_2026_CLFS_RATES: Record<string, number | null> = {
+  "81225": 291.36,
+  "81226": 450.91,
+  "81227": 174.81,
+  "81231": 174.81,
+  "81232": 174.81,
+  "81241": 73.37,
+  "81247": 174.81,
+  "81283": 73.37,
+  "81306": 291.36,
+  "81328": 174.81,
+  "81335": 174.81,
+  "81350": 234,
+  "81355": 88.2,
+  "81401": 137,
+  "81406": 282.88,
+  "81418": 917.08,
+  "81479": null,
+};
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -535,6 +554,29 @@ async function ensurePgxSchema() {
       "updated_at" timestamp default now()
     );
 
+    create table if not exists "pgx_cpt_codes" (
+      "id" text primary key not null,
+      "code" text not null unique,
+      "description" text not null,
+      "tier" text not null,
+      "min_genes" integer,
+      "medicare_rate" numeric(10, 2),
+      "rate_year" integer not null,
+      "rate_status" text not null,
+      "rate_source_url" text not null,
+      "article_id" text not null,
+      "source_url" text not null,
+      "created_at" timestamptz default now() not null,
+      "updated_at" timestamptz default now() not null
+    );
+
+    alter table "pgx_genes" add column if not exists "full_name" text;
+    alter table "pgx_genes" add column if not exists "cpt_codes" jsonb default '[]'::jsonb not null;
+    alter table "pgx_genes" add column if not exists "phenotype_options" jsonb default '[]'::jsonb not null;
+    alter table "pgx_gene_drug_pairs" add column if not exists "gene_symbol" text;
+    alter table "pgx_gene_drug_pairs" add column if not exists "drug_name" text;
+    alter table "pgx_gene_drug_pairs" add column if not exists "fda_label_type" text;
+
     create table if not exists "pgx_analyses" (
       "id" text primary key not null,
       "user_id" integer not null references "users" ("id") on delete cascade,
@@ -555,6 +597,8 @@ async function ensurePgxSchema() {
     create index if not exists "pgx_cms_groups_article_group_idx" on "pgx_cms_groups" ("article_id", "group_number", "group_type");
     create unique index if not exists "pgx_cms_groups_unique_row_idx" on "pgx_cms_groups" ("article_id", "group_number", "group_type", "code");
     create unique index if not exists "pgx_gene_drug_pairs_gene_drug_idx" on "pgx_gene_drug_pairs" ("gene", "drug");
+    create unique index if not exists "pgx_gene_drug_pairs_symbol_drug_idx" on "pgx_gene_drug_pairs" ("gene_symbol", "drug_name");
+    create index if not exists "pgx_cpt_codes_article_idx" on "pgx_cpt_codes" ("article_id", "code");
     create index if not exists "pgx_analyses_user_created_idx" on "pgx_analyses" ("user_id", "created_at" desc);
   `);
 }
@@ -569,14 +613,16 @@ export async function seedPgxReferenceData() {
          "version" = excluded."version",
          "source_url" = excluded."source_url",
          "last_synced_at" = excluded."last_synced_at",
-         "updated_at" = now()`,
+         "updated_at" = now()
+     where "pgx_cms_articles"."version" is null
+        or "pgx_cms_articles"."version" = 'starter-local'`,
     [
       "a59915",
       "A59915",
-      "Billing and Coding: Pharmacogenomics Testing",
+      "Billing and Coding: Pharmacogenomic Testing",
       "L39995",
-      "starter-local",
-      "https://www.cms.gov/medicare-coverage-database/",
+      "26",
+      "https://www.cms.gov/medicare-coverage-database/view/article.aspx?articleId=59915&ver=26",
     ],
   );
 
@@ -595,11 +641,14 @@ export async function seedPgxReferenceData() {
 
   for (const gene of PGX_GENES) {
     await pool.query(
-      `insert into "pgx_genes" ("id", "symbol", "display_name", "default_cpt", "phenotype_notes", "source_url", "updated_at")
-       values ($1, $2, $3, $4, $5, $6, now())
+      `insert into "pgx_genes" ("id", "symbol", "display_name", "full_name", "default_cpt", "cpt_codes", "phenotype_options", "phenotype_notes", "source_url", "updated_at")
+       values ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8, $9, now())
        on conflict ("id") do update
        set "display_name" = excluded."display_name",
+           "full_name" = coalesce("pgx_genes"."full_name", excluded."full_name"),
            "default_cpt" = excluded."default_cpt",
+           "cpt_codes" = case when "pgx_genes"."cpt_codes" = '[]'::jsonb then excluded."cpt_codes" else "pgx_genes"."cpt_codes" end,
+           "phenotype_options" = case when "pgx_genes"."phenotype_options" = '[]'::jsonb then excluded."phenotype_options" else "pgx_genes"."phenotype_options" end,
            "phenotype_notes" = excluded."phenotype_notes",
            "source_url" = excluded."source_url",
            "updated_at" = now()`,
@@ -607,7 +656,10 @@ export async function seedPgxReferenceData() {
         gene.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         gene,
         gene,
+        gene,
         PGX_TIER_1_MAP[gene] || null,
+        JSON.stringify(PGX_TIER_1_MAP[gene] ? [PGX_TIER_1_MAP[gene], "81418"] : gene === "GLP1R" ? ["81479"] : ["81401", "81418"]),
+        JSON.stringify(["Result Reported", "Indeterminate"]),
         "Pharmacogenomics starter gene. Verify current CPIC/FDA and payer guidance before final billing.",
         "https://cpicpgx.org/guidelines/",
       ],
@@ -618,10 +670,12 @@ export async function seedPgxReferenceData() {
     const id = `${pair.gene.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${pair.drug.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
     await pool.query(
       `insert into "pgx_gene_drug_pairs"
-       ("id", "gene", "drug", "drug_class", "cpic_level", "cpt_codes", "table_source", "recommendation", "source_url", "updated_at")
-       values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, now())
+       ("id", "gene", "gene_symbol", "drug", "drug_name", "drug_class", "cpic_level", "cpt_codes", "table_source", "recommendation", "source_url", "updated_at")
+       values ($1, $2, $2, $3, $3, $4, $5, $6::jsonb, $7, $8, $9, now())
        on conflict ("id") do update
        set "drug_class" = excluded."drug_class",
+           "gene_symbol" = excluded."gene_symbol",
+           "drug_name" = excluded."drug_name",
            "cpic_level" = excluded."cpic_level",
            "cpt_codes" = excluded."cpt_codes",
            "table_source" = excluded."table_source",
@@ -643,6 +697,34 @@ export async function seedPgxReferenceData() {
   }
 
   for (const item of PGX_CPT_CODES) {
+    const medicareRate = PGX_2026_CLFS_RATES[item.code] ?? null;
+    await pool.query(
+      `insert into "pgx_cpt_codes"
+       ("id", "code", "description", "tier", "min_genes", "medicare_rate", "rate_year", "rate_status", "rate_source_url", "article_id", "source_url", "updated_at")
+       values ($1, $2, $3, $4, $5, $6, 2026, $7, $8, 'A59915', $9, now())
+       on conflict ("id") do update
+       set "description" = excluded."description",
+           "tier" = excluded."tier",
+           "min_genes" = excluded."min_genes",
+           "medicare_rate" = excluded."medicare_rate",
+           "rate_year" = excluded."rate_year",
+           "rate_status" = excluded."rate_status",
+           "rate_source_url" = excluded."rate_source_url",
+           "article_id" = excluded."article_id",
+           "source_url" = excluded."source_url",
+           "updated_at" = now()`,
+      [
+        `cpt-${item.code}`,
+        item.code,
+        item.description,
+        item.tier,
+        item.minGenes || null,
+        medicareRate,
+        medicareRate === null ? "by_report" : "published",
+        "https://www.cms.gov/files/zip/26clabq3.zip",
+        "https://www.cms.gov/medicare-coverage-database/view/article.aspx?articleId=59915&ver=26",
+      ],
+    );
     await pool.query(
       `insert into "cpt_codes" ("id", "code", "description", "category", "type")
        select $1, $2, $3, $4, '2026'

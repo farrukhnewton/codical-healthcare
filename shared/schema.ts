@@ -1,6 +1,7 @@
 ﻿import { pgTable, text, serial, timestamp, integer, uniqueIndex, bigint, boolean, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { index } from "drizzle-orm/pg-core";
+import { numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -121,11 +122,32 @@ export const pgxCmsGroups = pgTable("pgx_cms_groups", {
   uniqueRowIdx: uniqueIndex("pgx_cms_groups_unique_row_idx").on(table.articleId, table.groupNumber, table.groupType, table.code),
 }));
 
+export const pgxCptCodes = pgTable("pgx_cpt_codes", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  description: text("description").notNull(),
+  tier: text("tier").notNull(),
+  minGenes: integer("min_genes"),
+  medicareRate: numeric("medicare_rate", { precision: 10, scale: 2 }),
+  rateYear: integer("rate_year").notNull(),
+  rateStatus: text("rate_status").notNull(),
+  rateSourceUrl: text("rate_source_url").notNull(),
+  articleId: text("article_id").notNull(),
+  sourceUrl: text("source_url").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  articleCodeIdx: index("pgx_cpt_codes_article_idx").on(table.articleId, table.code),
+}));
+
 export const pgxGenes = pgTable("pgx_genes", {
   id: text("id").primaryKey(),
   symbol: text("symbol").notNull().unique(),
   displayName: text("display_name").notNull(),
+  fullName: text("full_name"),
   defaultCpt: text("default_cpt"),
+  cptCodes: jsonb("cpt_codes").$type<string[]>().notNull().default([]),
+  phenotypeOptions: jsonb("phenotype_options").$type<string[]>().notNull().default([]),
   phenotypeNotes: text("phenotype_notes"),
   sourceUrl: text("source_url"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -135,11 +157,14 @@ export const pgxGenes = pgTable("pgx_genes", {
 export const pgxGeneDrugPairs = pgTable("pgx_gene_drug_pairs", {
   id: text("id").primaryKey(),
   gene: text("gene").notNull(),
+  geneSymbol: text("gene_symbol"),
   drug: text("drug").notNull(),
+  drugName: text("drug_name"),
   drugClass: text("drug_class"),
   cpicLevel: text("cpic_level").notNull(),
   cptCodes: jsonb("cpt_codes").$type<string[]>().notNull().default([]),
   tableSource: text("table_source").notNull(),
+  fdaLabelType: text("fda_label_type"),
   recommendation: text("recommendation").notNull(),
   sourceUrl: text("source_url"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -485,6 +510,7 @@ export type VoiceTranscription = typeof voiceTranscriptions.$inferSelect;
 export type SavedAiFile = typeof savedAiFiles.$inferSelect;
 export type PgxCmsArticle = typeof pgxCmsArticles.$inferSelect;
 export type PgxCmsGroup = typeof pgxCmsGroups.$inferSelect;
+export type PgxCptCode = typeof pgxCptCodes.$inferSelect;
 export type PgxGene = typeof pgxGenes.$inferSelect;
 export type PgxGeneDrugPair = typeof pgxGeneDrugPairs.$inferSelect;
 export type PgxAnalysis = typeof pgxAnalyses.$inferSelect;
