@@ -179,10 +179,30 @@ async function handleSearch(env: Env, url: URL) {
 
 async function handleCode(env: Env, url: URL) {
   const code = normalizeCode(url.searchParams.get("code"));
+  const stateCode = normalizeCode(url.searchParams.get("state"));
   const limit = limitParam(url.searchParams.get("limit"), 25, 200);
 
   if (!code) return json({ message: "code is required" }, 400);
 
+  if (stateCode && !/^[A-Z]{2}$/.test(stateCode)) return json({ message: "state must be a two-letter service-area code" }, 400);
+
+  const stateClause = stateCode
+    ? `and (
+         exists (
+           select 1 from mcd_document_jurisdictions dj
+           join mcd_jurisdictions j on j.jurisdiction_key = dj.jurisdiction_key
+           where dj.document_uid = d.document_uid and upper(j.state_code) = ?
+         )
+         or exists (
+           select 1 from mcd_document_contractors dco
+           join mcd_contractor_jurisdictions cj on cj.contractor_key = dco.contractor_key
+           join mcd_jurisdictions j on j.jurisdiction_key = cj.jurisdiction_key
+           where dco.document_uid = d.document_uid and upper(j.state_code) = ?
+             and (cj.effective_date is null or cj.effective_date <= date('now'))
+             and (cj.end_date is null or cj.end_date >= date('now'))
+         )
+       )`
+    : "";
   const results = await env.MCD_DB.prepare(
     `select d.document_uid, d.document_kind, d.display_id, d.cms_document_id, d.cms_version_id, d.title,
             d.effective_date, d.publication_date, d.status, dc.group_number, dc.relationship_type, c.code_type
@@ -190,13 +210,18 @@ async function handleCode(env: Env, url: URL) {
      join mcd_document_codes dc on dc.code_uid = c.code_uid
      join mcd_documents d on d.document_uid = dc.document_uid
      where c.normalized_code = ?
+       and d.is_current = 1
+       and (d.document_kind <> 'article' or upper(coalesce(d.status, '')) = 'A')
+       and (d.effective_date is null or d.effective_date <= date('now'))
+       and (d.end_date is null or d.end_date >= date('now'))
+       ${stateClause}
      order by d.document_kind, d.display_id
      limit ?`,
   )
-    .bind(code, limit)
+    .bind(...(stateCode ? [code, stateCode, stateCode, limit] : [code, limit]))
     .all();
 
-  return json({ code, results: results.results || [] });
+  return json({ code, stateCode: stateCode || null, results: results.results || [] });
 }
 
 async function handleDocument(env: Env, url: URL) {

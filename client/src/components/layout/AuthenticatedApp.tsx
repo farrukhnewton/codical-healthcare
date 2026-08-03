@@ -2,6 +2,7 @@ import "@/styles/app-shell.css";
 import "@/styles/codical-redesign.css";
 import "@/styles/dashboard-macos.css";
 import "@/styles/specialty.css";
+import "@/styles/burn-specialty.css";
 
 import { lazy, Suspense, type ReactNode } from "react";
 import { Redirect, Route, Switch } from "wouter";
@@ -35,6 +36,7 @@ const Settings = lazy(() => import("@/pages/Settings").then((module) => ({ defau
 const DrugLookup = lazy(() => import("@/pages/DrugLookup").then((module) => ({ default: module.DrugLookup })));
 const SpecialtyHub = lazy(() => import("@/pages/SpecialtyHub").then((module) => ({ default: module.SpecialtyHub })));
 const PgxWorkspace = lazy(() => import("@/pages/PgxWorkspace").then((module) => ({ default: module.PgxWorkspace })));
+const BurnWorkspace = lazy(() => import("@/pages/BurnWorkspace").then((module) => ({ default: module.BurnWorkspace })));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const ChatRealtimeBridge = lazy(() =>
   import("@/components/chat/ChatRealtimeBridge").then((module) => ({ default: module.ChatRealtimeBridge })),
@@ -98,6 +100,7 @@ function AuthenticatedRoutes() {
       <Route path="/druglookup">{() => <AppPage><DrugLookup /></AppPage>}</Route>
       <Route path="/specialty">{() => <AppPage><SpecialtyHub /></AppPage>}</Route>
       <Route path="/specialty/pgx">{() => <AppPage><PgxWorkspace /></AppPage>}</Route>
+      <Route path="/specialty/burn">{() => <AppPage><BurnWorkspace /></AppPage>}</Route>
       <Route>{() => <AppPage><NotFound /></AppPage>}</Route>
     </Switch>
   );

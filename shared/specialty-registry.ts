@@ -25,6 +25,7 @@ export type SpecialtyModule = {
   badge?: "new" | "beta" | "coming-soon";
   stats: string;
   dataSources: number;
+  imageUrl?: string;
 };
 
 /**
@@ -44,6 +45,7 @@ export const SPECIALTY_MODULES: readonly SpecialtyModule[] = [
     badge: "new",
     stats: "Active",
     dataSources: 4,
+    imageUrl: "https://codical-public-assets.farrukhnewton.workers.dev/specialty-images/pgx-genomic-sequencing-4k.jpg",
   },
   {
     id: "burn",
@@ -53,10 +55,11 @@ export const SPECIALTY_MODULES: readonly SpecialtyModule[] = [
     icon: "flame",
     color: "#fb923c",
     href: "/specialty/burn",
-    status: "coming-soon",
-    badge: "coming-soon",
-    stats: "Planned",
-    dataSources: 0,
+    status: "active",
+    badge: "new",
+    stats: "Active",
+    dataSources: 5,
+    imageUrl: "https://codical-public-assets.farrukhnewton.workers.dev/specialty-images/burn-skin-graft-4k.jpg",
   },
   {
     id: "ambulance",

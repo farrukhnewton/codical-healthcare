@@ -1,0 +1,15 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "codical-public-assets",
+  "main": "public-assets.ts",
+  "account_id": "7dc964fd2f9e2385f0eca8850ddfc76e",
+  "compatibility_date": "2026-07-29",
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "r2_buckets": [
+    {
+      "binding": "PUBLIC_ASSETS",
+      "bucket_name": "codical-public-assets"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 name = "codical-mcd-api"
 account_id = "7dc964fd2f9e2385f0eca8850ddfc76e"
 main = "mcd-api.ts"
-compatibility_date = "2026-05-08"
+compatibility_date = "2026-07-29"
 workers_dev = true
 
 [[d1_databases]]

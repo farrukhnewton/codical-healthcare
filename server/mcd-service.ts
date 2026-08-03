@@ -48,6 +48,7 @@ type McdArticleCoverageShard = {
   noncoveredIcdGroups: Record<string, Array<Record<string, string>>>;
   relatedLcd: Array<Record<string, string>>;
   relatedNcd: Array<Record<string, string>>;
+  geneDrugAssociations?: Array<{ gene: string; cptCodes: string[]; drug: string; guidance: string; intendedUse: string }>;
 };
 
 function mcdBaseUrl() {
@@ -143,6 +144,7 @@ export async function searchMcdCoverageRows(input: {
 export async function getMcdCodeCoverageRows(code: string, input: {
   kind?: McdDocumentKind;
   limit?: unknown;
+  stateCode?: string;
 } = {}) {
   const normalizedCode = String(code || "").trim().toUpperCase();
   if (!normalizedCode) return [];
@@ -150,6 +152,7 @@ export async function getMcdCodeCoverageRows(code: string, input: {
   const data = await fetchMcdJson<McdCodeResponse>("/api/mcd/code", {
     code: normalizedCode,
     limit: normalizeLimit(input.limit, 50, 200),
+    state: input.stateCode?.trim().toUpperCase(),
   });
 
   if (!data) return null;
@@ -301,6 +304,7 @@ export async function getMcdCodeCoverageIntelligence(code: string, input: { limi
 export async function getMcdBatchPairEvidence(input: {
   diagnosisCodes: string[];
   procedureCodes: string[];
+  stateCode?: string;
   limit?: unknown;
 }) {
   const diagnosisCodes = normalizeUniqueCodes(input.diagnosisCodes || [], 8);
@@ -324,12 +328,23 @@ export async function getMcdBatchPairEvidence(input: {
       effectiveDate: string | null;
       endDate: string | null;
     } | null;
+    evidence: Array<{
+      displayId: string;
+      articleId: string;
+      title: string;
+      groupNumber: string;
+      coverageStatus: "covered" | "noncovered" | "mixed";
+      effectiveDate: string | null;
+      endDate: string | null;
+      geneDrugAssociations: NonNullable<McdArticleCoverageShard["geneDrugAssociations"]>;
+    }>;
   }> = [];
 
   for (const procedureCode of procedureCodes) {
     const articleRows = await getMcdCodeCoverageRows(procedureCode, {
       kind: "article",
       limit: articleLimit,
+      stateCode: input.stateCode,
     });
 
     if (!articleRows) return null;
@@ -343,6 +358,7 @@ export async function getMcdBatchPairEvidence(input: {
         title: string;
         effectiveDate: string | null;
         endDate: string | null;
+        geneDrugAssociations: NonNullable<McdArticleCoverageShard["geneDrugAssociations"]>;
         groups: Array<{
           groupNumber: string;
           coveredIcd: ReturnType<typeof sampleCodes>;
@@ -404,6 +420,7 @@ export async function getMcdBatchPairEvidence(input: {
             title: shard.title,
             effectiveDate: shard.effectiveDate,
             endDate: shard.endDate,
+            geneDrugAssociations: shard.geneDrugAssociations || [],
             groups: matchedGroups as NonNullable<(typeof matchedGroups)[number]>[],
           });
         }
@@ -450,6 +467,16 @@ export async function getMcdBatchPairEvidence(input: {
               endDate: firstDocument.endDate,
             }
           : null,
+        evidence: documents.flatMap((document) => document.groups.map((group) => ({
+          displayId: document.displayId,
+          articleId: document.articleId,
+          title: document.title,
+          groupNumber: group.groupNumber,
+          coverageStatus: group.coverageStatus,
+          effectiveDate: document.effectiveDate,
+          endDate: document.endDate,
+          geneDrugAssociations: document.geneDrugAssociations,
+        }))),
       });
     }
   }

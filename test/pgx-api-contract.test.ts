@@ -11,7 +11,9 @@ test("PGx API endpoints enforce authenticated ownership and preview-only claims"
   }
   const engine = fs.readFileSync("server/pgx-engine.ts", "utf8");
   assert.match(engine, /submissionEnabled:\s*false/);
-  assert.match(engine, /charge:\s*null/);
+  assert.match(engine, /serviceLines:/);
+  assert.match(engine, /evidenceRows:/);
+  assert.match(engine, /status:\s*issues\.length === 0 \? "ready" as const : "review" as const/);
   assert.doesNotMatch(engine, /diagnosisCodes\.push\("Z13\.79"\)/);
 });
 

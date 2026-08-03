@@ -27,7 +27,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-import { SPECIALTY_MODULES } from "@shared/specialty-registry";
 
 type NavSection = "MAIN" | "TOOLS" | "ACCOUNT";
 
@@ -44,6 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/intelligence", label: "Coverage & Guidelines", icon: BookOpen, section: "MAIN", badge: "Live" },
   { href: "/crosswalk", label: "ICD/CPT Crosswalk", icon: GitCompareArrows, section: "MAIN" },
   { href: "/search", label: "Code Search", icon: Search, section: "MAIN" },
+  { href: "/specialty", label: "Specialty Coding", icon: Dna, section: "MAIN" },
   { href: "/workspace", label: "AI Coder", icon: FileCode2, section: "MAIN" },
   { href: "/voice-transcription", label: "Clinical Transcription", icon: AudioLines, section: "MAIN" },
   { href: "/chat", label: "Team Chat", icon: MessagesSquare, section: "MAIN" },
@@ -74,7 +74,6 @@ function isActiveRoute(location: string, href: string) {
 export function IconRail() {
   const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [specialtyOpen, setSpecialtyOpen] = useState(() => location.startsWith("/specialty"));
   const { toast } = useToast();
 
   const groupedItems = useMemo(
@@ -125,50 +124,6 @@ export function IconRail() {
       <nav className="app-sidebar-scroll" aria-label="Main navigation">
         {groupedItems.map(({ section, items }) => (
           <div key={section}>
-            {section === "ACCOUNT" ? (
-              <section className="app-nav-section app-specialty-nav-section">
-                <button
-                  type="button"
-                  className={`app-specialty-toggle${location.startsWith("/specialty") ? " is-active" : ""}`}
-                  onClick={() => setSpecialtyOpen((open) => !open)}
-                  aria-expanded={specialtyOpen}
-                  aria-controls="specialty-nav-items"
-                >
-                  <span><Dna size={14} /> Specialty coding</span>
-                  <ChevronDown size={14} className={specialtyOpen ? "is-open" : ""} />
-                </button>
-                {specialtyOpen ? (
-                  <div className="app-specialty-nav-list" id="specialty-nav-items">
-                    <Link
-                      href="/specialty"
-                      onClick={() => mobile && setMobileOpen(false)}
-                      className={`app-specialty-hub-link${location === "/specialty" ? " is-active" : ""}`}
-                    >
-                      All specialty modules
-                    </Link>
-                    {SPECIALTY_MODULES.map((module) => module.status === "active" ? (
-                      <Link
-                        key={module.id}
-                        href={module.href}
-                        onClick={() => mobile && setMobileOpen(false)}
-                        className={`app-specialty-nav-item${isActiveRoute(location, module.href) ? " is-active" : ""}`}
-                      >
-                        <span className="app-specialty-dot" style={{ background: module.color }} />
-                        <span>{module.shortTitle}</span>
-                        {module.badge && module.badge !== "coming-soon" ? <em>{module.badge}</em> : null}
-                      </Link>
-                    ) : (
-                      <span key={module.id} className="app-specialty-nav-item is-disabled" aria-disabled="true">
-                        <span className="app-specialty-dot" style={{ background: module.color }} />
-                        <span>{module.shortTitle}</span>
-                        <em>Soon</em>
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-              </section>
-            ) : null}
-
             <section className="app-nav-section">
               <p>{SECTION_LABELS[section]}</p>
               <div className="app-nav-list">

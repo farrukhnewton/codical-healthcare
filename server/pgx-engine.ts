@@ -12,11 +12,26 @@ export type PgxMedication = {
   source: "detected" | "manual";
 };
 
+export type PgxDiagnosisSelection = {
+  code: string;
+  description?: string;
+  selectionType: "circled_preprinted" | "checked_preprinted" | "handwritten_circled" | "handwritten" | "other_mark";
+  page: number;
+  confidence: number;
+  evidence: string;
+  source: "vision";
+};
+
 export type PgxExtractedData = {
   patient: {
     name?: string;
-    dob?: string;
-    mrn?: string;
+  };
+  patientMatch?: {
+    labName?: string;
+    requisitionName?: string;
+    documentsMatch: boolean;
+    databaseStatus: "matched" | "not_found" | "ambiguous" | "document_mismatch" | "not_checked";
+    databasePatient?: { id: number; name: string };
   };
   lab: {
     name?: string;
@@ -29,6 +44,7 @@ export type PgxExtractedData = {
     npi?: string;
   };
   diagnosisCodes: string[];
+  diagnosisSelections?: PgxDiagnosisSelection[];
   genes: PgxGeneResult[];
   medications: PgxMedication[];
   panel: {
@@ -67,6 +83,15 @@ export type PgxCmsGroup = {
   description?: string;
 };
 
+export type PgxCmsDrugEvidence = {
+  articleId: string;
+  gene: string;
+  drug: string;
+  cptCodes: string[];
+  guidance?: string;
+  intendedUse?: string;
+};
+
 export type PgxActionablePair = PgxGeneDrugPair & {
   genotype?: string;
   phenotype?: string;
@@ -83,6 +108,7 @@ export type PgxAnalysisResult = {
     code: string;
     status: "supported" | "manual_review";
     groupNumber?: number;
+    articleId?: string;
     rationale: string;
   }>;
   medicalNecessity: {
@@ -96,6 +122,43 @@ export type PgxAnalysisResult = {
   };
   narrative: string;
   disclaimer: string;
+  billingWorksheet: {
+    format: "PGX_BILLING_WORKSHEET";
+    articleId: string;
+    lcdId: string;
+    serviceState?: string;
+    documentedDiagnosisCodes: string[];
+    serviceLines: Array<{
+      lineNumber: number;
+      cptCode: string | null;
+      description: string;
+      units: number;
+      genes: string[];
+      medications: string[];
+      diagnosisCodes: string[];
+      diagnosisPointers: number[];
+      cmsMatches: Array<{
+        diagnosisCode: string;
+        groupNumber: number;
+        articleId: string;
+      }>;
+      codingBasis: "qualifying_panel" | "single_gene_test" | "separate_test_confirmation" | "unlisted_review";
+      status: "ready" | "review";
+      issues: string[];
+    }>;
+    evidenceRows: Array<{
+      gene: string;
+      genotype?: string;
+      phenotype?: string;
+      medications: string[];
+      evidence: string[];
+      cmsArticleIds: string[];
+      separateTestCptReference: string | null;
+      status: "ready" | "review";
+      issues: string[];
+    }>;
+    notes: string[];
+  };
 };
 
 export const PGX_CPT_CODES: PgxCptCode[] = [
@@ -244,12 +307,56 @@ function normalizeText(value: unknown) {
 
 function findLineValue(text: string, labels: string[]) {
   for (const label of labels) {
-    const regex = new RegExp(`${escapeRegExp(label)}\\s*[:#-]?\\s*([^\\n]{2,90})`, "i");
+    const regex = new RegExp(`(?:^|\\n)\\s*${escapeRegExp(label)}(?!\\s+signature\\b)\\s*(?:[:#-]\\s*|\\s{2,})([^\\n]{2,90})`, "i");
     const match = text.match(regex);
     if (match?.[1]) return match[1].trim().replace(/\s{2,}.+$/, "");
   }
 
   return undefined;
+}
+
+function sanitizePersonName(value: string | undefined) {
+  const cleaned = String(value || "")
+    .replace(/^[^A-Za-z]+/, "")
+    .split(/\b(?:account|requisition(?:\s+id)?|dob|date\s+of\s+birth|mrn|medical\s+record|sex|gender|phone|signature)\b/i)[0]
+    .replace(/[^A-Za-z'., -]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (cleaned.length < 3 || cleaned.length > 70) return undefined;
+  if (!/[A-Za-z]{2}/.test(cleaned) || /\b(?:signature|date|unknown|not detected)\b/i.test(cleaned)) return undefined;
+  return cleaned;
+}
+
+function findPersonValue(text: string, labels: string[]) {
+  return sanitizePersonName(findLineValue(text, labels));
+}
+
+function findDateValue(text: string, labels: string[]) {
+  for (const label of labels) {
+    const line = text.match(new RegExp(`(?:^|\\n)\\s*${escapeRegExp(label)}\\s*[:#-]?\\s*([^\\n]{1,90})`, "i"))?.[1];
+    const date = line?.match(/\b(?:\d{1,2}[\/-]\d{1,2}[\/-](?:\d{2}|\d{4})|\d{4}[\/-]\d{1,2}[\/-]\d{1,2})\b/)?.[0];
+    if (date) return date;
+  }
+  return undefined;
+}
+
+export function isIcd10CmCodeSyntax(value: unknown) {
+  return /^[A-Z][0-9]{2}(?:\.[0-9A-Z]{1,4})?$/.test(String(value || "").trim().toUpperCase());
+}
+
+function extractExplicitDiagnosisCodes(text: string) {
+  const diagnosisLines = text
+    .split("\n")
+    .filter((line) => /\b(?:primary\s+)?(?:diagnosis|diagnoses|icd-?10(?:-cm)?|dx(?:\s+codes?)?|other\s+dx)\b/i.test(line));
+
+  return unique(Array.from(diagnosisLines.join("\n").matchAll(/\b[A-Z][0-9]{2}(?:\.[0-9A-Z]{1,4})?\b/gi))
+    .map((match) => match[0].toUpperCase())
+    .filter(isIcd10CmCodeSyntax));
+}
+
+function markedSection(text: string, name: "LAB REPORT" | "REQUISITION") {
+  return text.match(new RegExp(`--- CODICAL ${name} START ---([\\s\\S]*?)--- CODICAL ${name} END ---`, "i"))?.[1]?.trim();
 }
 
 function detectGenotype(text: string, gene: string) {
@@ -269,6 +376,12 @@ export function extractPgxDataFromText(rawText: string): PgxExtractedData {
   const text = normalizeText(rawText);
   const upper = text.toUpperCase();
   const warnings: string[] = [];
+  const requisitionText = markedSection(text, "REQUISITION");
+  const clinicalContext = requisitionText || text;
+  const medicationContext = requisitionText || text
+    .split("\n")
+    .filter((line) => /\b(?:active|current|home)?\s*(?:medication|medications|meds|drug|drugs)\b/i.test(line))
+    .join("\n");
 
   const genes = PGX_GENES.filter((gene) => new RegExp(`\\b${escapeRegExp(gene)}\\b`, "i").test(text)).map((gene) => ({
     gene,
@@ -280,7 +393,7 @@ export function extractPgxDataFromText(rawText: string): PgxExtractedData {
 
   const detectedDrugNames = unique(
     PGX_GENE_DRUG_PAIRS
-      .filter((pairRow) => new RegExp(`\\b${escapeRegExp(pairRow.drug)}\\b`, "i").test(text))
+      .filter((pairRow) => new RegExp(`\\b${escapeRegExp(pairRow.drug)}\\b`, "i").test(medicationContext))
       .map((pairRow) => pairRow.drug),
   );
 
@@ -293,8 +406,9 @@ export function extractPgxDataFromText(rawText: string): PgxExtractedData {
     };
   });
 
-  const diagnosisCodes = unique(Array.from(text.matchAll(/\b[A-TV-Z][0-9][0-9A-Z](?:\.[0-9A-Z]{1,4})?\b/gi)).map((match) => match[0].toUpperCase()));
+  const diagnosisCodes = extractExplicitDiagnosisCodes(clinicalContext);
   if (diagnosisCodes.length === 0) warnings.push("No source-documented ICD-10-CM code was detected; diagnosis selection requires manual, source-backed review.");
+  if (/\bD[O0]B\b/i.test(clinicalContext) && diagnosisCodes.length === 0) warnings.push("A DOB label was detected but was not accepted as a diagnosis code.");
 
   const hasDupDel = /\b(?:duplication|deletion|copy number|copy-number|dup\/del|dup|del|xN|x\d+)\b/i.test(text);
   if (!hasDupDel && genes.length >= 6) warnings.push("Copy-number or dup/del language was not detected; verify before using 81418.");
@@ -303,19 +417,17 @@ export function extractPgxDataFromText(rawText: string): PgxExtractedData {
 
   return {
     patient: {
-      name: findLineValue(text, ["Patient Name", "Patient"]),
-      dob: findLineValue(text, ["DOB", "Date of Birth"]),
-      mrn: findLineValue(text, ["MRN", "Medical Record"]),
+      name: findPersonValue(clinicalContext, ["Patient Name", "Patient"]),
     },
     lab: {
       name: findLineValue(text, ["Laboratory", "Lab", "Testing Lab"]),
       accession: findLineValue(text, ["Accession", "Specimen", "Test ID"]),
-      collectionDate: findLineValue(text, ["Collection Date", "Collected"]),
-      reportDate: findLineValue(text, ["Report Date", "Reported"]),
+      collectionDate: findDateValue(text, ["Collection Date", "Collected"]),
+      reportDate: findDateValue(text, ["Report Date", "Reported"]),
     },
     orderingProvider: {
-      name: findLineValue(text, ["Ordering Provider", "Provider"]),
-      npi: upper.match(/\bNPI\s*[:#-]?\s*(\d{10})\b/)?.[1],
+      name: findPersonValue(clinicalContext, ["Ordering Provider Name", "Ordering Physician", "Prescriber", "Ordering Provider", "Provider"]),
+      npi: clinicalContext.toUpperCase().match(/\bNPI\s*[:#-]?\s*(\d{10})\b/)?.[1],
     },
     diagnosisCodes,
     genes,
@@ -347,7 +459,7 @@ export function determineCptCodes(extracted: Pick<PgxExtractedData, "genes" | "p
     return {
       type: "panel",
       codes: panelCode ? [{ ...panelCode, units: 1 }] : [],
-      notes: ["81418 selected because the panel has >=6 genes, CYP2C19, CYP2D6 and copy-number evidence."],
+      notes: ["81418 is a single candidate service because the reported panel meets the minimum gene-content descriptor. Confirm the performed assay, applicable PLA code, payer policy, and copy-number method before billing."],
     };
   }
 
@@ -372,16 +484,16 @@ export function determineCptCodes(extracted: Pick<PgxExtractedData, "genes" | "p
     codes,
     notes: [
       ...notes,
-      "Stacked individual CPT logic used because panel criteria were not fully met.",
+      "These are individual-test references, not automatically stackable claim lines. Confirm which tests were separately ordered and performed before billing more than one code.",
     ],
   };
 }
 
-export function validateMedicalNecessity(genes: PgxGeneResult[], medications: PgxMedication[]) {
+export function validateMedicalNecessity(genes: PgxGeneResult[], medications: PgxMedication[], knowledgePairs = PGX_GENE_DRUG_PAIRS) {
   const actionablePairs: PgxActionablePair[] = [];
   for (const medication of medications) {
     for (const geneResult of genes) {
-      const pairRow = PGX_GENE_DRUG_PAIRS.find(
+      const pairRow = knowledgePairs.find(
         (candidate) => candidate.gene === geneResult.gene && candidate.drug.toLowerCase() === medication.name.toLowerCase(),
       );
       if (pairRow && (pairRow.cpicLevel === "A" || pairRow.cpicLevel === "B" || pairRow.tableSource.includes("FDA"))) {
@@ -403,51 +515,69 @@ export function validateMedicalNecessity(genes: PgxGeneResult[], medications: Pg
   };
 }
 
-export function validateIcd10ForCpt(cptCode: string, icd10: string) {
-  const groupNumbers = PGX_CMS_GROUPS
-    .filter((group) => group.articleId === "A59915" && group.groupType === "cpt" && group.code === cptCode)
-    .map((group) => group.groupNumber);
-  const match = PGX_CMS_GROUPS.find(
-    (group) => group.articleId === "A59915"
-      && group.groupType === "icd10"
-      && group.code === icd10
-      && groupNumbers.includes(group.groupNumber),
-  );
+export function validateIcd10ForCpt(cptCode: string, icd10: string, groups = PGX_CMS_GROUPS) {
+  const cptGroups = groups.filter((group) => group.groupType === "cpt" && group.code === cptCode);
+  const match = groups.find((group) => group.groupType === "icd10"
+    && group.code === icd10
+    && cptGroups.some((cptGroup) => cptGroup.articleId === group.articleId && cptGroup.groupNumber === group.groupNumber));
 
   return {
     isValid: Boolean(match),
     groupNumber: match?.groupNumber,
+    articleId: match?.articleId,
   };
 }
 
 export function analyzePgxCoding(input: {
   extracted: PgxExtractedData;
   primaryIcd10?: string;
+  diagnosisCodes?: string[];
   drugNames?: string[];
   payerAcceptsPanel?: boolean;
+  cmsGroups?: PgxCmsGroup[];
+  cmsDrugEvidence?: PgxCmsDrugEvidence[];
+  geneDrugPairs?: PgxGeneDrugPair[];
+  stateCode?: string;
 }): PgxAnalysisResult {
+  const cmsGroups = input.cmsGroups !== undefined ? input.cmsGroups : PGX_CMS_GROUPS;
+  const cmsDrugEvidence = input.cmsDrugEvidence || [];
+  const enforceCmsDrugEvidence = Array.isArray(input.cmsDrugEvidence);
+  const knowledgePairs = input.geneDrugPairs?.length ? input.geneDrugPairs : PGX_GENE_DRUG_PAIRS;
   const manualMedications = unique(input.drugNames || [])
     .map((name) => name.trim().toLowerCase())
     .filter(Boolean)
     .map((name) => {
-      const pairRow = PGX_GENE_DRUG_PAIRS.find((candidate) => candidate.drug === name);
+      const pairRow = knowledgePairs.find((candidate) => candidate.drug === name);
       return { name, drugClass: pairRow?.drugClass, source: "manual" as const };
     });
   const medications = unique([...input.extracted.medications, ...manualMedications].map((medication) => medication.name))
     .map((name) => [...input.extracted.medications, ...manualMedications].find((medication) => medication.name === name)!)
     .filter(Boolean);
-  const extracted = { ...input.extracted, medications };
+  const requestedDiagnosisCodes = unique([
+    input.primaryIcd10,
+    ...(input.diagnosisCodes || []),
+  ].map((code) => code?.trim().toUpperCase()).filter((code): code is string => Boolean(code)));
+  const rejectedDiagnosisCodes = requestedDiagnosisCodes.filter((code) => !isIcd10CmCodeSyntax(code));
+  const extracted = {
+    ...input.extracted,
+    medications,
+    warnings: rejectedDiagnosisCodes.length
+      ? unique([...input.extracted.warnings, ...rejectedDiagnosisCodes.map((code) => `“${code}” was rejected because it is not valid ICD-10-CM syntax.`)])
+      : input.extracted.warnings,
+  };
   const cptSelection = determineCptCodes(extracted, input.payerAcceptsPanel ?? true);
-  const diagnosisCodes = unique([input.primaryIcd10?.trim().toUpperCase(), ...extracted.diagnosisCodes].filter(Boolean) as string[]);
-  const medicalNecessity = validateMedicalNecessity(extracted.genes, extracted.medications);
+  const diagnosisCodes = unique([...requestedDiagnosisCodes, ...extracted.diagnosisCodes]
+    .filter((code): code is string => Boolean(code && isIcd10CmCodeSyntax(code))));
+  const medicalNecessity = validateMedicalNecessity(extracted.genes, extracted.medications, knowledgePairs);
 
   const icd10 = diagnosisCodes.map((code) => {
-    const groupMatch = cptSelection.codes.some((cpt) => validateIcd10ForCpt(cpt.code, code).isValid);
-    const validation = cptSelection.codes.map((cpt) => validateIcd10ForCpt(cpt.code, code)).find((result) => result.isValid);
+    const groupMatch = cptSelection.codes.some((cpt) => validateIcd10ForCpt(cpt.code, code, cmsGroups).isValid);
+    const validation = cptSelection.codes.map((cpt) => validateIcd10ForCpt(cpt.code, code, cmsGroups)).find((result) => result.isValid);
     return {
       code,
       status: groupMatch ? "supported" as const : "manual_review" as const,
       groupNumber: validation?.groupNumber,
+      articleId: validation?.articleId,
       rationale: groupMatch
         ? "The CPT/ICD relationship is present in a verified, versioned source group."
         : "No verified jurisdiction/date-qualified source relationship is active; manual review is required.",
@@ -494,19 +624,118 @@ export function analyzePgxCoding(input: {
         : "No seeded CPIC/FDA evidence match found.",
     },
     {
+      id: "cms-gene-drug",
+      label: "CMS gene/drug table",
+      passed: !enforceCmsDrugEvidence || medicalNecessity.actionablePairs.some((pairRow) =>
+        cmsDrugEvidence.some((evidence) => evidence.gene === pairRow.gene && evidence.drug === pairRow.drug)),
+      message: !enforceCmsDrugEvidence
+        ? "CMS article medication evidence was not requested in this review."
+        : cmsDrugEvidence.length
+          ? `${cmsDrugEvidence.length} state-qualified CMS article gene/drug association(s) matched.`
+          : "No state-qualified CMS article gene/drug association matched the active medication and tested gene.",
+    },
+    {
       id: "once-lifetime",
       label: "Once-per-lifetime",
-      passed: true,
-      message: "No prior PGx test was found in this local Phase 1 session.",
+      passed: false,
+      message: "Prior germline testing has not been verified against longitudinal patient history; confirm before submission.",
     },
   ];
 
   const narrative = [
     `PGx analysis detected ${extracted.genes.length} gene(s): ${extracted.genes.map((gene) => gene.gene).join(", ") || "none"}.`,
-    `Suggested CPT strategy: ${cptSelection.type}; codes ${cptSelection.codes.map((code) => code.code).join(", ") || "none"}.`,
+    `Candidate laboratory service strategy: ${cptSelection.type}; codes ${cptSelection.codes.map((code) => code.code).join(", ") || "none"}.`,
     medicalNecessity.reason,
     "Coder must verify current CMS MCD article, commercial payer policy, LCD/NCD applicability and documentation before billing.",
   ].join(" ");
+
+  const serviceLines: PgxAnalysisResult["billingWorksheet"]["serviceLines"] = cptSelection.codes.map((selectedCpt, index) => {
+    const serviceGenes = cptSelection.type === "panel"
+      ? extracted.genes.map((gene) => gene.gene)
+      : selectedCpt.gene?.split(/,\s*/).filter(Boolean)
+        || extracted.genes.filter((gene) => PGX_TIER_1_MAP[gene.gene] === selectedCpt.code).map((gene) => gene.gene);
+    const relevantPairs = medicalNecessity.actionablePairs.filter((pairRow) => serviceGenes.includes(pairRow.gene));
+    const cmsMatches = diagnosisCodes.flatMap((diagnosisCode) => {
+      const match = validateIcd10ForCpt(selectedCpt.code, diagnosisCode, cmsGroups);
+      return match.isValid && match.groupNumber !== undefined && match.articleId
+        ? [{ diagnosisCode, groupNumber: match.groupNumber, articleId: match.articleId }]
+        : [];
+    });
+    const supportedDiagnosisCodes = unique(cmsMatches.map((match) => match.diagnosisCode));
+    const supportedArticles = new Set(cmsMatches.map((match) => match.articleId));
+    const cmsLinkedPairs = relevantPairs.filter((pairRow) => cmsDrugEvidence.some((evidence) =>
+      supportedArticles.has(evidence.articleId)
+      && evidence.gene === pairRow.gene
+      && evidence.drug === pairRow.drug
+      && evidence.cptCodes.includes(selectedCpt.code)));
+    const issues: string[] = [];
+
+    if (diagnosisCodes.length === 0) {
+      issues.push("No source-documented diagnosis was supplied for this service line.");
+    } else if (supportedDiagnosisCodes.length === 0) {
+      issues.push(`${diagnosisCodes.join(", ")} ${diagnosisCodes.length === 1 ? "is" : "are"} documented but not supported for ${selectedCpt.code} by the active state/MAC article data.`);
+    }
+    if (relevantPairs.length === 0) issues.push("No active medication has an actionable CPIC/FDA relationship with a gene in this service.");
+    if (enforceCmsDrugEvidence && relevantPairs.length > 0 && cmsLinkedPairs.length === 0) {
+      issues.push(`No actionable gene-drug pair is linked to ${selectedCpt.code} in the same applicable CMS article as a supported diagnosis.`);
+    }
+    if (cptSelection.type !== "panel" && extracted.genes.length > 1) {
+      issues.push("Confirm this was separately ordered and performed; multiple report results do not by themselves support stacked individual CPT billing.");
+    }
+    if (selectedCpt.tier === "unlisted") issues.push("Unlisted molecular pathology coding requires payer-specific documentation and applicable DEX/technical-assessment review.");
+    if (cptSelection.type === "panel" && extracted.panel.detectedPanelName) {
+      issues.push(`Named assay ${extracted.panel.detectedPanelName} was detected; confirm whether an assay-specific PLA code applies before using 81418.`);
+    }
+    if (relevantPairs.some((pairRow) => pairRow.drug === "warfarin" && ["CYP2C9", "VKORC1"].includes(pairRow.gene))) {
+      issues.push("Warfarin-response PGx must satisfy NCD 90.1 Coverage with Evidence Development requirements; ordinary LCD support is insufficient.");
+    }
+
+    return {
+      lineNumber: index + 1,
+      cptCode: selectedCpt.code,
+      description: selectedCpt.description,
+      units: 1,
+      genes: unique(serviceGenes),
+      medications: unique(relevantPairs.map((pairRow) => pairRow.drug)),
+      diagnosisCodes: supportedDiagnosisCodes,
+      diagnosisPointers: supportedDiagnosisCodes.map((code) => diagnosisCodes.indexOf(code) + 1).filter((pointer) => pointer > 0),
+      cmsMatches,
+      codingBasis: cptSelection.type === "panel"
+        ? "qualifying_panel" as const
+        : selectedCpt.tier === "unlisted"
+          ? "unlisted_review" as const
+          : extracted.genes.length === 1
+            ? "single_gene_test" as const
+            : "separate_test_confirmation" as const,
+      status: issues.length === 0 ? "ready" as const : "review" as const,
+      issues,
+    };
+  });
+
+  const evidenceRows: PgxAnalysisResult["billingWorksheet"]["evidenceRows"] = extracted.genes.map((geneResult) => {
+    const pairs = medicalNecessity.actionablePairs.filter((pairRow) => pairRow.gene === geneResult.gene);
+    const selectedCodes = new Set(cptSelection.codes.map((code) => code.code));
+    const articleEvidence = cmsDrugEvidence.filter((evidence) => pairs.some((pairRow) =>
+      evidence.gene === pairRow.gene
+      && evidence.drug === pairRow.drug
+      && evidence.cptCodes.some((code) => selectedCodes.has(code))));
+    const issues: string[] = [];
+    if (pairs.length === 0) issues.push("No active medication has an actionable CPIC/FDA relationship with this result.");
+    if (enforceCmsDrugEvidence && pairs.length > 0 && articleEvidence.length === 0) {
+      issues.push("No matching gene-drug entry was found in the applicable CMS article for the selected service.");
+    }
+    return {
+      gene: geneResult.gene,
+      genotype: geneResult.genotype,
+      phenotype: geneResult.phenotype,
+      medications: unique(pairs.map((pairRow) => pairRow.drug)),
+      evidence: unique(pairs.map((pairRow) => `${pairRow.tableSource} Level ${pairRow.cpicLevel}`)),
+      cmsArticleIds: unique(articleEvidence.map((evidence) => evidence.articleId)),
+      separateTestCptReference: PGX_TIER_1_MAP[geneResult.gene] || null,
+      status: issues.length === 0 ? "ready" as const : "review" as const,
+      issues,
+    };
+  });
 
   return {
     extracted,
@@ -519,40 +748,41 @@ export function analyzePgxCoding(input: {
     },
     narrative,
     disclaimer: "Decision support only. Verify current payer policy, CMS guidance and certified coder review before billing or submission.",
+    billingWorksheet: {
+      format: "PGX_BILLING_WORKSHEET",
+      articleId: unique(serviceLines.flatMap((line) => line.cmsMatches.map((match) => match.articleId))).join(", ") || "CMS MCD",
+      lcdId: "Jurisdiction-specific",
+      serviceState: input.stateCode?.trim().toUpperCase(),
+      documentedDiagnosisCodes: diagnosisCodes,
+      serviceLines,
+      evidenceRows,
+      notes: [
+        "Billable service lines represent laboratory tests actually performed; gene evidence rows are not additional claim lines.",
+        cptSelection.type === "panel"
+          ? "A qualifying 81418 panel is shown once with one unit; list additional tested genes and required drugs in the claim narrative."
+          : "Individual CPT references require confirmation that each test was separately ordered and performed; do not auto-stack codes from report contents.",
+        "Only source-documented diagnoses supported by the active state/MAC article are placed on the service line; unsupported documented diagnoses remain visible for review.",
+      ],
+    },
   };
 }
 
 export function buildPgxClaimPreview(analysis: PgxAnalysisResult) {
-  const supportedIcd = analysis.icd10.filter((row) => row.status === "supported").map((row) => row.code);
-  const reviewIcd = analysis.icd10.filter((row) => row.status !== "supported").map((row) => row.code);
-
   return {
-    claimType: "CMS-1500",
+    claimType: "PGX_BILLING_WORKSHEET" as const,
     previewOnly: true,
     submissionEnabled: false,
-    articleId: null,
-    coverageDecision: "jurisdiction_not_configured",
-    diagnosisPointers: supportedIcd,
-    reviewDiagnosisCodes: reviewIcd,
-    serviceLines: analysis.cptSelection.codes.map((code, index) => ({
-      line: index + 1,
-      cpt: code.code,
-      units: code.units,
-      diagnosisPointer: "A",
-      charge: null,
-      referenceRate: code.referenceRate,
-      rateDisclaimer: "Reference only; look up the applicable date-of-service fee schedule and payer contract.",
-      modifiers: [],
-      narrative: analysis.narrative,
-    })),
-    attachments: {
-      geneDrugReport: analysis.medicalNecessity.actionablePairs.map((pairRow) => ({
-        gene: pairRow.gene,
-        drug: pairRow.drug,
-        evidence: `${pairRow.tableSource} Level ${pairRow.cpicLevel}`,
-        recommendation: pairRow.recommendation,
-      })),
+    articleId: analysis.billingWorksheet.articleId,
+    lcdId: analysis.billingWorksheet.lcdId,
+    serviceState: analysis.billingWorksheet.serviceState,
+    patient: {
+      name: analysis.extracted.patient.name || null,
     },
+    patientMatch: analysis.extracted.patientMatch || null,
+    documentedDiagnosisCodes: analysis.billingWorksheet.documentedDiagnosisCodes,
+    serviceLines: analysis.billingWorksheet.serviceLines,
+    evidenceRows: analysis.billingWorksheet.evidenceRows,
+    notes: analysis.billingWorksheet.notes,
     audit: analysis.auditChecklist,
     disclaimer: analysis.disclaimer,
   };

@@ -74,14 +74,21 @@ export async function uploadPgxObject(
   const requiredPrefix = `pgx/${getPgxStorageEnvironment()}/${safePathSegment(process.env.PGX_DEFAULT_TENANT_ID || "")}/`;
   if (!key.startsWith(requiredPrefix) || key.includes("..") || key.includes("\\")) return null;
 
-  await client.send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: body,
-      ContentType: contentType,
-    }),
-  );
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    await client.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+      }),
+      { abortSignal: controller.signal },
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const url = await getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 300 });
 

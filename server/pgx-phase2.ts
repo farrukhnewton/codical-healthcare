@@ -125,7 +125,7 @@ export function validatePgxIntakeFile(input: {
     canonicalMimeType = "image/png";
     extractionMethod = "manual_entry";
     requiresManualReview = true;
-    warnings.push("Image OCR is not active; image content cannot populate claim-bound fields until manually reviewed.");
+    warnings.push("Image OCR text requires human review before diagnosis, medication, or claim-bound fields are accepted.");
   } else if (extension === "jpg" || extension === "jpeg") {
     if (!beginsWith(buffer, [0xff, 0xd8, 0xff]) || buffer.at(-2) !== 0xff || buffer.at(-1) !== 0xd9) {
       throw new PgxIntakeError("signature_mismatch", "The JPEG signature does not match its declared file type.");
@@ -134,7 +134,7 @@ export function validatePgxIntakeFile(input: {
     canonicalMimeType = "image/jpeg";
     extractionMethod = "manual_entry";
     requiresManualReview = true;
-    warnings.push("Image OCR is not active; image content cannot populate claim-bound fields until manually reviewed.");
+    warnings.push("Image OCR text requires human review before diagnosis, medication, or claim-bound fields are accepted.");
   } else {
     validateText(buffer);
     kind = "txt";

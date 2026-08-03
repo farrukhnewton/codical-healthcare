@@ -40,10 +40,13 @@ import {
   analyzePgxCoding,
   buildPgxClaimPreview,
   extractPgxDataFromText,
+  type PgxCmsGroup,
+  type PgxCmsDrugEvidence,
   type PgxAnalysisResult,
 } from "./pgx-engine";
 import { createPgxObjectKey, isPgxR2Configured, uploadPgxObject } from "./pgx-r2";
 import { PgxIntakeError, validatePgxIntakeFile } from "./pgx-phase2";
+import { understandPgxDocument } from "./services/pgx-document-understanding";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -315,32 +318,233 @@ function parseManualDrugNames(value: unknown) {
     .filter(Boolean);
 }
 
-function generatePgxPdfBuffer(analysis: PgxAnalysisResult, claimJson: Record<string, any>) {
+function comparablePatientName(value: unknown) {
+  return String(value || "").toLowerCase().replace(/[^a-z ]/g, " ").split(/\s+/).filter(Boolean).sort().join(" ");
+}
+
+async function matchPgxPatient(labName?: string, requisitionName?: string) {
+  const labKey = comparablePatientName(labName);
+  const reqKey = comparablePatientName(requisitionName);
+  const documentsMatch = Boolean(labKey && reqKey && labKey === reqKey);
+  if (labKey && reqKey && !documentsMatch) return { labName, requisitionName, documentsMatch: false, databaseStatus: "document_mismatch" as const };
+  const sourceName = labName || requisitionName;
+  if (!sourceName) return { labName, requisitionName, documentsMatch: false, databaseStatus: "not_checked" as const };
+  const tokens = String(sourceName).replace(/,/g, " ").split(/\s+/).filter(Boolean);
+  if (tokens.length < 2) return { labName, requisitionName, documentsMatch, databaseStatus: "not_found" as const };
+  const first = tokens[0];
+  const last = tokens[tokens.length - 1];
+  const matches = await db.select({ id: patients.id, firstName: patients.firstName, lastName: patients.lastName }).from(patients)
+    .where(or(and(ilike(patients.firstName, first), ilike(patients.lastName, last)), and(ilike(patients.firstName, last), ilike(patients.lastName, first))))
+    .limit(2);
+  if (matches.length === 1) return { labName, requisitionName, documentsMatch, databaseStatus: "matched" as const, databasePatient: { id: matches[0].id, name: `${matches[0].firstName} ${matches[0].lastName}` } };
+  return { labName, requisitionName, documentsMatch, databaseStatus: matches.length > 1 ? "ambiguous" as const : "not_found" as const };
+}
+
+function generateLegacyPgxPdfBuffer(analysis: PgxAnalysisResult, claimJson: Record<string, any>) {
   return new Promise<Buffer>((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 42 });
+    const doc = new PDFDocument({ size: "LETTER", layout: "landscape", margin: 28 });
     const chunks: Buffer[] = [];
     doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    doc.fontSize(18).text("Codical Health PGx Coding Review", { underline: false });
-    doc.moveDown(0.4);
-    doc.fontSize(9).fillColor("#5f527a").text(analysis.disclaimer);
-    doc.moveDown();
-    doc.fillColor("#170a42").fontSize(12).text("Suggested CPT Strategy", { continued: false });
-    doc.fontSize(10).fillColor("#2b205f").text(`${analysis.cptSelection.type.toUpperCase()} - ${analysis.cptSelection.codes.map((code) => `${code.code} x${code.units}`).join(", ") || "No code"}`);
-    doc.moveDown(0.6);
-    doc.fontSize(12).fillColor("#170a42").text("Diagnosis Candidates");
-    doc.fontSize(10).fillColor("#2b205f").text(analysis.icd10.map((row) => `${row.code} (${row.status})`).join(", ") || "None");
-    doc.moveDown(0.6);
-    doc.fontSize(12).fillColor("#170a42").text("Medical Necessity");
-    doc.fontSize(10).fillColor("#2b205f").text(analysis.medicalNecessity.reason);
-    doc.moveDown(0.6);
-    doc.fontSize(12).fillColor("#170a42").text("Claim Narrative");
-    doc.fontSize(10).fillColor("#2b205f").text(analysis.narrative);
-    doc.moveDown(0.6);
-    doc.fontSize(12).fillColor("#170a42").text("Claim JSON");
-    doc.fontSize(8).fillColor("#4d4166").text(JSON.stringify(claimJson, null, 2), { width: 500 });
+    const worksheetWidth = doc.page.width - 56;
+    const worksheetX = 28;
+    const worksheetWidths = [90, 66, 112, 82, 65, worksheetWidth - 415];
+    const worksheetHeadings = ["TESTED GENE", "CPT", "ACTIVE MEDICATION", "ICD-10-CM", "STATUS", "CMS / EVIDENCE REVIEW"];
+    doc.roundedRect(worksheetX, 28, worksheetWidth, 62, 8).fill("#eefcfb");
+    doc.fillColor("#0f766e").font("Helvetica-Bold").fontSize(18).text("PGx BILLING WORKSHEET", worksheetX + 14, 40);
+    doc.fillColor("#4b5563").font("Helvetica").fontSize(8).text(`Patient: ${claimJson.patient?.name || "REVIEW REQUIRED"}  |  CMS: ${claimJson.articleId || "MCD REVIEW"}  |  Service state: ${claimJson.serviceState || "REQUIRED"}`, worksheetX + 14, 66);
+    doc.fillColor("#991b1b").font("Helvetica-Bold").fontSize(8).text("CODER REVIEW REQUIRED", worksheetX + worksheetWidth - 180, 50, { width: 165, align: "right" });
+    let rowY = 104;
+    let rowX = worksheetX;
+    worksheetHeadings.forEach((heading, index) => {
+      doc.rect(rowX, rowY, worksheetWidths[index], 24).fillAndStroke("#0f766e", "#0f766e");
+      doc.fillColor("#fff").font("Helvetica-Bold").fontSize(6.5).text(heading, rowX + 4, rowY + 8, { width: worksheetWidths[index] - 8 });
+      rowX += worksheetWidths[index];
+    });
+    rowY += 24;
+    for (const row of claimJson.rows || []) {
+      if (rowY > doc.page.height - 85) { doc.addPage(); rowY = 36; }
+      const evidence = row.issues?.length
+        ? row.issues.join(" ")
+        : `${row.evidence || ""}${row.cmsGroupNumber ? `; ${row.cmsArticleId || "CMS"} group ${row.cmsGroupNumber}` : ""}${row.cptCode === "81418" && !row.billOnce ? "; traceability only - do not bill another unit" : ""}`;
+      const cells = [row.gene, row.cptCode || "REVIEW", row.medication || "REVIEW", row.diagnosisCode || "REVIEW", String(row.status).toUpperCase(), evidence];
+      rowX = worksheetX;
+      cells.forEach((cell, index) => {
+        doc.rect(rowX, rowY, worksheetWidths[index], 42).fillAndStroke("#fff", "#cbd5e1");
+        doc.fillColor(index === 4 && row.status !== "ready" ? "#9a3412" : "#111827").font(index < 2 ? "Helvetica-Bold" : "Helvetica").fontSize(7).text(String(cell), rowX + 4, rowY + 7, { width: worksheetWidths[index] - 8, height: 30, ellipsis: true });
+        rowX += worksheetWidths[index];
+      });
+      rowY += 42;
+    }
+    doc.fillColor("#4b5563").font("Helvetica").fontSize(7).text((claimJson.notes || []).join("  "), worksheetX, Math.min(rowY + 12, doc.page.height - 62), { width: worksheetWidth });
+    doc.fillColor("#7c2d12").font("Helvetica").fontSize(6.5).text(analysis.disclaimer, worksheetX, doc.page.height - 38, { width: worksheetWidth, align: "center" });
+    doc.end();
+    return;
+
+    const pageWidth = doc.page.width - 56;
+    const startX = 28;
+    const color = claimJson.claimType === "UB-04" ? "#854d0e" : "#9f1239";
+    const pale = claimJson.claimType === "UB-04" ? "#fffbeb" : "#fff1f2";
+    const value = (input: unknown, fallback = "REVIEW REQUIRED") => input === null || input === undefined || input === "" ? fallback : String(input);
+    const field = (x: number, y: number, width: number, height: number, label: string, content: unknown) => {
+      doc.save().lineWidth(0.6).strokeColor("#b6bbc6").rect(x, y, width, height).fillAndStroke("#ffffff", "#b6bbc6").restore();
+      doc.fillColor("#6b7280").fontSize(6).font("Helvetica-Bold").text(label.toUpperCase(), x + 5, y + 4, { width: width - 10, lineBreak: false });
+      doc.fillColor("#111827").fontSize(8).font("Helvetica").text(value(content), x + 5, y + 16, { width: width - 10, height: height - 18, ellipsis: true });
+    };
+
+    doc.save().roundedRect(startX, 28, pageWidth, 55, 7).fill(pale).restore();
+    doc.fillColor(color).font("Helvetica-Bold").fontSize(18).text(
+      claimJson.claimType === "UB-04" ? "CMS-1450 / UB-04 INSTITUTIONAL CLAIM REVIEW" : "CMS-1500 (02/12) PROFESSIONAL CLAIM REVIEW",
+      startX + 14,
+      40,
+    );
+    doc.fillColor("#4b5563").font("Helvetica").fontSize(8).text("Codical Health PGx Coding Engine · Structured review worksheet", startX + 14, 64);
+    doc.fillColor("#991b1b").font("Helvetica-Bold").fontSize(8).text("PREVIEW ONLY · NOT FOR CLAIM SUBMISSION", startX + pageWidth - 210, 49, { width: 195, align: "right" });
+
+    let y = 93;
+    const third = pageWidth / 3;
+    if (claimJson.claimType === "CMS-1500") {
+      field(startX, y, third, 40, "1a Insured ID", claimJson.patient?.memberId);
+      field(startX + third, y, third, 40, "2 Patient name", claimJson.patient?.name);
+      field(startX + third * 2, y, third, 40, "3 Date of birth", claimJson.patient?.dob);
+      y += 40;
+      field(startX, y, third, 40, "17 Ordering/referring provider", claimJson.provider?.name);
+      field(startX + third, y, third, 40, "17b NPI", claimJson.provider?.npi);
+      field(startX + third * 2, y, third, 40, "23 Prior authorization", claimJson.formFields?.priorAuthorization);
+    } else {
+      field(startX, y, third, 40, "FL 1 Billing provider", claimJson.provider?.billingName);
+      field(startX + third, y, third, 40, "FL 3a Patient control number", claimJson.formFields?.patientControlNumber);
+      field(startX + third * 2, y, third, 40, "FL 4 Type of bill", claimJson.formFields?.typeOfBill);
+      y += 40;
+      field(startX, y, third, 40, "FL 8 Patient name", claimJson.patient?.name);
+      field(startX + third, y, third, 40, "FL 10 Date of birth", claimJson.patient?.dob);
+      field(startX + third * 2, y, third, 40, "FL 56 Billing provider NPI", claimJson.provider?.billingNpi);
+    }
+    y += 48;
+    field(startX, y, pageWidth, 38, claimJson.claimType === "CMS-1500" ? "21 ICD-10-CM diagnoses" : "FL 66 / 67 ICD-10-CM diagnoses", (claimJson.diagnosisCodes || []).join(" · ") || "NO SOURCE-SUPPORTED DIAGNOSIS DETECTED");
+    y += 48;
+
+    const widths = claimJson.claimType === "CMS-1500"
+      ? [78, 55, 190, 48, 78, 55]
+      : [78, 190, 85, 78, 55, 78];
+    const headings = claimJson.claimType === "CMS-1500"
+      ? ["24A DATE", "24B POS", "24D CPT / HCPCS", "24E DX", "24F CHARGE", "24G UNITS"]
+      : ["FL 42 REVENUE", "FL 43 DESCRIPTION", "FL 44 HCPCS", "FL 45 DATE", "FL 46 UNITS", "FL 47 CHARGE"];
+    const totalDefined = widths.reduce((total, width) => total + width, 0);
+    widths[2] += pageWidth - totalDefined;
+    let x = startX;
+    headings.forEach((heading, index) => {
+      doc.save().rect(x, y, widths[index], 22).fillAndStroke(color, color).restore();
+      doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(6).text(heading, x + 4, y + 8, { width: widths[index] - 8 });
+      x += widths[index];
+    });
+    y += 22;
+    for (const line of claimJson.serviceLines || []) {
+      const cells = claimJson.claimType === "CMS-1500"
+        ? [value(claimJson.formFields?.serviceDate, "—"), value(claimJson.formFields?.placeOfService, "—"), `${value(line.cpt)} · ${value(line.description, "")}`, value(line.diagnosisPointer, "—"), line.charge === null ? "NOT SET" : line.charge, line.units]
+        : [value(line.revenueCode, "REVIEW"), value(line.description), value(line.hcpcs), value(claimJson.formFields?.serviceDate, "—"), line.units, line.charge === null ? "NOT SET" : line.charge];
+      x = startX;
+      cells.forEach((cell, index) => {
+        doc.save().rect(x, y, widths[index], 34).fillAndStroke("#ffffff", "#b6bbc6").restore();
+        doc.fillColor("#111827").font("Helvetica").fontSize(7).text(String(cell), x + 4, y + 8, { width: widths[index] - 8, height: 22, ellipsis: true });
+        x += widths[index];
+      });
+      y += 34;
+    }
+    if ((claimJson.serviceLines || []).length === 0) {
+      field(startX, y, pageWidth, 34, "Service lines", "NO CODE SUGGESTION");
+      y += 34;
+    }
+
+    y += 10;
+    const half = pageWidth / 2;
+    if (claimJson.claimType === "CMS-1500") {
+      field(startX, y, half, 38, "31 Provider signature", "SIGNATURE ON FILE — CONFIRM");
+      field(startX + half, y, half, 38, "33 / 33a Billing provider and NPI", `${value(claimJson.provider?.billingName)} · ${value(claimJson.provider?.billingNpi)}`);
+    } else {
+      field(startX, y, half, 38, "FL 50 / 60 Payer and insured ID", `${value(claimJson.formFields?.payerName)} · ${value(claimJson.patient?.memberId)}`);
+      field(startX + half, y, half, 38, "FL 76 Attending provider", `${value(claimJson.provider?.name)} · ${value(claimJson.provider?.npi)}`);
+    }
+    y += 49;
+    doc.fillColor("#374151").font("Helvetica-Bold").fontSize(8).text("CODING RATIONALE", startX, y);
+    doc.fillColor("#4b5563").font("Helvetica").fontSize(7.5).text(analysis.medicalNecessity.reason, startX, y + 12, { width: pageWidth, height: 30, ellipsis: true });
+    doc.fillColor("#7c2d12").font("Helvetica").fontSize(6.5).text(analysis.disclaimer, startX, doc.page.height - 43, { width: pageWidth, align: "center" });
+    doc.end();
+  });
+}
+
+function generatePgxPdfBuffer(analysis: PgxAnalysisResult, claimJson: Record<string, any>) {
+  return new Promise<Buffer>((resolve, reject) => {
+    const doc = new PDFDocument({ size: "LETTER", layout: "landscape", margin: 28 });
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const pageX = 28;
+    const pageWidth = doc.page.width - 56;
+    const bottom = doc.page.height - 52;
+    const value = (input: unknown, fallback = "REVIEW") => input === null || input === undefined || input === "" ? fallback : String(input);
+    const drawTitle = () => {
+      doc.roundedRect(pageX, 28, pageWidth, 62, 8).fill("#eefcfb");
+      doc.fillColor("#0f766e").font("Helvetica-Bold").fontSize(18).text("PGx BILLING WORKSHEET", pageX + 14, 40);
+      doc.fillColor("#4b5563").font("Helvetica").fontSize(8).text(`Patient: ${claimJson.patient?.name || "REVIEW REQUIRED"}  |  CMS: ${claimJson.articleId || "MCD REVIEW"}  |  Service state: ${claimJson.serviceState || "REQUIRED"}`, pageX + 14, 66);
+      doc.fillColor("#991b1b").font("Helvetica-Bold").fontSize(8).text("CODER REVIEW REQUIRED", pageX + pageWidth - 180, 50, { width: 165, align: "right" });
+    };
+    const drawHeadings = (y: number, headings: string[], widths: number[]) => {
+      let x = pageX;
+      headings.forEach((heading, index) => {
+        doc.rect(x, y, widths[index], 22).fillAndStroke("#0f766e", "#0f766e");
+        doc.fillColor("#fff").font("Helvetica-Bold").fontSize(6.2).text(heading, x + 4, y + 7, { width: widths[index] - 8 });
+        x += widths[index];
+      });
+      return y + 22;
+    };
+    const drawCells = (y: number, cells: unknown[], widths: number[], height: number, statusIndex?: number) => {
+      let x = pageX;
+      cells.forEach((cell, index) => {
+        doc.rect(x, y, widths[index], height).fillAndStroke("#fff", "#cbd5e1");
+        const review = statusIndex === index && String(cell).toUpperCase() !== "READY" && String(cell).toUpperCase() !== "SUPPORTED";
+        doc.fillColor(review ? "#9a3412" : "#111827").font(index < 2 ? "Helvetica-Bold" : "Helvetica").fontSize(6.8).text(value(cell), x + 4, y + 6, { width: widths[index] - 8, height: height - 12, ellipsis: true });
+        x += widths[index];
+      });
+      return y + height;
+    };
+
+    drawTitle();
+    let y = 104;
+    doc.fillColor("#0f172a").font("Helvetica-Bold").fontSize(9).text("BILLABLE LABORATORY SERVICE LINES", pageX, y);
+    y += 14;
+    const serviceWidths = [30, 58, 34, 136, 104, 92, pageWidth - 454];
+    const serviceHeadings = ["LINE", "CPT", "UOS", "TESTED CONTENT", "REQUIRED DRUGS", "SUPPORTED DX", "STATUS / REVIEW"];
+    y = drawHeadings(y, serviceHeadings, serviceWidths);
+    for (const line of claimJson.serviceLines || []) {
+      if (y + 54 > bottom) { doc.addPage(); drawTitle(); y = drawHeadings(104, serviceHeadings, serviceWidths); }
+      const review = line.issues?.length ? line.issues.join(" ") : (line.cmsMatches || []).map((match: any) => `${match.articleId} group ${match.groupNumber}`).join("; ");
+      y = drawCells(y, [line.lineNumber, line.cptCode, line.units, (line.genes || []).join(", "), (line.medications || []).join(", ") || "NONE LINKED", (line.diagnosisCodes || []).join(", ") || "NONE SUPPORTED", `${String(line.status).toUpperCase()} — ${review}`], serviceWidths, 54, 6);
+    }
+    if (!(claimJson.serviceLines || []).length) y = drawCells(y, ["-", "HOLD", "-", "No performed service determined", "-", "-", "REVIEW"], serviceWidths, 42, 6);
+
+    y += 10;
+    doc.fillColor("#475569").font("Helvetica").fontSize(7).text(`Source-documented diagnoses: ${(claimJson.documentedDiagnosisCodes || []).join(", ") || "NONE"}. Only supported diagnoses appear on service lines.`, pageX, y, { width: pageWidth });
+    y += 24;
+    if (y + 80 > bottom) { doc.addPage(); drawTitle(); y = 104; }
+    doc.fillColor("#0f172a").font("Helvetica-Bold").fontSize(9).text("GENE-MEDICATION EVIDENCE — NOT ADDITIONAL CLAIM LINES", pageX, y);
+    y += 14;
+    const evidenceWidths = [62, 122, 110, 94, 72, pageWidth - 460];
+    const evidenceHeadings = ["GENE", "RESULT", "ACTIONABLE DRUG", "EVIDENCE", "SEPARATE CPT REF", "STATUS / REVIEW"];
+    y = drawHeadings(y, evidenceHeadings, evidenceWidths);
+    for (const row of claimJson.evidenceRows || []) {
+      if (y + 46 > bottom) { doc.addPage(); drawTitle(); y = drawHeadings(104, evidenceHeadings, evidenceWidths); }
+      const review = row.issues?.length ? row.issues.join(" ") : (row.cmsArticleIds || []).join(", ");
+      y = drawCells(y, [row.gene, [row.genotype, row.phenotype].filter(Boolean).join(" / "), (row.medications || []).join(", ") || "NO MATCH", (row.evidence || []).join(", ") || "REVIEW", row.separateTestCptReference ? `${row.separateTestCptReference}*` : "NONE", `${String(row.status).toUpperCase()} — ${review}`], evidenceWidths, 46, 5);
+    }
+
+    const noteY = Math.min(y + 10, bottom - 25);
+    doc.fillColor("#475569").font("Helvetica").fontSize(6.6).text((claimJson.notes || []).join("  "), pageX, noteY, { width: pageWidth, height: 22, ellipsis: true });
+    doc.fillColor("#7c2d12").font("Helvetica").fontSize(6.2).text(analysis.disclaimer, pageX, doc.page.height - 38, { width: pageWidth, align: "center" });
     doc.end();
   });
 }
@@ -964,41 +1168,115 @@ export async function registerRoutes(
   app.post("/api/pgx/extract", upload.fields([
     { name: "labReport", maxCount: 1 },
     { name: "requisition", maxCount: 1 },
+    { name: "diagnosisPageImages", maxCount: 12 },
   ]), async (req, res) => {
     try {
       const user = await getAuthenticatedChatUser(req);
       const files = (req.files || {}) as Record<string, UploadedPgxFile[]>;
-      const uploadedFiles = [...(files.labReport || []), ...(files.requisition || [])];
-      const textParts = [
-        String(req.body?.labText || ""),
-        String(req.body?.requisitionText || ""),
-      ];
+      const labTextParts = [String(req.body?.labText || "").trim()].filter(Boolean);
+      const requisitionTextParts = [String(req.body?.requisitionText || "").trim()].filter(Boolean);
       const r2Objects: Array<{ key: string; url: string; contentType?: string }> = [];
       const warnings: string[] = [];
 
-      for (const file of uploadedFiles) {
-        if ((file.size || 0) > 20 * 1024 * 1024) {
-          throw new RouteError(400, "PGx files must be 20MB or smaller.");
+      for (const [uploadedFiles, destination] of [
+        [files.labReport || [], labTextParts],
+        [files.requisition || [], requisitionTextParts],
+      ] as Array<[UploadedPgxFile[], string[]]>) {
+        for (const file of uploadedFiles) {
+          if ((file.size || 0) > 20 * 1024 * 1024) {
+            throw new RouteError(400, "PGx files must be 20MB or smaller.");
+          }
+
+          const extracted = await extractTextFromPgxFile(file);
+          if (extracted.warning) warnings.push(`${extracted.fileName}: ${extracted.warning}`);
+          if (extracted.text) destination.push(extracted.text);
+
+          try {
+            const uploadResult = await uploadPgxObject(
+              createPgxObjectKey(user.id),
+              file.buffer,
+              extracted.mimeType || "application/octet-stream",
+            );
+            if (uploadResult) r2Objects.push({ key: uploadResult.key, url: uploadResult.url, contentType: extracted.mimeType });
+          } catch {
+            warnings.push(`${extracted.fileName}: secure storage was temporarily unavailable; extraction continued without an R2 copy.`);
+          }
         }
-
-        const extracted = await extractTextFromPgxFile(file);
-        if (extracted.warning) warnings.push(`${extracted.fileName}: ${extracted.warning}`);
-        if (extracted.text) textParts.push(extracted.text);
-
-        const uploadResult = await uploadPgxObject(
-          createPgxObjectKey(user.id),
-          file.buffer,
-          extracted.mimeType || "application/octet-stream",
-        );
-        if (uploadResult) r2Objects.push({ key: uploadResult.key, url: uploadResult.url, contentType: extracted.mimeType });
       }
 
-      const combinedText = textParts.join("\n\n").trim();
+      const emptyVision = { used: false, patientName: undefined as string | undefined, selections: [], medications: [], genes: [], warnings: [] };
+      const readDiagnosisPages = async () => {
+        const pageFiles = files.diagnosisPageImages || [];
+        const results: Awaited<ReturnType<typeof understandPgxDocument>>[] = [];
+        for (let index = 0; index < pageFiles.length; index += 3) {
+          results.push(...await Promise.all(pageFiles.slice(index, index + 3).map((file) => {
+            const sourcePage = Number(file.originalname?.match(/diagnosis-page-(\d+)/i)?.[1] || 1);
+            return understandPgxDocument(file, "requisition", { sourcePage });
+          })));
+        }
+        return results;
+      };
+      const [labVision, wholeRequisitionVision, pageVisionResults] = await Promise.all([
+        files.labReport?.[0] ? understandPgxDocument(files.labReport[0], "lab") : Promise.resolve(emptyVision),
+        files.requisition?.[0] ? understandPgxDocument(files.requisition[0], "requisition") : Promise.resolve(emptyVision),
+        readDiagnosisPages(),
+      ]);
+      const requisitionVision = {
+        used: wholeRequisitionVision.used || pageVisionResults.some((result) => result.used),
+        patientName: wholeRequisitionVision.patientName || pageVisionResults.find((result) => result.patientName)?.patientName,
+        selections: Array.from(new Map(
+          [...wholeRequisitionVision.selections, ...pageVisionResults.flatMap((result) => result.selections)]
+            .sort((left, right) => right.confidence - left.confidence)
+            .map((selection) => [selection.code, selection]),
+        ).values()),
+        medications: Array.from(new Map(
+          [...wholeRequisitionVision.medications, ...pageVisionResults.flatMap((result) => result.medications)]
+            .sort((left, right) => right.confidence - left.confidence)
+            .map((medication) => [medication.name.toLowerCase(), medication]),
+        ).values()),
+        genes: wholeRequisitionVision.genes,
+        warnings: [...wholeRequisitionVision.warnings, ...pageVisionResults.flatMap((result) => result.warnings)],
+      };
+      warnings.push(...labVision.warnings, ...requisitionVision.warnings);
+
+      const combinedText = [
+        labTextParts.length ? `--- CODICAL LAB REPORT START ---\n${labTextParts.join("\n\n")}\n--- CODICAL LAB REPORT END ---` : "",
+        requisitionTextParts.length ? `--- CODICAL REQUISITION START ---\n${requisitionTextParts.join("\n\n")}\n--- CODICAL REQUISITION END ---` : "",
+      ].filter(Boolean).join("\n\n").trim();
       if (combinedText.length < 20) {
         throw new RouteError(400, "Add readable PGx lab text or upload a TXT/PDF document.");
       }
 
       const extracted = extractPgxDataFromText(combinedText);
+      if (requisitionVision.selections.length > 0) {
+        const acceptedVisionCodes = requisitionVision.selections
+          .filter((selection) => selection.confidence >= 0.8)
+          .map((selection) => selection.code);
+        extracted.diagnosisSelections = requisitionVision.selections;
+        extracted.diagnosisCodes = Array.from(new Set([...acceptedVisionCodes, ...extracted.diagnosisCodes]));
+        extracted.warnings = extracted.warnings.filter((warning) => !warning.startsWith("No source-documented ICD-10-CM code"));
+      }
+      if (labVision.genes.length > 0) {
+        const genes = new Map(extracted.genes.map((gene) => [gene.gene, gene]));
+        for (const gene of labVision.genes) genes.set(gene.gene, gene);
+        extracted.genes = Array.from(genes.values());
+        extracted.panel.geneCount = extracted.genes.length;
+      }
+      if (requisitionVision.medications.length > 0) {
+        const medications = new Map(extracted.medications.map((medication) => [medication.name.toLowerCase(), medication]));
+        for (const medication of requisitionVision.medications.filter((item) => item.confidence >= .72)) {
+          medications.set(medication.name.toLowerCase(), { name: medication.name, source: "detected" });
+        }
+        extracted.medications = Array.from(medications.values());
+        extracted.warnings = extracted.warnings.filter((warning) => !warning.startsWith("No active medication"));
+      }
+      const labDocumentName = labVision.patientName || (labTextParts.length ? extractPgxDataFromText(labTextParts.join("\n\n")).patient.name : undefined);
+      const requisitionDocumentName = requisitionVision.patientName || (requisitionTextParts.length ? extractPgxDataFromText(requisitionTextParts.join("\n\n")).patient.name : undefined);
+      const patientMatch = await matchPgxPatient(labDocumentName, requisitionDocumentName);
+      extracted.patient = { name: patientMatch.databasePatient?.name || labDocumentName || requisitionDocumentName || extracted.patient.name };
+      extracted.patientMatch = patientMatch;
+      if (patientMatch.databaseStatus === "document_mismatch") warnings.push("The patient names on the laboratory report and requisition do not match. Stop and verify the documents.");
+      if (patientMatch.databaseStatus === "not_found") warnings.push("The extracted patient name was not found in the patient database; verify spelling or add the patient before final billing.");
       extracted.warnings.push(...warnings);
       res.json({
         success: true,
@@ -1021,12 +1299,59 @@ export async function registerRoutes(
         throw new RouteError(400, "extracted PGx data is required.");
       }
 
-      const analysis = analyzePgxCoding({
+      const pairRows = await db.select().from(pgxGeneDrugPairs);
+      const stateCode = String(req.body?.stateCode || "").trim().toUpperCase();
+      if (!/^[A-Z]{2}$/.test(stateCode)) throw new RouteError(400, "A two-letter Medicare service state is required for MAC-specific coverage review.");
+      const geneDrugPairs = pairRows.map((row) => ({ gene: row.geneSymbol || row.gene, drug: row.drugName || row.drug, drugClass: row.drugClass || "", cpicLevel: row.cpicLevel as "A" | "B" | "C" | "D", cptCodes: row.cptCodes || [], tableSource: String(row.tableSource).toUpperCase().includes("FDA") ? "CPIC/FDA" as const : "CPIC" as const, recommendation: row.recommendation, sourceUrl: row.sourceUrl || "https://cpicpgx.org/guidelines/" }));
+      const analysisInput = {
         extracted,
         primaryIcd10: req.body?.primaryIcd10,
+        diagnosisCodes: Array.isArray(req.body?.diagnosisCodes)
+          ? req.body.diagnosisCodes.map((code: unknown) => String(code))
+          : undefined,
         drugNames: parseManualDrugNames(req.body?.drugNames),
         payerAcceptsPanel: req.body?.payerAcceptsPanel !== false,
+        stateCode,
+        cmsGroups: [] as PgxCmsGroup[],
+        geneDrugPairs,
+      };
+      const preliminary = analyzePgxCoding(analysisInput);
+      const mcdEvidence = await getMcdBatchPairEvidence({
+        diagnosisCodes: preliminary.icd10.map((row) => row.code),
+        procedureCodes: preliminary.cptSelection.codes.map((row) => row.code),
+        stateCode,
+        limit: 30,
       });
+      const cmsGroups: PgxCmsGroup[] = [];
+      const cmsDrugEvidence: PgxCmsDrugEvidence[] = [];
+      for (const pair of mcdEvidence?.pairs || []) {
+        for (const evidence of pair.evidence || []) {
+          if (evidence.coverageStatus !== "covered" || !/pharmacogenom/i.test(evidence.title)) continue;
+          const articleId = evidence.displayId?.startsWith("A") ? evidence.displayId : `A${evidence.articleId}`;
+          const groupNumber = Number(evidence.groupNumber);
+          if (!Number.isInteger(groupNumber)) continue;
+          cmsGroups.push(
+            { articleId, groupNumber, groupType: "cpt", code: pair.procedureCode },
+            { articleId, groupNumber, groupType: "icd10", code: pair.icdCode },
+          );
+          for (const association of evidence.geneDrugAssociations || []) {
+            cmsDrugEvidence.push({
+              articleId,
+              gene: association.gene.toUpperCase(),
+              drug: association.drug.toLowerCase(),
+              cptCodes: association.cptCodes,
+              guidance: association.guidance,
+              intendedUse: association.intendedUse,
+            });
+          }
+        }
+      }
+      const uniqueCmsDrugEvidence = Array.from(new Map(cmsDrugEvidence.map((row) => [
+        `${row.articleId}:${row.gene}:${row.drug}:${row.cptCodes.join(",")}`,
+        row,
+      ])).values());
+      const analysis = analyzePgxCoding({ ...analysisInput, cmsGroups, cmsDrugEvidence: uniqueCmsDrugEvidence });
+      if (!mcdEvidence) analysis.extracted.warnings.push("The current CMS/MAC coverage service was unavailable; all CPT/diagnosis relationships remain in review.");
 
       res.json({ success: true, analysis });
     } catch (error: any) {
@@ -1041,21 +1366,29 @@ export async function registerRoutes(
       if (!analysis?.cptSelection || !analysis?.extracted) {
         throw new RouteError(400, "analysis is required.");
       }
+      if (!analysis.billingWorksheet || !Array.isArray(analysis.billingWorksheet.serviceLines) || !Array.isArray(analysis.billingWorksheet.evidenceRows)) {
+        throw new RouteError(409, "This analysis uses an older PGx claim format. Rebuild the billing worksheet with the current engine, then download it again.");
+      }
 
       const claimJson = buildPgxClaimPreview(analysis);
       const pdf = await generatePgxPdfBuffer(analysis, claimJson);
-      const uploadResult = await uploadPgxObject(
-        createPgxObjectKey(user.id),
-        pdf,
-        "application/pdf",
-      );
+      let uploadResult = null;
+      try {
+        uploadResult = await uploadPgxObject(
+          createPgxObjectKey(user.id),
+          pdf,
+          "application/pdf",
+        );
+      } catch {
+        // R2 is optional for claim generation. The inline PDF remains downloadable.
+      }
 
       res.json({
         success: true,
         claimJson,
-        narrative: analysis.narrative,
+        claimType: "PGX_BILLING_WORKSHEET",
         downloadUrl: uploadResult?.url || null,
-        filename: "PGx_Coding_Review.pdf",
+        filename: "PGx_Billing_Worksheet.pdf",
         pdfBase64: pdf.toString("base64"),
       });
     } catch (error: any) {
@@ -1160,7 +1493,7 @@ export async function registerRoutes(
     res.json({
       success: true,
       status: "starter-seed",
-      message: "Phase 1 PGx uses the local starter A59915/L39995 seed. Full CMS current_article.zip import is reserved for the scheduled sync phase.",
+      message: "PGx billing analysis uses the current Cloudflare CMS MCD release with active-article, MAC/state, CPT/ICD-group, and article gene/drug evidence checks.",
     });
   });
 

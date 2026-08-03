@@ -141,6 +141,82 @@ function normalizeCode(value: unknown) {
   return String(value || "").trim().toUpperCase();
 }
 
+type CmsPgxGeneDrugAssociation = {
+  gene: string;
+  cptCodes: string[];
+  drug: string;
+  guidance: string;
+  intendedUse: string;
+};
+
+function htmlTableRows(html: string) {
+  return Array.from(html.matchAll(/<table[\s\S]*?<\/table>/gi)).flatMap((table) =>
+    Array.from(table[0].matchAll(/<tr[\s\S]*?<\/tr>/gi)).map((row) =>
+      Array.from(row[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)).map((cell) => normalizeText(cell[1])),
+    ).filter((cells) => cells.length > 1),
+  );
+}
+
+function splitCmsDrugNames(value: string) {
+  return value.split(/\s*(?:,|;|\/|\band\b)\s*/i)
+    .map((drug) => drug.replace(/^e\.g\.?\s*/i, "").replace(/[().:+]$/g, "").trim().toLowerCase())
+    .filter((drug) => /^[a-z][a-z0-9' -]{2,70}$/.test(drug) && !/\b(?:class|metaboli|predict|guidance|drug)\b/i.test(drug));
+}
+
+function pgxGeneDrugAssociations(articles: CsvRow[]) {
+  const activePgxArticles = articles.filter((article) => article.status === "A" && /billing and coding:.*pharmacogenom/i.test(article.title));
+  const directByArticle = new Map<string, CmsPgxGeneDrugAssociation[]>();
+  const purposeRows: Array<{ articleKey: string; genes: string[]; cptCodes: string[]; purpose: string }> = [];
+
+  for (const article of activePgxArticles) {
+    const articleKey = `${article.article_id}:${article.article_version}`;
+    const rows = htmlTableRows(article.description || "");
+    let header: string[] = [];
+    for (const cells of rows) {
+      const normalizedHeaders = cells.map((cell) => cell.toLowerCase());
+      const geneIndex = normalizedHeaders.findIndex((cell) => /^gene(?:\/test)?$/.test(cell));
+      const cptIndex = normalizedHeaders.findIndex((cell) => /cpt code/.test(cell));
+      if (geneIndex >= 0 && cptIndex >= 0) { header = normalizedHeaders; continue; }
+      if (!header.length) continue;
+      const activeGeneIndex = header.findIndex((cell) => /^gene(?:\/test)?$/.test(cell));
+      const activeCptIndex = header.findIndex((cell) => /cpt code/.test(cell));
+      if (activeGeneIndex < 0 || activeCptIndex < 0 || !cells[activeGeneIndex]) continue;
+      const genes = cells[activeGeneIndex].toUpperCase().match(/[A-Z][A-Z0-9-]{1,19}/g) || [];
+      const cptCodes = Array.from(new Set(cells[activeCptIndex].toUpperCase().match(/\b(?:\d{5}|\d{4}[A-Z])\b/g) || []));
+      const directDrugIndex = header.findIndex((cell) => cell === "generic name" || cell === "drug" || cell === "intended use for drug");
+      const guidanceIndex = header.findIndex((cell) => cell === "guidance" || cell === "affected subgroups+");
+      const intendedUseIndex = header.findIndex((cell) => /intended use/.test(cell) && cell !== "intended use for drug");
+      if (directDrugIndex >= 0) {
+        for (const gene of genes) for (const drug of splitCmsDrugNames(cells[directDrugIndex] || "")) {
+          const list = directByArticle.get(articleKey) || [];
+          list.push({ gene, cptCodes, drug, guidance: cells[guidanceIndex] || "CMS article gene/drug table", intendedUse: cells[intendedUseIndex] || "" });
+          directByArticle.set(articleKey, list);
+        }
+      } else {
+        const purposeIndex = header.findIndex((cell) => /purpose and associated drug|testing purpose/.test(cell));
+        if (purposeIndex >= 0) purposeRows.push({ articleKey, genes, cptCodes, purpose: cells[purposeIndex] || "" });
+      }
+    }
+  }
+
+  const knownDrugs = Array.from(new Set(Array.from(directByArticle.values()).flatMap((rows) => rows.map((row) => row.drug))));
+  for (const row of purposeRows) {
+    const purpose = row.purpose.toLowerCase();
+    for (const drug of knownDrugs.filter((candidate) => new RegExp(`(^|[^a-z0-9])${candidate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`, "i").test(purpose))) {
+      for (const gene of row.genes) {
+        const list = directByArticle.get(row.articleKey) || [];
+        list.push({ gene, cptCodes: row.cptCodes, drug, guidance: "CMS article pharmacogenetic testing purpose table", intendedUse: row.purpose });
+        directByArticle.set(row.articleKey, list);
+      }
+    }
+  }
+
+  return new Map(Array.from(directByArticle.entries()).map(([key, rows]) => [
+    key,
+    uniqueByKey(rows, (row) => `${row.gene}:${row.drug}:${row.cptCodes.join(",")}`),
+  ]));
+}
+
 function hcpcsCodeType(code: string) {
   return /^\d{5}$/.test(code) ? "CPT" : "HCPCS";
 }
@@ -316,6 +392,7 @@ function buildCoverageShards(input: {
   articleNoncoveredIcd: CsvRow[];
   articleRelatedLcd: CsvRow[];
   articleRelatedNcd: CsvRow[];
+  geneDrugAssociations: Map<string, CmsPgxGeneDrugAssociation[]>;
 }) {
   const shardDir = path.join(scratchRoot, "coverage-shards", "articles");
   fs.rmSync(shardDir, { recursive: true, force: true });
@@ -391,6 +468,7 @@ function buildCoverageShards(input: {
         ncdId: row.r_ncd_id || "",
         ncdVersion: row.r_ncd_version || "",
       })),
+      geneDrugAssociations: input.geneDrugAssociations.get(key) || [],
     };
 
     const filePath = path.join(shardDir, `${article.article_id}-${article.article_version}.json`);
@@ -447,6 +525,13 @@ async function main() {
     ],
     (row) => [row.contractor_id, row.contractor_type_id, row.contractor_version].join(":"),
   );
+  const contractorJurisdictionSourceRows = uniqueByKey(
+    [
+      ...readCsv(csvPath("current_article", "current_article_csv", "contractor_jurisdiction.csv")),
+      ...readCsv(csvPath("current_lcd", "current_lcd_csv", "contractor_jurisdiction.csv")),
+    ],
+    (row) => [row.contractor_id, row.contractor_type_id, row.contractor_version, row.state_id, row.active_date, row.term_date].join(":"),
+  );
   const stateRows = uniqueByKey(
     [
       ...readCsv(csvPath("current_article", "current_article_csv", "state_lookup.csv")),
@@ -498,6 +583,14 @@ async function main() {
     null,
     null,
     null,
+  ]);
+
+  const contractorJurisdictionRows: SqlRow[] = contractorJurisdictionSourceRows.map((row) => [
+    `contractor:${row.contractor_id}:${row.contractor_type_id}:${row.contractor_version}`,
+    `state:${row.state_id}`,
+    cleanDate(row.active_date) || "",
+    cleanDate(row.term_date),
+    "current_article",
   ]);
 
   const documentRows: SqlRow[] = [
@@ -720,6 +813,7 @@ async function main() {
     return [documentUid, new Date().toISOString(), codesByDocument.get(documentUid)?.length || 0, 1];
   });
 
+  const cmsPgxGeneDrugAssociations = pgxGeneDrugAssociations(articles);
   const coverageShards = buildCoverageShards({
     articles,
     articleHcpcs,
@@ -727,6 +821,7 @@ async function main() {
     articleNoncoveredIcd,
     articleRelatedLcd: articleRelatedDocs,
     articleRelatedNcd,
+    geneDrugAssociations: cmsPgxGeneDrugAssociations,
   });
 
   const sql: string[] = [
@@ -742,6 +837,7 @@ async function main() {
     "DELETE FROM mcd_document_relationships;",
     "DELETE FROM mcd_document_jurisdictions;",
     "DELETE FROM mcd_document_contractors;",
+    "DELETE FROM mcd_contractor_jurisdictions;",
     "DELETE FROM mcd_documents;",
     "DELETE FROM mcd_codes;",
     "DELETE FROM mcd_contractors;",
@@ -754,6 +850,7 @@ async function main() {
   pushInsert(sql, "mcd_sources", ["source_key", "dataset_key", "dataset_scope", "dataset_kind", "local_root", "file_count", "row_count", "metadata_json"], sourceRows);
   pushInsert(sql, "mcd_contractors", ["contractor_key", "contractor_number", "contractor_name", "contractor_type", "contractor_subtype", "oversight_region", "raw_json"], contractorSqlRows);
   pushInsert(sql, "mcd_jurisdictions", ["jurisdiction_key", "jurisdiction_code", "jurisdiction_name", "state_code", "region_code", "dmerc_region_code", "raw_json"], jurisdictionSqlRows);
+  pushInsert(sql, "mcd_contractor_jurisdictions", ["contractor_key", "jurisdiction_key", "effective_date", "end_date", "source_key"], contractorJurisdictionRows);
   pushInsert(sql, "mcd_documents", ["document_uid", "document_kind", "cms_document_id", "cms_version_id", "source_key", "is_current", "title", "status", "document_type", "contractor_number", "effective_date", "end_date", "retirement_date", "last_updated_date", "publication_date", "benefit_category", "summary", "body_text", "raw_json", "created_at", "updated_at", "display_id", "keywords"], documentRows);
   if (shouldIncludeDocumentContractors) {
     pushInsert(sql, "mcd_document_contractors", ["document_uid", "contractor_key", "source_key"], uniqueByKey(documentContractorRows, (row) => `${row[0]}:${row[1]}`));
@@ -782,6 +879,7 @@ async function main() {
       ncds: ncds.length,
       contractors: contractorSqlRows.length,
       jurisdictions: jurisdictionSqlRows.length,
+      contractorJurisdictions: contractorJurisdictionRows.length,
       documents: documentRows.length,
       documentContractors: uniqueByKey(documentContractorRows, (row) => `${row[0]}:${row[1]}`).length,
       documentContractorsImported: shouldIncludeDocumentContractors,
@@ -793,6 +891,7 @@ async function main() {
       relationships: uniqueByKey(relationshipRows, (row) => `${row[0]}:${row[1]}:${row[2]}:${row[4]}`).length,
       ftsRows: ftsRows.length,
       articleCoverageShards: coverageShards.articleShardCount,
+      pgxGeneDrugAssociations: Array.from(cmsPgxGeneDrugAssociations.values()).reduce((count, rows) => count + rows.length, 0),
       coveredIcdRowsInR2Shards: articleCoveredIcd.length,
       noncoveredIcdRowsInR2Shards: articleNoncoveredIcd.length,
     },

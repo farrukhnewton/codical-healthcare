@@ -1,0 +1,191 @@
+.burn-workspace {
+  --burn: #f26b38;
+  --burn-deep: #9f3519;
+  --burn-soft: #fff3eb;
+  --burn-line: rgba(215, 92, 43, .2);
+  width: min(100% - 32px, 1480px);
+  display: grid;
+  gap: 18px;
+  margin: 20px auto 44px;
+  color: var(--app-text, hsl(var(--foreground)));
+}
+
+.burn-hero {
+  min-height: 210px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 26px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--burn-line);
+  border-radius: 24px;
+  padding: 30px 34px;
+  background:
+    radial-gradient(circle at 91% 8%, rgba(247, 135, 83, .25), transparent 31%),
+    radial-gradient(circle at 72% 120%, rgba(255, 200, 126, .24), transparent 39%),
+    linear-gradient(135deg, rgba(255, 255, 255, .98), rgba(255, 247, 240, .93));
+  box-shadow: 0 24px 60px rgba(106, 53, 29, .1);
+}
+
+.burn-hero::after { content: ""; position: absolute; width: 300px; height: 300px; right: -160px; bottom: -170px; border: 42px solid rgba(255, 255, 255, .38); border-radius: 50%; }
+.burn-hero-copy { max-width: 850px; position: relative; z-index: 1; }
+.burn-eyebrow { display: inline-flex; align-items: center; gap: 7px; color: var(--burn-deep); font-size: 10px; font-weight: 900; letter-spacing: .09em; }
+.burn-hero h1 { max-width: 780px; margin: 12px 0 8px; color: #27152d; font-family: "Outfit", sans-serif; font-size: clamp(28px, 3vw, 44px); font-weight: 900; letter-spacing: -.035em; line-height: 1.05; }
+.burn-hero p { max-width: 790px; margin: 0; color: #695d70; font-size: 12.5px; font-weight: 650; line-height: 1.65; }
+.burn-source-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 20px; }
+.burn-source-pills span { border: 1px solid rgba(224, 104, 50, .18); border-radius: 999px; padding: 7px 10px; color: #7e3c29; background: rgba(255, 255, 255, .7); font-size: 9px; font-weight: 800; }
+.burn-hero-actions { min-width: 170px; display: grid; justify-items: end; gap: 10px; position: relative; z-index: 1; }
+.burn-engine-state { display: inline-flex; align-items: center; gap: 7px; border: 1px solid rgba(31, 161, 103, .2); border-radius: 999px; padding: 7px 10px; color: #15744d; background: rgba(236, 253, 245, .84); font-size: 9px; font-weight: 850; }
+.burn-engine-state i { width: 7px; height: 7px; border-radius: 50%; background: #21bd7a; box-shadow: 0 0 0 4px rgba(33, 189, 122, .12); }
+.burn-ghost-button, .burn-add-button, .burn-print-button, .burn-icon-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0; cursor: pointer; font: inherit; }
+.burn-ghost-button { min-height: 36px; border: 1px solid rgba(75, 58, 81, .14); border-radius: 10px; padding: 0 12px; color: #4b3d51; background: rgba(255, 255, 255, .72); font-size: 10px; font-weight: 800; }
+
+.burn-workspace-grid { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(390px, .78fr); gap: 18px; align-items: start; }
+.burn-input-column, .burn-output-column { min-width: 0; display: grid; gap: 15px; }
+.burn-output-column { position: sticky; top: 14px; }
+.burn-panel, .burn-summary-card, .burn-worksheet-card, .burn-audit-card { border: 1px solid var(--app-line, hsl(var(--border))); border-radius: 18px; background: rgba(255, 255, 255, .82); box-shadow: 0 14px 38px rgba(63, 41, 75, .06); backdrop-filter: blur(16px); }
+.burn-panel { padding: 21px; }
+.burn-panel-heading, .burn-card-heading { display: flex; align-items: center; gap: 11px; }
+.burn-panel-heading { margin-bottom: 18px; }
+.burn-panel-icon { width: 36px; height: 36px; display: inline-grid; place-items: center; flex: 0 0 auto; border-radius: 11px; color: var(--burn-deep); background: var(--burn-soft); }
+.burn-panel-heading div, .burn-card-heading div { min-width: 0; flex: 1; }
+.burn-panel-heading p, .burn-card-heading p { margin: 0 0 2px; color: var(--burn); font-size: 8.5px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.burn-panel-heading h2, .burn-card-heading h2 { margin: 0; color: #2f2436; font-size: 15px; font-weight: 900; letter-spacing: -.01em; }
+.burn-section-number { color: #d9cedc; font-size: 22px; font-weight: 900; }
+
+.burn-form-grid { display: grid; gap: 11px; }
+.burn-form-grid-four { grid-template-columns: .65fr 1fr 1.1fr 1.1fr; }
+.burn-form-grid-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.burn-field { min-width: 0; display: grid; align-content: start; gap: 6px; color: #706577; font-size: 8.5px; font-weight: 850; letter-spacing: .035em; text-transform: uppercase; }
+.burn-field input, .burn-field select, .burn-region-row select, .burn-percent-control input[type="number"] { width: 100%; min-height: 39px; border: 1px solid #ddd5e1; border-radius: 9px; padding: 0 10px; color: #2f2535; outline: none; background: rgba(255, 255, 255, .9); font: 700 10.5px "Inter", sans-serif; letter-spacing: 0; text-transform: none; }
+.burn-field input:focus, .burn-field select:focus, .burn-region-row select:focus, .burn-percent-control input:focus { border-color: var(--burn); box-shadow: 0 0 0 3px rgba(242, 107, 56, .1); }
+.burn-field small { color: #9a909f; font-size: 7.5px; font-weight: 650; letter-spacing: 0; line-height: 1.35; text-transform: none; }
+.burn-callout { display: flex; align-items: flex-start; gap: 9px; border-radius: 10px; padding: 10px 11px; }
+.burn-callout svg { flex: 0 0 auto; margin-top: 1px; }
+.burn-callout p { margin: 0; font-size: 9px; font-weight: 650; line-height: 1.5; }
+.burn-callout-info { color: #1b6284; background: #eef8fc; }
+.burn-callout-warning { margin-top: 11px; color: #945111; background: #fff7df; }
+
+.burn-region-table { margin-top: 13px; overflow: hidden; border: 1px solid #e8e1ea; border-radius: 11px; }
+.burn-region-head, .burn-region-row { display: grid; grid-template-columns: 1.2fr 1.08fr 1.25fr .72fr 34px; gap: 8px; align-items: center; padding: 8px 10px; }
+.burn-region-head { min-height: 30px; color: #8b8090; background: #f8f5f9; font-size: 7.5px; font-weight: 900; letter-spacing: .045em; text-transform: uppercase; }
+.burn-region-row { min-height: 62px; border-top: 1px solid #ede7ef; background: rgba(255, 255, 255, .6); }
+.burn-region-row select { min-height: 36px; padding: 0 7px; font-size: 9px; }
+.burn-percent-control { display: grid; grid-template-columns: minmax(40px, 1fr) 52px 10px; gap: 6px; align-items: center; }
+.burn-percent-control input[type="range"] { min-width: 40px; accent-color: var(--burn); }
+.burn-percent-control input[type="number"] { min-height: 34px; padding: 0 5px; text-align: right; }
+.burn-percent-control b { color: #887d8e; font-size: 9px; }
+.burn-region-result { display: grid; gap: 2px; }
+.burn-region-result strong { color: var(--burn-deep); font-size: 11px; font-weight: 900; }
+.burn-region-result small { color: #968d9b; font-size: 7px; font-weight: 700; }
+.burn-icon-button { width: 30px; height: 30px; border-radius: 8px; color: #9f929e; background: transparent; }
+.burn-icon-button:hover { color: #bd381f; background: #fff0ed; }
+.burn-add-button { min-height: 37px; margin-top: 11px; border: 1px dashed rgba(242, 107, 56, .42); border-radius: 9px; padding: 0 12px; color: var(--burn-deep); background: #fff9f5; font-size: 9.5px; font-weight: 850; }
+.burn-add-button:disabled { cursor: not-allowed; opacity: .5; }
+
+.burn-confirm-service, .burn-switch-row { min-height: 65px; display: flex; align-items: center; gap: 10px; border: 1px solid #e3dce6; border-radius: 10px; padding: 10px 12px; color: #6c6172; background: #faf8fb; cursor: pointer; }
+.burn-confirm-service.is-confirmed { border-color: rgba(36, 177, 112, .28); color: #16714b; background: #f0fbf6; }
+.burn-confirm-service input, .burn-switch-row input { accent-color: var(--burn); }
+.burn-confirm-service span, .burn-switch-row span { display: grid; gap: 3px; }
+.burn-confirm-service strong, .burn-switch-row strong { font-size: 9.5px; font-weight: 850; }
+.burn-confirm-service small, .burn-switch-row small { color: #968b9b; font-size: 7.5px; font-weight: 650; }
+.burn-conditional-fields { margin-top: 12px; }
+.burn-switch-row { min-height: 52px; margin-top: 12px; }
+.burn-product-box { margin-top: 13px; border: 1px solid var(--burn-line); border-radius: 12px; padding: 13px; background: rgba(255, 248, 243, .55); }
+
+.burn-summary-card { overflow: hidden; padding: 20px; color: #fff; border-color: rgba(217, 88, 43, .2); background: linear-gradient(145deg, #52243e, #7d302c 57%, #b44a2c); box-shadow: 0 18px 42px rgba(93, 39, 43, .18); }
+.burn-summary-top { display: flex; align-items: center; justify-content: space-between; color: #ffd8c7; font-size: 8.5px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+.burn-metric-hero { display: flex; align-items: center; gap: 14px; margin: 21px 0 17px; }
+.burn-metric-hero > strong { font-family: "Outfit", sans-serif; font-size: 52px; font-weight: 900; letter-spacing: -.06em; line-height: .9; }
+.burn-metric-hero > strong small { margin-left: 3px; font-size: 20px; }
+.burn-metric-hero > span { border-left: 1px solid rgba(255,255,255,.25); padding-left: 14px; color: #ead4db; font-size: 9px; font-weight: 700; line-height: 1.5; }
+.burn-metric-hero > span b { color: #fff; }
+.burn-metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.burn-metric-grid div { display: grid; gap: 5px; border: 1px solid rgba(255,255,255,.13); border-radius: 10px; padding: 10px; background: rgba(255,255,255,.07); }
+.burn-metric-grid span, .burn-extent-code span { color: #e5cad1; font-size: 7.5px; font-weight: 750; }
+.burn-metric-grid strong { font-size: 13px; font-weight: 900; }
+.burn-extent-code { display: grid; gap: 4px; margin-top: 10px; border-radius: 11px; padding: 12px; background: rgba(17, 10, 22, .2); }
+.burn-extent-code strong { font: 900 22px "Outfit", sans-serif; }
+.burn-extent-code small { color: #ead7dc; font-size: 7.5px; font-weight: 650; line-height: 1.4; }
+
+.burn-worksheet-card, .burn-audit-card { padding: 18px; }
+.burn-card-heading { align-items: flex-start; padding-bottom: 13px; border-bottom: 1px solid #eee8f0; }
+.burn-card-heading > span { border-radius: 999px; padding: 5px 8px; color: #706574; background: #f3eff4; font-size: 7.5px; font-weight: 850; white-space: nowrap; }
+.burn-card-heading > span.is-held { color: #9a5314; background: #fff2d7; }
+.burn-card-heading > span.is-ready { color: #14704a; background: #eaf9f1; }
+.burn-code-lines { display: grid; gap: 8px; margin-top: 13px; }
+.burn-code-lines article { display: grid; grid-template-columns: 52px minmax(0, 1fr) 43px; gap: 9px; align-items: start; border: 1px solid #ebe4ed; border-radius: 10px; padding: 10px; background: #fff; }
+.burn-code-role { border-radius: 6px; padding: 4px; color: #706572; background: #f4f1f5; font-size: 6.5px; font-weight: 900; text-align: center; text-transform: uppercase; }
+.burn-code-role.is-primary { color: #9b3b1e; background: #fff0e8; }
+.burn-code-role.is-add-on { color: #6251a8; background: #f0edff; }
+.burn-code-role.is-product { color: #177153; background: #eaf9f2; }
+.burn-code-lines article > div { display: grid; gap: 3px; }
+.burn-code-lines article > div strong { color: var(--burn-deep); font: 900 15px "Outfit", sans-serif; }
+.burn-code-lines article > div b { color: #3c3141; font-size: 8.5px; font-weight: 850; }
+.burn-code-lines article > div small { color: #8c818f; font-size: 7.3px; font-weight: 650; line-height: 1.45; }
+.burn-units { display: grid; gap: 1px; color: #382c3c; font-size: 12px; font-weight: 900; text-align: right; }
+.burn-units small { color: #95899a; font-size: 6.5px; font-weight: 700; }
+.burn-empty-state { min-height: 170px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: #b5abb8; text-align: center; }
+.burn-empty-state strong { color: #54485a; font-size: 11px; font-weight: 900; }
+.burn-empty-state p { max-width: 270px; margin: 0; color: #8f8493; font-size: 8px; font-weight: 650; line-height: 1.5; }
+.burn-site-families { display: grid; gap: 7px; margin-top: 16px; }
+.burn-site-families h3 { margin: 0 0 2px; color: #4c4051; font-size: 9px; font-weight: 900; }
+.burn-site-families > div { display: grid; grid-template-columns: 47px minmax(0, 1fr) 14px; gap: 8px; align-items: center; border-radius: 8px; padding: 8px; background: #faf7fb; }
+.burn-site-families strong { color: var(--burn-deep); font-size: 11px; }
+.burn-site-families span { display: grid; gap: 2px; color: #4c404f; font-size: 8px; font-weight: 780; }
+.burn-site-families small { color: #938895; font-size: 6.8px; font-weight: 650; line-height: 1.35; }
+
+.burn-audit-list { display: grid; gap: 7px; margin-top: 13px; }
+.burn-audit-list article { display: flex; align-items: flex-start; gap: 9px; border: 1px solid #eee8ef; border-radius: 9px; padding: 9px; }
+.burn-audit-list article > span { width: 22px; height: 22px; display: inline-grid; place-items: center; flex: 0 0 auto; border-radius: 50%; }
+.burn-audit-list article.is-pass > span { color: #12734b; background: #e7f8ef; }
+.burn-audit-list article.is-review > span { color: #6652a4; background: #f0edfb; }
+.burn-audit-list article.is-hold > span { color: #9b4f13; background: #fff1d7; }
+.burn-audit-list article strong { color: #493e4d; font-size: 8.5px; font-weight: 850; }
+.burn-audit-list article p { margin: 2px 0 0; color: #8b808e; font-size: 7.2px; font-weight: 650; line-height: 1.45; }
+.burn-inline-warning { display: flex; gap: 7px; margin-top: 8px; border-radius: 8px; padding: 8px; color: #984715; background: #fff5e6; font-size: 7.5px; font-weight: 700; line-height: 1.4; }
+.burn-inline-warning svg { flex: 0 0 auto; }
+.burn-print-button { width: 100%; min-height: 43px; border-radius: 11px; color: #fff; background: linear-gradient(135deg, #df5c2d, #a73b2a); box-shadow: 0 10px 24px rgba(177, 62, 40, .2); font-size: 10px; font-weight: 900; }
+.burn-print-button:disabled { cursor: not-allowed; color: #9d939e; background: #e9e4ea; box-shadow: none; }
+.burn-legal-note { margin: -4px 8px 0; color: #958b99; font-size: 7px; font-weight: 650; line-height: 1.5; text-align: center; }
+
+.dark .burn-hero { background: radial-gradient(circle at 91% 8%, rgba(242,107,56,.2), transparent 32%), linear-gradient(135deg, rgba(35,24,42,.98), rgba(43,26,36,.95)); }
+.dark .burn-hero h1, .dark .burn-panel-heading h2, .dark .burn-card-heading h2 { color: #fff7fb; }
+.dark .burn-hero p { color: #c6bac9; }
+.dark .burn-panel, .dark .burn-worksheet-card, .dark .burn-audit-card { background: rgba(27, 20, 34, .85); }
+.dark .burn-field input, .dark .burn-field select, .dark .burn-region-row select, .dark .burn-percent-control input[type="number"], .dark .burn-code-lines article { color: #f8eef9; border-color: #4a3c50; background: #261d2c; }
+.dark .burn-region-head, .dark .burn-region-row, .dark .burn-site-families > div, .dark .burn-confirm-service, .dark .burn-switch-row { background: rgba(39, 29, 46, .8); }
+.dark .burn-empty-state strong, .dark .burn-code-lines article > div b, .dark .burn-audit-list article strong { color: #f3e8f4; }
+
+@media (max-width: 1180px) {
+  .burn-workspace-grid { grid-template-columns: 1fr; }
+  .burn-output-column { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .burn-summary-card, .burn-print-button, .burn-legal-note { grid-column: 1 / -1; }
+}
+
+@media (max-width: 820px) {
+  .burn-hero { flex-direction: column; padding: 23px; }
+  .burn-hero-actions { width: 100%; grid-template-columns: 1fr auto; align-items: center; justify-items: start; }
+  .burn-form-grid-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .burn-region-head { display: none; }
+  .burn-region-row { grid-template-columns: repeat(2, minmax(0, 1fr)) 34px; }
+  .burn-percent-control { grid-column: 1 / 2; }
+}
+
+@media (max-width: 620px) {
+  .burn-workspace { width: min(100% - 20px, 1480px); margin-top: 10px; }
+  .burn-hero h1 { font-size: 29px; }
+  .burn-output-column, .burn-form-grid-four, .burn-form-grid-two { grid-template-columns: 1fr; }
+  .burn-summary-card, .burn-print-button, .burn-legal-note { grid-column: auto; }
+  .burn-region-row { grid-template-columns: 1fr 34px; }
+  .burn-region-row > select, .burn-percent-control, .burn-region-result { grid-column: 1; }
+  .burn-region-row .burn-icon-button { grid-column: 2; grid-row: 1; }
+}
+
+@media print {
+  .appShell > aside, .appShell > div > header, .burn-input-column, .burn-hero-actions, .burn-print-button, .burn-legal-note { display: none !important; }
+  .appShell, .appShellMain { height: auto !important; overflow: visible !important; }
+  .burn-workspace, .burn-workspace-grid, .burn-output-column { width: 100%; display: block; margin: 0; }
+  .burn-hero, .burn-summary-card, .burn-worksheet-card, .burn-audit-card { break-inside: avoid; margin-bottom: 12px; box-shadow: none; }
+}
