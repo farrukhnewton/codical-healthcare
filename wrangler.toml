@@ -1,6 +1,6 @@
 name = "codical-healthcare"
 account_id = "7dc964fd2f9e2385f0eca8850ddfc76e"
-compatibility_date = "2026-05-08"
+compatibility_date = "2026-07-29"
 pages_build_output_dir = "dist/public"
 
 [[d1_databases]]

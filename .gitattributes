@@ -1,1 +1,2 @@
 server/data/hcc/2026/*.csv -whitespace
+server/data/infusion/2026Q3/*.csv -text -whitespace

@@ -90,6 +90,15 @@ import {
   type HccCaseInput,
 } from "../shared/hcc-coding";
 import { CMS_HCC_V28_2026 } from "./hcc-cms-v28-data";
+import {
+  INFUSION_ENGINE_VERSION,
+  INFUSION_POLICY_VERSION,
+  evaluateInfusionCase,
+  lookupInfusionDrugs,
+  type InfusionCaseInput,
+} from "../shared/infusion-coding";
+import { CMS_INFUSION_ASP_2026_Q3 } from "./infusion-cms-asp-data";
+import { understandInfusionDocument } from "./services/infusion-document-understanding";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1113,6 +1122,85 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ============ INFUSION HIERARCHY AND DRUG-UNIT ROUTES ============
+
+  app.get("/api/infusion/references", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      res.json({
+        engineVersion: INFUSION_ENGINE_VERSION,
+        policyVersion: INFUSION_POLICY_VERSION,
+        pricingQuarter: CMS_INFUSION_ASP_2026_Q3.quarter,
+        effectiveFrom: CMS_INFUSION_ASP_2026_Q3.effectiveFrom,
+        effectiveTo: CMS_INFUSION_ASP_2026_Q3.effectiveTo,
+        drugCodeCount: Object.keys(CMS_INFUSION_ASP_2026_Q3.entries).length,
+        drugAliasCount: Object.keys(CMS_INFUSION_ASP_2026_Q3.aliases).length,
+        sources: [
+          { id: "cms-ncci-2026-xi", title: "2026 Medicare NCCI Policy Manual, Chapter XI", url: "https://www.cms.gov/files/document/2026-ncci-medicare-policy-manual-all-chapters.pdf" },
+          { id: "cms-asp-2026-q3", title: "July 2026 Medicare Part B Drug Payment Limit Files", url: "https://www.cms.gov/medicare/payment/part-b-drugs/asp-pricing-files" },
+          { id: "cms-mcp-ch17", title: "Medicare Claims Processing Manual, Chapter 17", url: "https://www.cms.gov/Regulations-and-Guidance/Guidance/Manuals/downloads/clm104c17.pdf" },
+          { id: "cms-mcd-a53778", title: "A53778 Infusion, Injection and Hydration Services", url: "https://www.cms.gov/medicare-coverage-database/view/article.aspx?articleId=53778" },
+          { id: "cms-ncci-ptp", title: "Medicare NCCI Procedure-to-Procedure Edits", url: "https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/medicare-ncci-procedure-procedure-ptp-edits" },
+          { id: "cms-ncci-mue", title: "Medicare NCCI Medically Unlikely Edits", url: "https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/medicare-ncci-medically-unlikely-edits-mues" },
+        ],
+        safeguards: { sourceTimesRequired: true, doseUnitConversionAudited: true, coverageNotInferredFromAsp: true, humanApprovalRequired: true, autonomousSubmissionAllowed: false },
+      });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to load infusion references"); }
+  });
+
+  app.get("/api/infusion/drugs", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const query = String(req.query.q || "").trim();
+      if (query.length < 2) throw new RouteError(400, "Enter at least two characters or a complete HCPCS code.");
+      res.json({ query, quarter: CMS_INFUSION_ASP_2026_Q3.quarter, results: lookupInfusionDrugs(query, CMS_INFUSION_ASP_2026_Q3), coverageNotice: "Presence in an ASP file does not establish Medicare coverage or medical necessity." });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to search infusion drugs"); }
+  });
+
+  app.post("/api/infusion/documents/extract", upload.fields([{ name: "documents", maxCount: 12 }]), async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const files = (((req.files || {}) as Record<string, UploadedPgxFile[]>).documents || []);
+      if (!files.length) throw new RouteError(400, "Upload at least one medication administration record, flowsheet, or order document.");
+      const documents: Array<Record<string, unknown>> = [];
+      for (const file of files) {
+        const [extracted, vision] = await Promise.all([extractTextFromPgxFile(file), understandInfusionDocument(file)]);
+        let stored: Awaited<ReturnType<typeof uploadSpecialtyObject>> = null;
+        try { stored = await uploadSpecialtyObject("infusion", createSpecialtyObjectKey("infusion", user.id), file.buffer, extracted.mimeType); } catch { /* Review can continue if object storage is temporarily unavailable. */ }
+        const text = extracted.text.replace(/\s+/g, " ").trim();
+        documents.push({
+          fileName: extracted.fileName, byteSize: file.buffer.length, sha256: extracted.validation.sha256, pageCount: extracted.validation.pageCount,
+          extractionMethod: vision.used ? "visual-ocr-plus-native-text" : extracted.validation.extractionMethod,
+          patientName: vision.patientName || null, serviceDate: vision.serviceDate || null, administrations: vision.administrations,
+          textPreview: text.slice(0, 700), objectKey: stored?.key || null, requiresManualReview: true,
+          warnings: [...new Set([extracted.warning, ...vision.warnings, !text && !vision.used ? "No native text was found; advanced visual OCR was unavailable." : "", "Every extracted dose, route, start/stop time, access site, and waste amount must be verified against the source."] .filter(Boolean))],
+        });
+      }
+      res.json({ success: true, documents, requiresHumanReview: true, autonomousCodeSelection: false });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to process infusion documents"); }
+  });
+
+  app.post("/api/infusion/evaluate", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const candidate = req.body?.caseInput as InfusionCaseInput | undefined;
+      if (!candidate?.serviceDate || !candidate?.setting || !Array.isArray(candidate?.administrations)) throw new RouteError(400, "Date of service, setting, and administration evidence are required.");
+      const caseInput: InfusionCaseInput = { ...candidate, administrations: candidate.administrations.slice(0, 100) };
+      const evaluation = evaluateInfusionCase(caseInput, CMS_INFUSION_ASP_2026_Q3);
+      const administrationCodes = [...new Set(evaluation.administrationLines.map((line) => line.code))];
+      let ncci: unknown = null;
+      if (administrationCodes.length > 1) {
+        try { ncci = await checkNcciBatchEdits(administrationCodes.slice(0, 8), candidate.setting === "hospital-outpatient" ? "outpatient" : "practitioner"); }
+        catch (error: any) { ncci = { unavailable: true, message: error?.message || "NCCI lookup unavailable; do not release without edit review." }; }
+      }
+      res.json({
+        success: true, evaluation, ncci,
+        dataProvenance: { quarter: CMS_INFUSION_ASP_2026_Q3.quarter, sourceHashes: CMS_INFUSION_ASP_2026_Q3.sourceHashes },
+        evidenceSemantics: "This is a coder-review worksheet. It does not establish coverage, medical necessity, drug classification, payer payment, or permission to submit a claim.",
+      });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to build the infusion coding worksheet"); }
+  });
 
   // ============ CMS-HCC V28 RISK ADJUSTMENT ROUTES ============
 
