@@ -99,6 +99,13 @@ import {
 } from "../shared/infusion-coding";
 import { CMS_INFUSION_ASP_2026_Q3 } from "./infusion-cms-asp-data";
 import { understandInfusionDocument } from "./services/infusion-document-understanding";
+import {
+  NICU_ENGINE_VERSION,
+  NICU_POLICY_VERSION,
+  evaluateNicuCase,
+  type NicuCaseInput,
+} from "../shared/nicu-coding";
+import { understandNicuDocument } from "./services/nicu-document-understanding";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1122,6 +1129,101 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ============ NICU DAILY CODER ROUTES ============
+
+  app.get("/api/nicu/references", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      res.json({
+        engineVersion: NICU_ENGINE_VERSION,
+        policyVersion: NICU_POLICY_VERSION,
+        scope: "Professional directing-provider daily review with an explicit facility-pathway boundary",
+        sources: [
+          { id: "cms-ncci-2026-xi", title: "2026 Medicare NCCI Policy Manual, Chapter XI", url: "https://www.cms.gov/files/document/11-chapter11a-ncci-medicare-policy-manual-2026-final.pdf" },
+          { id: "cms-ncci-ptp-2026-q3", title: "Medicare NCCI PTP Edits, 2026 Q3", url: "https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/medicare-ncci-procedure-procedure-ptp-edits" },
+          { id: "cms-medicaid-ncci-2026-q3", title: "Medicaid NCCI Edit Files, 2026 Q3", url: "https://www.cms.gov/medicare/coding-billing/ncci-medicaid/medicaid-ncci-edit-files" },
+          { id: "cdc-icd10-fy2026", title: "FY 2026 ICD-10-CM Official Guidelines", url: "https://ftp.cdc.gov/pub/health_statistics/nchs/publications/ICD10CM/2026/ICD-10-CM-October-2025-Guidelines.pdf" },
+          { id: "aap-global-per-diem", title: "AAP Global Per Diem Critical Care: Direct Supervision and Reporting", url: "https://www.aap.org/globalassets/publications/cfp22/global_per_diem_critical_care_codes.pdf" },
+          { id: "ama-cpt-current", title: "Current licensed CPT guidance", url: "https://www.ama-assn.org/practice-management/cpt" },
+          { id: "payer-policy", title: "Date-effective state Medicaid, CHIP, or commercial payer policy", url: "https://www.medicaid.gov/medicaid/by-state/index.html" },
+        ],
+        safeguards: {
+          criticalStatusNeverInferred: true,
+          presentWeightRequiredForContinuingIntensiveTier: true,
+          oneDirectingProviderPerDiemPerDate: true,
+          facilityBillingHeldForGrouperAndContractReview: true,
+          payerCoverageNotInferred: true,
+          licensedCptVerificationRequired: true,
+          humanApprovalRequired: true,
+          autonomousSubmissionAllowed: false,
+        },
+      });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to load NICU references"); }
+  });
+
+  app.post("/api/nicu/documents/extract", upload.fields([{ name: "documents", maxCount: 12 }]), async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const files = (((req.files || {}) as Record<string, UploadedPgxFile[]>).documents || []);
+      if (!files.length) throw new RouteError(400, "Upload at least one NICU progress note, flowsheet, transfer record, or discharge document.");
+      const documents: Array<Record<string, unknown>> = [];
+      for (const file of files) {
+        const [extracted, vision] = await Promise.all([extractTextFromPgxFile(file), understandNicuDocument(file)]);
+        let stored: Awaited<ReturnType<typeof uploadSpecialtyObject>> = null;
+        try { stored = await uploadSpecialtyObject("nicu", createSpecialtyObjectKey("nicu", user.id), file.buffer, extracted.mimeType); } catch { /* OCR can continue when storage is temporarily unavailable. */ }
+        const text = extracted.text.replace(/\s+/g, " ").trim();
+        documents.push({
+          fileName: extracted.fileName,
+          byteSize: file.buffer.length,
+          sha256: extracted.validation.sha256,
+          pageCount: extracted.validation.pageCount,
+          extractionMethod: vision.used ? "visual-ocr-plus-native-text" : extracted.validation.extractionMethod,
+          patientName: vision.patientName || null,
+          dateOfBirth: vision.dateOfBirth || null,
+          admissionDate: vision.admissionDate || null,
+          birthWeightGrams: vision.birthWeightGrams || null,
+          days: vision.days,
+          diagnoses: vision.diagnoses,
+          textPreview: text.slice(0, 700),
+          objectKey: stored?.key || null,
+          requiresManualReview: true,
+          warnings: [...new Set([
+            extracted.warning,
+            ...vision.warnings,
+            !text && !vision.used ? "No native text was found; advanced visual OCR was unavailable." : "",
+            "Every extracted date, weight, status, provider, diagnosis, procedure, and attestation must be verified against the source.",
+          ].filter(Boolean))],
+        });
+      }
+      res.json({ success: true, documents, requiresHumanReview: true, autonomousCodeSelection: false });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to process NICU documents"); }
+  });
+
+  app.post("/api/nicu/evaluate", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const candidate = req.body?.caseInput as NicuCaseInput | undefined;
+      if (!candidate?.dateOfBirth || !candidate?.admissionDate || !Array.isArray(candidate?.days) || !Array.isArray(candidate?.diagnoses)) throw new RouteError(400, "Date of birth, admission date, diagnoses array, and daily evidence are required.");
+      const caseInput: NicuCaseInput = {
+        ...candidate,
+        diagnoses: candidate.diagnoses.slice(0, 100),
+        days: candidate.days.slice(0, 120).map((day) => ({ ...day, procedures: Array.isArray(day.procedures) ? day.procedures.slice(0, 40) : [] })),
+      };
+      const evaluation = evaluateNicuCase(caseInput);
+      let ncci: unknown = null;
+      if (caseInput.claimScope === "practitioner" && evaluation.ncciCodes.length > 1) {
+        try { ncci = await checkNcciBatchEdits(evaluation.ncciCodes.slice(0, 12), "practitioner"); }
+        catch (error: any) { ncci = { unavailable: true, message: error?.message || "NCCI lookup unavailable; do not release procedure combinations without current edit review." }; }
+      }
+      res.json({
+        success: true,
+        evaluation,
+        ncci,
+        evidenceSemantics: "This is a coder-review worksheet. It does not diagnose critical illness, establish coverage, replace a licensed CPT source, determine a facility DRG/revenue path, authorize a modifier, or submit a claim.",
+      });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to build the NICU daily coding worksheet"); }
+  });
 
   // ============ INFUSION HIERARCHY AND DRUG-UNIT ROUTES ============
 
