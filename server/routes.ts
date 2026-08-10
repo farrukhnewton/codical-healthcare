@@ -106,6 +106,13 @@ import {
   type NicuCaseInput,
 } from "../shared/nicu-coding";
 import { understandNicuDocument } from "./services/nicu-document-understanding";
+import {
+  VAD_ECMO_ENGINE_VERSION,
+  VAD_ECMO_POLICY_VERSION,
+  evaluateVadEcmoCase,
+  type VadEcmoCaseInput,
+} from "../shared/vad-ecmo-coding";
+import { understandVadEcmoDocument } from "./services/vad-ecmo-document-understanding";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1129,6 +1136,101 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ============ VAD / ECMO CODER ROUTES ============
+
+  app.get("/api/vad-ecmo/references", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      res.json({
+        engineVersion: VAD_ECMO_ENGINE_VERSION,
+        policyVersion: VAD_ECMO_POLICY_VERSION,
+        scope: "Professional CPT and inpatient-facility ICD-10-PCS candidate review with separate coverage and NCCI gates",
+        sources: [
+          { id: "cms-ncd-20.9.1", title: "CMS NCD 20.9.1 Ventricular Assist Devices", url: "https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?ncdid=360&ncdver=2" },
+          { id: "cms-pfs-rvu26c", title: "July 2026 Physician Fee Schedule Relative Value File", url: "https://www.cms.gov/medicare/payment/fee-schedules/physician/pfs-relative-value-files/rvu26c" },
+          { id: "cms-ncci-2026-v", title: "2026 Medicare NCCI Policy Manual, Chapter V", url: "https://www.cms.gov/files/document/2026-ncci-medicare-policy-manual-all-chapters.pdf" },
+          { id: "cms-ncci-ptp-2026-q3", title: "Medicare NCCI PTP Edits, 2026 Q3", url: "https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/medicare-ncci-procedure-procedure-ptp-edits" },
+          { id: "cms-icd10-pcs-2026", title: "April 2026 ICD-10-PCS Files and Official Guidelines", url: "https://www.cms.gov/medicare/coding-billing/icd-10-codes" },
+          { id: "cms-ipps-fy2026", title: "FY 2026 IPPS Final Rule and MS-DRG Files", url: "https://www.cms.gov/medicare/payment/prospective-payment-systems/acute-inpatient-pps/fy-2026-ipps-final-rule-home-page" },
+          { id: "ama-cpt-current", title: "Current licensed CPT guidance", url: "https://www.ama-assn.org/practice-management/cpt" },
+        ],
+        safeguards: {
+          ecmoModeNeverInferred: true,
+          deviceAndAccessNeverInferred: true,
+          professionalAndFacilityCodingSeparated: true,
+          ncdCoverageEvaluatedSeparately: true,
+          currentNcciRequired: true,
+          modifiersNeverAutomatic: true,
+          licensedCptVerificationRequired: true,
+          humanApprovalRequired: true,
+          autonomousSubmissionAllowed: false,
+        },
+      });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to load VAD/ECMO references"); }
+  });
+
+  app.post("/api/vad-ecmo/documents/extract", upload.fields([{ name: "documents", maxCount: 12 }]), async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const files = (((req.files || {}) as Record<string, UploadedPgxFile[]>).documents || []);
+      if (!files.length) throw new RouteError(400, "Upload at least one operative report, perfusion record, daily management note, device interrogation, or removal note.");
+      const documents: Array<Record<string, unknown>> = [];
+      for (const file of files) {
+        const [extracted, vision] = await Promise.all([extractTextFromPgxFile(file), understandVadEcmoDocument(file)]);
+        let stored: Awaited<ReturnType<typeof uploadSpecialtyObject>> = null;
+        try { stored = await uploadSpecialtyObject("vad-ecmo", createSpecialtyObjectKey("vad-ecmo", user.id), file.buffer, extracted.mimeType); } catch { /* OCR can continue if storage is unavailable. */ }
+        const text = extracted.text.replace(/\s+/g, " ").trim();
+        documents.push({
+          fileName: extracted.fileName,
+          byteSize: file.buffer.length,
+          sha256: extracted.validation.sha256,
+          pageCount: extracted.validation.pageCount,
+          extractionMethod: vision.used ? "visual-ocr-plus-native-text" : extracted.validation.extractionMethod,
+          patientName: vision.patientName || null,
+          dateOfBirth: vision.dateOfBirth || null,
+          services: vision.services,
+          diagnoses: vision.diagnoses,
+          coverageFacts: vision.coverageFacts,
+          textPreview: text.slice(0, 700),
+          objectKey: stored?.key || null,
+          requiresManualReview: true,
+          warnings: [...new Set([
+            extracted.warning,
+            ...vision.warnings,
+            !text && !vision.used ? "No native text was found; advanced visual OCR was unavailable." : "",
+            "Every extracted device, mode, access, phase, clinician, diagnosis, and coverage fact must be verified against the source.",
+          ].filter(Boolean))],
+        });
+      }
+      res.json({ success: true, documents, requiresHumanReview: true, autonomousCodeSelection: false });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to process VAD/ECMO documents"); }
+  });
+
+  app.post("/api/vad-ecmo/evaluate", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const candidate = req.body?.caseInput as VadEcmoCaseInput | undefined;
+      if (!candidate?.dateOfBirth || !Array.isArray(candidate?.services) || !Array.isArray(candidate?.diagnoses) || !candidate?.coverage) throw new RouteError(400, "Date of birth, coverage evidence, diagnoses array, and service records are required.");
+      const caseInput: VadEcmoCaseInput = {
+        ...candidate,
+        diagnoses: candidate.diagnoses.slice(0, 100),
+        services: candidate.services.slice(0, 120).map((service) => ({ ...service, sameDayProcedureCodes: Array.isArray(service.sameDayProcedureCodes) ? service.sameDayProcedureCodes.slice(0, 30) : [] })),
+      };
+      const evaluation = evaluateVadEcmoCase(caseInput);
+      let ncci: unknown = null;
+      if (caseInput.claimScope === "professional" && evaluation.ncciCodes.length > 1) {
+        try { ncci = await checkNcciBatchEdits(evaluation.ncciCodes.slice(0, 16), "practitioner"); }
+        catch (error: any) { ncci = { unavailable: true, message: error?.message || "NCCI lookup unavailable; do not release code combinations without current edit review." }; }
+      }
+      res.json({
+        success: true,
+        evaluation,
+        ncci,
+        evidenceSemantics: "Coder-review worksheet only. It does not infer clinical conditions, establish coverage, replace licensed CPT or current PCS tables, determine an MS-DRG, authorize a modifier, or submit a claim.",
+      });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to build the VAD/ECMO coding worksheet"); }
+  });
 
   // ============ NICU DAILY CODER ROUTES ============
 
