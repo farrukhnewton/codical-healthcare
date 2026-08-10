@@ -113,6 +113,13 @@ import {
   type VadEcmoCaseInput,
 } from "../shared/vad-ecmo-coding";
 import { understandVadEcmoDocument } from "./services/vad-ecmo-document-understanding";
+import {
+  CABG_ENGINE_VERSION,
+  CABG_POLICY_VERSION,
+  evaluateCabgCase,
+  type CabgCaseInput,
+} from "../shared/cabg-coding";
+import { understandCabgDocument } from "./services/cabg-document-understanding";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1136,6 +1143,114 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ============ CABG ASSEMBLER ROUTES ============
+
+  app.get("/api/cabg/references", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      res.json({
+        engineVersion: CABG_ENGINE_VERSION,
+        policyVersion: CABG_POLICY_VERSION,
+        scope: "Professional CPT and inpatient-facility ICD-10-PCS CABG candidate assembly with distinct payer, NCCI, MUE, and add-on-code gates",
+        sources: [
+          { id: "cms-pfs-rvu26c", title: "July 2026 Physician Fee Schedule Relative Value File", url: "https://www.cms.gov/medicare/payment/fee-schedules/physician/pfs-relative-value-files/rvu26c" },
+          { id: "cms-ncci-2026-v", title: "2026 Medicare NCCI Policy Manual, Chapter V", url: "https://www.cms.gov/files/document/05-chapter5-ncci-medicare-policy-manual-2026-final.pdf" },
+          { id: "cms-ncci-ptp-2026-q3", title: "Medicare NCCI PTP Edits, 2026 Q3", url: "https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/medicare-ncci-procedure-procedure-ptp-edits" },
+          { id: "cms-ncci-mue-2026-q3", title: "Medicare Practitioner MUEs, 2026 Q3", url: "https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/medicare-ncci-medically-unlikely-edits-mues" },
+          { id: "cms-ncci-aoc-2026-q3", title: "Medicare Add-on Code Edits, 2026 Q3", url: "https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/medicare-ncci-add-code-edits" },
+          { id: "cms-icd10-pcs-2026", title: "April 2026 ICD-10-PCS Files and Official Guidelines", url: "https://www.cms.gov/medicare/coding-billing/icd-10-codes" },
+          { id: "cms-pcs-job-aid", title: "CMS ICD-10-PCS Bypass Job Aid", url: "https://www.cms.gov/Outreach-and-Education/MLN/WBT/MLN4151758-ICD-10-PCS/ICD10PCS/jobaids/jobaid.html" },
+          { id: "cms-ipps-fy2026", title: "FY 2026 IPPS Final Rule and MS-DRG Files", url: "https://www.cms.gov/medicare/payment/prospective-payment-systems/acute-inpatient-pps/fy-2026-ipps-final-rule-home-page" },
+          { id: "cms-mcd", title: "Medicare Coverage Database", url: "https://www.cms.gov/medicare-coverage-database/search.aspx" },
+          { id: "sts-acsd-2026", title: "STS Adult Cardiac Surgery Database Specifications", url: "https://www.sts.org/sites/default/files/Database%20Manuals/Training%20Manual%20V4_20_2%20May%202026%20Volume%201.pdf" },
+          { id: "ama-cpt-current", title: "Current licensed CPT guidance", url: "https://www.ama-assn.org/practice-management/cpt" },
+        ],
+        safeguards: {
+          distalTargetsCountedIndividually: true,
+          conduitSegmentsAndProximalAnastomosesExcluded: true,
+          professionalAndFacilityCodingSeparated: true,
+          coverageNeverInferred: true,
+          currentNcciMueAndAocRequired: true,
+          modifiersNeverAutomatic: true,
+          licensedCptAndCurrentPcsVerificationRequired: true,
+          humanApprovalRequired: true,
+          autonomousSubmissionAllowed: false,
+        },
+      });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to load CABG references"); }
+  });
+
+  app.post("/api/cabg/documents/extract", upload.fields([{ name: "documents", maxCount: 12 }]), async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const files = (((req.files || {}) as Record<string, UploadedPgxFile[]>).documents || []);
+      if (!files.length) throw new RouteError(400, "Upload at least one signed operative report, graft diagram, harvest note, or perfusion record.");
+      const documents: Array<Record<string, unknown>> = [];
+      for (const file of files) {
+        const [extracted, vision] = await Promise.all([extractTextFromPgxFile(file), understandCabgDocument(file)]);
+        let stored: Awaited<ReturnType<typeof uploadSpecialtyObject>> = null;
+        try { stored = await uploadSpecialtyObject("cabg", createSpecialtyObjectKey("cabg", user.id), file.buffer, extracted.mimeType); } catch { /* OCR may continue when object storage is unavailable. */ }
+        const text = extracted.text.replace(/\s+/g, " ").trim();
+        documents.push({
+          fileName: extracted.fileName,
+          byteSize: file.buffer.length,
+          sha256: extracted.validation.sha256,
+          pageCount: extracted.validation.pageCount,
+          extractionMethod: vision.used ? "visual-ocr-plus-native-text" : extracted.validation.extractionMethod,
+          patientName: vision.patientName || null,
+          dateOfBirth: vision.dateOfBirth || null,
+          serviceDate: vision.serviceDate || null,
+          primarySurgeon: vision.primarySurgeon || null,
+          signedReportText: vision.signedReportText || null,
+          targets: vision.targets,
+          harvests: vision.harvests,
+          redoFacts: vision.redoFacts,
+          endarterectomyVessels: vision.endarterectomyVessels,
+          diagnoses: vision.diagnoses,
+          sameDayProcedureCodes: vision.sameDayProcedureCodes,
+          textPreview: text.slice(0, 700),
+          objectKey: stored?.key || null,
+          requiresManualReview: true,
+          warnings: [...new Set([
+            extracted.warning,
+            ...vision.warnings,
+            !text && !vision.used ? "No native text was found; advanced visual OCR was unavailable." : "",
+            "Every target, conduit, inflow, harvest, diagnosis, signature, redo, and same-day procedure fact must be verified against the source.",
+          ].filter(Boolean))],
+        });
+      }
+      res.json({ success: true, documents, requiresHumanReview: true, autonomousCodeSelection: false });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to process CABG documents"); }
+  });
+
+  app.post("/api/cabg/evaluate", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const candidate = req.body?.caseInput as CabgCaseInput | undefined;
+      if (!candidate?.serviceDate || !Array.isArray(candidate?.targets) || !Array.isArray(candidate?.harvests) || !Array.isArray(candidate?.diagnoses)) throw new RouteError(400, "Service date, targets, harvests, and diagnoses are required.");
+      const caseInput: CabgCaseInput = {
+        ...candidate,
+        targets: candidate.targets.slice(0, 80),
+        harvests: candidate.harvests.slice(0, 20),
+        diagnoses: candidate.diagnoses.slice(0, 100),
+        sameDayProcedureCodes: Array.isArray(candidate.sameDayProcedureCodes) ? candidate.sameDayProcedureCodes.slice(0, 30) : [],
+        coronaryEndarterectomyVessels: Math.max(0, Math.min(12, Number(candidate.coronaryEndarterectomyVessels) || 0)),
+      };
+      const evaluation = evaluateCabgCase(caseInput);
+      let ncci: unknown = null;
+      if (caseInput.claimScope === "professional" && evaluation.ncciCodes.length > 1) {
+        try { ncci = await checkNcciBatchEdits(evaluation.ncciCodes.slice(0, 16), "practitioner"); }
+        catch (error: any) { ncci = { unavailable: true, message: error?.message || "NCCI lookup unavailable; do not release code combinations without current edit review." }; }
+      }
+      res.json({
+        success: true,
+        evaluation,
+        ncci,
+        evidenceSemantics: "Coder-review worksheet only. It does not infer coronary disease, medical necessity, coverage, modifiers, diagnoses, an MS-DRG, or claim submission authority and does not replace licensed CPT or current PCS tables.",
+      });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to build the CABG coding worksheet"); }
+  });
 
   // ============ VAD / ECMO CODER ROUTES ============
 
