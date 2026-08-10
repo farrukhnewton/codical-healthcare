@@ -66,6 +66,13 @@ import {
   evaluateTransplantCase,
   type TransplantCaseInput,
 } from "../shared/transplant-coding";
+import {
+  OTP_2026_NATIONAL_RATES,
+  OTP_ENGINE_VERSION,
+  OTP_POLICY_VERSION,
+  evaluateOtpCase,
+  type OtpCaseInput,
+} from "../shared/otp-mat-coding";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1089,6 +1096,129 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ============ OTP / MOUD BUNDLE ROUTES ============
+
+  app.get("/api/otp-mat/references", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      res.json({
+        engineVersion: OTP_ENGINE_VERSION,
+        policyVersion: OTP_POLICY_VERSION,
+        rates: OTP_2026_NATIONAL_RATES,
+        professionalClaim: { format: "837P", placeOfService: "58", telecomPlaceOfService: "58" },
+        institutionalClaims: [
+          { site: "freestanding", format: "837I", typeOfBill: "087x", revenueCodes: "090x-091x or 0949" },
+          { site: "provider-based", format: "837I", typeOfBill: "087x", conditionCode: "89", revenueCodes: "090x-091x or 0949" },
+          { site: "hospital-based", format: "837I", typeOfBill: "013x", revenueCodes: "090x-091x or 0949" },
+          { site: "CAH-based", format: "837I", typeOfBill: "085x", revenueCodes: "090x-091x or 0949" },
+        ],
+        sources: [
+          { id: "cms-clm-ch39", title: "Medicare Claims Processing Manual, Chapter 39 - OTPs", url: "https://www.cms.gov/files/document/chapter-39-opioid-treatment-programs-otps.pdf" },
+          { id: "cms-otp-cy2026-rates", title: "CMS CY 2026 OTP payment rates", url: "https://www.cms.gov/medicare/payment/opioid-treatment-programs-otp/billing-payment/otp-payment-rates" },
+          { id: "cms-cr14347", title: "CMS CR 14347 / R13572BP", url: "https://www.cms.gov/medicare/regulations-guidance/transmittals/2026-transmittals/r13572bp" },
+          { id: "cms-otp-enrollment", title: "CMS OTP enrollment", url: "https://www.cms.gov/medicare/payment/opioid-treatment-program/enrollment" },
+          { id: "samhsa-42-cfr-part-8", title: "SAMHSA 42 CFR Part 8", url: "https://www.samhsa.gov/substance-use/treatment/opioid-treatment-program/42-cfr-part-8" },
+          { id: "samhsa-federal-guidelines-2024", title: "Federal Guidelines for OTPs, Fall 2024", url: "https://store.samhsa.gov/sites/default/files/federal-guidelines-opioid-treatment-pep24-02-011.pdf" },
+        ],
+        safeguards: {
+          diagnosisInference: false,
+          takeHomeClinicalAuthorization: false,
+          autonomousClaimSubmission: false,
+          licensedCodeSetRequiredWhereApplicable: true,
+        },
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to load OTP/MOUD references");
+    }
+  });
+
+  app.post("/api/otp-mat/documents/extract", upload.fields([{ name: "documents", maxCount: 10 }]), async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const files = (((req.files || {}) as Record<string, UploadedPgxFile[]>).documents || []);
+      if (!files.length) throw new RouteError(400, "Upload at least one OTP treatment document.");
+      const documents = [] as Array<Record<string, unknown>>;
+      for (const file of files) {
+        const extracted = await extractTextFromPgxFile(file);
+        const normalized = extracted.text.replace(/\s+/g, " ").trim();
+        const lower = normalized.toLowerCase();
+        const documentType = /admission|intake|initial assessment/.test(lower) ? "intake-assessment"
+          : /dose|dosing|medication administration|take.home/.test(lower) ? "medication-record"
+          : /counsel|therapy|peer support|navigation/.test(lower) ? "service-note"
+          : /treatment plan|plan of care/.test(lower) ? "treatment-plan"
+          : /toxicology|drug screen|urine/.test(lower) ? "toxicology"
+          : /certif|accredit|enrollment/.test(lower) ? "program-credential"
+          : "unclassified";
+        let stored: Awaited<ReturnType<typeof uploadSpecialtyObject>> = null;
+        try {
+          stored = await uploadSpecialtyObject("otp-mat", createSpecialtyObjectKey("otp-mat", user.id), file.buffer, extracted.mimeType);
+        } catch {
+          // The evidence can still be reviewed when encrypted object storage is temporarily unavailable.
+        }
+        documents.push({
+          fileName: extracted.fileName,
+          documentType,
+          byteSize: file.buffer.length,
+          sha256: extracted.validation.sha256,
+          pageCount: extracted.validation.pageCount,
+          extractionMethod: extracted.validation.extractionMethod,
+          requiresManualReview: extracted.validation.requiresManualReview || !normalized,
+          textPreview: normalized.slice(0, 600),
+          objectKey: stored?.key || null,
+          warnings: [
+            extracted.warning,
+            !normalized ? "No native text was found. Route scanned or handwritten pages through an approved OCR/vision service and verify every claim-bound field against the source page." : "",
+          ].filter(Boolean),
+        });
+      }
+      res.json({
+        success: true,
+        documents,
+        notice: "Document classification and extracted text are preliminary evidence only. The engine will not infer an OUD diagnosis, medication, dose, service time, or take-home authorization.",
+        requiresHumanReview: true,
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to process OTP treatment documents");
+    }
+  });
+
+  app.post("/api/otp-mat/evaluate", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const candidate = req.body?.caseInput as OtpCaseInput | undefined;
+      if (!candidate?.serviceDate || !candidate.payerMode || !candidate.claimEntity || !candidate.siteType || !candidate.medication || !candidate.program) {
+        throw new RouteError(400, "Service date, payer, claim entity, site, medication pathway, and program evidence are required.");
+      }
+      const caseInput: OtpCaseInput = {
+        ...candidate,
+        diagnosisCodes: Array.isArray(candidate.diagnosisCodes) ? candidate.diagnosisCodes : [],
+        additionalCounselingMinutes: Number(candidate.additionalCounselingMinutes || 0),
+        coordinatedCareMinutes: Number(candidate.coordinatedCareMinutes || 0),
+        navigationMinutes: Number(candidate.navigationMinutes || 0),
+        peerRecoveryMinutes: Number(candidate.peerRecoveryMinutes || 0),
+        intensiveOutpatient: candidate.intensiveOutpatient ? {
+          ...candidate.intensiveOutpatient,
+          services: Array.isArray(candidate.intensiveOutpatient.services) ? candidate.intensiveOutpatient.services : [],
+        } : undefined,
+      };
+      const evaluation = evaluateOtpCase(caseInput);
+      const stateCode = String(req.body?.stateCode || "").trim().toUpperCase();
+      if (stateCode && !/^[A-Z]{2}$/.test(stateCode)) throw new RouteError(400, "Use a two-letter service state for CMS evidence.");
+      const cmsEvidence = evaluation.diagnosisCodes.length && evaluation.lines.length
+        ? await getMcdBatchPairEvidence({ diagnosisCodes: evaluation.diagnosisCodes, procedureCodes: evaluation.lines.map((line) => line.hcpcs), stateCode: stateCode || undefined, limit: 30 })
+        : { source: "cloudflare-mcd", pairs: [] };
+      res.json({
+        success: true,
+        evaluation,
+        cmsEvidence,
+        evidenceSemantics: "MCD pair evidence is supporting context, not a substitute for the national OTP manual, current payment file, service-state rules, or payer policy. No local match does not mean noncoverage.",
+        autonomousClaimSubmission: false,
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to build the OTP/MOUD billing worksheet");
+    }
+  });
 
   // ============ ORGAN TRANSPLANT LIFECYCLE ROUTES ============
 
