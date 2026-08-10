@@ -120,6 +120,13 @@ import {
   type CabgCaseInput,
 } from "../shared/cabg-coding";
 import { understandCabgDocument } from "./services/cabg-document-understanding";
+import {
+  CATH_PCI_ENGINE_VERSION,
+  CATH_PCI_POLICY_VERSION,
+  evaluateCathPciCase,
+  type CathPciCaseInput,
+} from "../shared/cath-pci-coding";
+import { understandCathPciDocument } from "./services/cath-pci-document-understanding";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1143,6 +1150,86 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ============ CARDIAC CATH / PCI CODER ROUTES ============
+
+  app.get("/api/cath-pci/references", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      res.json({
+        engineVersion: CATH_PCI_ENGINE_VERSION,
+        policyVersion: CATH_PCI_POLICY_VERSION,
+        scope: "Professional, hospital-outpatient, and inpatient-facility cardiac catheterization and PCI candidate assembly",
+        sources: [
+          { id: "cms-pfs-rvu26c", title: "July 2026 Physician Fee Schedule Relative Value File", url: "https://www.cms.gov/medicare/payment/fee-schedules/physician/pfs-relative-value-files/rvu26c" },
+          { id: "cms-pci-a57479", title: "CMS Billing and Coding: Percutaneous Coronary Interventions (A57479)", url: "https://www.cms.gov/medicare-coverage-database/view/article.aspx?articleId=57479" },
+          { id: "cms-cath-a52850", title: "CMS Billing and Coding: Cardiac Catheterization (A52850)", url: "https://www.cms.gov/medicare-coverage-database/view/article.aspx?articleId=52850&ver=55" },
+          { id: "cms-pci-l34761", title: "CMS LCD: Percutaneous Coronary Interventions (L34761)", url: "https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?lcdid=34761&ver=34" },
+          { id: "cms-cath-l33557", title: "CMS LCD: Cardiac Catheterization (L33557)", url: "https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?lcdid=33557&ver=47" },
+          { id: "cms-ncci-2026-xi", title: "2026 Medicare NCCI Policy Manual, Chapter XI", url: "https://www.cms.gov/files/document/2026-ncci-medicare-policy-manual-all-chapters.pdf" },
+          { id: "cms-ncci-mue-2026-q3", title: "Medicare Practitioner MUEs, 2026 Q3", url: "https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/medicare-ncci-medically-unlikely-edits-mues" },
+          { id: "cms-ncci-aoc-2026-q3", title: "Medicare Add-on Code Edits, 2026 Q3", url: "https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/medicare-ncci-add-code-edits" },
+          { id: "cms-ncci-ptp-2026-q3", title: "Medicare NCCI PTP Edits, 2026 Q3", url: "https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/medicare-ncci-procedure-procedure-ptp-edits" },
+          { id: "cms-icd10-pcs-2026", title: "April 2026 ICD-10-PCS files and guidelines", url: "https://www.cms.gov/medicare/coding-billing/icd-10-codes" },
+          { id: "cms-mcd", title: "Medicare Coverage Database", url: "https://www.cms.gov/medicare-coverage-database/search.aspx" },
+          { id: "ama-cpt-current", title: "Current licensed CPT guidance", url: "https://www.ama-assn.org/practice-management/cpt" },
+        ],
+        safeguards: {
+          oneHierarchySelectedPciFamilyPerMajorVessel: true,
+          diagnosticCathSameSessionGate: true,
+          retired2026BranchAddOnsBlocked: ["92921", "92925", "92929", "92934", "92938", "92944", "92975"],
+          new2026CodesSupported: ["92930", "92945"],
+          professionalOutpatientAndInpatientSeparated: true,
+          coverageAndDiagnosesNeverInferred: true,
+          modifiersNeverAutomatic: true,
+          currentNcciMueAocAndLicensedCptRequired: true,
+          humanApprovalRequired: true,
+          autonomousSubmissionAllowed: false,
+        },
+      });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to load cardiac cath/PCI references"); }
+  });
+
+  app.post("/api/cath-pci/documents/extract", upload.fields([{ name: "documents", maxCount: 12 }]), async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const files = (((req.files || {}) as Record<string, UploadedPgxFile[]>).documents || []);
+      if (!files.length) throw new RouteError(400, "Upload at least one signed cath report, PCI report, hemodynamic record, or device log.");
+      const documents: Array<Record<string, unknown>> = [];
+      for (const file of files) {
+        const [extracted, vision] = await Promise.all([extractTextFromPgxFile(file), understandCathPciDocument(file)]);
+        let stored: Awaited<ReturnType<typeof uploadSpecialtyObject>> = null;
+        try { stored = await uploadSpecialtyObject("cath-pci", createSpecialtyObjectKey("cath-pci", user.id), file.buffer, extracted.mimeType); } catch { /* OCR may continue when storage is unavailable. */ }
+        const text = extracted.text.replace(/\s+/g, " ").trim();
+        documents.push({
+          fileName: extracted.fileName, byteSize: file.buffer.length, sha256: extracted.validation.sha256,
+          pageCount: extracted.validation.pageCount, extractionMethod: vision.used ? "visual-ocr-plus-native-text" : extracted.validation.extractionMethod,
+          patientName: vision.patientName || null, dateOfBirth: vision.dateOfBirth || null, serviceDate: vision.serviceDate || null,
+          operatorName: vision.operatorName || null, signedReportText: vision.signedReportText || null,
+          diagnostic: vision.diagnostic, interventions: vision.interventions, adjuncts: vision.adjuncts, diagnoses: vision.diagnoses,
+          textPreview: text.slice(0, 700), objectKey: stored?.key || null, requiresManualReview: true,
+          warnings: [...new Set([extracted.warning, ...vision.warnings, !text && !vision.used ? "No native text was found; advanced visual OCR was unavailable." : "", "Verify every vessel, lesion, intervention, device, diagnostic indication, diagnosis, and signature against the source."].filter(Boolean))],
+        });
+      }
+      res.json({ success: true, documents, requiresHumanReview: true, autonomousCodeSelection: false });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to process cardiac cath/PCI documents"); }
+  });
+
+  app.post("/api/cath-pci/evaluate", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const candidate = req.body?.caseInput as CathPciCaseInput | undefined;
+      if (!candidate?.dateOfService || !candidate?.diagnostic || !Array.isArray(candidate.interventions) || !Array.isArray(candidate.adjuncts) || !Array.isArray(candidate.diagnoses)) throw new RouteError(400, "Service date, diagnostic facts, interventions, adjuncts, and diagnoses are required.");
+      const caseInput: CathPciCaseInput = { ...candidate, interventions: candidate.interventions.slice(0, 40), adjuncts: candidate.adjuncts.slice(0, 40), diagnoses: candidate.diagnoses.slice(0, 100), sameDayProcedureCodes: Array.isArray(candidate.sameDayProcedureCodes) ? candidate.sameDayProcedureCodes.slice(0, 30) : [] };
+      const evaluation = evaluateCathPciCase(caseInput);
+      let ncci: unknown = null;
+      if (caseInput.claimScope !== "inpatient-facility" && evaluation.claimCodes.length > 1) {
+        try { ncci = await checkNcciBatchEdits(evaluation.claimCodes.slice(0, 20), caseInput.claimScope === "professional" ? "practitioner" : "outpatient"); }
+        catch (error: any) { ncci = { unavailable: true, message: error?.message || "NCCI lookup unavailable; do not release combinations without current edit review." }; }
+      }
+      res.json({ success: true, evaluation, ncci, evidenceSemantics: "Coder-review worksheet only. No diagnosis, coverage, modifier, payment, MS-DRG, or submission authority is inferred; licensed CPT and current PCS/OCE/NCCI review remain required." });
+    } catch (error: any) { return sendRouteError(res, error, "Failed to build the cardiac cath/PCI worksheet"); }
+  });
 
   // ============ CABG ASSEMBLER ROUTES ============
 

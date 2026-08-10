@@ -187,6 +187,20 @@ export const SPECIALTY_MODULES: readonly SpecialtyModule[] = [
     dataSources: 11,
     imageUrl: "https://codical-public-assets.farrukhnewton.workers.dev/specialty-images/cabg-assembler-hero-v1.png",
   },
+  {
+    id: "cath-pci",
+    title: "Cardiac Cath & PCI",
+    shortTitle: "Cath & PCI Coder",
+    description: "Diagnostic catheterization, coronary intervention hierarchy, adjunct, outpatient, and inpatient PCS review.",
+    icon: "activity",
+    color: "#0ea5e9",
+    href: "/specialty/cath-pci",
+    status: "active",
+    badge: "new",
+    stats: "Active",
+    dataSources: 12,
+    imageUrl: "https://codical-public-assets.farrukhnewton.workers.dev/specialty-images/cath-pci-coder-hero-v1.png",
+  },
 ] as const;
 
 export const ACTIVE_SPECIALTY_MODULES = SPECIALTY_MODULES.filter((module) => module.status === "active");

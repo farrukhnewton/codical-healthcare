@@ -12,6 +12,7 @@ import "@/styles/infusion-specialty.css";
 import "@/styles/nicu-specialty.css";
 import "@/styles/vad-ecmo-specialty.css";
 import "@/styles/cabg-specialty.css";
+import "@/styles/cath-pci-specialty.css";
 
 import { lazy, Suspense, type ReactNode } from "react";
 import { Redirect, Route, Switch } from "wouter";
@@ -55,6 +56,7 @@ const InfusionWorkspace = lazy(() => import("@/pages/InfusionWorkspace").then((m
 const NicuWorkspace = lazy(() => import("@/pages/NicuWorkspace").then((module) => ({ default: module.NicuWorkspace })));
 const VadEcmoWorkspace = lazy(() => import("@/pages/VadEcmoWorkspace").then((module) => ({ default: module.VadEcmoWorkspace })));
 const CabgWorkspace = lazy(() => import("@/pages/CabgWorkspace").then((module) => ({ default: module.CabgWorkspace })));
+const CathPciWorkspace = lazy(() => import("@/pages/CathPciWorkspace").then((module) => ({ default: module.CathPciWorkspace })));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const ChatRealtimeBridge = lazy(() =>
   import("@/components/chat/ChatRealtimeBridge").then((module) => ({ default: module.ChatRealtimeBridge })),
@@ -128,6 +130,7 @@ function AuthenticatedRoutes() {
       <Route path="/specialty/nicu">{() => <AppPage><NicuWorkspace /></AppPage>}</Route>
       <Route path="/specialty/vad-ecmo">{() => <AppPage><VadEcmoWorkspace /></AppPage>}</Route>
       <Route path="/specialty/cabg">{() => <AppPage><CabgWorkspace /></AppPage>}</Route>
+      <Route path="/specialty/cath-pci">{() => <AppPage><CathPciWorkspace /></AppPage>}</Route>
       <Route>{() => <AppPage><NotFound /></AppPage>}</Route>
     </Switch>
   );
