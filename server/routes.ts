@@ -79,6 +79,17 @@ import {
   evaluateEmMdmCase,
   type EmMdmCaseInput,
 } from "../shared/em-mdm-coding";
+import {
+  HCC_DATA_COLLECTION_YEAR,
+  HCC_ENGINE_VERSION,
+  HCC_MA_CODING_PATTERN_ADJUSTMENT,
+  HCC_NORMALIZATION_FACTOR,
+  HCC_PAYMENT_YEAR,
+  HCC_POLICY_VERSION,
+  evaluateHccCase,
+  type HccCaseInput,
+} from "../shared/hcc-coding";
+import { CMS_HCC_V28_2026 } from "./hcc-cms-v28-data";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1102,6 +1113,132 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ============ CMS-HCC V28 RISK ADJUSTMENT ROUTES ============
+
+  app.get("/api/hcc/references", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      res.json({
+        engineVersion: HCC_ENGINE_VERSION,
+        policyVersion: HCC_POLICY_VERSION,
+        modelVersion: CMS_HCC_V28_2026.modelVersion,
+        paymentYear: HCC_PAYMENT_YEAR,
+        dataCollectionYear: HCC_DATA_COLLECTION_YEAR,
+        diagnosisMappingCount: Object.keys(CMS_HCC_V28_2026.mappings).length,
+        normalizationFactor: HCC_NORMALIZATION_FACTOR,
+        maCodingPatternAdjustment: HCC_MA_CODING_PATTERN_ADJUSTMENT,
+        scope: "Non-PACE Medicare Advantage Part C, PY 2026, 2024 CMS-HCC V28 final model",
+        heldPathways: ["PACE blended model", "ESRD dialysis", "ESRD transplant", "ESRD functioning graft", "Part D RxHCC"],
+        sources: [
+          { id: "cms-py2026-model", title: "CMS 2026 Model Software/ICD-10 Mappings", url: "https://www.cms.gov/medicare/payment/medicare-advantage-rates-statistics/risk-adjustment/2026-model-software-icd-10-mappings" },
+          { id: "cms-cy2026-announcement", title: "CMS CY 2026 Rate Announcement", url: "https://www.cms.gov/files/document/2026-announcement.pdf" },
+          { id: "cms-mcm-ch7", title: "Medicare Managed Care Manual, Chapter 7", url: "https://www.cms.gov/regulations-and-guidance/guidance/manuals/downloads/mc86c07.pdf" },
+          { id: "cms-radv", title: "CMS Medicare Advantage RADV Program", url: "https://www.cms.gov/data-research/monitoring-programs/medicare-risk-adjustment-data-validation-program" },
+          { id: "cms-icd10-fy2026", title: "FY 2026 ICD-10-CM Official Guidelines", url: "https://www.cms.gov/files/document/fy-2026-icd-10-cm-coding-guidelines.pdf" },
+          { id: "cms-ra-eligible-services", title: "Medicare Risk Adjustment Eligible CPT/HCPCS Codes", url: "https://www.cms.gov/medicare/health-plans/medicareadvtgspecratestats/risk-adjustors-items/cpt-hcpcs" },
+        ],
+        safeguards: {
+          historicalDiagnosesNeverAutoRecaptured: true,
+          unsupportedDiagnosesNeverSuggested: true,
+          genericDollarPaymentEstimateDisabled: true,
+          humanApprovalRequired: true,
+          autonomousSubmissionAllowed: false,
+        },
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to load HCC references");
+    }
+  });
+
+  app.post("/api/hcc/map-codes", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const codes = Array.isArray(req.body?.codes) ? req.body.codes.map((value: unknown) => String(value).toUpperCase().replace(/[^A-Z0-9]/g, "")).filter(Boolean).slice(0, 250) : [];
+      if (!codes.length) throw new RouteError(400, "Provide at least one ICD-10-CM code.");
+      res.json({
+        success: true,
+        paymentYear: HCC_PAYMENT_YEAR,
+        modelVersion: CMS_HCC_V28_2026.modelVersion,
+        mappings: [...new Set<string>(codes)].map((code) => ({ code, rules: CMS_HCC_V28_2026.mappings[code] || [], mapped: Boolean(CMS_HCC_V28_2026.mappings[code]?.length) })),
+        notice: "A model mapping is not proof that a diagnosis is reportable. Current medical-record support, acceptable provider/source, eligible encounter, ICD-10-CM rules, and human review remain required.",
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to map HCC diagnosis codes");
+    }
+  });
+
+  app.post("/api/hcc/documents/extract", upload.fields([{ name: "documents", maxCount: 12 }]), async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const files = (((req.files || {}) as Record<string, UploadedPgxFile[]>).documents || []);
+      if (!files.length) throw new RouteError(400, "Upload at least one encounter or medical-record document.");
+      const documents: Array<Record<string, unknown>> = [];
+      for (const file of files) {
+        const extracted = await extractTextFromPgxFile(file);
+        const normalized = extracted.text.replace(/\s+/g, " ").trim();
+        const candidateCodes = [...new Set((normalized.toUpperCase().match(/\b[A-TV-Z][0-9][0-9A-Z](?:\.?[0-9A-Z]{1,4})?\b/g) || []).map((code) => code.replace(".", "")))].filter((code) => CMS_HCC_V28_2026.mappings[code]).slice(0, 100);
+        const lower = normalized.toLowerCase();
+        const candidateFlags = {
+          signatureLanguagePresent: /electronically signed|signed by|signature|authenticated by/.test(lower),
+          assessmentPlanLanguagePresent: /assessment|impression|plan|diagnosis/.test(lower),
+          uncertainLanguagePresent: /probable|suspected|questionable|rule out|working diagnosis/.test(lower),
+          serviceDateLanguagePresent: /date of service|encounter date|visit date/.test(lower),
+        };
+        let stored: Awaited<ReturnType<typeof uploadSpecialtyObject>> = null;
+        try {
+          stored = await uploadSpecialtyObject("hcc", createSpecialtyObjectKey("hcc", user.id), file.buffer, extracted.mimeType);
+        } catch {
+          // The review can continue when encrypted object storage is temporarily unavailable.
+        }
+        documents.push({
+          fileName: extracted.fileName,
+          byteSize: file.buffer.length,
+          sha256: extracted.validation.sha256,
+          pageCount: extracted.validation.pageCount,
+          extractionMethod: extracted.validation.extractionMethod,
+          textPreview: normalized.slice(0, 700),
+          candidateCodes,
+          candidateFlags,
+          objectKey: stored?.key || null,
+          requiresManualReview: true,
+          warnings: [
+            extracted.warning,
+            !normalized ? "No native text was found. Route scanned or handwritten records through an approved OCR/vision service." : null,
+            "Detected codes and phrases are review candidates only. Extraction never confirms, recaptures, or submits a diagnosis.",
+          ].filter(Boolean),
+        });
+      }
+      res.json({ success: true, documents, requiresHumanReview: true, autonomousDiagnosisSuggestion: false });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to process HCC documents");
+    }
+  });
+
+  app.post("/api/hcc/evaluate", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const candidate = req.body?.caseInput as HccCaseInput | undefined;
+      if (!candidate?.dateOfBirth || !candidate?.sex || !candidate?.programType || !candidate?.enrollmentType || !candidate?.medicaidStatus || !Array.isArray(candidate?.diagnoses)) {
+        throw new RouteError(400, "Payment year, beneficiary demographics, program/enrollment context, and diagnosis evidence are required.");
+      }
+      const caseInput: HccCaseInput = {
+        ...candidate,
+        paymentYear: 2026,
+        diagnoses: candidate.diagnoses.slice(0, 500),
+        priorYearDiagnoses: Array.isArray(candidate.priorYearDiagnoses) ? candidate.priorYearDiagnoses.slice(0, 500) : [],
+      };
+      const evaluation = evaluateHccCase(caseInput, CMS_HCC_V28_2026);
+      res.json({
+        success: true,
+        evaluation,
+        modelProvenance: { version: CMS_HCC_V28_2026.modelVersion, sourceHashes: CMS_HCC_V28_2026.sourceHashes },
+        evidenceSemantics: "The result is a deterministic model worksheet, not a diagnosis, encounter-data submission, CMS payment determination, or guarantee of RADV support.",
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to build the HCC risk-adjustment worksheet");
+    }
+  });
 
   // ============ OFFICE / OUTPATIENT E/M MDM ROUTES ============
 
