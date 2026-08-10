@@ -33,6 +33,16 @@ test("Lund-Browder calculation uses the pediatric age band", () => {
   assert.equal(result.extentCode, "T31.0");
 });
 
+test("anterior and posterior limb surfaces calculate independently", () => {
+  const anterior = analyzeBurnCase(caseInput({ regions: [{ regionId: "right_upper_arm", surface: "anterior", burnDepth: 2, percentBurned: 100 }] }));
+  const both = analyzeBurnCase(caseInput({ regions: [
+    { regionId: "right_upper_arm", surface: "anterior", burnDepth: 2, percentBurned: 100 },
+    { regionId: "right_upper_arm", surface: "posterior", burnDepth: 2, percentBurned: 100 },
+  ] }));
+  assert.equal(anterior.totalTbsa, 2);
+  assert.equal(both.totalTbsa, 4);
+});
+
 for (const [area, expected] of [
   [12, [["15271", 1]]],
   [40, [["15271", 1], ["15272", 1]]],

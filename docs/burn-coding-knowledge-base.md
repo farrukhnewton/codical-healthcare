@@ -1,49 +1,47 @@
 # Burn & Skin Graft Coding — validated implementation basis
 
-Status: production decision-support rules for engine version `2026.08`
+Status: decision-support rules for engine version `2026.08`
 
 Scope: `/specialty/burn`
-Effective-policy baseline: FY/CY 2026; always validate against the date of service
 
-## Purpose and safety boundary
+Policy baseline: FY/CY 2026; always evaluate the policy effective on the date of service
 
-This document replaces the supplied draft as the implementation basis. The source draft was useful as a broad inventory, but several statements were not safe to encode as universal rules. Codical therefore calculates facts that can be derived reproducibly, releases a CPT candidate only when a performed service is confirmed, and holds payer-, product-, or documentation-dependent choices for coder review.
+## Safety boundary
 
-The engine does not submit claims, determine coverage, or replace a licensed current-year CPT source. It provides a coder worksheet with the evidence and unresolved gates visible.
+The engine calculates reproducible clinical extent, produces code candidates only from a documented performed service, and exposes unresolved documentation or payer questions as holds. It does not submit a claim or equate the absence of a local CMS article with noncoverage. Final coding requires the complete record, current licensed CPT content, NCCI edits, applicable payer policy, and qualified coder review.
 
-## Corrections made to the supplied draft
+## Lund–Browder model
 
-1. Superficial (first-degree) burns are tracked but excluded from TBSA. The original algorithm incorrectly counted every depth.
-2. An extent under 10% is `T31.0` or `T32.0`, not the invalid `T31.00`/`T32.00` produced by the original string builder.
-3. T31/T32 is conditional and generally additional to site-specific codes. It is not assigned for sequela encounters.
-4. Burn debridement/local care is kept separate from general wound-debridement families. The engine withholds 11042–11047 and 97597–97598 when burned surfaces are entered.
-5. Procedure codes are never inferred from a burn diagnosis or TBSA alone. The performed service, treated site group, and required measurements must be documented.
-6. Routine debridement is not separately released with graft or skin-substitute application. Distinct recipient-site preparation is flagged for NCCI review.
-7. Skin-substitute application limits are not hardcoded as a universal four-, eight-, or ten-application rule. Coverage is MAC-, indication-, product-, setting-, and effective-date-specific.
-8. JW/JZ is not automatically appended. Package use, discarded amount, product classification, setting, and current CMS instructions must be reviewed.
-9. C5271–C5278 are not used in the 2026 engine. They were deleted effective December 31, 2025.
-10. Non-sheet and injected products are placed on hold for a current HCPCS/application-code review instead of being forced into 15271–15278.
+The implementation uses 19 regions and six age bands: under 1, 1–4, 5–9, 10–14, 15–19, and adult 20+. Region weights were reconciled to the supplied adult/pediatric worksheet and the published Lund–Browder references. Head weight decreases and leg/thigh weight increases with age; stable regions retain the same weight.
 
-## 1. TBSA calculation
+For each selected region:
 
-The module uses the age-adjusted Lund–Browder chart with 19 distinct regions and six age bands. Each row records:
+`TBSA contribution = age-band region maximum × affected share of region`
 
-- region maximum for the patient's age band;
-- percentage of that region affected;
-- depth (superficial, partial-thickness, or full-thickness);
-- contribution: `region maximum × affected fraction`.
+Anterior and posterior surfaces are stored independently. For regions whose published maximum is circumferential (head, neck, limbs, hands, and feet), each surface carries one-half of the region maximum. Selecting both surfaces produces the full circumferential weight; selecting one never mirrors to the other. Trunk, buttock, and perineal rows already represent a single published surface and therefore retain their full listed weight.
 
-Counted TBSA is the sum of partial- and full-thickness contributions. Full-thickness TBSA is reported separately. Superficial extent is displayed only as a reconciliation value.
+Only partial- and full-thickness contributions are included in counted TBSA. Superficial burns remain visible for reconciliation but are excluded. The 3D model uses a detailed CC0 MakeHuman mesh with age-adjusted proportions, 360-degree camera controls, independent anterior/posterior hit surfaces, and region color rendered directly on the anatomical mesh. The inferior-to-superior percentage fill is a proportional UI visualization; it is not an inferred wound boundary.
 
-Duplicate regions are rejected by the calculation layer, affected fractions are constrained to 0–100%, and patient age is constrained to 0–120.
+The 3D mesh asset and its CC0 provenance are documented in `client/public/models/MODEL-LICENSE.md`. The Lund–Browder region weights and calculation remain independent from the presentation mesh.
 
-## 2. ICD-10-CM decision logic
+References:
 
-The engine creates two different outputs:
+- Supplied `Lund_Browder_Burn_Estimate_Diagram_Adult-Pediatric.pdf`
+- Almutlaq et al., *Lund and Browder chart—modified versus original: a comparative study*: https://pmc.ncbi.nlm.nih.gov/articles/PMC6895471/
+- American Burn Association, *Advanced Burn Life Support Provider Manual*: https://ameriburn.org/wp-content/uploads/2019/08/2018-abls-providermanual.pdf
 
-### Site-family prompts
+## Document understanding
 
-| Clinical region | Family prompt |
+The intake uses two complementary passes:
+
+1. PDF.js renders scanned pages at high resolution and Tesseract extracts searchable text.
+2. A constrained multimodal model reviews the whole PDF plus up to 12 high-priority page images for handwriting, circles, checkmarks, burn diagrams, and operative facts.
+
+The model is instructed to return only visible patient-specific facts. It must distinguish planned from performed procedures and must not convert total TBSA into a per-region percentage. Every result stays editable. Manual changes in the review UI are the values submitted to `/api/burn/analyze`.
+
+## ICD-10-CM logic
+
+| Clinical region | Site-family prompt |
 | --- | --- |
 | Head/neck | T20.- |
 | Trunk/buttock/perineum | T21.- |
@@ -52,83 +50,39 @@ The engine creates two different outputs:
 | Hip/lower limb except ankle/foot | T24.- |
 | Ankle/foot | T25.- |
 
-These are intentionally incomplete prompts. The exact diagnosis requires documented subsite, depth, laterality where applicable, and seventh character/encounter. The engine does not invent those facts.
+These are prompts, not complete codes. Exact coding requires documented subsite, depth, laterality when applicable, and encounter character. T31/T32 extent is conditional/additional; it does not replace the site-specific diagnosis and is not generated for sequela encounters.
 
-### Extent code
+Source: CDC/NCHS, *FY 2026 ICD-10-CM Official Guidelines for Coding and Reporting*: https://ftp.cdc.gov/pub/health_statistics/nchs/publications/ICD10CM/2026/ICD-10-CM-October-2025-Guidelines.pdf
 
-- burn: T31 category;
-- corrosion: T32 category;
-- less than 10%: `.0`;
-- 10% or more: total-TBSA decile followed by full-thickness decile;
-- sequela: not assigned;
-- role: additional/conditional, not a replacement for site-specific coding.
+## Procedure logic
 
-The FY 2026 guidelines specifically describe T31/T32 use when the burn/corrosion site is unspecified or as additional data, and advise an additional T31 code when third-degree burns involve 20% or more of body surface. The final coder remains responsible for guideline sequencing and external-cause coding.
+- Local burn treatment: 16000 or 16020–16030 only for a confirmed performed service without anesthesia. Anesthesia-dependent work is held at the 16010–16015 family for descriptor review.
+- Escharotomy: 16035 plus 16036 units only from documented incisions.
+- Recipient-site preparation: 15002–15005 from site group and treated area, with a mandatory NCCI gate for distinct excisional preparation.
+- Split-thickness autograft: 15100/15101 or 15120/15121 by site group and area.
+- Full-thickness autograft: 15200/15201, 15220/15221, 15240/15241, or 15260/15261 by site group and area.
+- Sheet-form CTP/skin substitute: 15271–15278 by site group and area. Product identity, HCPCS, package, applied/discarded amount, indication, setting, state, MAC, and effective date remain required.
+- General debridement: 11042–11047 and 97597–97598 are withheld for burned surfaces unless a separate qualifying wound is documented.
+- NPWT: 97605–97608 remains a family-level review until equipment type and surface area are documented.
 
-## 3. Procedure decision logic
+CMS NCCI source: https://www.cms.gov/files/document/2026-ncci-medicare-policy-manual-all-chapters.pdf
 
-### Local burn treatment
+## CMS/MAC evidence catalog
 
-For confirmed treatment without anesthesia, the module can produce a candidate from 16000 or 16020–16030 using documented depth and treated TBSA. When anesthesia is documented, the engine returns the 16010–16015 family for licensed-descriptor review rather than guessing an exact code.
+CMS article content remains normalized in Cloudflare D1 tables (`mcd_documents`, `mcd_codes`, `mcd_document_codes`, `mcd_code_groups`, and `mcd_coverage_rules`). Migration `0004_mcd_burn_specialty_catalog.sql` adds code-family routing and the live `mcd_burn_specialty_documents` view. This avoids copying article text and automatically includes newly imported current versions.
 
-### Escharotomy
+The current all-MAC MCD scan found relevant records for wound, debridement, negative-pressure therapy, recipient-site preparation, and CTP application, including:
 
-16035 is released only when an initial escharotomy incision is explicitly confirmed. 16036 units follow documented additional incisions.
+- A53001, *Billing and Coding: Wound Care / Debridement Services*: https://www.cms.gov/medicare-coverage-database/view/article.aspx?articleId=53001
+- A54117, *Billing and Coding: Bioengineered Skin Substitutes*: https://www.cms.gov/medicare-coverage-database/view/article.aspx?articleId=54117
+- A56696, *Billing and Coding: Wound Application of Cellular and/or Tissue Based Products (CTPs), Lower Extremities*: https://www.cms.gov/medicare-coverage-database/view/article.aspx?articleId=56696
+- A57680, *Billing and Coding: Skin Substitute Grafts for Diabetic Foot Ulcers and Venous Leg Ulcers*: https://www.cms.gov/medicare-coverage-database/view/article.aspx?articleId=57680
+- L34032, *Debridement Services*: https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?LCDId=34032
+- L36377, *Skin Substitute Grafts/CTPs*: https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?LCDId=36377
+- L36690, *Wound Application of CTPs*: https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?lcdid=36690
 
-### Surgical recipient-site preparation
+Acute burn treatment and autograft codes may have no matching local coverage article. The API returns `not_found` for that state and explicitly labels it as “no matching local CMS article evidence,” not “noncovered.”
 
-15002/15003 and 15004/15005 are calculated from the documented anatomic group and area. Their presence on the worksheet does not establish separate reportability; the output carries an NCCI review gate requiring distinct excisional preparation to viable tissue for reconstruction.
+## Maintenance
 
-### Autografts
-
-Split-thickness and full-thickness candidates use the selected anatomic group and measured recipient area. A single primary unit is used for the initial area and add-on units are calculated only for the additional area or part thereof.
-
-### Sheet-form skin substitutes
-
-For a confirmed sheet-form skin-replacement application:
-
-- below 100 cm², the appropriate 15271/15275 primary family covers the first 25 cm², with 15272/15276 add-on units for each additional 25 cm² or part thereof;
-- at 100 cm² or more, the appropriate 15273/15277 primary family covers the first 100 cm², with 15274/15278 add-on units for each additional 100 cm² or part thereof;
-- the primary application code remains one unit per anatomic group;
-- exact product name, current HCPCS, package size, applied/discarded amount, setting, state, MAC, and date of service are required audit facts;
-- product-code units remain on hold until the HCPCS billing unit and package documentation are reconciled.
-
-### General debridement and NPWT
-
-General wound-debridement families are presented only for a non-burn wound workflow and require documented deepest tissue removed and aggregated surface area. NPWT remains a family-level review because equipment type and total treated area determine the exact choice.
-
-## 4. Mandatory claim-defense gates
-
-- each affected site and depth;
-- age and date of service;
-- partial/full-thickness TBSA calculation;
-- performed service confirmation;
-- treated area and CPT anatomic grouping;
-- recipient-site preparation evidence when separately considered;
-- graft/product identity and traceability;
-- product package, applied, and discarded quantities;
-- state, MAC, setting, indication, and policy effective date;
-- NCCI bundling/edit review;
-- licensed CPT descriptor validation;
-- qualified coder approval.
-
-## 5. Authoritative sources
-
-- American Burn Association, *Advanced Burn Life Support Provider Manual* (superficial burns excluded from TBSA; Lund–Browder use): https://ameriburn.org/wp-content/uploads/2019/08/2018-abls-providermanual.pdf
-- American Burn Association, *Guidelines for Burn Patient Referral*: https://www.ameriburn.org/burn-care-team/resources/guidelines-for-burn-patient-referral
-- CDC/NCHS, *FY 2026 ICD-10-CM Official Guidelines for Coding and Reporting*: https://ftp.cdc.gov/pub/health_statistics/nchs/publications/ICD10CM/2026/ICD-10-CM-October-2025-Guidelines.pdf
-- CMS, *2026 NCCI Medicare Policy Manual* (Chapter IV, graft/application bundling and units): https://www.cms.gov/files/document/2026-ncci-medicare-policy-manual-all-chapters.pdf
-- CMS, LCD L34032, *Debridement Services* (burned surfaces excluded from standard wound-debridement policy): https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?LCDId=34032
-- CMS, Article A53001, *Billing and Coding: Debridement Services*: https://www.cms.gov/medicare-coverage-database/view/article.aspx?articleId=53001
-- CMS, CY 2026 Physician Fee Schedule Final Rule fact sheet: https://www.cms.gov/newsroom/fact-sheets/calendar-year-cy-2026-medicare-physician-fee-schedule-final-rule-cms-1832-f
-- CMS, MM14361, *Hospital Outpatient Prospective Payment System: January 2026 Update*: https://www.cms.gov/files/document/mm14361-hospital-outpatient-prospective-payment-system-january-2026-update.pdf
-- CMS, skin-substitute LCD update/withdrawal fact sheet: https://www.cms.gov/newsroom/fact-sheets/upcoming-update-final-local-coverage-determinations-lcds-certain-skin-substitutes
-- CMS, JW/JZ modifier FAQs: https://www.cms.gov/medicare/medicare-fee-for-service-payment/hospitaloutpatientpps/downloads/jw-modifier-faqs.pdf
-
-## 6. Maintenance rules
-
-Review the engine at every annual ICD-10-CM/CPT/NCCI cycle and each quarterly HCPCS update. Skin-substitute policy must also be reviewed when CMS or a MAC changes product classification, payment treatment, coverage, application limits, or documentation requirements. Rules are versioned in code; a policy update must include test changes and a dated decision-log entry.
-
-## 7. Specialty card asset
-
-The non-graphic wound-care photograph used for the active hub card is a 6043×4029 image by cottonbro studio, published as free to use by Pexels: https://www.pexels.com/photo/a-person-getting-his-hand-bandaged-5721555/. The original-resolution JPEG is stored at `specialty-images/burn-skin-graft-4k.jpg` in the project's public Cloudflare R2 bucket.
+Review rules at every annual ICD-10-CM/CPT/NCCI cycle, each quarterly HCPCS update, and whenever CMS or a MAC changes a CTP product classification, coverage rule, application limit, or documentation requirement. Every rule change requires tests and a dated knowledge-base update.

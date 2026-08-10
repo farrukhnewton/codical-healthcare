@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "adult": {
+    "locked": true,
+    "path": "lund-browder-athletic-male.obj",
+    "sha256": "0964cc763a5f91a0bf427edf5af52c20ad5b86b15a826fa1d9f9e7e1ea9d4117"
+  },
+  "skin": {
+    "locked": true,
+    "path": "lund-browder-male-skin.png",
+    "sha256": "862a26e335e958b70534cb5f0d7c47ef30ab148a56c42b3e9da969cf76f12963"
+  },
+  "pediatric": {
+    "switchAge": 18,
+    "canonicalTopology": "adult",
+    "child": {
+      "path": "lund-browder-pediatric-child.obj",
+      "sha256": "5b0751357ce3139cf85e61c8764b3ee45ba72df9234352d1498c39f6b47678c6"
+    },
+    "infant": {
+      "path": "lund-browder-pediatric-infant.obj",
+      "sha256": "2f41072e9943ae29aa5e1e153ee6ae5bef99226bf6b1b318b0f0a819af3736d6"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 export const BURN_ENGINE_VERSION = "2026.08";
 
 export type BurnDepth = 1 | 2 | 3;
+export type BurnSurface = "anterior" | "posterior" | "circumferential";
 export type InjuryType = "burn" | "corrosion";
 export type EncounterType = "initial" | "subsequent" | "sequela";
 export type BurnServiceType =
@@ -41,6 +42,7 @@ export type BurnRegionInput = {
   regionId: BurnRegionId;
   burnDepth: BurnDepth;
   percentBurned: number;
+  surface?: BurnSurface;
 };
 
 export type BurnServiceInput = {
@@ -110,6 +112,15 @@ type RegionDefinition = {
   siteFamily: "T20" | "T21" | "T22" | "T23" | "T24" | "T25";
 };
 
+const SINGLE_SURFACE_REGIONS = new Set<BurnRegionId>([
+  "anterior_trunk", "posterior_trunk", "right_buttock", "left_buttock", "perineum",
+]);
+
+export function burnRegionSurfaceFactor(regionId: BurnRegionId, surface: BurnSurface = "circumferential") {
+  if (SINGLE_SURFACE_REGIONS.has(regionId) || surface === "circumferential") return 1;
+  return 0.5;
+}
+
 export const BURN_REGIONS: Record<BurnRegionId, RegionDefinition> = {
   head: { label: "Head", percentages: [19, 17, 13, 11, 9, 7], siteFamily: "T20" },
   neck: { label: "Neck", percentages: [2, 2, 2, 2, 2, 2], siteFamily: "T20" },
@@ -152,7 +163,7 @@ export function ageBandIndex(age: number): number {
   if (age <= 4) return 1;
   if (age <= 9) return 2;
   if (age <= 14) return 3;
-  if (age <= 19) return 4;
+  if (age <= 17) return 4;
   return 5;
 }
 
@@ -279,20 +290,24 @@ function buildServiceLines(input: BurnCaseInput, totalTbsa: number): CandidateSe
 export function analyzeBurnCase(input: BurnCaseInput): BurnAnalysis {
   const age = Number.isFinite(input.patientAge) ? clamp(input.patientAge, 0, 120) : 0;
   const band = ageBandIndex(age);
-  const seen = new Set<BurnRegionId>();
+  const seen = new Set<string>();
   const warnings: string[] = [];
   const regionResults: RegionCalculation[] = [];
 
   for (const region of input.regions) {
-    if (seen.has(region.regionId)) {
-      warnings.push(`${BURN_REGIONS[region.regionId].label} was entered more than once; only the first entry was used.`);
+    const surface = region.surface || "circumferential";
+    const regionKey = `${region.regionId}:${surface}`;
+    if (seen.has(regionKey)) {
+      warnings.push(`${BURN_REGIONS[region.regionId].label} (${surface}) was entered more than once; only the first entry was used.`);
       continue;
     }
-    seen.add(region.regionId);
+    seen.add(regionKey);
     const definition = BURN_REGIONS[region.regionId];
     const percentBurned = clamp(Number(region.percentBurned) || 0, 0, 100);
-    const contributedTbsa = round(definition.percentages[band] * (percentBurned / 100));
-    regionResults.push({ ...region, percentBurned, label: definition.label, regionMaximum: definition.percentages[band], contributedTbsa, siteFamily: definition.siteFamily });
+    const regionMaximum = round(definition.percentages[band] * burnRegionSurfaceFactor(region.regionId, surface));
+    const contributedTbsa = round(regionMaximum * (percentBurned / 100));
+    const surfaceLabel = SINGLE_SURFACE_REGIONS.has(region.regionId) || surface === "circumferential" ? "" : ` — ${surface}`;
+    regionResults.push({ ...region, surface, percentBurned, label: `${definition.label}${surfaceLabel}`, regionMaximum, contributedTbsa, siteFamily: definition.siteFamily });
   }
 
   const superficialTbsa = round(regionResults.filter((region) => region.burnDepth === 1).reduce((sum, region) => sum + region.contributedTbsa, 0));
@@ -313,7 +328,7 @@ export function analyzeBurnCase(input: BurnCaseInput): BurnAnalysis {
       id: "site-depth",
       status: regionResults.length ? "pass" : "hold",
       title: "Burn site and depth",
-      detail: regionResults.length ? `${regionResults.length} unique region${regionResults.length === 1 ? "" : "s"} documented.` : "Document each affected site and burn depth before coding.",
+      detail: regionResults.length ? `${regionResults.length} unique mapped surface${regionResults.length === 1 ? "" : "s"} documented.` : "Document each affected site, surface, and burn depth before coding.",
     },
     {
       id: "extent",

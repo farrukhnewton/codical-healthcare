@@ -189,3 +189,138 @@
   .burn-workspace, .burn-workspace-grid, .burn-output-column { width: 100%; display: block; margin: 0; }
   .burn-hero, .burn-summary-card, .burn-worksheet-card, .burn-audit-card { break-inside: avoid; margin-bottom: 12px; box-shadow: none; }
 }
+
+/* Interactive burn intake and Lund-Browder workspace */
+.burn-intake-panel { padding: 25px 27px; }
+.burn-upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.burn-upload-card { appearance: none; width: 100%; min-height: 96px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; padding: 17px; border: 1px dashed rgba(159, 53, 25, .28); border-radius: 17px; background: linear-gradient(145deg, rgba(255,255,255,.9), rgba(255,246,240,.72)); color: inherit; text-align: left; cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.burn-upload-card:hover { transform: translateY(-1px); border-color: var(--burn); box-shadow: 0 12px 28px rgba(112, 57, 32, .09); }
+.burn-upload-card.has-file { border-style: solid; border-color: rgba(37, 175, 127, .38); background: linear-gradient(145deg, rgba(239,255,249,.9), rgba(255,250,246,.85)); }
+.burn-upload-icon { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid var(--burn-line); border-radius: 14px; color: var(--burn); background: #fff; }
+.burn-upload-card > span:nth-child(3) { min-width: 0; display: grid; gap: 4px; }
+.burn-upload-card strong { font-size: 14px; }
+.burn-upload-card small { overflow: hidden; color: var(--app-muted, #6b7890); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.burn-upload-card > b { color: var(--burn-deep); font-size: 11px; }
+.burn-scan-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(30, 38, 65, .08); }
+.burn-scan-footer > div { display: grid; gap: 3px; }
+.burn-scan-footer strong { font-size: 12px; }
+.burn-scan-footer small { color: var(--app-muted, #718096); font-size: 11px; }
+.burn-primary-button, .burn-build-button { border: 0; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 17px; color: #fff; background: linear-gradient(135deg, #ef6a3b, #bd3d21); box-shadow: 0 10px 22px rgba(197, 64, 31, .22); font-weight: 800; cursor: pointer; }
+.burn-primary-button:disabled, .burn-build-button:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+.burn-progress { height: 4px; overflow: hidden; margin-top: 13px; border-radius: 999px; background: rgba(242, 107, 56, .12); }
+.burn-progress i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f28a48, #c63f24); transition: width .18s ease; }
+.burn-spin { animation: burn-spin .9s linear infinite; }
+@keyframes burn-spin { to { transform: rotate(360deg); } }
+.burn-callout-error { margin-top: 14px; color: #a51e22; border-color: rgba(190, 42, 42, .22); background: rgba(255, 241, 241, .88); }
+.burn-extraction-status { margin-top: 12px; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid rgba(29, 165, 110, .24); border-radius: 11px; color: #117a55; background: rgba(236, 253, 246, .76); font-size: 11px; font-weight: 700; }
+.burn-form-grid-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.burn-field textarea { width: 100%; resize: vertical; min-height: 66px; border: 1px solid rgba(27, 38, 67, .14); border-radius: 11px; padding: 11px 12px; color: inherit; background: rgba(255,255,255,.8); font: inherit; }
+
+.burn-map-editor-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(250px, .78fr); gap: 16px; align-items: stretch; margin-top: 14px; }
+.burn-body-map { min-width: 0; border: 1px solid rgba(35, 44, 74, .1); border-radius: 20px; padding: 16px; background: radial-gradient(circle at 50% 28%, rgba(248, 142, 89, .09), transparent 48%), linear-gradient(160deg, rgba(255,255,255,.95), rgba(249,247,246,.78)); }
+.burn-body-map.is-pediatric { background: radial-gradient(circle at 50% 28%, rgba(108, 163, 246, .11), transparent 48%), linear-gradient(160deg, rgba(255,255,255,.95), rgba(246,249,255,.8)); }
+.burn-map-toolbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 0 2px 10px; }
+.burn-map-toolbar > div { display: grid; gap: 3px; }
+.burn-map-toolbar strong { font-size: 13px; }
+.burn-map-toolbar small { color: var(--app-muted, #728096); font-size: 10px; }
+.burn-map-toolbar > span { border: 1px solid var(--burn-line); border-radius: 999px; padding: 5px 9px; color: var(--burn-deep); background: #fff; font-size: 9px; font-weight: 800; }
+.burn-model-viewport { position: relative; overflow: hidden; height: 510px; border: 1px solid rgba(94,72,140,.12); border-radius: 17px; background: radial-gradient(circle at 50% 25%, #faf8ff 0%, #eee8fb 52%, #e3daf5 100%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.52), 0 15px 35px rgba(72,52,112,.12); }
+.burn-model-viewport::after { content: ""; position: absolute; z-index: 0; right: 12%; bottom: 24px; left: 12%; height: 22px; border-radius: 50%; background: rgba(72,45,104,.18); filter: blur(14px); pointer-events: none; }
+.burn-model-viewport canvas { position: relative; z-index: 1; display: block; width: 100% !important; height: 100% !important; outline: none; touch-action: none; }
+.burn-model-instructions { position: absolute; z-index: 5; bottom: 11px; left: 11px; display: flex; align-items: center; gap: 6px; max-width: calc(100% - 205px); border: 1px solid rgba(255,255,255,.1); border-radius: 999px; padding: 7px 10px; color: rgba(239,244,252,.82); background: rgba(8,12,18,.66); box-shadow: 0 7px 20px rgba(0,0,0,.2); backdrop-filter: blur(9px); font-size: 8px; font-weight: 700; pointer-events: none; }
+.burn-model-instructions svg { color: #ff9a69; }
+.burn-model-instructions i { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,.35); }
+.burn-model-controls { position: absolute; z-index: 6; right: 11px; bottom: 11px; display: flex; gap: 5px; }
+.burn-model-controls button { display: inline-flex; align-items: center; gap: 5px; min-height: 31px; border: 1px solid rgba(255,255,255,.12); border-radius: 9px; padding: 6px 8px; color: rgba(249,251,255,.9); background: rgba(15,20,29,.76); box-shadow: 0 7px 19px rgba(0,0,0,.2); backdrop-filter: blur(9px); font-size: 8px; font-weight: 800; cursor: pointer; }
+.burn-model-controls button:hover, .burn-model-controls button:focus-visible { color: #fff; border-color: rgba(255,154,105,.62); background: rgba(71,37,27,.78); outline: none; }
+.burn-model-loading { display: flex; align-items: center; gap: 8px; width: max-content; border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 9px 12px; color: rgba(249,251,255,.88); background: rgba(11,15,22,.74); font-size: 9px; font-weight: 800; }
+.burn-model-loading svg { color: #ff9361; animation: burn-scan-pulse 1.35s ease-in-out infinite; }
+.burn-model-static { height: 100%; display: grid; place-content: center; justify-items: center; gap: 8px; padding: 28px; color: rgba(244,248,255,.88); text-align: center; }
+.burn-model-static svg { color: #ff9868; }
+.burn-model-static strong { font-size: 13px; }
+.burn-model-static span { max-width: 330px; color: rgba(224,231,242,.66); font-size: 9px; line-height: 1.5; }
+@keyframes burn-scan-pulse { 50% { opacity: .48; transform: scale(.92); } }
+.burn-body-map-3d.is-expanded { position: fixed; z-index: 1000; inset: 18px; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; border-color: rgba(255,147,97,.34); box-shadow: 0 30px 90px rgba(11,17,28,.38); }
+.burn-body-map-3d.is-expanded .burn-model-viewport { height: 100%; min-height: 0; }
+.burn-body-map-3d.is-expanded::before { content: ""; position: fixed; z-index: -1; inset: 0; background: rgba(14,19,28,.62); backdrop-filter: blur(8px); }
+.burn-map-figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.burn-figure { min-width: 0; display: grid; gap: 3px; text-align: center; }
+.burn-figure > span { color: var(--app-muted, #6f7c91); font-size: 9px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.burn-figure svg { width: 100%; height: min(410px, 40vw); min-height: 300px; filter: drop-shadow(0 8px 12px rgba(31, 41, 61, .07)); }
+.burn-map-region { cursor: pointer; outline: none; }
+.burn-map-region-base { fill: rgba(241, 238, 235, .82); }
+.burn-map-region-fill { opacity: 1; transition: filter .16s ease; }
+.burn-map-region-outline { fill: transparent; stroke: #8992a2; stroke-width: 1.5; transition: stroke .16s ease, stroke-width .16s ease, filter .16s ease; }
+.burn-map-region:hover .burn-map-region-outline, .burn-map-region:focus .burn-map-region-outline { stroke: var(--burn); stroke-width: 3; }
+.burn-map-region.is-selected .burn-map-region-outline { stroke: #8d301b; stroke-width: 3.5; filter: drop-shadow(0 0 4px rgba(240, 105, 54, .45)); }
+.burn-map-legend { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; padding-top: 8px; border-top: 1px solid rgba(34, 43, 73, .07); color: var(--app-muted, #6d788c); font-size: 9px; }
+.burn-map-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.burn-map-legend i, .burn-selected-strip i, .burn-depth-buttons i { width: 8px; height: 8px; border-radius: 3px; background: currentColor; }
+.depth-one, .depth-1 { color: #d99a1f; background: #f6b94a !important; }
+.depth-two, .depth-2 { color: #de5632; background: #f36c45 !important; }
+.depth-three, .depth-3 { color: #8d2222; background: #9b2c2c !important; }
+.burn-map-note { margin: 8px 0 0; color: var(--app-muted, #7a8496); font-size: 9px; line-height: 1.45; text-align: center; }
+.burn-region-editor { min-width: 0; border: 1px solid rgba(43, 51, 80, .1); border-radius: 18px; padding: 17px; background: rgba(255,255,255,.74); }
+.burn-region-editor-title { display: grid; gap: 3px; padding-bottom: 13px; border-bottom: 1px solid rgba(35, 43, 70, .08); }
+.burn-region-editor-title span { color: var(--burn-deep); font-size: 9px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.burn-region-editor-title strong { font-size: 17px; }
+.burn-region-editor-title small { color: var(--app-muted, #6f7c91); font-size: 10px; }
+.burn-depth-buttons { display: grid; gap: 7px; margin-top: 14px; }
+.burn-depth-buttons button { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 9px; min-height: 49px; border: 1px solid rgba(34, 43, 72, .09); border-radius: 11px; padding: 8px 10px; color: inherit; background: rgba(250,250,251,.75); text-align: left; cursor: pointer; }
+.burn-depth-buttons button.is-active { border-color: rgba(241, 105, 55, .42); background: rgba(255, 241, 233, .83); box-shadow: inset 3px 0 var(--burn); }
+.burn-depth-buttons button > span { display: grid; gap: 1px; font-size: 11px; font-weight: 800; }
+.burn-depth-buttons small { color: var(--app-muted, #788397); font-size: 9px; font-weight: 600; }
+.burn-region-percent { display: grid; grid-template-columns: 1fr 58px; gap: 8px; margin-top: 15px; }
+.burn-region-percent > div { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
+.burn-region-percent > div span { color: var(--app-muted, #6f7a8d); font-weight: 700; }
+.burn-region-percent > div strong { color: var(--burn-deep); font-size: 14px; }
+.burn-region-percent input[type="range"] { min-width: 0; accent-color: var(--burn); }
+.burn-region-percent input[type="number"] { width: 58px; border: 1px solid rgba(34, 43, 72, .13); border-radius: 8px; padding: 7px; background: #fff; }
+.burn-contribution { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 14px; border-radius: 11px; padding: 11px; color: #fff; background: linear-gradient(135deg, #30394f, #1f2638); }
+.burn-contribution span { font-size: 9px; font-weight: 700; }
+.burn-contribution strong { font-size: 12px; }
+.burn-remove-region { width: 100%; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; padding: 8px; color: #a34331; background: transparent; font-size: 10px; font-weight: 800; cursor: pointer; }
+.burn-selected-strip { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+.burn-selected-strip button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(38, 46, 75, .1); border-radius: 999px; padding: 7px 9px; color: var(--app-text, #222b42); background: rgba(255,255,255,.82); font-size: 9px; font-weight: 750; cursor: pointer; }
+.burn-selected-strip button.is-active { border-color: rgba(242, 107, 56, .38); background: var(--burn-soft); }
+.burn-selected-strip button b { color: var(--burn-deep); font-size: 9px; }
+.burn-selected-strip button em { color: var(--app-muted, #758197); font-size: 8px; font-style: normal; font-weight: 800; text-transform: capitalize; }
+.burn-selected-strip .burn-add-chip { color: var(--burn-deep); border-style: dashed; }
+.burn-surface-note { margin: 10px 0 0; border-radius: 9px; padding: 8px 9px; color: var(--app-muted, #68758a); background: rgba(242, 245, 249, .82); font-size: 9px; line-height: 1.45; }
+.burn-build-button { width: 100%; min-height: 46px; margin-top: 18px; font-size: 12px; }
+.burn-claim-context { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.burn-claim-context > div { min-width: 0; display: grid; gap: 2px; border: 1px solid rgba(36, 45, 75, .08); border-radius: 10px; padding: 9px; background: rgba(248,249,251,.72); }
+.burn-claim-context > div:last-child { grid-column: 1 / -1; }
+.burn-claim-context span { color: var(--app-muted, #738095); font-size: 8px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.burn-claim-context strong { overflow-wrap: anywhere; color: var(--app-text, #202941); font-size: 10px; }
+
+.burn-cms-card { overflow: hidden; border: 1px solid rgba(40, 154, 121, .18); border-radius: 19px; padding: 17px; background: linear-gradient(150deg, rgba(246,255,252,.94), rgba(255,255,255,.9)); box-shadow: 0 15px 36px rgba(37, 77, 66, .07); }
+.burn-cms-code { display: grid; grid-template-columns: 52px 1fr; gap: 9px; padding: 10px 0; border-top: 1px solid rgba(34, 70, 62, .08); }
+.burn-cms-code > strong { color: #137a61; font-size: 12px; }
+.burn-cms-code > div { display: grid; gap: 4px; }
+.burn-cms-code span { color: var(--app-muted, #647388); font-size: 9px; line-height: 1.4; }
+.burn-pair-status { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 7px; border-radius: 9px; padding: 8px 9px; background: rgba(240,243,247,.8); font-size: 9px; }
+.burn-pair-status.is-covered { color: #087557; background: rgba(223,248,239,.88); }
+.burn-pair-status.is-noncovered { color: #9d3030; background: rgba(255,235,235,.88); }
+.burn-pair-status.is-mixed { color: #8b6512; background: rgba(255,247,220,.88); }
+.burn-cms-semantics { display: block; margin-top: 10px; color: var(--app-muted, #728095); font-size: 8px; line-height: 1.4; }
+
+@media (max-width: 1120px) {
+  .burn-map-editor-grid { grid-template-columns: 1fr; }
+  .burn-region-editor { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .burn-region-editor-title { grid-column: 1 / -1; }
+  .burn-depth-buttons { margin-top: 0; }
+}
+@media (max-width: 760px) {
+  .burn-upload-grid, .burn-form-grid-three { grid-template-columns: 1fr; }
+  .burn-scan-footer { align-items: stretch; flex-direction: column; }
+  .burn-region-editor { display: block; }
+  .burn-depth-buttons { margin-top: 14px; }
+  .burn-figure svg { height: 330px; }
+  .burn-model-viewport { height: 440px; }
+  .burn-model-instructions { top: 10px; right: 10px; bottom: auto; left: 10px; max-width: none; justify-content: center; }
+  .burn-model-instructions span:nth-of-type(2), .burn-model-instructions span:nth-of-type(3), .burn-model-instructions i { display: none; }
+  .burn-model-controls { right: 8px; bottom: 8px; left: 8px; justify-content: center; }
+  .burn-model-controls button { flex: 1; justify-content: center; }
+  .burn-body-map-3d.is-expanded { inset: 7px; }
+}

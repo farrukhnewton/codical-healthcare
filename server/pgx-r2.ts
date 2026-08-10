@@ -24,6 +24,17 @@ export function createPgxObjectKey(userId: string | number, analysisId = randomU
   return `pgx/${environment}/${tenantId}/${safeUserId}/${safeAnalysisId}/${safeObjectId}`;
 }
 
+export function createSpecialtyObjectKey(moduleId: string, userId: string | number, caseId = randomUUID(), objectId = randomUUID()) {
+  const environment = getPgxStorageEnvironment();
+  const tenantId = safePathSegment(process.env.PGX_DEFAULT_TENANT_ID || "");
+  const safeModuleId = safePathSegment(moduleId);
+  const safeUserId = safePathSegment(userId);
+  const safeCaseId = safePathSegment(caseId);
+  const safeObjectId = safePathSegment(objectId);
+  if (!environment || !tenantId || !safeModuleId || !safeUserId || !safeCaseId || !safeObjectId) return null;
+  return `specialty/${safeModuleId}/${environment}/${tenantId}/${safeUserId}/${safeCaseId}/${safeObjectId}`;
+}
+
 function getR2Client() {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const endpoint = process.env.R2_ENDPOINT
@@ -96,6 +107,36 @@ export async function uploadPgxObject(
     bucket,
     key,
     url,
+    expiresInSeconds: 300,
+  };
+}
+
+export async function uploadSpecialtyObject(
+  moduleId: string,
+  key: string | null,
+  body: Buffer,
+  contentType = "application/octet-stream",
+) {
+  const client = getR2Client();
+  const bucket = getPgxBucketName();
+  const environment = getPgxStorageEnvironment();
+  const tenantId = safePathSegment(process.env.PGX_DEFAULT_TENANT_ID || "");
+  const safeModuleId = safePathSegment(moduleId);
+  if (!client || !bucket || !key || !environment || !tenantId || !safeModuleId) return null;
+  const requiredPrefix = `specialty/${safeModuleId}/${environment}/${tenantId}/`;
+  if (!key.startsWith(requiredPrefix) || key.includes("..") || key.includes("\\")) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: contentType }), { abortSignal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+  return {
+    bucket,
+    key,
+    url: await getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 300 }),
     expiresInSeconds: 300,
   };
 }

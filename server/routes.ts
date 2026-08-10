@@ -44,9 +44,28 @@ import {
   type PgxCmsDrugEvidence,
   type PgxAnalysisResult,
 } from "./pgx-engine";
-import { createPgxObjectKey, isPgxR2Configured, uploadPgxObject } from "./pgx-r2";
+import { createPgxObjectKey, createSpecialtyObjectKey, isPgxR2Configured, uploadPgxObject, uploadSpecialtyObject } from "./pgx-r2";
 import { PgxIntakeError, validatePgxIntakeFile } from "./pgx-phase2";
 import { understandPgxDocument } from "./services/pgx-document-understanding";
+import { analyzeBurnCase, type BurnCaseInput, type BurnRegionInput, type BurnServiceInput } from "../shared/burn-coding";
+import { understandBurnDocument, type BurnDocumentUnderstandingResult } from "./services/burn-document-understanding";
+import {
+  ALS2_PROCEDURE_LABELS,
+  AMBULANCE_HCPCS,
+  AMBULANCE_POLICY_VERSION,
+  ORIGIN_DESTINATION_LABELS,
+  estimateAmbulancePayment,
+  evaluateAmbulanceCase,
+  type AmbulanceCaseInput,
+  type AmbulanceRateInput,
+} from "../shared/ambulance-coding";
+import { parseNemsisXml } from "./services/ambulance-nemsis";
+import {
+  TRANSPLANT_ENGINE_VERSION,
+  TRANSPLANT_POLICY_VERSION,
+  evaluateTransplantCase,
+  type TransplantCaseInput,
+} from "../shared/transplant-coding";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1071,6 +1090,195 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
+  // ============ ORGAN TRANSPLANT LIFECYCLE ROUTES ============
+
+  app.get("/api/transplant/references", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      res.json({
+        engineVersion: TRANSPLANT_ENGINE_VERSION,
+        policyVersion: TRANSPLANT_POLICY_VERSION,
+        programRecordCutover: "2026-04-06",
+        organs: ["kidney", "liver", "heart", "lung", "heart-lung", "pancreas", "intestine", "multivisceral", "combined"],
+        sources: [
+          { id: "cms-pecos-cr14262", title: "CMS CR 14262 / Transplant Program PECOS records", url: "https://www.cms.gov/medicare/regulations-guidance/transmittals/2026-transmittals/r13757cp" },
+          { id: "cms-cp-ch3", title: "Medicare Claims Processing Manual, Chapter 3", url: "https://www.cms.gov/regulations-and-guidance/guidance/manuals/downloads/clm104c03.pdf" },
+          { id: "cms-bp-ch11", title: "Medicare Benefit Policy Manual, Chapter 11", url: "https://www.cms.gov/regulations-and-guidance/guidance/manuals/downloads/bp102c11.pdf" },
+          { id: "ncd-260.1", title: "NCD 260.1 Adult Liver Transplantation", url: "https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?NCDId=70" },
+          { id: "ncd-260.3", title: "NCD 260.3 Pancreas Transplants", url: "https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?ncdid=107" },
+          { id: "ncd-260.5", title: "NCD 260.5 Intestinal and Multi-Visceral Transplantation", url: "https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?ncdid=280" },
+          { id: "ncd-260.9", title: "NCD 260.9 Heart Transplants", url: "https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?ncdid=112" },
+          { id: "cms-part-b-id", title: "Medicare Part B Immunosuppressive Drug Benefit", url: "https://www.cms.gov/partbid-provider" },
+          { id: "cms-2552-10", title: "Form CMS-2552-10, Worksheet D-4", url: "https://www.cms.gov/files/document/r26p240f.pdf" },
+          { id: "hrsa-optn", title: "HRSA OPTN policies and modernization", url: "https://www.hrsa.gov/optn/policies-bylaws/policies" },
+        ],
+        semantics: "Source metadata is authoritative context, not a coverage determination. Licensed CPT content, current grouper files, payer policy, and date-effective program records remain required where applicable.",
+        autonomousClaimSubmission: false,
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to load transplant references");
+    }
+  });
+
+  app.post("/api/transplant/documents/extract", upload.fields([{ name: "documents", maxCount: 8 }]), async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const files = (((req.files || {}) as Record<string, UploadedPgxFile[]>).documents || []);
+      if (!files.length) throw new RouteError(400, "Upload at least one transplant document.");
+      const documents = [] as Array<Record<string, unknown>>;
+      for (const file of files) {
+        const extracted = await extractTextFromPgxFile(file);
+        const normalized = extracted.text.replace(/\s+/g, " ").trim();
+        const lower = normalized.toLowerCase();
+        const documentType = /operative report|procedure performed|implantation/.test(lower) ? "operative-report"
+          : /donor|organ procurement|procurement organization/.test(lower) ? "donor-acquisition"
+          : /discharge summary|discharge date/.test(lower) ? "discharge-summary"
+          : /immunosuppress|tacrolimus|cyclosporine|mycophenolate/.test(lower) ? "pharmacy"
+          : /invoice|cost report|standard acquisition charge|sac\b/.test(lower) ? "acquisition-cost"
+          : "unclassified";
+        let stored: Awaited<ReturnType<typeof uploadSpecialtyObject>> = null;
+        try {
+          stored = await uploadSpecialtyObject("transplant", createSpecialtyObjectKey("transplant", user.id), file.buffer, extracted.mimeType);
+        } catch {
+          // Extraction remains usable when encrypted object storage is temporarily unavailable.
+        }
+        documents.push({
+          fileName: extracted.fileName,
+          documentType,
+          byteSize: file.buffer.length,
+          sha256: extracted.validation.sha256,
+          pageCount: extracted.validation.pageCount,
+          extractionMethod: extracted.validation.extractionMethod,
+          requiresManualReview: extracted.validation.requiresManualReview || !normalized,
+          textPreview: normalized.slice(0, 600),
+          objectKey: stored?.key || null,
+          warnings: [extracted.warning, !normalized ? "No native text was available. Route image or scanned PDF pages through an approved OCR/vision service and verify every claim-bound field." : ""].filter(Boolean),
+        });
+      }
+      res.json({
+        success: true,
+        documents,
+        notice: "Classification and native text are preliminary evidence only. Diagnoses, complications, procedures, and coverage facts require source-page verification.",
+        requiresHumanReview: true,
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to process transplant documents");
+    }
+  });
+
+  app.post("/api/transplant/evaluate", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const candidate = req.body?.caseInput as TransplantCaseInput | undefined;
+      if (!candidate?.serviceDate || !candidate.organ || !candidate.ageCategory || !candidate.payerMode || !candidate.purpose) {
+        throw new RouteError(400, "Service date, organ, age category, payer, and episode purpose are required.");
+      }
+      const caseInput: TransplantCaseInput = {
+        ...candidate,
+        diagnosisCodes: Array.isArray(candidate.diagnosisCodes) ? candidate.diagnosisCodes : [],
+        programApprovals: Array.isArray(candidate.programApprovals) ? candidate.programApprovals : [],
+      };
+      const evaluation = evaluateTransplantCase(caseInput);
+      const professionalCodes = evaluation.claimLanes.flatMap((lane) => lane.lines)
+        .filter((line) => line.codeSystem === "CPT" && line.code)
+        .map((line) => String(line.code));
+      const stateCode = String(req.body?.stateCode || "").trim().toUpperCase();
+      if (stateCode && !/^[A-Z]{2}$/.test(stateCode)) throw new RouteError(400, "Use a two-letter service state for CMS evidence.");
+      const cmsEvidence = evaluation.diagnosisCodes.length && professionalCodes.length
+        ? await getMcdBatchPairEvidence({ diagnosisCodes: evaluation.diagnosisCodes, procedureCodes: professionalCodes, stateCode: stateCode || undefined, limit: 20 })
+        : { source: "cloudflare-mcd", pairs: [] };
+      res.json({
+        success: true,
+        evaluation,
+        cmsEvidence,
+        evidenceSemantics: "MCD evidence is supporting context. An absent local match is not noncoverage, and the transplant program, NCD, manual, grouper, and payer pathways remain separate gates.",
+        autonomousClaimSubmission: false,
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to build the transplant lifecycle worksheet");
+    }
+  });
+
+  // ============ AMBULANCE SPECIALTY CODING ROUTES ============
+
+  app.get("/api/ambulance/references", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      res.json({
+        policyVersion: AMBULANCE_POLICY_VERSION,
+        hcpcs: AMBULANCE_HCPCS,
+        originDestination: ORIGIN_DESTINATION_LABELS,
+        als2Procedures: ALS2_PROCEDURE_LABELS,
+        modifiers: {
+          GM: "Multiple patients on one ambulance trip",
+          QL: "Patient pronounced dead after ambulance called",
+          QM: "Service provided under arrangement by an institutional provider",
+          QN: "Service furnished directly by an institutional provider",
+        },
+        placeOfService: { "41": "Ambulance - land", "42": "Ambulance - air or water" },
+        sources: [
+          { id: "cms-bp-100-02-ch10", title: "Medicare Benefit Policy Manual, Chapter 10", url: "https://www.cms.gov/Regulations-and-Guidance/Guidance/Manuals/Downloads/bp102c10.pdf" },
+          { id: "cms-cp-100-04-ch15", title: "Medicare Claims Processing Manual, Chapter 15", url: "https://www.cms.gov/Regulations-and-Guidance/Guidance/Manuals/downloads/clm104c15.pdf" },
+          { id: "cms-afs-puf-2026", title: "CY 2026 Ambulance Fee Schedule PUF", url: "https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files" },
+          { id: "nemsis-v351", title: "NEMSIS v3.5.1 data dictionaries and XSD", url: "https://nemsis.org/technical-resources/version-3/version-3-data-dictionaries/" },
+        ],
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to load ambulance references");
+    }
+  });
+
+  app.post("/api/ambulance/nemsis/import", upload.single("nemsisFile"), async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const file = req.file as UploadedPgxFile | undefined;
+      if (!file?.buffer) throw new RouteError(400, "Upload a NEMSIS EMSDataSet XML file.");
+      const mime = String(file.mimetype || "").toLowerCase();
+      if (!mime.includes("xml") && !String(file.originalname || "").toLowerCase().endsWith(".xml")) throw new RouteError(400, "Only NEMSIS XML files are accepted.");
+      const imported = parseNemsisXml(file.buffer);
+      res.json({ success: true, imported, autonomousClaimSubmission: false, requiresCoderApproval: true });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to import the NEMSIS record");
+    }
+  });
+
+  app.post("/api/ambulance/evaluate", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const candidate = req.body?.caseInput as AmbulanceCaseInput | undefined;
+      if (!candidate || !candidate.serviceDate || !candidate.payerMode || !candidate.entityType || !candidate.transportMode) {
+        throw new RouteError(400, "A service date, payer mode, entity type, and transport mode are required.");
+      }
+      const caseInput: AmbulanceCaseInput = {
+        ...candidate,
+        loadedMiles: candidate.loadedMiles ?? 0,
+        patientCount: Number(candidate.patientCount || 1),
+        medications: Array.isArray(candidate.medications) ? candidate.medications : [],
+        als2Procedures: Array.isArray(candidate.als2Procedures) ? candidate.als2Procedures : [],
+        diagnosisCodes: Array.isArray(candidate.diagnosisCodes) ? candidate.diagnosisCodes : [],
+      };
+      const evaluation = evaluateAmbulanceCase(caseInput);
+      const rate = req.body?.rate as AmbulanceRateInput | undefined;
+      const paymentEstimate = estimateAmbulancePayment(caseInput, evaluation, rate);
+      const stateCode = String(req.body?.stateCode || "").trim().toUpperCase();
+      if (stateCode && !/^[A-Z]{2}$/.test(stateCode)) throw new RouteError(400, "Use a two-letter service state for CMS evidence.");
+      const procedureCodes = evaluation.lines.filter((line) => line.category === "base").map((line) => line.hcpcs);
+      const cmsEvidence = evaluation.diagnosisCodes.length && procedureCodes.length
+        ? await getMcdBatchPairEvidence({ diagnosisCodes: evaluation.diagnosisCodes, procedureCodes, stateCode: stateCode || undefined, limit: 20 })
+        : { source: "cloudflare-mcd", pairs: [] };
+      res.json({
+        success: true,
+        evaluation,
+        paymentEstimate,
+        cmsEvidence,
+        evidenceSemantics: "MCD evidence is supporting coverage context. No matching local article is not a noncoverage determination; the national AFS and MAC claim-processing files remain controlling.",
+        autonomousClaimSubmission: false,
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to build the ambulance coding worksheet");
+    }
+  });
+
   // ============ PGx SPECIALTY CODING ROUTES ============
 
   app.get("/api/pgx/knowledge/genes", async (req, res) => {
@@ -1162,6 +1370,108 @@ export async function registerRoutes(
       });
     } catch (error: any) {
       return sendRouteError(res, error, "Failed to load PGx CMS groups");
+    }
+  });
+
+  app.post("/api/burn/extract", upload.fields([
+    { name: "clinicalNote", maxCount: 1 },
+    { name: "operativeReport", maxCount: 1 },
+    { name: "pageImages", maxCount: 24 },
+  ]), async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const files = (req.files || {}) as Record<string, UploadedPgxFile[]>;
+      const sourceFiles = [...(files.clinicalNote || []), ...(files.operativeReport || [])];
+      if (!sourceFiles.length) throw new RouteError(400, "Upload a clinical note or operative report.");
+      const warnings: string[] = [];
+      const textParts = [String(req.body?.clinicalText || "").trim(), String(req.body?.operativeText || "").trim()].filter(Boolean);
+      const r2Objects: Array<{ key: string; url: string; contentType?: string }> = [];
+      for (const file of sourceFiles) {
+        if ((file.size || 0) > 20 * 1024 * 1024) throw new RouteError(400, "Burn documents must be 20MB or smaller.");
+        const extracted = await extractTextFromPgxFile(file);
+        if (extracted.text) textParts.push(extracted.text);
+        if (extracted.warning) warnings.push(`${extracted.fileName}: ${extracted.warning}`);
+        try {
+          const stored = await uploadPgxObject(createPgxObjectKey(user.id), file.buffer, extracted.mimeType || "application/octet-stream");
+          if (stored) r2Objects.push({ key: stored.key, url: stored.url, contentType: extracted.mimeType });
+        } catch {
+          warnings.push(`${extracted.fileName}: secure storage was unavailable; OCR continued without an R2 copy.`);
+        }
+      }
+
+      const emptyVision: BurnDocumentUnderstandingResult = { used: false, diagnoses: [], regions: [], procedures: [], warnings: [] };
+      const [clinicalVision, operativeVision] = await Promise.all([
+        files.clinicalNote?.[0] ? understandBurnDocument(files.clinicalNote[0]) : Promise.resolve(emptyVision),
+        files.operativeReport?.[0] ? understandBurnDocument(files.operativeReport[0]) : Promise.resolve(emptyVision),
+      ]);
+      const pageResults: BurnDocumentUnderstandingResult[] = [];
+      const pageFiles = files.pageImages || [];
+      for (let index = 0; index < pageFiles.length; index += 3) {
+        pageResults.push(...await Promise.all(pageFiles.slice(index, index + 3).map((file) => {
+          const sourcePage = Number(file.originalname?.match(/burn-page-(\d+)/i)?.[1] || 1);
+          return understandBurnDocument(file, { sourcePage });
+        })));
+      }
+      const results = [clinicalVision, operativeVision, ...pageResults];
+      warnings.push(...results.flatMap((result) => result.warnings));
+      const best = <T>(rows: T[], key: (row: T) => string, score: (row: T) => number) => Array.from(new Map(
+        [...rows].sort((left, right) => score(right) - score(left)).map((row) => [key(row), row]),
+      ).values());
+      const diagnoses = best(results.flatMap((row) => row.diagnoses), (row) => row.code, (row) => row.confidence);
+      const regions = best(results.flatMap((row) => row.regions), (row) => `${row.regionId}-${row.burnDepth}`, (row) => row.confidence);
+      const procedures = best(results.flatMap((row) => row.procedures), (row) => row.type, (row) => row.confidence + (row.performed ? 1 : 0));
+      const noteName = clinicalVision.patientName || pageResults.find((row) => row.patientName)?.patientName;
+      const opName = operativeVision.patientName;
+      const patientMatch = await matchPgxPatient(noteName, opName);
+      if (patientMatch.databaseStatus === "document_mismatch") warnings.push("Patient names differ between the clinical note and operative report. Stop and verify the files.");
+      if (patientMatch.databaseStatus === "not_found") warnings.push("The extracted patient name was not found in the patient database; verify spelling before billing.");
+      if (!results.some((row) => row.used)) warnings.push("Handwriting-aware visual OCR did not run; all extracted fields require manual source verification.");
+      const documentedTotalTbsa = results.map((row) => row.documentedTotalTbsa).find((value) => value !== undefined);
+      const documentedThirdDegreeTbsa = results.map((row) => row.documentedThirdDegreeTbsa).find((value) => value !== undefined);
+      const product = results.find((row) => row.product)?.product;
+      res.json({
+        success: true,
+        extracted: {
+          patientName: patientMatch.databasePatient?.name || noteName || opName,
+          patientAge: results.map((row) => row.patientAge).find((value) => value !== undefined),
+          serviceDate: results.map((row) => row.serviceDate).find(Boolean),
+          diagnoses, regions, procedures, documentedTotalTbsa, documentedThirdDegreeTbsa, product,
+          patientMatch, warnings: Array.from(new Set(warnings.filter(Boolean))),
+          nativeTextAvailable: textParts.some((text) => text.length > 40),
+        },
+        r2: { configured: isPgxR2Configured(), objects: r2Objects },
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to extract burn documents");
+    }
+  });
+
+  app.post("/api/burn/analyze", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const candidate = req.body?.caseInput as BurnCaseInput | undefined;
+      if (!candidate || !Number.isFinite(candidate.patientAge) || !Array.isArray(candidate.regions) || !candidate.service) {
+        throw new RouteError(400, "A complete burn case review is required.");
+      }
+      const regions: BurnRegionInput[] = candidate.regions.map((row) => ({ regionId: row.regionId, surface: row.surface, burnDepth: Number(row.burnDepth) as any, percentBurned: Number(row.percentBurned) }));
+      const service: BurnServiceInput = { ...candidate.service, performed: candidate.service.performed === true };
+      const caseInput: BurnCaseInput = { ...candidate, patientAge: Number(candidate.patientAge), regions, service };
+      const analysis = analyzeBurnCase(caseInput);
+      const procedureCodes = analysis.serviceLines.map((row) => row.code.trim().toUpperCase()).filter((code) => /^[A-Z]?\d{4,5}$/.test(code));
+      const diagnosisCodes = Array.from(new Set([
+        ...(Array.isArray(req.body?.diagnosisCodes) ? req.body.diagnosisCodes : []),
+        ...(analysis.extentCode ? [analysis.extentCode] : []),
+      ].map((code) => String(code || "").trim().toUpperCase()).filter((code) => /^[A-TV-Z][0-9][0-9A-Z](?:\.[0-9A-Z]{1,4})?$/.test(code))));
+      const stateCode = String(req.body?.stateCode || "").trim().toUpperCase();
+      if (stateCode && !/^[A-Z]{2}$/.test(stateCode)) throw new RouteError(400, "Use a two-letter service state for MAC evidence.");
+      const catalog = await Promise.all(procedureCodes.map(async (code) => ({
+        code,
+        articles: await getMcdCodeCoverageRows(code, { kind: "article", stateCode: stateCode || undefined, limit: 100 }),
+      })));
+      const pairEvidence = diagnosisCodes.length && procedureCodes.length ? await getMcdBatchPairEvidence({ diagnosisCodes, procedureCodes, stateCode: stateCode || undefined, limit: 20 }) : { source: "cloudflare-mcd", pairs: [] };
+      res.json({ success: true, analysis, cmsEvidence: { pairEvidence, catalog }, evidenceSemantics: "not_found means no matching local CMS article evidence was found; it does not mean noncovered" });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to build the burn coding worksheet");
     }
   });
 
