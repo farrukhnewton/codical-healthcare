@@ -6,6 +6,7 @@ import "@/styles/burn-specialty.css";
 import "@/styles/ambulance-specialty.css";
 import "@/styles/transplant-specialty.css";
 import "@/styles/otp-mat-specialty.css";
+import "@/styles/em-mdm-specialty.css";
 
 import { lazy, Suspense, type ReactNode } from "react";
 import { Redirect, Route, Switch } from "wouter";
@@ -43,6 +44,7 @@ const BurnWorkspace = lazy(() => import("@/pages/BurnWorkspace").then((module) =
 const AmbulanceWorkspace = lazy(() => import("@/pages/AmbulanceWorkspace").then((module) => ({ default: module.AmbulanceWorkspace })));
 const TransplantWorkspace = lazy(() => import("@/pages/TransplantWorkspace").then((module) => ({ default: module.TransplantWorkspace })));
 const OtpMatWorkspace = lazy(() => import("@/pages/OtpMatWorkspace").then((module) => ({ default: module.OtpMatWorkspace })));
+const EmMdmWorkspace = lazy(() => import("@/pages/EmMdmWorkspace").then((module) => ({ default: module.EmMdmWorkspace })));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const ChatRealtimeBridge = lazy(() =>
   import("@/components/chat/ChatRealtimeBridge").then((module) => ({ default: module.ChatRealtimeBridge })),
@@ -110,6 +112,7 @@ function AuthenticatedRoutes() {
       <Route path="/specialty/ambulance">{() => <AppPage><AmbulanceWorkspace /></AppPage>}</Route>
       <Route path="/specialty/transplant">{() => <AppPage><TransplantWorkspace /></AppPage>}</Route>
       <Route path="/specialty/otp-mat">{() => <AppPage><OtpMatWorkspace /></AppPage>}</Route>
+      <Route path="/specialty/em-mdm">{() => <AppPage><EmMdmWorkspace /></AppPage>}</Route>
       <Route>{() => <AppPage><NotFound /></AppPage>}</Route>
     </Switch>
   );

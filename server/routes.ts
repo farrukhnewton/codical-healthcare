@@ -73,6 +73,12 @@ import {
   evaluateOtpCase,
   type OtpCaseInput,
 } from "../shared/otp-mat-coding";
+import {
+  EM_MDM_ENGINE_VERSION,
+  EM_MDM_POLICY_VERSION,
+  evaluateEmMdmCase,
+  type EmMdmCaseInput,
+} from "../shared/em-mdm-coding";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1096,6 +1102,112 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ============ OFFICE / OUTPATIENT E/M MDM ROUTES ============
+
+  app.get("/api/em-mdm/references", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      res.json({
+        engineVersion: EM_MDM_ENGINE_VERSION,
+        policyVersion: EM_MDM_POLICY_VERSION,
+        scope: "Office and other outpatient E/M services only",
+        codeFamilies: { newPatient: ["99202", "99203", "99204", "99205"], establishedPatient: ["99212", "99213", "99214", "99215"], staffServiceReview: ["99211"], medicareAddOns: ["G2211", "G2212"] },
+        currentTimeThresholdMinutes: { newPatient: { "99202": 15, "99203": 30, "99204": 45, "99205": 60 }, establishedPatient: { "99212": 10, "99213": 20, "99214": 30, "99215": 40 } },
+        medicareProlongedThresholdMinutes: { "99205+G2212x1": 89, "99215+G2212x1": 69, additionalUnitMinutes: 15 },
+        sources: [
+          { id: "cms-mln006764", title: "CMS Evaluation and Management Services, May 2026", url: "https://www.cms.gov/files/document/mln006764-evaluation-management-services.pdf" },
+          { id: "cms-clm-ch12", title: "Medicare Claims Processing Manual, Chapter 12", url: "https://www.cms.gov/Regulations-and-Guidance/Guidance/Manuals/Downloads/clm104c12.pdf" },
+          { id: "cms-mm13473", title: "CMS MM13473 - Office/Outpatient G2211", url: "https://www.cms.gov/files/document/mm13473-how-use-office-and-outpatient-evaluation-and-management-visit-complexity-add-code-g2211.pdf" },
+          { id: "ama-em-guidelines", title: "AMA CPT E/M guidance and MDM framework", url: "https://www.ama-assn.org/practice-management/cpt/cpt-evaluation-and-management" },
+          { id: "ama-em-2024-time", title: "AMA 2024 E/M minimum-time revision", url: "https://www.ama-assn.org/practice-management/cpt/simpler-approach-helps-physicians-properly-report-em-services" },
+        ],
+        licensing: "CPT descriptors and the complete official MDM table require a current AMA license. This endpoint returns code identifiers, original paraphrases, CMS policy metadata, and adapter boundaries only.",
+        autonomousClaimSubmission: false,
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to load E/M references");
+    }
+  });
+
+  app.post("/api/em-mdm/documents/extract", upload.fields([{ name: "documents", maxCount: 8 }]), async (req, res) => {
+    try {
+      const user = await getAuthenticatedChatUser(req);
+      const files = (((req.files || {}) as Record<string, UploadedPgxFile[]>).documents || []);
+      if (!files.length) throw new RouteError(400, "Upload at least one office/outpatient encounter document.");
+      const documents = [] as Array<Record<string, unknown>>;
+      for (const file of files) {
+        const extracted = await extractTextFromPgxFile(file);
+        const normalized = extracted.text.replace(/\s+/g, " ").trim();
+        const lower = normalized.toLowerCase();
+        const documentType = /assessment|plan|medical decision/.test(lower) ? "encounter-note"
+          : /medication|prescription|dose/.test(lower) ? "medication-record"
+          : /lab|imaging|radiology|test result/.test(lower) ? "test-record"
+          : /referral|consult|external note/.test(lower) ? "external-record"
+          : /procedure|surgery|operative/.test(lower) ? "same-day-procedure"
+          : "unclassified";
+        const candidateFlags = {
+          prescriptionManagementLanguage: /start(?:ed|ing)?|stop(?:ped|ping)?|continue(?:d)?|adjust(?:ed)?|prescri(?:be|bed|ption)/.test(lower),
+          hospitalizationLanguage: /admit(?:ted)?|hospitali[sz]|emergency department|higher level of care/.test(lower),
+          independentHistorianLanguage: /independent historian|history (?:provided|obtained) (?:from|by)/.test(lower),
+          externalDiscussionLanguage: /discussed with|consulted with|spoke with/.test(lower),
+          totalTimeLanguage: /total time|minutes? (?:spent|on the date)/.test(lower),
+        };
+        let stored: Awaited<ReturnType<typeof uploadSpecialtyObject>> = null;
+        try {
+          stored = await uploadSpecialtyObject("em-mdm", createSpecialtyObjectKey("em-mdm", user.id), file.buffer, extracted.mimeType);
+        } catch {
+          // Evidence remains reviewable when encrypted object storage is temporarily unavailable.
+        }
+        documents.push({
+          fileName: extracted.fileName,
+          documentType,
+          byteSize: file.buffer.length,
+          sha256: extracted.validation.sha256,
+          pageCount: extracted.validation.pageCount,
+          extractionMethod: extracted.validation.extractionMethod,
+          requiresManualReview: true,
+          textPreview: normalized.slice(0, 600),
+          objectKey: stored?.key || null,
+          candidateFlags,
+          warnings: [extracted.warning, !normalized ? "No native text was found. Route scanned or handwritten pages through an approved OCR/vision service." : "MDM candidates are search flags only; the physician/QHP and coder must verify the exact source language and encounter context."].filter(Boolean),
+        });
+      }
+      res.json({ success: true, documents, notice: "Extraction never auto-classifies problem severity, management risk, patient status, diagnosis, or billable time. Verify every selected element against the source note.", requiresHumanReview: true });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to process E/M encounter documents");
+    }
+  });
+
+  app.post("/api/em-mdm/evaluate", async (req, res) => {
+    try {
+      await getAuthenticatedChatUser(req);
+      const candidate = req.body?.caseInput as EmMdmCaseInput | undefined;
+      if (!candidate?.serviceDate || !candidate.payerMode || !candidate.siteType || !candidate.placeOfService || !candidate.selectionBasis || !candidate.problems || !candidate.data || !candidate.risk || !candidate.time || !candidate.sameDay || !candidate.g2211) {
+        throw new RouteError(400, "Service date, payer, site, POS, selection basis, and all E/M evidence domains are required.");
+      }
+      const caseInput: EmMdmCaseInput = {
+        ...candidate,
+        diagnosisCodes: Array.isArray(candidate.diagnosisCodes) ? candidate.diagnosisCodes : [],
+        data: { ...candidate.data, externalNoteSourceIds: Array.isArray(candidate.data.externalNoteSourceIds) ? candidate.data.externalNoteSourceIds : [], tests: Array.isArray(candidate.data.tests) ? candidate.data.tests : [] },
+      };
+      const evaluation = evaluateEmMdmCase(caseInput);
+      const stateCode = String(req.body?.stateCode || "").trim().toUpperCase();
+      if (stateCode && !/^[A-Z]{2}$/.test(stateCode)) throw new RouteError(400, "Use a two-letter service state for CMS evidence.");
+      const cmsEvidence = evaluation.diagnosisCodes.length && evaluation.claimLines.length
+        ? await getMcdBatchPairEvidence({ diagnosisCodes: evaluation.diagnosisCodes, procedureCodes: evaluation.claimLines.map((line) => line.code), stateCode: stateCode || undefined, limit: 30 })
+        : { source: "cloudflare-mcd", pairs: [] };
+      res.json({
+        success: true,
+        evaluation,
+        cmsEvidence,
+        evidenceSemantics: "MCD matches are supporting coverage context. They do not establish the E/M level, medical necessity, CPT eligibility, or payer payment.",
+        autonomousClaimSubmission: false,
+      });
+    } catch (error: any) {
+      return sendRouteError(res, error, "Failed to build the E/M MDM worksheet");
+    }
+  });
 
   // ============ OTP / MOUD BUNDLE ROUTES ============
 
