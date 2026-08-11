@@ -6881,13 +6881,14 @@
   text-transform: uppercase;
 }
 
-.nex-hero-premier-badge i {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: #6d92ff;
-  box-shadow: 0 0 18px rgba(109, 146, 255, 0.78);
-  animation: nex-hero-premier-dot 1.8s ease-in-out infinite;
+.nex-hero-premier-badge-mark {
+  display: inline-flex;
+  filter: drop-shadow(0 0 10px rgba(104, 92, 255, 0.42));
+}
+
+.nex-hero-premier-badge-mark .co-logo-bars {
+  width: 54px;
+  height: 32px;
 }
 
 .nex-hero-premier-badge span {
@@ -7287,17 +7288,6 @@
   50% { transform: translate3d(0, -10px, 0); }
 }
 
-@keyframes nex-hero-premier-dot {
-  0%, 100% {
-    opacity: 0.78;
-    transform: scale(0.9);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.16);
-  }
-}
-
 @keyframes nex-hero-premier-orb-left {
   0%, 100% { transform: translate3d(0, 0, 0) rotate(-2deg); }
   50% { transform: translate3d(34px, -22px, 0) rotate(3deg); }
@@ -7413,8 +7403,7 @@
   .nex-hero-premier-screen,
   .nex-hero-clean-screen::after,
   .nex-hero-clean-orbit,
-  .nex-hero-clean-pulse,
-  .nex-hero-premier-badge i {
+  .nex-hero-clean-pulse {
     animation: none !important;
   }
 }
@@ -10639,37 +10628,14 @@ body {
   backdrop-filter: none !important;
 }
 
-.nex-hero-premier-badge i {
-  position: relative;
-  width: 34px;
-  height: 18px;
-  display: block;
-  background: transparent !important;
-  animation: none !important;
+.nex-hero-premier-badge-mark {
+  display: inline-flex;
+  filter: drop-shadow(0 0 12px rgba(104, 92, 255, 0.5));
 }
 
-.nex-hero-premier-badge i::before,
-.nex-hero-premier-badge i::after {
-  content: "";
-  position: absolute;
-  background: #ffffff;
-}
-
-.nex-hero-premier-badge i::before {
-  left: 0;
-  bottom: 2px;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-}
-
-.nex-hero-premier-badge i::after {
-  right: 0;
-  bottom: 1px;
-  width: 24px;
-  height: 14px;
-  border-radius: 999px 999px 5px 5px;
-  clip-path: polygon(0 100%, 100% 100%, 100% 48%, 82% 48%, 72% 18%, 48% 0, 27% 14%, 17% 48%, 0 48%);
+.nex-hero-premier-badge-mark .co-logo-bars {
+  width: 58px;
+  height: 34px;
 }
 
 .nex-hero-premier-badge span {

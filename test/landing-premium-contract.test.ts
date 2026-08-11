@@ -7,6 +7,7 @@ const premiumSections = readFileSync("client/src/components/landing/PremiumLandi
 const brandMark = readFileSync("client/src/components/BrandMark.tsx", "utf8");
 const brandStyles = readFileSync("client/src/styles/brand-system.css", "utf8");
 const landingStyles = readFileSync("client/src/styles/landing-refresh.css", "utf8");
+const landingStitchStyles = readFileSync("client/src/styles/landing-stitch.css", "utf8");
 const indexHtml = readFileSync("client/index.html", "utf8");
 
 test("landing uses the centralized authoritative brand assets", () => {
@@ -14,6 +15,12 @@ test("landing uses the centralized authoritative brand assets", () => {
   assert.match(brandMark, /codical-bars-static-web\.png/);
   assert.match(brandStyles, /prefers-reduced-motion:\s*reduce/);
   assert.match(indexHtml, /logo-bars-192\.png/);
+});
+
+test("hero eyebrow uses the animated Codical mark instead of the legacy Premier-style glyph", () => {
+  assert.match(landing, /<BrandMark animated compact className="nex-hero-premier-badge-mark" \/>/);
+  assert.match(landingStitchStyles, /\.nex-hero-premier-badge-mark \.co-logo-bars/);
+  assert.doesNotMatch(landing, /<i \/>\s*\n\s*<span>AI-powered medical coding platform<\/span>/);
 });
 
 test("approved laptop shells contain Codical product screens without legacy overlays", () => {

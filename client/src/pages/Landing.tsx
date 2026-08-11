@@ -757,7 +757,7 @@ function HeroSection() {
           }}
         >
           <motion.div className="nex-hero-premier-badge" variants={HERO_COPY_ITEM_VARIANTS}>
-            <i />
+            <BrandMark animated compact className="nex-hero-premier-badge-mark" />
             <span>AI-powered medical coding platform</span>
           </motion.div>
           <motion.h1 className="nex-hero-premier-title">
