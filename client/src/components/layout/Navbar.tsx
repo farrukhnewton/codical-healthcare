@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { Stethoscope, Search, Bookmark, FileText } from "lucide-react";
-import logoUrl from "@assets/55555Screenshot_2025-12-01_181512_1772553010861.png";
+import { Search, Bookmark, FileText } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 
 export function Navbar() {
   const [location] = useLocation();
@@ -17,17 +17,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity group">
-              <div className="bg-primary rounded-xl p-2 shadow-lg h-12 w-12 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Stethoscope className="w-7 h-7 text-white" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-black tracking-tighter text-primary leading-none uppercase">
-                  Codical
-                </span>
-                <span className="text-sm font-bold text-secondary leading-none">
-                  Health
-                </span>
-              </div>
+              <BrandMark />
             </Link>
           </div>
           

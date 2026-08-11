@@ -27,6 +27,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { BrandMark } from "@/components/BrandMark";
 
 type NavSection = "MAIN" | "TOOLS" | "ACCOUNT";
 
@@ -102,7 +103,7 @@ export function IconRail() {
       </div>
 
       <Link href="/dashboard" onClick={() => mobile && setMobileOpen(false)} aria-label="Codical dashboard" className="app-sidebar-brand">
-        <span className="app-sidebar-mark" aria-hidden="true">CH</span>
+        <BrandMark compact />
         <span className="app-sidebar-brand-copy">
           <strong>Codical Health</strong>
           <em>Revenue Intelligence OS</em>

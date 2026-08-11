@@ -6,6 +6,7 @@ import {
   LockKeyhole,
   ShieldCheck,
 } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import "@/styles/auth-phase2.css";
 
 export type AuthMode = "password" | "magic";
@@ -233,8 +234,7 @@ function AuthShowcase() {
     <aside className="auth-showcase" aria-label="Codical Health secure access overview">
       <div className="auth-showcase-noise" aria-hidden="true" />
       <div className="auth-showcase-brand">
-        <span>CH</span>
-        <b>Codical Health</b>
+        <BrandMark animated inverse />
       </div>
 
       <div className="auth-showcase-copy">

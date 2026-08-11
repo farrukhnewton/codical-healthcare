@@ -14,7 +14,7 @@ export function SplashScreen() {
         transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
         className="flex flex-col items-center gap-5"
       >
-        <BrandMark className="co-brand-intro" />
+        <BrandMark animated className="co-brand-intro" />
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: [0, 1, 1, 0.78] }}

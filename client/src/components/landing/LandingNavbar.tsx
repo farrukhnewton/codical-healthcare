@@ -12,6 +12,7 @@ import {
   BadgeDollarSign,
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
+import { BrandMark } from "@/components/BrandMark";
 
 export function LandingNavbar() {
   const [, setLocation] = useLocation();
@@ -66,17 +67,7 @@ export function LandingNavbar() {
     <div className="ln-navWrap">
       <nav className={"ln-nav " + (scrolled ? "ln-scrolled" : "")}>
         <div className="ln-logo" onClick={() => scrollTo("#hero")} aria-label="Go to top">
-          <div className="ln-bars" aria-hidden="true">
-            <span className="ln-bar" />
-            <span className="ln-bar" />
-            <span className="ln-bar" />
-            <span className="ln-bar" />
-            <span className="ln-bar" />
-          </div>
-          <div className="ln-brandText">
-            <strong>CODICAL</strong>
-            <span>HEALTH</span>
-          </div>
+          <BrandMark animated />
         </div>
 
         <div className="ln-navLinks" aria-label="Primary navigation">

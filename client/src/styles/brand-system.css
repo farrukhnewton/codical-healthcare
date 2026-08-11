@@ -1,0 +1,111 @@
+.codical-brand-v2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.codical-brand-v2 .co-logo-bars {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 38px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.codical-brand-v2 .co-logo-bars::after,
+.codical-brand-v2 .co-logo-bars::before {
+  content: none;
+}
+
+.codical-brand-v2 .co-logo-asset {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.codical-brand-v2 .co-wordmark {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  color: #0a20b7;
+  font-family: "Inter", "Plus Jakarta Sans", system-ui, sans-serif;
+  font-style: normal;
+  line-height: .86;
+}
+
+.codical-brand-v2 .co-wordmark span,
+.codical-brand-v2 .co-wordmark small {
+  color: inherit;
+  font-style: normal;
+  font-weight: 850;
+  letter-spacing: -.045em;
+}
+
+.codical-brand-v2 .co-wordmark span {
+  font-size: 16px;
+}
+
+.codical-brand-v2 .co-wordmark small {
+  font-size: 13px;
+}
+
+.codical-brand-v2 .co-wordmark em {
+  margin-top: 5px;
+  color: inherit;
+  font-size: 6.5px;
+  font-style: normal;
+  font-weight: 750;
+  letter-spacing: .06em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.codical-brand-v2.is-inverse .co-wordmark {
+  color: #fff;
+}
+
+.auth-phase2-shell .auth-showcase-brand .codical-brand-v2 .co-logo-bars,
+.app-sidebar-brand .codical-brand-v2 .co-logo-bars {
+  width: 38px;
+  height: 30px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.auth-phase2-shell .auth-showcase-brand .codical-brand-v2 .co-wordmark span,
+.auth-phase2-shell .auth-showcase-brand .codical-brand-v2 .co-wordmark small {
+  display: block;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+}
+
+.app-sidebar-brand .codical-brand-v2 {
+  flex: 0 0 auto;
+}
+
+.app-sidebar-brand .codical-brand-v2 .co-logo-bars {
+  width: 38px;
+  height: 32px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .codical-brand-v2 .co-logo-asset[src$=".gif"] {
+    content: url("/assets/brand/codical-bars-static.png");
+  }
+}

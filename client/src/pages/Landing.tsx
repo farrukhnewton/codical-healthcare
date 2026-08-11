@@ -1,4 +1,5 @@
 import "@/styles/landing-stitch.css";
+import "@/styles/landing-refresh.css";
 
 import heroLaptopPremierFrame from "@/assets/landing/hero-concept-laptop-clean-premier.png";
 import creativeEyeballVideo from "@/assets/landing/creative-eyeball.mp4";
@@ -87,7 +88,7 @@ type Feature = {
   stat: string;
 };
 
-type CommandDemoId = "coding" | "transcription" | "chat";
+type CommandDemoId = "coding" | "transcription" | "specialty";
 
 type CommandDemo = {
   id: CommandDemoId;
@@ -97,16 +98,6 @@ type CommandDemo = {
   description: string;
   metric: string;
   status: string;
-};
-
-type CommandWizardStep = {
-  id: CommandDemoId;
-  action: string;
-  title: string;
-  detail: string;
-  result: string;
-  x: string;
-  y: string;
 };
 
 type CreativeTool = Feature & {
@@ -126,15 +117,14 @@ type AccentMotionStyle = MotionStyle & {
   "--tool-accent"?: string;
 };
 
-type WizardMotionStyle = CSSProperties & {
-  "--wizard-x": string;
-  "--wizard-y": string;
-};
-
 type VideoStory = {
+  id: string;
   title: string;
-  source: string;
-  videoId: string;
+  category: string;
+  video: string;
+  fallback: string;
+  poster: string;
+  duration: string;
   note: string;
 };
 
@@ -147,6 +137,18 @@ type ProfileStory = {
   quote: string;
   portrait: string;
 };
+
+type FeaturedModule = {
+  id: string;
+  eyebrow: string;
+  title: string;
+  summary: string;
+  image: string;
+  href: string;
+  accent: string;
+};
+
+const PUBLIC_MEDIA_BASE = (import.meta.env.VITE_PUBLIC_MEDIA_URL || "https://codical-public-assets.farrukhnewton.workers.dev").replace(/\/$/, "");
 
 const NAV_ITEMS = [
   { label: "Platform", href: "#platform" },
@@ -209,7 +211,7 @@ const MENU_GROUPS: MenuGroup[] = [
 
 const LOGO_GROUPS: LogoGroup[] = [
   {
-    label: "Insurers",
+    label: "Payer network",
     logos: [
       { name: "UnitedHealthcare", domain: "uhc.com", logo: "/assets/logos/insurers/unitedhealthcare.svg", color: "#1f3570", size: "wide" },
       { name: "Aetna", domain: "aetna.com", logo: "/assets/logos/insurers/aetna.svg", color: "#7d3f98", size: "compact" },
@@ -220,7 +222,7 @@ const LOGO_GROUPS: LogoGroup[] = [
     ],
   },
   {
-    label: "Clearinghouses",
+    label: "Claims network",
     logos: [
       { name: "Availity", domain: "availity.com", logo: "/assets/logos/insurers/availity.svg", color: "#f7941e", size: "wide" },
       { name: "Change Healthcare", domain: "changehealthcare.com", logo: "/assets/logos/insurers/change-healthcare.png", color: "#f72b55", size: "wide" },
@@ -277,7 +279,7 @@ const COMMAND_DEMOS: CommandDemo[] = [
     id: "coding",
     label: "AI coding",
     icon: BrainCircuit,
-    title: "AI coding work queue",
+    title: "AI coding review",
     description: "Coder-controlled suggestions with source evidence, modifier checks and payer-ready rationale.",
     metric: "98%",
     status: "Code set accepted",
@@ -292,43 +294,13 @@ const COMMAND_DEMOS: CommandDemo[] = [
     status: "Transcript finalized",
   },
   {
-    id: "chat",
-    label: "Team chat",
-    icon: MessagesSquare,
-    title: "Case-attached team chat",
-    description: "Coders, billers and reviewers coordinate in one thread without losing claim context.",
-    metric: "3 live",
-    status: "Handoff routed",
-  },
-];
-
-const COMMAND_WIZARD_STEPS: CommandWizardStep[] = [
-  {
-    id: "coding",
-    action: "Accept coding set",
-    title: "Step 1: review AI coding evidence",
-    detail: "Click the suggested ICD and CPT bundle to lock the source-linked coding decision.",
-    result: "Coding evidence accepted",
-    x: "34%",
-    y: "57%",
-  },
-  {
-    id: "transcription",
-    action: "Finalize transcript",
-    title: "Step 2: convert audio into coding context",
-    detail: "Finalize the encounter transcript and send the extracted clinical context to review.",
-    result: "Transcript routed to coding",
-    x: "51%",
-    y: "72%",
-  },
-  {
-    id: "chat",
-    action: "Route team handoff",
-    title: "Step 3: attach the team decision",
-    detail: "Send the validation summary into the case thread so billing and review stay aligned.",
-    result: "Handoff complete",
-    x: "82%",
-    y: "55%",
+    id: "specialty",
+    label: "Specialty coding",
+    icon: Stethoscope,
+    title: "Specialty coding engines",
+    description: "Purpose-built PGx, burn, ambulance, transplant and high-acuity coding workspaces stay in one system.",
+    metric: "12 engines",
+    status: "Specialty workspace open",
   },
 ];
 
@@ -370,51 +342,86 @@ const CREATIVE_SCATTER_LAYOUTS = [
   { x: 45, y: 28, r: -9, s: 0.8 },
 ];
 
-const VIDEO_STORIES: VideoStory[] = [
+const FEATURED_MODULES: FeaturedModule[] = [
   {
-    title: "Phelps Memorial RCM workflow story",
-    source: "Inovalon",
-    videoId: "k9GXupX1TSs",
-    note: "Public YouTube embed about enhanced healthcare RCM workflows.",
+    id: "ai-coding",
+    eyebrow: "Evidence-first automation",
+    title: "AI Medical Coding",
+    summary: "Source-linked code suggestions, documentation evidence and claim checks stay together until coder signoff.",
+    image: "/assets/landing/ai-coding.webp",
+    href: "/signup",
+    accent: "#23c7e6",
   },
   {
-    title: "O'Neal Medical revenue cycle story",
-    source: "Brightree",
-    videoId: "KpTPlGfE_sY",
-    note: "Public YouTube embed about medical revenue cycle workflows.",
+    id: "ai-transcription",
+    eyebrow: "Clinical speech to structure",
+    title: "AI Clinical Transcription",
+    summary: "Convert encounter audio into a reviewable note while preserving the source context coders need.",
+    image: "/assets/landing/ai-transcription.webp",
+    href: "/signup",
+    accent: "#a36ff1",
+  },
+  {
+    id: "specialty-coding",
+    eyebrow: "Purpose-built medical logic",
+    title: "Specialty Coding",
+    summary: "Dedicated engines apply specialty-specific workflows instead of forcing every service through one generic form.",
+    image: "/assets/landing/specialty-coding.webp",
+    href: "/signup",
+    accent: "#f47a45",
+  },
+  {
+    id: "claim-validation",
+    eyebrow: "Revenue integrity before submission",
+    title: "Claim Validation",
+    summary: "Bring coding, policy and validation signals into a single pre-bill review designed for human approval.",
+    image: "/assets/landing/claim-validation.webp",
+    href: "/signup",
+    accent: "#f6b64b",
   },
 ];
 
+const VIDEO_STORIES: VideoStory[] = FEATURED_MODULES.map((module) => ({
+  id: module.id,
+  title: module.title,
+  category: module.eyebrow,
+  video: `${PUBLIC_MEDIA_BASE}/landing-media/${module.id}-tour.mp4`,
+  fallback: `/assets/videos/landing/${module.id}-tour.mp4`,
+  poster: module.image,
+  duration: "0:07",
+  note: module.summary,
+}));
+
 const PROFILE_STORIES: ProfileStory[] = [
   {
-    name: "Maya Ellis, CPC",
-    role: "Coding Operations Director",
-    location: "Denver, CO",
-    org: "Metro Specialty Group",
-    orgMark: "MS",
+    name: "Coding operations",
+    role: "Illustrative workflow perspective",
+    location: "Human review stays in control",
+    org: "Evidence before acceptance",
+    orgMark: "01",
     quote:
-      "Our reviewers need fast evidence, not another disconnected queue. The best workflow keeps documentation, codes and claim checks visible together.",
-    portrait: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=700&q=85",
+      "Reviewers should be able to see the source language, suggested code and validation signal in the same decision view.",
+    portrait: "/assets/landing/ai-coding.webp",
   },
   {
-    name: "Jon Bell, CRCR",
-    role: "Revenue Cycle Manager",
-    location: "Orlando, FL",
-    org: "Coastal Care Network",
-    orgMark: "CC",
+    name: "Revenue integrity",
+    role: "Illustrative workflow perspective",
+    location: "Issues surface before billing",
+    org: "Validation in the workflow",
+    orgMark: "02",
     quote:
-      "Denial prevention improves when billing, coding and follow-up teams can see the same signal before submission.",
-    portrait: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=700&q=85",
+      "A claim check is most useful before submission, while the documentation and coding rationale are still easy to correct.",
+    portrait: "/assets/landing/claim-validation.webp",
   },
   {
-    name: "Priya Raman",
-    role: "Anesthesia Billing Lead",
-    location: "Nashville, TN",
-    org: "Summit Anesthesia Partners",
-    orgMark: "SA",
+    name: "Specialty teams",
+    role: "Illustrative workflow perspective",
+    location: "Specific logic, shared platform",
+    org: "Specialty depth without silos",
+    orgMark: "03",
     quote:
-      "Anesthesia payment reviews move faster when base units, time, locality and modifier rationale are all in the same workspace.",
-    portrait: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=700&q=85",
+      "Specialty coding needs dedicated clinical logic without separating the team from the rest of the revenue-cycle workspace.",
+    portrait: "/assets/landing/specialty-coding.webp",
   },
 ];
 
@@ -552,7 +559,10 @@ function CtaButton({
 }) {
   return (
     <Link className={`nex-button nex-button-${variant}`} href={href}>
-      <strong>{children}</strong>
+      <strong className="nex-button-label">
+        <span>{children}</span>
+        <span aria-hidden="true">{children}</span>
+      </strong>
       <span>
         <ArrowRight size={17} />
       </span>
@@ -577,7 +587,7 @@ function Header() {
         }}
       >
         <a className="nex-brand" href="#top" aria-label="Codical Health home">
-          <BrandMark />
+          <BrandMark animated />
         </a>
 
         <nav className="nex-nav" aria-label="Landing navigation">
@@ -600,7 +610,7 @@ function Header() {
           <a className="nex-nav-item nex-nav-link" href="#stories">
             Stories
           </a>
-          <a className="nex-nav-item nex-nav-link" href="#cta">
+          <a className="nex-nav-item nex-nav-link" href="#pricing">
             Pricing
           </a>
         </nav>
@@ -674,7 +684,7 @@ function Header() {
               </a>
             );
           })}
-          <a className="nex-mobile-group" href="#cta" onClick={() => setMobileOpen(false)}>
+          <a className="nex-mobile-group" href="#pricing" onClick={() => setMobileOpen(false)}>
             <i>
               <BarChart3 size={22} />
             </i>
@@ -740,7 +750,6 @@ function EcosystemMarquee() {
         <div className="nex-logo-board">
           {LOGO_GROUPS.map((group, groupIndex) => (
             <div className="nex-logo-row" data-category={group.label.toLowerCase()} key={group.label}>
-              <div className="nex-logo-label">{group.label}</div>
               <div className="nex-logo-track-window">
                 <div className="nex-logo-track" data-reverse={groupIndex % 2 === 1 ? "true" : "false"}>
                   {[...group.logos, ...group.logos, ...group.logos].map((logo, index) => (
@@ -766,7 +775,7 @@ function EcosystemMarquee() {
   );
 }
 
-function MiniSidebar() {
+function MiniSidebar({ activeIndex = 0 }: { activeIndex?: number }) {
   return (
     <aside className="nex-app-sidebar" aria-hidden="true">
       <BrandMark compact />
@@ -780,7 +789,7 @@ function MiniSidebar() {
       ].map(([label, Icon], index) => {
         const SidebarIcon = Icon as LucideIcon;
         return (
-          <span className={index === 0 ? "is-active" : ""} key={label as string}>
+          <span className={index === activeIndex ? "is-active" : ""} key={label as string}>
             <SidebarIcon size={15} />
             {label as string}
           </span>
@@ -790,10 +799,18 @@ function MiniSidebar() {
   );
 }
 
-function DashboardScreen({ compact = false }: { compact?: boolean }) {
+function DashboardScreen({ compact = false, animated = false }: { compact?: boolean; animated?: boolean }) {
+  const [activeNav, setActiveNav] = useState(0);
+
+  useEffect(() => {
+    if (!animated) return;
+    const timer = window.setInterval(() => setActiveNav((current) => (current + 1) % 6), 2200);
+    return () => window.clearInterval(timer);
+  }, [animated]);
+
   return (
-    <div className={`nex-dashboard-screen ${compact ? "is-compact" : ""}`}>
-      <MiniSidebar />
+    <div className={`nex-dashboard-screen ${compact ? "is-compact" : ""}${animated ? " is-live-preview" : ""}`}>
+      <MiniSidebar activeIndex={activeNav} />
       <main className="nex-screen-main">
         <div className="nex-screen-top">
           <div>
@@ -906,12 +923,14 @@ function LaptopHardwareFrame({
   className = "",
   screenClassName = "",
   decorative = false,
+  brandSystemBar = true,
   alt = "Codical Health software running on a laptop",
 }: {
   children: ReactNode;
   className?: string;
   screenClassName?: string;
   decorative?: boolean;
+  brandSystemBar?: boolean;
   alt?: string;
 }) {
   return (
@@ -922,6 +941,12 @@ function LaptopHardwareFrame({
         alt={decorative ? "" : alt}
         aria-hidden={decorative ? true : undefined}
       />
+      {brandSystemBar ? (
+        <div className="nex-laptop-system-brand" aria-hidden="true">
+          <BrandMark compact />
+          <strong>Codical Health</strong>
+        </div>
+      ) : null}
       <div className={`nex-hero-laptop-screen ${screenClassName}`} aria-hidden={decorative ? true : undefined}>
         {children}
       </div>
@@ -1061,7 +1086,7 @@ function HeroSection() {
               screenClassName="is-hero-laptop"
               alt="Codical Health platform running on a laptop"
             >
-              <DashboardScreen compact />
+              <DashboardScreen compact animated />
               <span className="nex-hero-screen-glaze" />
               <span className="nex-hero-screen-sweep" />
             </LaptopHardwareFrame>
@@ -1082,56 +1107,19 @@ function CommandCenterScreen({
 }) {
   const active = COMMAND_DEMOS.find((demo) => demo.id === activeDemo) ?? COMMAND_DEMOS[0];
   const ActiveIcon = active.icon;
-  const [wizardIndex, setWizardIndex] = useState(0);
-  const [wizardComplete, setWizardComplete] = useState(false);
-  const wizard = COMMAND_WIZARD_STEPS[wizardIndex] ?? COMMAND_WIZARD_STEPS[0];
-  const wizardStyle = { "--wizard-x": wizard.x, "--wizard-y": wizard.y } as WizardMotionStyle;
   const caseRows = [
     ["CH-83472", "J47.1", "98%", "Ready"],
     ["CH-83473", "E11.65", "96%", "Review"],
     ["CH-83474", "K21.9", "97%", "Ready"],
     ["CH-83475", "M54.16", "95%", "Hold"],
   ];
-  const selectDemo = (demoId: CommandDemoId) => {
-    const nextIndex = COMMAND_WIZARD_STEPS.findIndex((step) => step.id === demoId);
-    if (nextIndex >= 0) {
-      setWizardIndex(nextIndex);
-      setWizardComplete(false);
-    }
-    onChange(demoId);
-  };
-  const advanceWizard = () => {
-    if (wizardComplete) {
-      setWizardComplete(false);
-      setWizardIndex(0);
-      onChange(COMMAND_WIZARD_STEPS[0].id);
-      return;
-    }
-
-    const nextIndex = wizardIndex + 1;
-    if (nextIndex < COMMAND_WIZARD_STEPS.length) {
-      setWizardIndex(nextIndex);
-      onChange(COMMAND_WIZARD_STEPS[nextIndex].id);
-      return;
-    }
-
-    setWizardComplete(true);
-  };
-
-  useEffect(() => {
-    const nextIndex = COMMAND_WIZARD_STEPS.findIndex((step) => step.id === activeDemo);
-    if (nextIndex >= 0 && COMMAND_WIZARD_STEPS[wizardIndex]?.id !== activeDemo) {
-      setWizardIndex(nextIndex);
-      setWizardComplete(false);
-    }
-  }, [activeDemo, wizardIndex]);
 
   return (
     <div className="nex-command-screen">
       <header className="nex-command-osbar">
         <div>
-          <BrandMark compact />
-          <strong>CODICAL</strong>
+          <BrandMark animated compact />
+          <strong>Codical Health</strong>
         </div>
         <label>
           <Search size={12} />
@@ -1151,7 +1139,7 @@ function CommandCenterScreen({
               type="button"
               key={demo.id}
               className={demo.id === activeDemo ? "is-active" : ""}
-              onClick={() => selectDemo(demo.id)}
+              onClick={() => onChange(demo.id)}
             >
               <DemoIcon size={14} />
               {demo.label}
@@ -1160,7 +1148,7 @@ function CommandCenterScreen({
         })}
       </nav>
 
-      <main className="nex-command-workspace" data-mode={activeDemo} style={wizardStyle}>
+      <main className="nex-command-workspace" data-mode={activeDemo}>
         <aside className="nex-command-rail" aria-hidden="true">
           {[Activity, ClipboardCheck, FileAudio, MessagesSquare, ShieldCheck].map((Icon, index) => (
             <i className={index === COMMAND_DEMOS.findIndex((demo) => demo.id === activeDemo) + 1 ? "is-active" : ""} key={index}>
@@ -1169,7 +1157,7 @@ function CommandCenterScreen({
           ))}
         </aside>
 
-        <section className="nex-command-mainboard">
+        <section className="nex-command-mainboard" key={activeDemo}>
           <div className="nex-command-filters">
             {["Date Range", "May 01 - May 22, 2026", "Facility", "All Facilities", "Payer", "All Payers", "Filters"].map((item, index) => (
               <span className={index % 2 === 0 ? "is-label" : ""} key={`${item}-${index}`}>
@@ -1207,7 +1195,7 @@ function CommandCenterScreen({
               {activeDemo === "coding" && (
                 <div className="nex-command-code-review">
                   {caseRows.map(([caseId, code, confidence, status]) => (
-                    <button type="button" key={caseId} onClick={advanceWizard}>
+                    <button type="button" key={caseId}>
                       <span>{caseId}</span>
                       <strong>{code}</strong>
                       <em>{confidence}</em>
@@ -1226,20 +1214,17 @@ function CommandCenterScreen({
                   <blockquote>
                     Patient reports improved breathing after nebulizer treatment. Assessment supports J44.1 with documented exacerbation.
                   </blockquote>
-                  <button type="button" onClick={advanceWizard}>Finalize structured note</button>
+                  <button type="button">Finalize structured note</button>
                 </div>
               )}
-              {activeDemo === "chat" && (
-                <div className="nex-command-chat">
-                  {[
-                    ["Sarah", "EBM audit update attached to the claim."],
-                    ["Raj", "Denied claim 247912 reprocessed."],
-                    ["Emily", "New payer rule for Aetna effective today."],
-                  ].map(([person, message], index) => (
-                    <p className={index === 1 ? "is-own" : ""} key={person}>
-                      <strong>{person}</strong>
-                      <span>{message}</span>
-                    </p>
+              {activeDemo === "specialty" && (
+                <div className="nex-command-specialties">
+                  {["PGx", "Burn & graft", "Ambulance", "Transplant", "NICU", "Cardiac"].map((label, index) => (
+                    <button type="button" className={index === 0 ? "is-active" : ""} key={label}>
+                      <Stethoscope size={13} />
+                      <strong>{label}</strong>
+                      <span>{index === 0 ? "Open" : "Ready"}</span>
+                    </button>
                   ))}
                 </div>
               )}
@@ -1266,39 +1251,10 @@ function CommandCenterScreen({
               <p><span>Claim validation</span><em>Clean</em></p>
               <p><span>Coder review</span><em>3</em></p>
               <p><span>Chat updates</span><em>Live</em></p>
-              <button type="button" className={wizardComplete ? "is-complete" : ""} onClick={advanceWizard}>
-                {wizardComplete ? "Demo complete" : active.status}
-              </button>
+              <button type="button">{active.status}</button>
             </aside>
           </div>
         </section>
-
-        <button
-          type="button"
-          className={wizardComplete ? "nex-command-wizard-target is-complete" : "nex-command-wizard-target"}
-          onClick={advanceWizard}
-          aria-label={wizardComplete ? "Restart command center demo" : wizard.action}
-        >
-          <span>{wizardComplete ? "Done" : wizard.action}</span>
-        </button>
-        <div className={wizardComplete ? "nex-command-demo-wizard is-complete" : "nex-command-demo-wizard"} aria-live="polite">
-          <div className="nex-command-wizard-progress" aria-hidden="true">
-            {COMMAND_WIZARD_STEPS.map((step, index) => (
-              <i
-                key={step.id}
-                className={index < wizardIndex || wizardComplete ? "is-done" : index === wizardIndex ? "is-active" : ""}
-              />
-            ))}
-          </div>
-          <span>{wizardComplete ? "Guided demo finished" : `Guided demo ${wizardIndex + 1}/${COMMAND_WIZARD_STEPS.length}`}</span>
-          <strong>{wizardComplete ? "Every signal is now attached to the case." : wizard.title}</strong>
-          <p>{wizardComplete ? "Coding evidence, transcript context and team handoff are visible in one command center." : wizard.detail}</p>
-          <button type="button" onClick={advanceWizard}>
-            {wizardComplete ? "Restart demo" : wizard.action}
-            <ArrowRight size={12} />
-          </button>
-          <small>{wizardComplete ? "Ready for claim validation" : wizard.result}</small>
-        </div>
         <span className="nex-command-cursor" aria-hidden="true" />
         <span className="nex-command-click is-a" aria-hidden="true" />
         <span className="nex-command-click is-b" aria-hidden="true" />
@@ -1311,7 +1267,16 @@ function CommandCenterScreen({
 function CommandCenterSection() {
   const [activeDemo, setActiveDemo] = useState<CommandDemoId>("coding");
   const active = COMMAND_DEMOS.find((demo) => demo.id === activeDemo) ?? COMMAND_DEMOS[0];
-  const ActiveIcon = active.icon;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveDemo((current) => {
+        const currentIndex = COMMAND_DEMOS.findIndex((demo) => demo.id === current);
+        return COMMAND_DEMOS[(currentIndex + 1) % COMMAND_DEMOS.length].id;
+      });
+    }, 4600);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <section className="nex-command nex-command-premier" id="platform">
@@ -1320,7 +1285,7 @@ function CommandCenterSection() {
         <span className="nex-section-label">Command center</span>
         <h2>One workspace. Every revenue cycle signal in motion.</h2>
         <p>
-          A live operating view for coding, transcription and team review, with software that can be tested directly inside the laptop.
+          The actual application shell cycles through AI coding, clinical transcription and specialty coding so teams can preview the workflow before signing in.
         </p>
         <div className="nex-command-mode-pills" role="tablist" aria-label="Command center demo controls">
           {COMMAND_DEMOS.map((demo) => {
@@ -1343,12 +1308,6 @@ function CommandCenterSection() {
       </div>
 
       <div className="nex-command-showcase">
-        <div className="nex-command-context-card">
-          <ActiveIcon size={20} />
-          <strong>{active.title}</strong>
-          <p>{active.description}</p>
-          <span>{active.status}</span>
-        </div>
         <div className="nex-command-visual">
           <LaptopHardwareFrame className="nex-command-laptop" screenClassName="nex-command-laptop-screen">
             <CommandCenterScreen activeDemo={activeDemo} onChange={setActiveDemo} />
@@ -1823,42 +1782,85 @@ function CreativeFinalCTA({ progress }: { progress: MotionValue<number> }) {
     <motion.div className="nex-creative-final-cta" style={{ opacity, y, filter }}>
       <p>Unlimited coding clarity & revenue-cycle follow-through</p>
       <strong>AI coding + transcription + anesthesia logic + attached team review</strong>
-      <Link href="/signup">View portfolio <ArrowRight size={16} /></Link>
+      <Link href="/signup">Free demo <ArrowRight size={16} /></Link>
     </motion.div>
+  );
+}
+
+function FeaturedModuleMoment({
+  module,
+  index,
+  progress,
+}: {
+  module: FeaturedModule;
+  index: number;
+  progress: MotionValue<number>;
+}) {
+  const segment = 1 / FEATURED_MODULES.length;
+  const start = index * segment;
+  const enter = Math.max(0, start - segment * 0.18);
+  const visible = start + segment * 0.08;
+  const hold = start + segment * 0.76;
+  const exit = Math.min(1, start + segment);
+  const opacity = index === 0
+    ? useTransform(progress, [0, hold, exit], [1, 1, 0])
+    : index === FEATURED_MODULES.length - 1
+      ? useTransform(progress, [enter, visible, 1], [0, 1, 1])
+      : useTransform(progress, [enter, visible, hold, exit], [0, 1, 1, 0]);
+  const filter = index === 0
+    ? useTransform(progress, [0, hold, exit], ["blur(0px)", "blur(0px)", "blur(18px)"])
+    : useTransform(progress, [enter, visible, hold, exit], ["blur(18px)", "blur(0px)", "blur(0px)", "blur(18px)"]);
+  const copyY = useTransform(progress, [enter, visible, exit], ["42px", "0px", "-36px"]);
+  const imageScale = useTransform(progress, [enter, visible, exit], [0.92, 1, 1.035]);
+
+  return (
+    <motion.article
+      className="ch-feature-moment"
+      style={{ opacity, filter, "--feature-accent": module.accent } as unknown as MotionStyle}
+    >
+      <motion.div className="ch-feature-copy" style={{ y: copyY }}>
+        <span>{module.eyebrow}</span>
+        <h3>{module.title}</h3>
+        <p>{module.summary}</p>
+        <span className="ch-feature-action">Explore the workflow <ArrowRight size={16} /></span>
+      </motion.div>
+      <motion.figure className="ch-feature-visual" style={{ scale: imageScale }}>
+        <img src={module.image} alt={`${module.title} product concept`} loading={index === 0 ? "eager" : "lazy"} />
+        <div className="ch-feature-logo"><BrandMark animated compact /></div>
+        <figcaption>{String(index + 1).padStart(2, "0")} / {String(FEATURED_MODULES.length).padStart(2, "0")}</figcaption>
+      </motion.figure>
+    </motion.article>
   );
 }
 
 function SolutionsSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
-  const stageOpacity = useTransform(scrollYProgress, [0, 0.04, 0.98, 1], [0.94, 1, 1, 0.98]);
 
   return (
-    <section className="nex-solutions nex-creative-tools" id="solutions" ref={sectionRef}>
-      <motion.div className="nex-creative-sticky" style={{ opacity: stageOpacity }}>
-        <div className="nex-creative-progress" aria-hidden="true">
-          <motion.span style={{ scaleX: scrollYProgress }} />
+    <section className="ch-feature-scroll" id="solutions" ref={sectionRef}>
+      <div className="ch-feature-sticky">
+        <div className="ch-feature-progress" aria-hidden="true"><motion.span style={{ scaleX: scrollYProgress }} /></div>
+        <header>
+          <span>Featured workflows</span>
+          <p>Built inside Codical Health</p>
+        </header>
+        <div className="ch-feature-stage">
+          {FEATURED_MODULES.map((module, index) => (
+            <FeaturedModuleMoment key={module.id} module={module} index={index} progress={scrollYProgress} />
+          ))}
         </div>
-        <CreativeFlowWaveBackground />
+      </div>
+    </section>
+  );
+}
 
-        <div className="nex-creative-stage">
-          <div className="nex-creative-scatter-field" aria-label="Codical Health tool visuals">
-            {CREATIVE_SCATTER_LAYOUTS.map((_, index) => {
-              const showcase = CREATIVE_SHOWCASES[index % CREATIVE_SHOWCASES.length];
-              return <CreativeScatterImage key={`${showcase.id}-${index}`} showcase={showcase} index={index} progress={scrollYProgress} />;
-            })}
-          </div>
-          <CreativeStackIntro progress={scrollYProgress} />
-          <CreativeEmptyPrompt progress={scrollYProgress} />
-          <div className="nex-creative-sequence-field">
-            {CREATIVE_SHOWCASES.map((showcase, index) => (
-              <CreativeSequenceMoment key={showcase.id} showcase={showcase} index={index} progress={scrollYProgress} />
-            ))}
-          </div>
-          <CreativeEyeFinale progress={scrollYProgress} />
-          <CreativeFinalCTA progress={scrollYProgress} />
-        </div>
-      </motion.div>
+function FeatureDemoBand() {
+  return (
+    <section className="ch-feature-demo-band">
+      <BrandMark animated compact />
+      <p>See the complete workflow with your team.</p>
+      <Link href="/signup">Free demo <ArrowRight size={16} /></Link>
     </section>
   );
 }
@@ -1867,22 +1869,19 @@ function VideoStoriesSection() {
   return (
     <section className="nex-video-stories" id="stories">
       <div className="nex-section-center">
-        <span className="nex-section-label">Healthcare revenue voices</span>
-        <h2>Hear from medical billing and RCM professionals.</h2>
-        <p>Playable public YouTube embeds selected for the medical billing, RCM and healthcare operations context.</p>
+        <span className="nex-section-label">Codical product films</span>
+        <h2>See the workflows in motion.</h2>
+        <p>Four original product previews, served from Codical Health's Cloudflare media layer.</p>
       </div>
 
       <div className="nex-video-grid">
         {VIDEO_STORIES.map((story) => (
-          <article className="nex-video-card" key={story.videoId}>
+          <article className="nex-video-card" key={story.id}>
             <VideoPlayer story={story} />
             <div className="nex-video-copy">
-              <small>{story.source}</small>
+              <small>{story.category}</small>
               <h3>{story.title}</h3>
               <p>{story.note}</p>
-              <a href={`https://www.youtube.com/watch?v=${story.videoId}`} target="_blank" rel="noreferrer">
-                Watch on YouTube <ArrowRight size={14} />
-              </a>
             </div>
           </article>
         ))}
@@ -1897,22 +1896,17 @@ function VideoPlayer({ story }: { story: VideoStory }) {
   return (
     <div className="nex-video-frame">
       {playing ? (
-        <iframe
-          title={story.title}
-          src={`https://www.youtube-nocookie.com/embed/${story.videoId}?rel=0&modestbranding=1&autoplay=1`}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+        <video title={story.title} controls autoPlay playsInline poster={story.poster} preload="metadata">
+          <source src={story.video} type="video/mp4" />
+          <source src={story.fallback} type="video/mp4" />
+        </video>
       ) : (
         <button type="button" onClick={() => setPlaying(true)} aria-label={`Play ${story.title}`}>
-          <img
-            src={`https://i.ytimg.com/vi/${story.videoId}/hqdefault.jpg`}
-            alt=""
-            loading="lazy"
-          />
+          <img src={story.poster} alt="" loading="lazy" />
           <span aria-hidden="true">
             <Play size={24} />
           </span>
+          <small>{story.duration}</small>
         </button>
       )}
     </div>
@@ -1923,8 +1917,9 @@ function ProfileStoriesSection() {
   return (
     <section className="nex-profile-stories">
       <div className="nex-section-center">
-        <span className="nex-section-label">Role profiles</span>
-        <h2>Results that matter. Partnerships that last.</h2>
+        <span className="nex-section-label">Workflow perspectives</span>
+        <h2>Designed around the decisions healthcare teams actually make.</h2>
+        <p>Illustrative role perspectives—not customer endorsements—show how Codical keeps evidence, validation and specialty logic connected.</p>
       </div>
 
       <div className="nex-profile-grid">
@@ -1936,7 +1931,7 @@ function ProfileStoriesSection() {
             </div>
             <blockquote>{story.quote}</blockquote>
             <div className="nex-profile-person">
-              <img src={story.portrait} alt={`${story.name} professional portrait`} loading="lazy" />
+              <img src={story.portrait} alt="" loading="lazy" />
               <div>
                 <strong>{story.name}</strong>
                 <span>{story.role}</span>
@@ -1950,26 +1945,122 @@ function ProfileStoriesSection() {
   );
 }
 
+function DifferenceSection() {
+  const differences = [
+    [BrainCircuit, "Evidence before automation", "Suggestions stay connected to source context so a reviewer can verify why a code is present."],
+    [Stethoscope, "Specialty-native workflows", "PGx, burn, ambulance, transplant and high-acuity engines use purpose-built inputs and logic."],
+    [ShieldCheck, "Validation before submission", "Coding and claim checks live in the workflow while corrections are still actionable."],
+    [UsersRound, "Human approval by design", "Codical supports coder judgment and auditability; it does not hide decisions behind a black box."],
+    [Workflow, "One connected workspace", "Coding, transcription, reference tools, specialty modules and team collaboration share one operating view."],
+    [Landmark, "CMS-aware foundations", "Reference data and policy context are versioned so teams can review the basis for a recommendation."],
+  ] as const;
+
+  return (
+    <section className="ch-difference" id="difference">
+      <div className="ch-difference-heading">
+        <span>How we're different</span>
+        <h2>Clinical depth without workflow sprawl.</h2>
+        <p>Codical Health brings specialty intelligence and revenue-cycle controls into a coherent, reviewable system.</p>
+      </div>
+      <div className="ch-difference-grid">
+        {differences.map(([Icon, title, copy], index) => (
+          <article key={title}>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <Icon size={24} />
+            <h3>{title}</h3>
+            <p>{copy}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RevenueRibbonSection() {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start end", "end start"] });
+  const rotate = useTransform(scrollYProgress, [0, 1], [-9, 8]);
+  const y = useTransform(scrollYProgress, [0, 1], [90, -80]);
+  const scale = useTransform(scrollYProgress, [0, .5, 1], [.88, 1.04, .95]);
+
+  return (
+    <section className="ch-revenue-ribbon" ref={sectionRef} aria-label="Connected revenue cycle animation">
+      <div className="ch-ribbon-copy">
+        <span>One connected operating layer</span>
+        <h2>From clinical signal to claim-ready review.</h2>
+      </div>
+      <motion.img
+        src="/assets/landing/revenue-ribbon.png"
+        alt="Abstract purple and coral ribbon representing connected revenue workflows"
+        style={{ rotate, y, scale }}
+      />
+    </section>
+  );
+}
+
+function PricingSection() {
+  const plans = [
+    {
+      name: "Starter",
+      price: "$0",
+      note: "For essential research and reference work.",
+      features: ["Code Search", "CMS Guidelines", "RVU Calculator", "NPI Lookup"],
+      featured: false,
+    },
+    {
+      name: "Premium",
+      price: "$249",
+      note: "For connected coding and validation teams.",
+      features: ["Everything in Starter", "ICD/CPT Crosswalk", "Team Chat", "All validation tools"],
+      featured: true,
+    },
+    {
+      name: "Enterprise",
+      price: "$399",
+      note: "For AI-enabled specialty operations.",
+      features: ["Everything in Premium", "AI Medical Coding", "AI Clinical Transcription", "All Specialty Coding engines"],
+      featured: false,
+    },
+  ];
+
+  return (
+    <section className="ch-pricing" id="pricing">
+      <div className="nex-section-center">
+        <span className="nex-section-label">Simple plans</span>
+        <h2>Choose the workspace depth your team needs.</h2>
+        <p>Monthly workspace pricing. Start with the core reference tools, then add connected validation and AI specialty workflows.</p>
+      </div>
+      <div className="ch-pricing-grid">
+        {plans.map((plan) => (
+          <article className={plan.featured ? "is-featured" : ""} key={plan.name}>
+            {plan.featured ? <span className="ch-plan-badge">Most popular</span> : null}
+            <BrandMark animated compact />
+            <h3>{plan.name}</h3>
+            <div><strong>{plan.price}</strong><span>/ month</span></div>
+            <p>{plan.note}</p>
+            <ul>
+              {plan.features.map((feature) => <li key={feature}><BadgeCheck size={16} />{feature}</li>)}
+            </ul>
+            <Link href="/signup">Get started <ArrowRight size={15} /></Link>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function GlassLogoCta() {
   return (
     <section className="nex-final" id="cta">
+      <div className="ch-cta-stars" aria-hidden="true" />
       <div className="nex-final-copy">
-        <span className="nex-section-label">Codical Health</span>
-        <h2>Ready to elevate your revenue cycle?</h2>
-        <p>See how Codical Health can help your team code with precision and drive sustainable revenue growth.</p>
+        <BrandMark animated inverse />
+        <h2>Start free, or request a guided demo.</h2>
+        <p>Explore the essential tools now, then see how Codical connects AI coding, transcription, validation and specialty workflows.</p>
         <div className="nex-final-actions">
-          <CtaButton href="/signup">Request a demo</CtaButton>
-          <CtaButton href="/login" variant="secondary">Sign in</CtaButton>
+          <CtaButton href="/signup">Start free</CtaButton>
+          <CtaButton href="/signup?intent=demo" variant="secondary">Request a demo</CtaButton>
         </div>
-      </div>
-      <div className="nex-glass-logo" aria-label="Animated Codical Health logo">
-        <div className="nex-glass-mark">
-          {[0, 1, 2, 3, 4].map((index) => (
-            <span key={index} />
-          ))}
-        </div>
-        <strong>codical</strong>
-        <em>health</em>
       </div>
     </section>
   );
@@ -1984,21 +2075,39 @@ export function Landing() {
         <EcosystemMarquee />
         <CommandCenterSection />
         <SolutionsSection />
+        <FeatureDemoBand />
         <VideoStoriesSection />
         <ProfileStoriesSection />
+        <DifferenceSection />
+        <RevenueRibbonSection />
+        <PricingSection />
         <GlassLogoCta />
       </main>
       <footer className="nex-footer">
-        <BrandMark compact />
-        <nav aria-label="Footer">
-          <a href="#platform">Platform</a>
-          <a href="#solutions">Solutions</a>
-          <a href="#ecosystem">Ecosystem</a>
-          <a href="#stories">Stories</a>
-          <a href="#cta">Privacy</a>
-          <a href="#cta">Security</a>
-        </nav>
-        <p>&copy; 2026 Codical Health. All rights reserved.</p>
+        <div className="ch-footer-brand-card">
+          <BrandMark animated tagline />
+          <p>Healthcare coding intelligence built for reviewable, connected revenue-cycle work.</p>
+        </div>
+        <div className="ch-footer-links">
+          <nav aria-label="Product footer links">
+            <strong>Product</strong>
+            <a href="#platform">Platform</a>
+            <a href="#solutions">Solutions</a>
+            <a href="#stories">Product films</a>
+            <a href="#pricing">Pricing</a>
+          </nav>
+          <nav aria-label="Account footer links">
+            <strong>Access</strong>
+            <Link href="/signup">Start free</Link>
+            <Link href="/signup?intent=demo">Request a demo</Link>
+            <Link href="/login">Sign in</Link>
+          </nav>
+        </div>
+        <div className="ch-footer-bottom">
+          <BrandMark animated compact />
+          <p>&copy; 2026 Codical Health. All rights reserved.</p>
+          <span>Precision in coding, power in revenue</span>
+        </div>
       </footer>
     </div>
   );

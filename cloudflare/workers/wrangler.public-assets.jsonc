@@ -3,9 +3,14 @@
   "name": "codical-public-assets",
   "main": "public-assets.ts",
   "account_id": "7dc964fd2f9e2385f0eca8850ddfc76e",
-  "compatibility_date": "2026-07-29",
+  "compatibility_date": "2026-08-11",
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
-  "observability": { "enabled": true },
+  "observability": {
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.05 }
+  },
   "r2_buckets": [
     {
       "binding": "PUBLIC_ASSETS",

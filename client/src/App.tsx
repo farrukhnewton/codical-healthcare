@@ -22,7 +22,7 @@ function AuthLoadingScreen() {
         <div className="auth-loading-card w-full max-w-sm">
           <div className="ln-preview p-8 text-center">
             <div className="flex items-center justify-center">
-              <BrandMark />
+              <BrandMark animated />
             </div>
 
             <div className="mt-6 text-[12px] font-black tracking-[0.16em] uppercase text-[hsl(var(--muted-foreground))]">
