@@ -24,14 +24,16 @@ test("hero eyebrow uses the animated Codical mark instead of the legacy Premier-
 });
 
 test("approved laptop shells contain Codical product screens without legacy overlays", () => {
+  assert.equal(landing.match(/<LaptopHardwareFrame/g)?.length, 2);
   assert.match(landing, /LaptopHardwareFrame/);
   assert.match(landing, /DashboardScreen compact animated/);
   assert.match(landing, /CommandCenterScreen/);
-  assert.match(landing, /nex-laptop-system-bar/);
+  assert.match(landing, /nex-laptop-system-bar" data-rendered="native"/);
   assert.match(landing, /nex-laptop-system-brand/);
   assert.match(landing, /nex-laptop-native-bars/);
   assert.match(landingStyles, /\.nex-laptop-native-bars i:nth-child\(5\)/);
   assert.match(landingStyles, /\.nex-laptop-system-bar[\s\S]*?width:\s*79\.84%/);
+  assert.doesNotMatch(landing, /brandSystemBar/);
   assert.doesNotMatch(landing, /<div className="nex-laptop-system-brand"[^>]*>\s*<BrandMark/);
   assert.doesNotMatch(landing, /AI Work Queue|Guided Demo|Premier CS|PremierCS|View Portfolio/);
 });
