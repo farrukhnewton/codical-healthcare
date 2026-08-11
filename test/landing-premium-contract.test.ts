@@ -36,8 +36,9 @@ test("navigation spacing and hero glass use the same centered shell", () => {
 
 test("hero reveals the complete laptop before the ecosystem section enters", () => {
   assert.match(landing, /laptopRevealWidth/);
+  assert.match(landing, /\[0, -430\]/);
   assert.match(landingStitchStyles, /height:\s*calc\(100svh \+ 920px\)/);
-  assert.match(landingStitchStyles, /calc\(165\.18svh - 280\.8px\)/);
+  assert.match(landingStitchStyles, /calc\(165\.18svh - 320\.4px\)/);
 });
 
 test("hero keeps one glass-wave source without legacy duplicate layers", () => {

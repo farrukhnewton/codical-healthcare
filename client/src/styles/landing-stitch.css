@@ -10593,7 +10593,7 @@ body {
   left: 50% !important;
   right: auto !important;
   bottom: auto !important;
-  width: min(1290px, calc(100vw - 100px), calc(165.18svh - 280.8px)) !important;
+  width: min(1290px, calc(100vw - 100px), calc(165.18svh - 320.4px)) !important;
   max-width: none !important;
   min-width: 0 !important;
   margin: 0 !important;
