@@ -30,7 +30,7 @@ export function HeroSection() {
                 className="group px-8 py-4 text-base font-bold text-white rounded-2xl transition-all duration-300 hover:scale-105"
                 style={{ background: "linear-gradient(135deg, #15803D 0%, #0369A1 100%)", boxShadow: "0 8px 32px rgba(21,128,61,0.3)" }}
               >
-                Start Free Trial
+                Start free
                 <ArrowRight className="inline w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
               <button

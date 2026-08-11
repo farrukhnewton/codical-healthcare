@@ -4,8 +4,8 @@
   "description": "AI-powered healthcare revenue cycle management platform",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAFDF7",
-  "theme_color": "#15803D",
+  "background_color": "#F7F3FF",
+  "theme_color": "#1928C7",
   "icons": [
     {
       "src": "/logo-bars-192.png",

@@ -98,7 +98,7 @@ export function LandingNavbar() {
               onClick={() => setLocation("/signup")}
               style={{ height: 40, paddingInline: 14 }}
             >
-              Start Free Trial <ChevronRight size={16} />
+              Start free <ChevronRight size={16} />
             </button>
           </div>
 
@@ -130,7 +130,7 @@ export function LandingNavbar() {
               Log in
             </button>
             <button className="ln-btn ln-btnPrimary ln-magnetic" onClick={() => setLocation("/signup")}>
-              Start Free Trial <ChevronRight size={16} />
+              Start free <ChevronRight size={16} />
             </button>
           </div>
         </div>

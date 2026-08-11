@@ -5,53 +5,27 @@ import { OrganicCard } from "@/components/ui/OrganicCard";
 const PLANS = [
   {
     name: "Starter",
-    price: "$299",
-    period: "/month",
-    desc: "Perfect for individual coders and small practices",
-    features: [
-      "5,000 AI code lookups/mo",
-      "ICD-10, CPT, HCPCS search",
-      "Basic NCCI checking",
-      "RVU calculator",
-      "Email support",
-    ],
-    cta: "Start Free Trial",
+    price: "Free",
+    desc: "For essential research and reference work",
+    features: ["Code Search", "CMS Guidelines", "RVU Calculator", "NPI Lookup"],
+    cta: "Get started",
     popular: false,
   },
   {
-    name: "Professional",
-    price: "$799",
-    period: "/month",
-    desc: "For coding teams and mid-size practices",
-    features: [
-      "Unlimited AI lookups",
-      "All 50+ tools included",
-      "Advanced compliance engine",
-      "Analytics dashboard",
-      "Team collaboration (5 seats)",
-      "Priority support",
-      "Custom reports",
-    ],
-    cta: "Start Free Trial",
-    popular: true,
+    name: "Premium",
+    price: "$249",
+    desc: "For connected coding and validation teams",
+    features: ["Everything in Starter", "ICD/CPT Crosswalk", "Team Chats", "All Validation Tools"],
+    cta: "Get started",
+    popular: false,
   },
   {
     name: "Enterprise",
-    price: "Custom",
-    period: "",
-    desc: "For hospitals, health systems, and large groups",
-    features: [
-      "Everything in Professional",
-      "Unlimited team seats",
-      "API access",
-      "EMR/EHR integration",
-      "Dedicated account manager",
-      "Custom AI training",
-      "SLA guarantee",
-      "On-premise option",
-    ],
-    cta: "Contact Sales",
-    popular: false,
+    price: "$399",
+    desc: "For AI-enabled specialty operations",
+    features: ["Everything in Premium", "AI Coding", "AI Transcription", "Specialty Coding"],
+    cta: "Request a demo",
+    popular: true,
   },
 ];
 
@@ -91,7 +65,6 @@ export function PricingSection() {
               <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
               <div className="mt-4 mb-2">
                 <span className="text-4xl font-black text-gray-900">{plan.price}</span>
-                <span className="text-gray-500 text-sm">{plan.period}</span>
               </div>
               <p className="text-sm text-gray-600 mb-6">{plan.desc}</p>
 
@@ -105,7 +78,7 @@ export function PricingSection() {
               </ul>
 
               <button
-                onClick={() => setLocation(plan.name === "Enterprise" ? "/login" : "/signup")}
+                onClick={() => setLocation(plan.name === "Enterprise" ? "/signup?intent=demo" : "/signup")}
                 className={
                   "w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-[1.02] " +
                   (plan.popular

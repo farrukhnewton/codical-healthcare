@@ -36,22 +36,22 @@ export function CTASection() {
               Revenue Cycle?
             </h2>
             <p className="text-lg text-white/80 mb-10 max-w-2xl mx-auto">
-              Join thousands of healthcare professionals using Codical Health to code faster,
-              bill smarter, and recover more revenue.
+              Explore the essential tools, or request a guided view of Codical's AI coding,
+              transcription, validation and specialty workflows.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <button
                 onClick={() => setLocation("/signup")}
                 className="group px-8 py-4 bg-white text-emerald-800 font-bold rounded-2xl text-base hover:scale-105 transition-all duration-300 shadow-xl"
               >
-                Start Free Trial
+                Start free
                 <ArrowRight className="inline w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
               <button
-                onClick={() => setLocation("/login")}
+                onClick={() => setLocation("/signup?intent=demo")}
                 className="px-8 py-4 text-white/90 font-semibold rounded-2xl text-base border-2 border-white/30 hover:bg-white/10 transition-all duration-300"
               >
-                Schedule Demo
+                Request a demo
               </button>
             </div>
           </div>

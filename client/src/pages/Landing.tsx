@@ -2,18 +2,13 @@ import "@/styles/landing-stitch.css";
 import "@/styles/landing-refresh.css";
 
 import heroLaptopPremierFrame from "@/assets/landing/hero-concept-laptop-clean-premier.png";
-import creativeEyeballVideo from "@/assets/landing/creative-eyeball.mp4";
 import {
   motion,
-  type MotionValue,
-  type MotionStyle,
-  useMotionValue,
   useReducedMotion,
   useScroll,
-  useSpring,
   useTransform,
 } from "framer-motion";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "wouter";
 import {
   Activity,
@@ -22,7 +17,6 @@ import {
   BadgeCheck,
   BarChart3,
   BrainCircuit,
-  Calculator,
   ChevronDown,
   ClipboardCheck,
   FileAudio,
@@ -33,20 +27,28 @@ import {
   Menu,
   MessagesSquare,
   MessageSquareText,
-  Mic2,
   Play,
   ScanSearch,
   Search,
   ShieldCheck,
   ShieldPlus,
-  Sparkles,
   Stethoscope,
-  UsersRound,
   Workflow,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
+import {
+  DifferenceSection,
+  FeatureDemoBand,
+  GlassLogoCta,
+  PricingSection,
+  ProductFilmsSection,
+  RevenueRibbonSection,
+  SolutionsSection,
+  VerifiedCustomerStoriesSection,
+  VerifiedTestimonialsSection,
+} from "@/components/landing/PremiumLandingSections";
 
 type LogoItem = {
   name: string;
@@ -78,16 +80,6 @@ type MenuGroup = {
   items: MenuItem[];
 };
 
-type Feature = {
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  title: string;
-  summary: string;
-  points: string[];
-  stat: string;
-};
-
 type CommandDemoId = "coding" | "transcription" | "specialty";
 
 type CommandDemo = {
@@ -100,62 +92,12 @@ type CommandDemo = {
   status: string;
 };
 
-type CreativeTool = Feature & {
-  accent: string;
-  caption: string;
-};
-
-type CreativeShowcase = CreativeTool & {
-  category: string;
-  line: string;
-  subline: string;
-  proof: string;
-  visual: "coding" | "transcription" | "calculator" | "chat";
-};
-
-type AccentMotionStyle = MotionStyle & {
-  "--tool-accent"?: string;
-};
-
-type VideoStory = {
-  id: string;
-  title: string;
-  category: string;
-  video: string;
-  fallback: string;
-  poster: string;
-  duration: string;
-  note: string;
-};
-
-type ProfileStory = {
-  name: string;
-  role: string;
-  location: string;
-  org: string;
-  orgMark: string;
-  quote: string;
-  portrait: string;
-};
-
-type FeaturedModule = {
-  id: string;
-  eyebrow: string;
-  title: string;
-  summary: string;
-  image: string;
-  href: string;
-  accent: string;
-};
-
-const PUBLIC_MEDIA_BASE = (import.meta.env.VITE_PUBLIC_MEDIA_URL || "https://codical-public-assets.farrukhnewton.workers.dev").replace(/\/$/, "");
-
 const NAV_ITEMS = [
   { label: "Platform", href: "#platform" },
   { label: "Solutions", href: "#solutions" },
   { label: "Ecosystem", href: "#ecosystem" },
   { label: "Stories", href: "#stories" },
-  { label: "Pricing", href: "#cta" },
+  { label: "Pricing", href: "#pricing" },
 ];
 
 const MENU_IMAGES = [
@@ -231,49 +173,6 @@ const LOGO_GROUPS: LogoGroup[] = [
   },
 ];
 
-const FEATURES: Feature[] = [
-  {
-    id: "coding",
-    label: "AI Medical Coding",
-    icon: Sparkles,
-    title: "Source-linked coding support before the claim moves.",
-    summary:
-      "Codical reads clinical context, suggests ICD-10, CPT, HCPCS and modifier options, then keeps rationale tied to the source note.",
-    points: ["CPT, ICD-10 and HCPCS suggestions", "NCCI and modifier review", "Coder signoff with evidence"],
-    stat: "98% confidence review lane",
-  },
-  {
-    id: "transcription",
-    label: "AI Transcription",
-    icon: Mic2,
-    title: "Turn encounter audio into structured coding context.",
-    summary:
-      "Upload audio, review structured fields, inspect transcript evidence and send extracted codes into validation without losing context.",
-    points: ["Audio intake and transcript cleanup", "Structured patient record", "One-click handoff to claim review"],
-    stat: "25MB audio intake",
-  },
-  {
-    id: "anesthesia",
-    label: "Anesthesia Calculator",
-    icon: Calculator,
-    title: "Calculate units, modifiers and locality factors in one flow.",
-    summary:
-      "The anesthesia calculator combines base units, time units, MAC locality and modifier policy into a clear payment summary.",
-    points: ["CY 2026 locality factors", "Base unit lookup", "Modifier payment adjustments"],
-    stat: "109 locality options",
-  },
-  {
-    id: "chat",
-    label: "Team Chats",
-    icon: MessageSquareText,
-    title: "Keep coding decisions and team context together.",
-    summary:
-      "Team chats help coders, billers and reviewers discuss work, attach files and ask the assistant without leaving the case flow.",
-    points: ["Direct and group threads", "Conversation context panel", "Assistant-ready collaboration"],
-    stat: "Live review handoffs",
-  },
-];
-
 const COMMAND_DEMOS: CommandDemo[] = [
   {
     id: "coding",
@@ -301,127 +200,6 @@ const COMMAND_DEMOS: CommandDemo[] = [
     description: "Purpose-built PGx, burn, ambulance, transplant and high-acuity coding workspaces stay in one system.",
     metric: "12 engines",
     status: "Specialty workspace open",
-  },
-];
-
-const CREATIVE_TOOLS: CreativeTool[] = FEATURES.map((feature, index) => ({
-  ...feature,
-  accent: ["#00d0ff", "#b65cff", "#ff914d", "#38d8a5"][index] ?? "#9d4edd",
-  caption: ["Evidence-first coding", "Structured clinical audio", "Payment logic in one view", "Review decisions together"][index] ?? feature.label,
-}));
-
-const CREATIVE_SHOWCASES: CreativeShowcase[] = CREATIVE_TOOLS.map((tool, index) => ({
-  ...tool,
-  category: ["CODING", "AUDIO", "PAYMENT", "TEAM"][index] ?? tool.label.toUpperCase(),
-  line:
-    [
-      "AI coding that keeps evidence visible.",
-      "Transcription that turns speech into structure.",
-      "Anesthesia math that explains the payment.",
-      "Team review that stays attached to the case.",
-    ][index] ?? tool.title,
-  subline:
-    [
-      "Source-linked ICD, CPT, HCPCS and modifier suggestions stay connected to the claim.",
-      "Encounter audio becomes usable notes, coding context and review-ready language.",
-      "Base units, time, modifiers and locality factors stay in one calculation view.",
-      "Coders, billers and reviewers resolve questions without leaving the workflow.",
-    ][index] ?? tool.summary,
-  proof: ["98% confidence", "01:24 transcript", "187.5 MME", "3 live reviewers"][index] ?? tool.stat,
-  visual: (["coding", "transcription", "calculator", "chat"] as const)[index] ?? "coding",
-}));
-
-const CREATIVE_SCATTER_LAYOUTS = [
-  { x: -39, y: -20, r: -6, s: 0.92 },
-  { x: -15, y: -27, r: 7, s: 0.82 },
-  { x: 18, y: -24, r: -2, s: 0.88 },
-  { x: 38, y: -17, r: 5, s: 0.86 },
-  { x: -34, y: 18, r: 4, s: 0.84 },
-  { x: -8, y: 25, r: -7, s: 0.86 },
-  { x: 24, y: 22, r: 6, s: 0.84 },
-  { x: 45, y: 28, r: -9, s: 0.8 },
-];
-
-const FEATURED_MODULES: FeaturedModule[] = [
-  {
-    id: "ai-coding",
-    eyebrow: "Evidence-first automation",
-    title: "AI Medical Coding",
-    summary: "Source-linked code suggestions, documentation evidence and claim checks stay together until coder signoff.",
-    image: "/assets/landing/ai-coding.webp",
-    href: "/signup",
-    accent: "#23c7e6",
-  },
-  {
-    id: "ai-transcription",
-    eyebrow: "Clinical speech to structure",
-    title: "AI Clinical Transcription",
-    summary: "Convert encounter audio into a reviewable note while preserving the source context coders need.",
-    image: "/assets/landing/ai-transcription.webp",
-    href: "/signup",
-    accent: "#a36ff1",
-  },
-  {
-    id: "specialty-coding",
-    eyebrow: "Purpose-built medical logic",
-    title: "Specialty Coding",
-    summary: "Dedicated engines apply specialty-specific workflows instead of forcing every service through one generic form.",
-    image: "/assets/landing/specialty-coding.webp",
-    href: "/signup",
-    accent: "#f47a45",
-  },
-  {
-    id: "claim-validation",
-    eyebrow: "Revenue integrity before submission",
-    title: "Claim Validation",
-    summary: "Bring coding, policy and validation signals into a single pre-bill review designed for human approval.",
-    image: "/assets/landing/claim-validation.webp",
-    href: "/signup",
-    accent: "#f6b64b",
-  },
-];
-
-const VIDEO_STORIES: VideoStory[] = FEATURED_MODULES.map((module) => ({
-  id: module.id,
-  title: module.title,
-  category: module.eyebrow,
-  video: `${PUBLIC_MEDIA_BASE}/landing-media/${module.id}-tour.mp4`,
-  fallback: `/assets/videos/landing/${module.id}-tour.mp4`,
-  poster: module.image,
-  duration: "0:07",
-  note: module.summary,
-}));
-
-const PROFILE_STORIES: ProfileStory[] = [
-  {
-    name: "Coding operations",
-    role: "Illustrative workflow perspective",
-    location: "Human review stays in control",
-    org: "Evidence before acceptance",
-    orgMark: "01",
-    quote:
-      "Reviewers should be able to see the source language, suggested code and validation signal in the same decision view.",
-    portrait: "/assets/landing/ai-coding.webp",
-  },
-  {
-    name: "Revenue integrity",
-    role: "Illustrative workflow perspective",
-    location: "Issues surface before billing",
-    org: "Validation in the workflow",
-    orgMark: "02",
-    quote:
-      "A claim check is most useful before submission, while the documentation and coding rationale are still easy to correct.",
-    portrait: "/assets/landing/claim-validation.webp",
-  },
-  {
-    name: "Specialty teams",
-    role: "Illustrative workflow perspective",
-    location: "Specific logic, shared platform",
-    org: "Specialty depth without silos",
-    orgMark: "03",
-    quote:
-      "Specialty coding needs dedicated clinical logic without separating the team from the rest of the revenue-cycle workspace.",
-    portrait: "/assets/landing/specialty-coding.webp",
   },
 ];
 
@@ -704,35 +482,6 @@ function Header() {
   );
 }
 
-function HeroCleanProductScreen() {
-  return (
-    <div className="nex-hero-clean-screen">
-      <div className="nex-hero-clean-top" aria-hidden="true">
-        <span className="nex-hero-clean-brand">
-          <i />
-          <i />
-          <i />
-          <i />
-        </span>
-        <span />
-        <span />
-        <span />
-      </div>
-      <div className="nex-hero-clean-grid" aria-hidden="true">
-        {Array.from({ length: 18 }).map((_, index) => (
-          <span key={index} />
-        ))}
-      </div>
-      <span className="nex-hero-clean-orbit is-one" aria-hidden="true" />
-      <span className="nex-hero-clean-orbit is-two" aria-hidden="true" />
-      <span className="nex-hero-clean-orbit is-three" aria-hidden="true" />
-      <span className="nex-hero-clean-pulse is-one" aria-hidden="true" />
-      <span className="nex-hero-clean-pulse is-two" aria-hidden="true" />
-      <span className="nex-hero-clean-pulse is-three" aria-hidden="true" />
-    </div>
-  );
-}
-
 function PartnerLogo({ logo }: { logo: LogoItem }) {
   return (
     <img className={`nex-partner-logo-image is-${logo.size ?? "wide"}`} src={logo.logo} alt="" loading="lazy" />
@@ -897,23 +646,6 @@ function DashboardScreen({ compact = false, animated = false }: { compact?: bool
           </section>
         </div>
       </main>
-    </div>
-  );
-}
-
-function LaptopMockup({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={`nex-laptop ${className}`}>
-      <div className="nex-laptop-lid">
-        <div className="nex-laptop-camera" />
-        <div className="nex-laptop-screen">
-          {children}
-          <span className="nex-screen-scanner" aria-hidden="true" />
-        </div>
-      </div>
-      <div className="nex-laptop-base">
-        <span />
-      </div>
     </div>
   );
 }
@@ -1319,753 +1051,6 @@ function CommandCenterSection() {
   );
 }
 
-function FeaturePanel({ feature }: { feature: Feature }) {
-  if (feature.id === "transcription") {
-    return (
-      <div className="nex-feature-ui transcription-ui">
-        <div className="nex-feature-note">
-          <FileAudio size={18} />
-          <div>
-            <strong>Consult-audio-0618.m4a</strong>
-            <span>Structured record created</span>
-          </div>
-        </div>
-        <div className="nex-waveform large" aria-hidden="true">
-          {Array.from({ length: 34 }).map((_, index) => (
-            <i key={index} style={{ animationDelay: `${index * 38}ms` }} />
-          ))}
-        </div>
-        <div className="nex-code-columns">
-          <span>CPT 99214</span>
-          <span>ICD-10 J44.1</span>
-          <span>HCPCS J7613</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (feature.id === "anesthesia") {
-    return (
-      <div className="nex-feature-ui anesthesia-ui">
-        <div className="nex-calc-hero">
-          <span>Non-qualifying payment</span>
-          <strong>$824.91</strong>
-          <small>17 units x locality factor</small>
-        </div>
-        <div className="nex-calc-grid">
-          <span>Base units <strong>6</strong></span>
-          <span>Time units <strong>6</strong></span>
-          <span>Modifier <strong>AA</strong></span>
-          <span>Locality <strong>TN 00</strong></span>
-        </div>
-      </div>
-    );
-  }
-
-  if (feature.id === "chat") {
-    return (
-      <div className="nex-feature-ui chat-ui">
-        {[
-          ["Coder", "The modifier rationale is supported by the operative note."],
-          ["Billing", "Claim validator is clear after the update."],
-          ["Assistant", "Summary attached to case C-74823."],
-        ].map(([sender, message], index) => (
-          <div className={index === 1 ? "is-own" : ""} key={sender}>
-            <strong>{sender}</strong>
-            <p>{message}</p>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="nex-feature-ui coding-ui">
-      <div className="nex-feature-table">
-        {[
-          ["M54.16", "Radiculopathy", "99%", "Selected"],
-          ["721.3", "Lumbosacral spondylosis", "96%", "Selected"],
-          ["62323", "Injection, epidural", "97%", "Review"],
-        ].map(([code, label, confidence, status]) => (
-          <div key={code}>
-            <strong>{code}</strong>
-            <span>{label}</span>
-            <em>{confidence}</em>
-            <small>{status}</small>
-          </div>
-        ))}
-      </div>
-      <button type="button">Send to claim validation</button>
-    </div>
-  );
-}
-
-function CreativeImagePanel({
-  showcase,
-  variant = "standard",
-}: {
-  showcase: CreativeShowcase;
-  variant?: "standard" | "scatter" | "stack" | "sequence" | "ghost";
-}) {
-  const ToolIcon = showcase.icon;
-
-  return (
-    <figure className={`nex-portfolio-image is-${showcase.visual} is-${variant}`} aria-label={`${showcase.label} product visual`}>
-      <div className="nex-portfolio-chrome">
-        <span />
-        <span />
-        <span />
-        <strong>{showcase.label}</strong>
-      </div>
-      <div className="nex-portfolio-body">
-        <div className="nex-portfolio-badge">
-          <ToolIcon size={16} />
-          <span>{showcase.proof}</span>
-        </div>
-
-        {showcase.visual === "coding" && (
-          <div className="nex-portfolio-coding">
-            <BrandMark compact />
-            <div className="nex-portfolio-mini-table">
-              {[
-                ["CH-83472", "J47.1", "98"],
-                ["CH-83473", "E11.65", "96"],
-                ["CH-83474", "K21.9", "97"],
-              ].map(([chart, code, score]) => (
-                <span key={chart}>
-                  <b>{chart}</b>
-                  <em>{code}</em>
-                  <i>{score}%</i>
-                </span>
-              ))}
-            </div>
-            <div className="nex-portfolio-donut" aria-hidden="true" />
-          </div>
-        )}
-
-        {showcase.visual === "transcription" && (
-          <div className="nex-portfolio-transcription">
-            <div className="nex-portfolio-wave" aria-hidden="true">
-              {Array.from({ length: 34 }).map((_, index) => (
-                <i key={index} style={{ animationDelay: `${index * 34}ms` }} />
-              ))}
-            </div>
-            <p>Patient reports improved breathing. Assessment supports exacerbation coding with source language.</p>
-            <strong>Structured note ready</strong>
-          </div>
-        )}
-
-        {showcase.visual === "calculator" && (
-          <div className="nex-portfolio-calculator">
-            <strong>$824.91</strong>
-            <span>17 units x locality factor</span>
-            {[
-              ["Base", "6"],
-              ["Time", "6"],
-              ["Modifier", "AA"],
-              ["MME", "187.5"],
-            ].map(([label, value]) => (
-              <p key={label}>
-                <em>{label}</em>
-                <b>{value}</b>
-              </p>
-            ))}
-          </div>
-        )}
-
-        {showcase.visual === "chat" && (
-          <div className="nex-portfolio-chat">
-            {[
-              ["Coder", "Evidence accepted."],
-              ["Billing", "Validator is clean."],
-              ["Assistant", "Summary attached."],
-            ].map(([sender, text], index) => (
-              <p className={index === 1 ? "is-own" : ""} key={sender}>
-                <strong>{sender}</strong>
-                <span>{text}</span>
-              </p>
-            ))}
-          </div>
-        )}
-      </div>
-    </figure>
-  );
-}
-
-function CreativeFlowWaveBackground({ light = false }: { light?: boolean }) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const prefersReducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext("2d");
-    const parent = canvas?.parentElement;
-
-    if (!canvas || !context || !parent) return;
-
-    const layers: Array<[number, number, number, number]> = light
-      ? [
-          [255, 255, 255, 0.06],
-          [198, 201, 220, 0.04],
-          [107, 125, 235, 0.03],
-        ]
-      : [
-          [200, 79, 232, 0.1],
-          [155, 63, 230, 0.07],
-          [107, 125, 235, 0.05],
-          [198, 201, 220, 0.03],
-        ];
-
-    let width = 0;
-    let height = 0;
-    let time = 0;
-    let frameId = 0;
-    let disposed = false;
-
-    const resize = () => {
-      const rect = parent.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      width = Math.max(1, rect.width);
-      height = Math.max(1, rect.height);
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-
-    const drawLayer = ([red, green, blue, alpha]: [number, number, number, number], layerIndex: number) => {
-      const frequency = 0.003 + layerIndex * 0.001;
-      const phase = layerIndex * 1.1;
-      const amplitude = 45 + layerIndex * 10;
-      const baseY = height * 0.5 + layerIndex * 20;
-
-      context.beginPath();
-      context.moveTo(0, height);
-
-      for (let x = 0; x <= width; x += 3) {
-        const y =
-          baseY +
-          Math.sin(x * frequency + time + phase) * amplitude +
-          Math.sin(x * frequency * 2.2 + time * 1.3 + phase) * amplitude * 0.2;
-        context.lineTo(x, y);
-      }
-
-      context.lineTo(width, height);
-      context.closePath();
-      context.fillStyle = `rgba(${red},${green},${blue},${alpha})`;
-      context.fill();
-
-      if (layerIndex === 0) {
-        context.beginPath();
-        for (let x = 0; x <= width; x += 3) {
-          const y =
-            baseY +
-            Math.sin(x * frequency + time + phase) * amplitude +
-            Math.sin(x * frequency * 2.2 + time * 1.3 + phase) * amplitude * 0.2;
-          if (x === 0) {
-            context.moveTo(x, y);
-          } else {
-            context.lineTo(x, y);
-          }
-        }
-        context.strokeStyle = `rgba(${red},${green},${blue},0.22)`;
-        context.lineWidth = 1.5;
-        context.stroke();
-      }
-    };
-
-    const draw = () => {
-      context.clearRect(0, 0, width, height);
-      if (!prefersReducedMotion) {
-        time += 0.005;
-      }
-
-      layers.forEach(drawLayer);
-
-      if (!prefersReducedMotion && !disposed) {
-        frameId = window.requestAnimationFrame(draw);
-      }
-    };
-
-    resize();
-    draw();
-
-    const resizeObserver = typeof ResizeObserver !== "undefined"
-      ? new ResizeObserver(() => {
-          resize();
-          if (prefersReducedMotion) draw();
-        })
-      : null;
-    resizeObserver?.observe(parent);
-
-    return () => {
-      disposed = true;
-      if (frameId) window.cancelAnimationFrame(frameId);
-      resizeObserver?.disconnect();
-    };
-  }, [light, prefersReducedMotion]);
-
-  return (
-    <div className={`nex-creative-canvas-bg${light ? " is-light" : " is-dark"}`} aria-hidden="true">
-      <canvas ref={canvasRef} className="nex-creative-flow-canvas" />
-    </div>
-  );
-}
-
-function CreativeScatterImage({
-  showcase,
-  index,
-  progress,
-}: {
-  showcase: CreativeShowcase;
-  index: number;
-  progress: MotionValue<number>;
-}) {
-  const layout = CREATIVE_SCATTER_LAYOUTS[index] ?? CREATIVE_SCATTER_LAYOUTS[0];
-  const x = useTransform(progress, [0, 0.14, 0.23, 0.32], [`${layout.x}vw`, `${layout.x * 0.58}vw`, "0vw", "0vw"]);
-  const y = useTransform(progress, [0, 0.14, 0.23, 0.32], [`${layout.y}vh`, `${layout.y * 0.5}vh`, "0vh", "0vh"]);
-  const rotate = useTransform(progress, [0, 0.2, 0.3], [`${layout.r}deg`, `${layout.r * 0.32}deg`, "0deg"]);
-  const scale = useTransform(progress, [0, 0.2, 0.32], [layout.s, 0.78, 0.58]);
-  const opacity = useTransform(progress, [0, 0.18, 0.27, 0.35], [1, 1, 0.5, 0]);
-  const filter = useTransform(progress, [0, 0.22, 0.34], ["blur(0px)", "blur(0px)", "blur(18px)"]);
-
-  return (
-    <motion.div className="nex-creative-scatter-item" style={{ x, y, rotate, scale, opacity, filter }}>
-      <CreativeImagePanel showcase={showcase} variant="scatter" />
-    </motion.div>
-  );
-}
-
-function CreativeStackIntro({ progress }: { progress: MotionValue<number> }) {
-  const opacity = useTransform(progress, [0.12, 0.2, 0.34, 0.41], [0, 1, 1, 0]);
-  const scale = useTransform(progress, [0.12, 0.25, 0.41], [0.72, 1, 0.92]);
-  const y = useTransform(progress, [0.12, 0.41], ["6vh", "-4vh"]);
-  const textOpacity = useTransform(progress, [0.22, 0.29, 0.37], [0, 1, 0]);
-  const textFilter = useTransform(progress, [0.22, 0.29, 0.37], ["blur(18px)", "blur(0px)", "blur(14px)"]);
-
-  return (
-    <motion.div className="nex-creative-stack-intro" style={{ opacity, scale, y }}>
-      <CreativeImagePanel showcase={CREATIVE_SHOWCASES[0]} variant="stack" />
-      <motion.h2 style={{ opacity: textOpacity, filter: textFilter }}>
-        what moves <em>revenue</em> forward?
-      </motion.h2>
-    </motion.div>
-  );
-}
-
-function CreativeEmptyPrompt({ progress }: { progress: MotionValue<number> }) {
-  const opacity = useTransform(progress, [0.38, 0.44, 0.49, 0.54], [0, 1, 1, 0]);
-  const filter = useTransform(progress, [0.38, 0.44, 0.54], ["blur(24px)", "blur(5px)", "blur(18px)"]);
-  const x = useTransform(progress, [0.38, 0.5], ["7vw", "0vw"]);
-
-  return (
-    <motion.div className="nex-creative-empty-prompt" style={{ opacity, filter }}>
-      <div className="nex-creative-category-ghosts" aria-hidden="true">
-        {CREATIVE_SHOWCASES.map((showcase) => (
-          <span key={showcase.id}>{showcase.category}</span>
-        ))}
-      </div>
-      <motion.div className="nex-creative-empty-frame" style={{ x }} />
-    </motion.div>
-  );
-}
-
-function CreativeSequenceMoment({
-  showcase,
-  index,
-  progress,
-}: {
-  showcase: CreativeShowcase;
-  index: number;
-  progress: MotionValue<number>;
-}) {
-  const start = 0.49 + index * 0.09;
-  const hold = start + 0.055;
-  const end = start + 0.095;
-  const opacity = useTransform(progress, [start - 0.035, start, hold, end], [0, 1, 1, 0]);
-  const filter = useTransform(progress, [start - 0.035, start, hold, end], ["blur(26px)", "blur(0px)", "blur(0px)", "blur(18px)"]);
-  const imageX = useTransform(progress, [start - 0.035, start, end], ["10vw", "0vw", "-4vw"]);
-  const imageRotate = useTransform(progress, [start - 0.035, start, end], ["9deg", "-2deg", "4deg"]);
-  const imageScale = useTransform(progress, [start - 0.035, start, end], [0.82, 1, 0.88]);
-
-  return (
-    <motion.article className="nex-creative-sequence-moment" style={{ opacity, filter }}>
-      <div className="nex-creative-word-stack" aria-hidden="true">
-        {CREATIVE_SHOWCASES.map((item) => (
-          <span className={item.id === showcase.id ? "is-active" : ""} key={item.id}>
-            {item.category}
-          </span>
-        ))}
-      </div>
-      <div className="nex-creative-sequence-copy">
-        <small>{showcase.caption}</small>
-        <h3>{showcase.line}</h3>
-        <p>{showcase.subline}</p>
-        <strong>{showcase.proof}</strong>
-      </div>
-      <motion.div className="nex-creative-sequence-image" style={{ x: imageX, rotate: imageRotate, scale: imageScale }}>
-        <CreativeImagePanel showcase={showcase} variant="sequence" />
-      </motion.div>
-    </motion.article>
-  );
-}
-
-function CreativeEyeFinale({ progress }: { progress: MotionValue<number> }) {
-  const prefersReducedMotion = useReducedMotion();
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const smoothMouseX = useSpring(mouseX, { stiffness: 70, damping: 20, mass: 0.35 });
-  const smoothMouseY = useSpring(mouseY, { stiffness: 70, damping: 20, mass: 0.35 });
-  const layerOpacity = useTransform(progress, [0.82, 0.855, 0.985, 1], [0, 1, 1, 0]);
-  const cardScale = useTransform(progress, [0.84, 0.9, 0.965, 1], [0.85, 0.85, 2.5, 2.5]);
-  const cardRotateY = useTransform(progress, [0.84, 0.89], ["15deg", "0deg"]);
-  const cardOpacity = useTransform(progress, [0.9, 0.98, 1], [1, 0.15, 0.15]);
-  const dissolveOpacity = useTransform(progress, [0.935, 0.988, 1], [0, 0.95, 0.98]);
-  const captionOpacity = useTransform(progress, [0.845, 0.875, 0.94, 0.985], [0, 1, 0.78, 0]);
-  const captionY = useTransform(progress, [0.845, 0.875, 0.985], ["30px", "0px", "-18px"]);
-  const captionFilter = useTransform(progress, [0.845, 0.875, 0.985], ["blur(16px)", "blur(0px)", "blur(12px)"]);
-  const parallaxX = useTransform(smoothMouseX, [-1, 1], prefersReducedMotion ? [0, 0] : [-10, 10]);
-  const parallaxY = useTransform(smoothMouseY, [-1, 1], prefersReducedMotion ? [0, 0] : [-8, 8]);
-
-  useEffect(() => {
-    if (prefersReducedMotion) return;
-
-    const handlePointerMove = (event: PointerEvent) => {
-      mouseX.set((event.clientX / window.innerWidth - 0.5) * 2);
-      mouseY.set((event.clientY / window.innerHeight - 0.5) * 2);
-    };
-
-    window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    return () => window.removeEventListener("pointermove", handlePointerMove);
-  }, [mouseX, mouseY, prefersReducedMotion]);
-
-  return (
-    <motion.div className="nex-creative-eye-scene" style={{ opacity: layerOpacity }}>
-      <motion.div
-        className="nex-creative-eye-video-wrap"
-        style={{
-          scale: cardScale,
-          rotateY: cardRotateY,
-          x: parallaxX,
-          y: parallaxY,
-          opacity: cardOpacity,
-        }}
-      >
-        <div className="nex-creative-eye-card">
-          <video
-            src={creativeEyeballVideo}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            aria-label="Animated eye with orbiting glass waves"
-          />
-          <motion.div className="nex-creative-eyeball-dissolve" style={{ opacity: dissolveOpacity }} aria-hidden="true" />
-        </div>
-      </motion.div>
-      <motion.h3 className="nex-creative-eyeball-caption" style={{ opacity: captionOpacity, y: captionY, filter: captionFilter }}>
-        Built around <em>forward</em> revenue momentum.
-      </motion.h3>
-      <motion.div className="nex-creative-eyeball-wash" style={{ opacity: dissolveOpacity }} aria-hidden="true" />
-    </motion.div>
-  );
-}
-
-function CreativeFinalCTA({ progress }: { progress: MotionValue<number> }) {
-  const opacity = useTransform(progress, [0.97, 0.992, 1], [0, 1, 1]);
-  const y = useTransform(progress, [0.97, 1], ["18vh", "0vh"]);
-  const filter = useTransform(progress, [0.97, 0.992], ["blur(18px)", "blur(0px)"]);
-
-  return (
-    <motion.div className="nex-creative-final-cta" style={{ opacity, y, filter }}>
-      <p>Unlimited coding clarity & revenue-cycle follow-through</p>
-      <strong>AI coding + transcription + anesthesia logic + attached team review</strong>
-      <Link href="/signup">Free demo <ArrowRight size={16} /></Link>
-    </motion.div>
-  );
-}
-
-function FeaturedModuleMoment({
-  module,
-  index,
-  progress,
-}: {
-  module: FeaturedModule;
-  index: number;
-  progress: MotionValue<number>;
-}) {
-  const segment = 1 / FEATURED_MODULES.length;
-  const start = index * segment;
-  const enter = Math.max(0, start - segment * 0.18);
-  const visible = start + segment * 0.08;
-  const hold = start + segment * 0.76;
-  const exit = Math.min(1, start + segment);
-  const opacity = index === 0
-    ? useTransform(progress, [0, hold, exit], [1, 1, 0])
-    : index === FEATURED_MODULES.length - 1
-      ? useTransform(progress, [enter, visible, 1], [0, 1, 1])
-      : useTransform(progress, [enter, visible, hold, exit], [0, 1, 1, 0]);
-  const filter = index === 0
-    ? useTransform(progress, [0, hold, exit], ["blur(0px)", "blur(0px)", "blur(18px)"])
-    : useTransform(progress, [enter, visible, hold, exit], ["blur(18px)", "blur(0px)", "blur(0px)", "blur(18px)"]);
-  const copyY = useTransform(progress, [enter, visible, exit], ["42px", "0px", "-36px"]);
-  const imageScale = useTransform(progress, [enter, visible, exit], [0.92, 1, 1.035]);
-
-  return (
-    <motion.article
-      className="ch-feature-moment"
-      style={{ opacity, filter, "--feature-accent": module.accent } as unknown as MotionStyle}
-    >
-      <motion.div className="ch-feature-copy" style={{ y: copyY }}>
-        <span>{module.eyebrow}</span>
-        <h3>{module.title}</h3>
-        <p>{module.summary}</p>
-        <span className="ch-feature-action">Explore the workflow <ArrowRight size={16} /></span>
-      </motion.div>
-      <motion.figure className="ch-feature-visual" style={{ scale: imageScale }}>
-        <img src={module.image} alt={`${module.title} product concept`} loading={index === 0 ? "eager" : "lazy"} />
-        <div className="ch-feature-logo"><BrandMark animated compact /></div>
-        <figcaption>{String(index + 1).padStart(2, "0")} / {String(FEATURED_MODULES.length).padStart(2, "0")}</figcaption>
-      </motion.figure>
-    </motion.article>
-  );
-}
-
-function SolutionsSection() {
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
-
-  return (
-    <section className="ch-feature-scroll" id="solutions" ref={sectionRef}>
-      <div className="ch-feature-sticky">
-        <div className="ch-feature-progress" aria-hidden="true"><motion.span style={{ scaleX: scrollYProgress }} /></div>
-        <header>
-          <span>Featured workflows</span>
-          <p>Built inside Codical Health</p>
-        </header>
-        <div className="ch-feature-stage">
-          {FEATURED_MODULES.map((module, index) => (
-            <FeaturedModuleMoment key={module.id} module={module} index={index} progress={scrollYProgress} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FeatureDemoBand() {
-  return (
-    <section className="ch-feature-demo-band">
-      <BrandMark animated compact />
-      <p>See the complete workflow with your team.</p>
-      <Link href="/signup">Free demo <ArrowRight size={16} /></Link>
-    </section>
-  );
-}
-
-function VideoStoriesSection() {
-  return (
-    <section className="nex-video-stories" id="stories">
-      <div className="nex-section-center">
-        <span className="nex-section-label">Codical product films</span>
-        <h2>See the workflows in motion.</h2>
-        <p>Four original product previews, served from Codical Health's Cloudflare media layer.</p>
-      </div>
-
-      <div className="nex-video-grid">
-        {VIDEO_STORIES.map((story) => (
-          <article className="nex-video-card" key={story.id}>
-            <VideoPlayer story={story} />
-            <div className="nex-video-copy">
-              <small>{story.category}</small>
-              <h3>{story.title}</h3>
-              <p>{story.note}</p>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function VideoPlayer({ story }: { story: VideoStory }) {
-  const [playing, setPlaying] = useState(false);
-
-  return (
-    <div className="nex-video-frame">
-      {playing ? (
-        <video title={story.title} controls autoPlay playsInline poster={story.poster} preload="metadata">
-          <source src={story.video} type="video/mp4" />
-          <source src={story.fallback} type="video/mp4" />
-        </video>
-      ) : (
-        <button type="button" onClick={() => setPlaying(true)} aria-label={`Play ${story.title}`}>
-          <img src={story.poster} alt="" loading="lazy" />
-          <span aria-hidden="true">
-            <Play size={24} />
-          </span>
-          <small>{story.duration}</small>
-        </button>
-      )}
-    </div>
-  );
-}
-
-function ProfileStoriesSection() {
-  return (
-    <section className="nex-profile-stories">
-      <div className="nex-section-center">
-        <span className="nex-section-label">Workflow perspectives</span>
-        <h2>Designed around the decisions healthcare teams actually make.</h2>
-        <p>Illustrative role perspectives—not customer endorsements—show how Codical keeps evidence, validation and specialty logic connected.</p>
-      </div>
-
-      <div className="nex-profile-grid">
-        {PROFILE_STORIES.map((story) => (
-          <article className="nex-profile-card" key={story.name}>
-            <div className="nex-profile-brand">
-              <span>{story.orgMark}</span>
-              <strong>{story.org}</strong>
-            </div>
-            <blockquote>{story.quote}</blockquote>
-            <div className="nex-profile-person">
-              <img src={story.portrait} alt="" loading="lazy" />
-              <div>
-                <strong>{story.name}</strong>
-                <span>{story.role}</span>
-                <small>{story.location}</small>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function DifferenceSection() {
-  const differences = [
-    [BrainCircuit, "Evidence before automation", "Suggestions stay connected to source context so a reviewer can verify why a code is present."],
-    [Stethoscope, "Specialty-native workflows", "PGx, burn, ambulance, transplant and high-acuity engines use purpose-built inputs and logic."],
-    [ShieldCheck, "Validation before submission", "Coding and claim checks live in the workflow while corrections are still actionable."],
-    [UsersRound, "Human approval by design", "Codical supports coder judgment and auditability; it does not hide decisions behind a black box."],
-    [Workflow, "One connected workspace", "Coding, transcription, reference tools, specialty modules and team collaboration share one operating view."],
-    [Landmark, "CMS-aware foundations", "Reference data and policy context are versioned so teams can review the basis for a recommendation."],
-  ] as const;
-
-  return (
-    <section className="ch-difference" id="difference">
-      <div className="ch-difference-heading">
-        <span>How we're different</span>
-        <h2>Clinical depth without workflow sprawl.</h2>
-        <p>Codical Health brings specialty intelligence and revenue-cycle controls into a coherent, reviewable system.</p>
-      </div>
-      <div className="ch-difference-grid">
-        {differences.map(([Icon, title, copy], index) => (
-          <article key={title}>
-            <span>{String(index + 1).padStart(2, "0")}</span>
-            <Icon size={24} />
-            <h3>{title}</h3>
-            <p>{copy}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function RevenueRibbonSection() {
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start end", "end start"] });
-  const rotate = useTransform(scrollYProgress, [0, 1], [-9, 8]);
-  const y = useTransform(scrollYProgress, [0, 1], [90, -80]);
-  const scale = useTransform(scrollYProgress, [0, .5, 1], [.88, 1.04, .95]);
-
-  return (
-    <section className="ch-revenue-ribbon" ref={sectionRef} aria-label="Connected revenue cycle animation">
-      <div className="ch-ribbon-copy">
-        <span>One connected operating layer</span>
-        <h2>From clinical signal to claim-ready review.</h2>
-      </div>
-      <motion.img
-        src="/assets/landing/revenue-ribbon.png"
-        alt="Abstract purple and coral ribbon representing connected revenue workflows"
-        style={{ rotate, y, scale }}
-      />
-    </section>
-  );
-}
-
-function PricingSection() {
-  const plans = [
-    {
-      name: "Starter",
-      price: "$0",
-      note: "For essential research and reference work.",
-      features: ["Code Search", "CMS Guidelines", "RVU Calculator", "NPI Lookup"],
-      featured: false,
-    },
-    {
-      name: "Premium",
-      price: "$249",
-      note: "For connected coding and validation teams.",
-      features: ["Everything in Starter", "ICD/CPT Crosswalk", "Team Chat", "All validation tools"],
-      featured: true,
-    },
-    {
-      name: "Enterprise",
-      price: "$399",
-      note: "For AI-enabled specialty operations.",
-      features: ["Everything in Premium", "AI Medical Coding", "AI Clinical Transcription", "All Specialty Coding engines"],
-      featured: false,
-    },
-  ];
-
-  return (
-    <section className="ch-pricing" id="pricing">
-      <div className="nex-section-center">
-        <span className="nex-section-label">Simple plans</span>
-        <h2>Choose the workspace depth your team needs.</h2>
-        <p>Monthly workspace pricing. Start with the core reference tools, then add connected validation and AI specialty workflows.</p>
-      </div>
-      <div className="ch-pricing-grid">
-        {plans.map((plan) => (
-          <article className={plan.featured ? "is-featured" : ""} key={plan.name}>
-            {plan.featured ? <span className="ch-plan-badge">Most popular</span> : null}
-            <BrandMark animated compact />
-            <h3>{plan.name}</h3>
-            <div><strong>{plan.price}</strong><span>/ month</span></div>
-            <p>{plan.note}</p>
-            <ul>
-              {plan.features.map((feature) => <li key={feature}><BadgeCheck size={16} />{feature}</li>)}
-            </ul>
-            <Link href="/signup">Get started <ArrowRight size={15} /></Link>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function GlassLogoCta() {
-  return (
-    <section className="nex-final" id="cta">
-      <div className="ch-cta-stars" aria-hidden="true" />
-      <div className="nex-final-copy">
-        <BrandMark animated inverse />
-        <h2>Start free, or request a guided demo.</h2>
-        <p>Explore the essential tools now, then see how Codical connects AI coding, transcription, validation and specialty workflows.</p>
-        <div className="nex-final-actions">
-          <CtaButton href="/signup">Start free</CtaButton>
-          <CtaButton href="/signup?intent=demo" variant="secondary">Request a demo</CtaButton>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export function Landing() {
   return (
     <div className="nex-page">
@@ -2076,12 +1061,13 @@ export function Landing() {
         <CommandCenterSection />
         <SolutionsSection />
         <FeatureDemoBand />
-        <VideoStoriesSection />
-        <ProfileStoriesSection />
+        <ProductFilmsSection />
+        <VerifiedCustomerStoriesSection />
+        <VerifiedTestimonialsSection />
         <DifferenceSection />
         <RevenueRibbonSection />
         <PricingSection />
-        <GlassLogoCta />
+        <GlassLogoCta CtaButton={CtaButton} />
       </main>
       <footer className="nex-footer">
         <div className="ch-footer-brand-card">

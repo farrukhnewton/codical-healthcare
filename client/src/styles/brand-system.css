@@ -106,6 +106,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .codical-brand-v2 .co-logo-asset[src$=".gif"] {
-    content: url("/assets/brand/codical-bars-static.png");
+    content: url("/assets/brand/codical-bars-static-web.png");
   }
 }

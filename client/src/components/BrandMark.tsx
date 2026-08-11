@@ -20,7 +20,7 @@ export function BrandMark({
       <div className="co-logo-bars" aria-hidden="true">
         <img
           className="co-logo-asset"
-          src={animated ? "/assets/brand/codical-bars-animated.gif" : "/assets/brand/codical-bars-static.png"}
+          src={animated ? "/assets/brand/codical-bars-animated-web.gif" : "/assets/brand/codical-bars-static-web.png"}
           alt=""
           decoding="async"
         />
