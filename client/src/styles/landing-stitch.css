@@ -6767,10 +6767,7 @@
 
 .nex-hero-premier-radial,
 .nex-hero-premier-video,
-.nex-hero-premier-texture,
-.nex-hero-premier-grid,
-.nex-hero-premier-vignette,
-.nex-hero-premier-orb {
+.nex-hero-premier-vignette {
   position: absolute;
   pointer-events: none;
   user-select: none;
@@ -6793,50 +6790,6 @@
   opacity: 0.38;
   mix-blend-mode: screen;
   filter: saturate(0.95) contrast(1.08);
-}
-
-.nex-hero-premier-texture {
-  inset: 0;
-  z-index: 2;
-  opacity: 0.12;
-  mix-blend-mode: screen;
-  background:
-    url("/reference/anim-frame-original.jpg") center / cover no-repeat,
-    radial-gradient(ellipse at 50% 22%, rgba(109, 146, 255, 0.26), transparent 32%),
-    radial-gradient(ellipse at 68% 38%, rgba(157, 78, 221, 0.18), transparent 36%),
-    repeating-linear-gradient(112deg, rgba(255, 255, 255, 0.032) 0 1px, transparent 1px 14px);
-}
-
-.nex-hero-premier-grid {
-  inset: 0;
-  z-index: 3;
-  opacity: 0.06;
-  background-image: url("/assets/hero-grid-texture.svg");
-  background-size: 72px 72px;
-  mask-image: radial-gradient(60% 60% at 50% 20%, #000, transparent);
-}
-
-.nex-hero-premier-orb {
-  z-index: 2;
-  width: min(800px, 68vw);
-  height: auto;
-  mix-blend-mode: screen;
-  filter: blur(0.1px) saturate(1.08);
-  transform: translateZ(0);
-}
-
-.nex-hero-premier-orb.is-left {
-  left: max(-220px, -18vw);
-  top: 14%;
-  opacity: 0.72;
-  animation: nex-hero-premier-orb-left 13s ease-in-out infinite;
-}
-
-.nex-hero-premier-orb.is-right {
-  right: max(-240px, -18vw);
-  top: 32%;
-  opacity: 0.62;
-  animation: nex-hero-premier-orb-right 15s ease-in-out infinite;
 }
 
 .nex-hero-premier-vignette {
@@ -7291,16 +7244,6 @@
   50% { transform: translate3d(0, -10px, 0); }
 }
 
-@keyframes nex-hero-premier-orb-left {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(-2deg); }
-  50% { transform: translate3d(34px, -22px, 0) rotate(3deg); }
-}
-
-@keyframes nex-hero-premier-orb-right {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(2deg); }
-  50% { transform: translate3d(-38px, 28px, 0) rotate(-3deg); }
-}
-
 @keyframes nex-hero-clean-glaze {
   0% { transform: translateX(-80%) skewX(-10deg); opacity: 0; }
   16% { opacity: 0.72; }
@@ -7327,10 +7270,6 @@
   .nex-hero-premier-title {
     max-width: 760px;
     font-size: clamp(44px, 9vw, 68px);
-  }
-
-  .nex-hero-premier-orb {
-    width: 660px;
   }
 
   .nex-hero-premier-trust-badge {
@@ -7389,19 +7328,10 @@
     display: none;
   }
 
-  .nex-hero-premier-orb.is-left {
-    left: -360px;
-  }
-
-  .nex-hero-premier-orb.is-right {
-    right: -390px;
-    opacity: 0.46;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .nex-hero-premier-video,
-  .nex-hero-premier-orb,
   .nex-hero-premier-macbook-image,
   .nex-hero-premier-screen,
   .nex-hero-clean-screen::after,
@@ -7444,23 +7374,6 @@ html {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.88),
     0 34px 90px rgba(88, 48, 160, 0.12);
-}
-
-.nex-command-premier::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  left: -8%;
-  right: -8%;
-  bottom: 4%;
-  height: 50%;
-  background:
-    url("/assets/hero-orb-left.svg") left bottom / min(760px, 48vw) auto no-repeat,
-    url("/assets/hero-orb-right.svg") right 8% / min(960px, 56vw) auto no-repeat;
-  opacity: 0.3;
-  filter: blur(0.6px) saturate(1.06);
-  animation: nex-command-wave-drift 12s ease-in-out infinite;
-  pointer-events: none;
 }
 
 .nex-command-glow {
@@ -8459,11 +8372,6 @@ html {
   text-align: center;
   transform: translateX(-50%);
   text-wrap: balance;
-}
-
-@keyframes nex-command-wave-drift {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(1.4%, -1.2%, 0) scale(1.025); }
 }
 
 @keyframes nex-command-sparkline {
@@ -10498,7 +10406,7 @@ body {
   transform: none !important;
   width: min(calc(100% - var(--nex-shell-inline)), var(--nex-shell-max)) !important;
   min-height: 70px !important;
-  margin: 10px auto 10px !important;
+  margin: 20px auto 10px !important;
   grid-template-columns: minmax(240px, 270px) minmax(0, 1fr) max-content !important;
   column-gap: 16px !important;
   padding: 8px 12px 8px 18px !important;
@@ -10548,8 +10456,8 @@ body {
 .nex-hero-premier-sticky {
   position: sticky;
   top: 0;
-  height: 100svh;
-  min-height: 100svh;
+  height: calc(100svh - 98px);
+  min-height: calc(100svh - 98px);
   padding: clamp(28px, 4.4vh, 42px) 24px 0 !important;
   overflow: hidden;
   background: transparent !important;
@@ -10558,23 +10466,21 @@ body {
 .nex-hero-premier-panel {
   position: absolute;
   top: 0;
-  left: 50%;
-  right: auto;
+  left: max(var(--nex-shell-gutter), calc((100vw - var(--nex-shell-max)) / 2));
+  right: max(var(--nex-shell-gutter), calc((100vw - var(--nex-shell-max)) / 2));
   z-index: 0;
-  width: min(calc(100% - var(--nex-shell-inline)), var(--nex-shell-max));
+  width: auto;
   overflow: hidden;
   background: #05070a;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 44px 110px rgba(8, 8, 18, 0.18);
-  transform: translateX(-50%);
-  will-change: bottom, border-radius;
+  transform: none;
+  will-change: left, right, bottom, border-radius;
 }
 
 .nex-hero-premier-panel .nex-hero-premier-radial,
 .nex-hero-premier-panel .nex-hero-premier-video,
-.nex-hero-premier-panel .nex-hero-premier-texture,
-.nex-hero-premier-panel .nex-hero-premier-grid,
 .nex-hero-premier-panel .nex-hero-premier-vignette {
   inset: 0;
 }
@@ -10586,33 +10492,9 @@ body {
 }
 
 .nex-hero-premier-panel .nex-hero-premier-video {
-  opacity: 0.44;
-  filter: saturate(0.96) contrast(1.08) brightness(0.96);
-}
-
-.nex-hero-premier-panel .nex-hero-premier-texture {
-  opacity: 0.3;
-  background:
-    url("/reference/anim-frame-original.jpg") center 36% / cover no-repeat,
-    radial-gradient(ellipse at 43% 52%, rgba(84, 0, 233, 0.3), transparent 34%),
-    repeating-linear-gradient(112deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 14px);
-}
-
-.nex-hero-premier-panel .nex-hero-premier-orb {
-  z-index: 2;
-  width: min(900px, 72vw);
-  opacity: 0.56;
-  filter: saturate(0.98) contrast(1.08) brightness(0.72);
-}
-
-.nex-hero-premier-panel .nex-hero-premier-orb.is-left {
-  left: max(-170px, -11vw);
-  top: 43%;
-}
-
-.nex-hero-premier-panel .nex-hero-premier-orb.is-right {
-  right: max(-150px, -10vw);
-  top: 20%;
+  opacity: 0.76;
+  mix-blend-mode: normal;
+  filter: saturate(1.08) contrast(1.08) brightness(0.78);
 }
 
 .nex-hero-premier-panel .nex-hero-premier-vignette {

@@ -218,114 +218,6 @@ const HERO_COPY_ITEM_VARIANTS = {
   },
 };
 
-function useHeroScrollTimeline() {
-  const heroRef = useRef<HTMLElement | null>(null);
-  const prefersReducedMotion = useReducedMotion();
-  const [viewport, setViewport] = useState({
-    width: 1440,
-    height: 900,
-    isMobile: false,
-  });
-
-  useEffect(() => {
-    const update = () => {
-      const width = document.documentElement.clientWidth;
-      const height = window.innerHeight;
-      const nextViewport = {
-        width,
-        height,
-        isMobile: width < 768,
-      };
-
-      document.documentElement.style.setProperty("--vh", `${height * 0.01}px`);
-      setViewport((current) => {
-        if (
-          current.width === nextViewport.width &&
-          current.height === nextViewport.height &&
-          current.isMobile === nextViewport.isMobile
-        ) {
-          return current;
-        }
-
-        return nextViewport;
-      });
-    };
-
-    update();
-    window.addEventListener("resize", update);
-    window.addEventListener("orientationchange", update);
-
-    return () => {
-      window.removeEventListener("resize", update);
-      window.removeEventListener("orientationchange", update);
-    };
-  }, []);
-
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end end"],
-  });
-  const panelWidth = Math.min(1480, Math.max(0, viewport.width - (viewport.isMobile ? 16 : 48)));
-  const sideInset = Math.max(viewport.isMobile ? 8 : 24, (viewport.width - panelWidth) / 2);
-  const initialClip = `inset(${viewport.isMobile ? 76 : 92}px ${sideInset}px ${viewport.isMobile ? 14 : 34}px round ${viewport.isMobile ? 18 : 28}px)`;
-  const expandedClip = "inset(0px 0px 0px round 0px)";
-
-  const clipPath = useTransform(scrollYProgress, [0, 0.52], [initialClip, expandedClip]);
-  const laptopY = useTransform(
-    scrollYProgress,
-    [0, 1],
-    [prefersReducedMotion ? "0vh" : viewport.isMobile ? "22vh" : "28vh", prefersReducedMotion ? "0vh" : viewport.isMobile ? "-4vh" : "-7vh"],
-  );
-  const laptopScale = useTransform(scrollYProgress, [0, 1], [viewport.isMobile ? 0.9 : 0.91, viewport.isMobile ? 1 : 1.02]);
-  const laptopOpacity = useTransform(scrollYProgress, [0, 0.08], [prefersReducedMotion ? 1 : 0.92, 1]);
-  const waveY = useTransform(
-    scrollYProgress,
-    [0, 1],
-    [prefersReducedMotion ? 0 : viewport.height * 0.03, prefersReducedMotion ? 0 : -viewport.height * 0.24],
-  );
-  const waveScale = useTransform(scrollYProgress, [0, 0.75], [viewport.isMobile ? 1.04 : 1.06, viewport.isMobile ? 1.17 : 1.22]);
-  const waveOpacity = useTransform(scrollYProgress, [0, 0.48, 1], [0.94, 0.68, 0.58]);
-  const waveFilter = useTransform(
-    scrollYProgress,
-    [0.2, 0.78, 1],
-    [
-      "blur(0px) saturate(118%) contrast(104%)",
-      `blur(${viewport.isMobile ? 3 : 7}px) saturate(116%) contrast(103%)`,
-      `blur(${viewport.isMobile ? 2 : 4}px) saturate(116%) contrast(103%)`,
-    ],
-  );
-  const copyY = useTransform(
-    scrollYProgress,
-    [0, 0.5],
-    [prefersReducedMotion ? "0vh" : "6vh", prefersReducedMotion ? "0vh" : "-26vh"],
-  );
-  const copyOpacity = useTransform(scrollYProgress, [0, 0.34, 0.54], [1, 0.34, 0]);
-  const copyScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.945]);
-  const copyFilter = useTransform(
-    scrollYProgress,
-    [0, 0.5],
-    ["blur(0px)", prefersReducedMotion ? "blur(0px)" : "blur(18px)"],
-  );
-  const scrimOpacity = useTransform(scrollYProgress, [0.72, 1], [0, viewport.isMobile ? 0.08 : 0.16]);
-
-  return {
-    heroRef,
-    clipPath,
-    laptopY,
-    laptopScale,
-    laptopOpacity,
-    waveY,
-    waveScale,
-    waveOpacity,
-    waveFilter,
-    copyY,
-    copyOpacity,
-    copyScale,
-    copyFilter,
-    scrimOpacity,
-  };
-}
-
 function CtaButton({
   href,
   children,
@@ -709,7 +601,23 @@ function LaptopHardwareFrame({
 function HeroSection() {
   const heroRef = useRef<HTMLElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof document === "undefined" ? 1440 : document.documentElement.clientWidth,
+  );
   const { scrollY } = useScroll();
+  useEffect(() => {
+    const updateViewportWidth = () => setViewportWidth(document.documentElement.clientWidth);
+    window.addEventListener("resize", updateViewportWidth);
+    return () => window.removeEventListener("resize", updateViewportWidth);
+  }, []);
+  const shellMaxWidth = viewportWidth <= 980 ? 920 : 1360;
+  const shellGutter = viewportWidth <= 980 ? 16 : 32;
+  const initialPanelInset = Math.max(shellGutter, (viewportWidth - shellMaxWidth) / 2);
+  const panelInsetX = useTransform(
+    scrollY,
+    [0, 720],
+    prefersReducedMotion ? [initialPanelInset, initialPanelInset] : [initialPanelInset, 0],
+  );
   const panelInsetBottom = useTransform(scrollY, [0, 720], prefersReducedMotion ? ["32px", "32px"] : ["32px", "0px"]);
   const panelRadius = useTransform(scrollY, [0, 390, 720], prefersReducedMotion ? [30, 30, 30] : [30, 18, 0]);
   const laptopScale = useTransform(scrollY, [0, 720], prefersReducedMotion ? [1, 1] : [1, 1]);
@@ -736,6 +644,8 @@ function HeroSection() {
         <motion.div
           className="nex-hero-premier-panel"
           style={{
+            left: panelInsetX,
+            right: panelInsetX,
             bottom: panelInsetBottom,
             borderRadius: panelRadius,
           }}
@@ -749,16 +659,10 @@ function HeroSection() {
             playsInline
             crossOrigin="anonymous"
             preload="auto"
-            poster="/assets/videos/hero-poster.jpg"
             aria-hidden="true"
           >
             <source src="/assets/videos/hero-loop-healthcare.mp4" type="video/mp4" />
-            <source src="/assets/videos/loop_optimized.mp4" type="video/mp4" />
           </video>
-          <div className="nex-hero-premier-texture" aria-hidden="true" />
-          <div className="nex-hero-premier-grid" aria-hidden="true" />
-          <img className="nex-hero-premier-orb is-left" src="/assets/hero-orb-left.svg" alt="" aria-hidden="true" />
-          <img className="nex-hero-premier-orb is-right" src="/assets/hero-orb-right.svg" alt="" aria-hidden="true" />
           <div className="nex-hero-premier-vignette" aria-hidden="true" />
         </motion.div>
 

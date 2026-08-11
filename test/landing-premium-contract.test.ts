@@ -30,7 +30,17 @@ test("navigation spacing and hero glass use the same centered shell", () => {
   assert.ok((landingStitchStyles.match(/var\(--nex-shell-max\)/g) ?? []).length >= 2);
   assert.match(landingStitchStyles, /\.nex-button\s*>\s*span\s*\{/);
   assert.doesNotMatch(landingStitchStyles, /\.nex-button span\s*\{/);
-  assert.doesNotMatch(landing, /panelInsetX/);
+  assert.match(landing, /panelInsetX/);
+  assert.match(landingStitchStyles, /height:\s*calc\(100svh - 98px\)/);
+});
+
+test("hero keeps one glass-wave source without legacy duplicate layers", () => {
+  assert.equal(landing.match(/hero-loop-healthcare\.mp4/g)?.length, 1);
+  for (const legacy of ["loop_optimized.mp4", "hero-poster.jpg", "hero-orb-left.svg", "hero-orb-right.svg", "anim-frame-original.jpg", "hero-grid-texture.svg"]) {
+    assert.doesNotMatch(landing, new RegExp(legacy.replace(".", "\\.")));
+    assert.doesNotMatch(landingStitchStyles, new RegExp(legacy.replace(".", "\\.")));
+  }
+  assert.doesNotMatch(landing, /nex-hero-premier-(texture|grid|orb)/);
 });
 
 test("approved laptop shells contain Codical product screens without legacy overlays", () => {
