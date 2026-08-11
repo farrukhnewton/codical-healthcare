@@ -674,15 +674,33 @@ function LaptopHardwareFrame({
         aria-hidden={decorative ? true : undefined}
       />
       {brandSystemBar ? (
-        <div className="nex-laptop-system-brand" aria-label="Codical Health">
-          <span className="nex-laptop-native-bars" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
-          <strong>Codical Health</strong>
+        <div className="nex-laptop-system-bar" aria-hidden="true">
+          <div className="nex-laptop-system-brand">
+            <span className="nex-laptop-native-bars">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+            <strong>Codical Health</strong>
+          </div>
+          <div className="nex-laptop-system-menu">
+            <span>File</span>
+            <span>Edit</span>
+            <span>View</span>
+            <span>Go</span>
+            <span>Window</span>
+            <span>Help</span>
+          </div>
+          <div className="nex-laptop-system-status">
+            <span className="is-battery"><i /></span>
+            <span className="is-controls"><i /><i /><i /><i /></span>
+            <span className="is-search" />
+            <span className="is-wifi"><i /><i /><i /></span>
+            <span className="is-date">Mon Jun 22</span>
+            <span>9:41 AM</span>
+          </div>
         </div>
       ) : null}
       <div className={`nex-hero-laptop-screen ${screenClassName}`} aria-hidden={decorative ? true : undefined}>

@@ -41,24 +41,30 @@
   width: 100%;
 }
 
-.nex-laptop-system-brand {
+.nex-laptop-system-bar {
   position: absolute;
   z-index: 7;
-  top: 3.46%;
-  left: 11.52%;
+  top: 2.88%;
+  left: 10.08%;
+  width: 79.84%;
+  height: 4.08%;
   display: flex;
   align-items: center;
-  gap: clamp(3px, .34vw, 6px);
-  width: 13.65%;
-  height: 3.82%;
-  padding: 0 .68%;
+  padding: 0 1.45%;
   overflow: hidden;
   border-radius: 0;
-  background: #050506;
+  background: #030304;
   color: #fff;
-  box-shadow: 1px 0 0 #050506, -1px 0 0 #050506;
+  box-shadow: 0 1px 0 #030304, 0 -1px 0 #030304;
   pointer-events: none;
   line-height: 1;
+}
+
+.nex-laptop-system-brand {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: clamp(3px, .34vw, 6px);
 }
 
 .nex-laptop-native-bars {
@@ -83,7 +89,7 @@
 .nex-laptop-native-bars i:nth-child(4) { height: 100%; background: #f8b64f; }
 .nex-laptop-native-bars i:nth-child(5) { height: 58%; background: #4937a7; }
 
-.nex-laptop-system-brand > strong {
+.nex-laptop-system-brand strong {
   display: block;
   min-width: 0;
   margin: 0;
@@ -97,6 +103,105 @@
   text-overflow: clip;
   white-space: nowrap;
 }
+
+.nex-laptop-system-menu,
+.nex-laptop-system-status {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, .92);
+  font-family: Inter, "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: clamp(4px, .47vw, 8px);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.nex-laptop-system-menu {
+  gap: clamp(6px, .85vw, 14px);
+  margin-left: clamp(9px, 1.2vw, 18px);
+}
+
+.nex-laptop-system-status {
+  gap: clamp(5px, .65vw, 11px);
+  margin-left: auto;
+}
+
+.nex-laptop-system-status .is-battery {
+  position: relative;
+  width: clamp(8px, .95vw, 14px);
+  height: clamp(4px, .48vw, 7px);
+  border: 1px solid rgba(255, 255, 255, .82);
+  border-radius: 2px;
+}
+
+.nex-laptop-system-status .is-battery::after {
+  content: "";
+  position: absolute;
+  top: 25%;
+  right: -2px;
+  width: 1px;
+  height: 50%;
+  border-radius: 0 1px 1px 0;
+  background: rgba(255, 255, 255, .82);
+}
+
+.nex-laptop-system-status .is-battery i {
+  position: absolute;
+  inset: 1px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, .88);
+}
+
+.nex-laptop-system-status .is-controls {
+  width: clamp(7px, .8vw, 12px);
+  height: clamp(7px, .8vw, 12px);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+}
+
+.nex-laptop-system-status .is-controls i {
+  border: 1px solid rgba(255, 255, 255, .88);
+  border-radius: 999px;
+}
+
+.nex-laptop-system-status .is-search {
+  position: relative;
+  width: clamp(6px, .7vw, 11px);
+  height: clamp(6px, .7vw, 11px);
+  border: 1px solid rgba(255, 255, 255, .9);
+  border-radius: 999px;
+}
+
+.nex-laptop-system-status .is-search::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  bottom: -2px;
+  width: 4px;
+  height: 1px;
+  background: rgba(255, 255, 255, .9);
+  transform: rotate(45deg);
+  transform-origin: left center;
+}
+
+.nex-laptop-system-status .is-wifi {
+  width: clamp(8px, .9vw, 13px);
+  height: clamp(6px, .68vw, 10px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1px;
+}
+
+.nex-laptop-system-status .is-wifi i {
+  width: 1px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, .9);
+}
+
+.nex-laptop-system-status .is-wifi i:nth-child(1) { height: 35%; }
+.nex-laptop-system-status .is-wifi i:nth-child(2) { height: 65%; }
+.nex-laptop-system-status .is-wifi i:nth-child(3) { height: 100%; }
 
 .nex-dashboard-screen.is-live-preview .nex-screen-main {
   animation: ch-dashboard-pan 8.8s cubic-bezier(.45,0,.25,1) infinite;
@@ -1037,7 +1142,8 @@
 }
 
 @media (max-width: 720px) {
-  .nex-laptop-system-brand { width: 18%; }
+  .nex-laptop-system-menu,
+  .nex-laptop-system-status .is-date { display: none; }
   .ch-feature-scroll { height: 400vh; }
   .ch-feature-sticky { min-height: 620px; }
   .ch-feature-sticky > header { top: 28px; left: 20px; }
