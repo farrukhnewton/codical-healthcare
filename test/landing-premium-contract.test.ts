@@ -23,6 +23,16 @@ test("hero eyebrow uses the animated Codical mark instead of the legacy Premier-
   assert.doesNotMatch(landing, /<i \/>\s*\n\s*<span>AI-powered medical coding platform<\/span>/);
 });
 
+test("navigation spacing and hero glass use the same centered shell", () => {
+  assert.match(landingStitchStyles, /--nex-shell-max:\s*1360px/);
+  assert.match(landingStitchStyles, /--nex-shell-gutter:\s*32px/);
+  assert.match(landingStitchStyles, /--nex-shell-inline:\s*64px/);
+  assert.ok((landingStitchStyles.match(/var\(--nex-shell-max\)/g) ?? []).length >= 2);
+  assert.match(landingStitchStyles, /\.nex-button\s*>\s*span\s*\{/);
+  assert.doesNotMatch(landingStitchStyles, /\.nex-button span\s*\{/);
+  assert.doesNotMatch(landing, /panelInsetX/);
+});
+
 test("approved laptop shells contain Codical product screens without legacy overlays", () => {
   assert.equal(landing.match(/<LaptopHardwareFrame/g)?.length, 2);
   assert.match(landing, /LaptopHardwareFrame/);

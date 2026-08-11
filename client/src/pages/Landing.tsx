@@ -710,7 +710,6 @@ function HeroSection() {
   const heroRef = useRef<HTMLElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
   const { scrollY } = useScroll();
-  const panelInsetX = useTransform(scrollY, [0, 720], prefersReducedMotion ? ["32px", "32px"] : ["32px", "0px"]);
   const panelInsetBottom = useTransform(scrollY, [0, 720], prefersReducedMotion ? ["32px", "32px"] : ["32px", "0px"]);
   const panelRadius = useTransform(scrollY, [0, 390, 720], prefersReducedMotion ? [30, 30, 30] : [30, 18, 0]);
   const laptopScale = useTransform(scrollY, [0, 720], prefersReducedMotion ? [1, 1] : [1, 1]);
@@ -737,8 +736,6 @@ function HeroSection() {
         <motion.div
           className="nex-hero-premier-panel"
           style={{
-            left: panelInsetX,
-            right: panelInsetX,
             bottom: panelInsetBottom,
             borderRadius: panelRadius,
           }}

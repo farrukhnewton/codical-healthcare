@@ -31,6 +31,9 @@
   --nex-purple-2: #9d4edd;
   --nex-violet: #7b2fbe;
   --nex-lavender: #dfe7ff;
+  --nex-shell-max: 1360px;
+  --nex-shell-gutter: 32px;
+  --nex-shell-inline: 64px;
   --nex-shadow: 0 26px 80px rgba(83, 50, 144, 0.14);
   --nex-shadow-strong: 0 42px 120px rgba(48, 31, 105, 0.22);
   min-height: 100vh;
@@ -273,7 +276,7 @@
   box-shadow: 0 24px 48px rgba(123, 47, 190, 0.28);
 }
 
-.nex-button span {
+.nex-button > span {
   width: 40px;
   height: 40px;
   display: grid;
@@ -897,7 +900,7 @@
   font-size: 13px;
 }
 
-.nex-hero-actions .nex-button span {
+.nex-hero-actions .nex-button > span {
   width: 34px;
   height: 34px;
 }
@@ -10493,16 +10496,29 @@ body {
   top: auto !important;
   left: auto !important;
   transform: none !important;
-  width: min(calc(100% - 64px), 1360px) !important;
+  width: min(calc(100% - var(--nex-shell-inline)), var(--nex-shell-max)) !important;
   min-height: 70px !important;
   margin: 10px auto 10px !important;
-  grid-template-columns: 300px minmax(0, 1fr) auto !important;
+  grid-template-columns: minmax(240px, 270px) minmax(0, 1fr) max-content !important;
+  column-gap: 16px !important;
   padding: 8px 12px 8px 18px !important;
   z-index: 80;
 }
 
 .nex-header .nex-brand {
-  min-width: 260px;
+  min-width: 240px;
+}
+
+.nex-header .nex-nav {
+  gap: 2px;
+}
+
+.nex-header .nex-nav-item {
+  padding-inline: 11px;
+}
+
+.nex-header .nex-header-actions {
+  gap: 10px;
 }
 
 .nex-header .nex-brand .co-brand {
@@ -10542,13 +10558,17 @@ body {
 .nex-hero-premier-panel {
   position: absolute;
   top: 0;
+  left: 50%;
+  right: auto;
   z-index: 0;
+  width: min(calc(100% - var(--nex-shell-inline)), var(--nex-shell-max));
   overflow: hidden;
   background: #05070a;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 44px 110px rgba(8, 8, 18, 0.18);
-  will-change: left, right, bottom, border-radius;
+  transform: translateX(-50%);
+  will-change: bottom, border-radius;
 }
 
 .nex-hero-premier-panel .nex-hero-premier-radial,
@@ -10821,8 +10841,14 @@ body {
 }
 
 @media (max-width: 980px) {
+  .nex-page {
+    --nex-shell-max: 920px;
+    --nex-shell-gutter: 16px;
+    --nex-shell-inline: 32px;
+  }
+
   .nex-header {
-    width: min(calc(100% - 32px), 920px) !important;
+    width: min(calc(100% - var(--nex-shell-inline)), var(--nex-shell-max)) !important;
     grid-template-columns: 1fr auto !important;
   }
 
