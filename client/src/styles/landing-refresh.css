@@ -44,33 +44,57 @@
 .nex-laptop-system-brand {
   position: absolute;
   z-index: 7;
-  top: 3.62%;
-  left: 11.65%;
+  top: 3.46%;
+  left: 11.52%;
   display: flex;
   align-items: center;
-  gap: .45%;
-  width: 12.8%;
-  height: 3.5%;
-  padding: 0 .45%;
-  border-radius: 2px;
-  background: #09090b;
+  gap: clamp(3px, .34vw, 6px);
+  width: 13.65%;
+  height: 3.82%;
+  padding: 0 .68%;
+  overflow: hidden;
+  border-radius: 0;
+  background: #050506;
   color: #fff;
+  box-shadow: 1px 0 0 #050506, -1px 0 0 #050506;
   pointer-events: none;
   line-height: 1;
 }
 
-.nex-laptop-system-brand .codical-brand-v2 .co-logo-bars {
-  width: clamp(9px, 1.15vw, 16px);
-  height: clamp(8px, .9vw, 13px);
+.nex-laptop-native-bars {
+  width: clamp(13px, 1.35vw, 20px);
+  height: clamp(9px, .9vw, 14px);
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1px;
 }
 
+.nex-laptop-native-bars i {
+  width: 15%;
+  min-width: 1px;
+  border-radius: 999px;
+}
+
+.nex-laptop-native-bars i:nth-child(1) { height: 54%; background: #f47c45; }
+.nex-laptop-native-bars i:nth-child(2) { height: 88%; background: #1928c7; }
+.nex-laptop-native-bars i:nth-child(3) { height: 66%; background: #ef936b; }
+.nex-laptop-native-bars i:nth-child(4) { height: 100%; background: #f8b64f; }
+.nex-laptop-native-bars i:nth-child(5) { height: 58%; background: #4937a7; }
+
 .nex-laptop-system-brand > strong {
+  display: block;
+  min-width: 0;
+  margin: 0;
   overflow: hidden;
   color: #fff;
-  font-size: clamp(4px, .56vw, 9px);
-  font-weight: 650;
-  letter-spacing: -.02em;
+  font-family: Inter, "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: clamp(5px, .58vw, 9px);
+  font-weight: 700;
+  letter-spacing: -.025em;
   line-height: 1;
+  text-overflow: clip;
   white-space: nowrap;
 }
 

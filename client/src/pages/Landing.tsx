@@ -674,8 +674,14 @@ function LaptopHardwareFrame({
         aria-hidden={decorative ? true : undefined}
       />
       {brandSystemBar ? (
-        <div className="nex-laptop-system-brand" aria-hidden="true">
-          <BrandMark compact />
+        <div className="nex-laptop-system-brand" aria-label="Codical Health">
+          <span className="nex-laptop-native-bars" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
           <strong>Codical Health</strong>
         </div>
       ) : null}
