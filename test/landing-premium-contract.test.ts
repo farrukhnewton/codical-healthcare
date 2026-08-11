@@ -34,6 +34,12 @@ test("navigation spacing and hero glass use the same centered shell", () => {
   assert.match(landingStitchStyles, /height:\s*calc\(100svh - 98px\)/);
 });
 
+test("hero reveals the complete laptop before the ecosystem section enters", () => {
+  assert.match(landing, /laptopRevealWidth/);
+  assert.match(landingStitchStyles, /height:\s*calc\(100svh \+ 920px\)/);
+  assert.match(landingStitchStyles, /calc\(165\.18svh - 280\.8px\)/);
+});
+
 test("hero keeps one glass-wave source without legacy duplicate layers", () => {
   assert.equal(landing.match(/hero-loop-healthcare\.mp4/g)?.length, 1);
   for (const legacy of ["loop_optimized.mp4", "hero-poster.jpg", "hero-orb-left.svg", "hero-orb-right.svg", "anim-frame-original.jpg", "hero-grid-texture.svg"]) {

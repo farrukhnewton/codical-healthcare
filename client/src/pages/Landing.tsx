@@ -621,12 +621,13 @@ function HeroSection() {
   const panelInsetBottom = useTransform(scrollY, [0, 720], prefersReducedMotion ? ["32px", "32px"] : ["32px", "0px"]);
   const panelRadius = useTransform(scrollY, [0, 390, 720], prefersReducedMotion ? [30, 30, 30] : [30, 18, 0]);
   const laptopScale = useTransform(scrollY, [0, 720], prefersReducedMotion ? [1, 1] : [1, 1]);
+  const laptopRevealWidth = "min(1290px, calc(100vw - 100px), calc(165.18svh - 280.8px))";
   const laptopWidth = useTransform(
     scrollY,
     [0, 720],
     prefersReducedMotion
-      ? ["min(1290px, calc(100vw - 100px))", "min(1290px, calc(100vw - 100px))"]
-      : ["min(1290px, calc(100vw - 100px))", "min(1290px, calc(100vw - 100px))"],
+      ? [laptopRevealWidth, laptopRevealWidth]
+      : [laptopRevealWidth, laptopRevealWidth],
   );
   const laptopY = useTransform(scrollY, [0, 720], prefersReducedMotion ? [0, 0] : [0, -390]);
   const laptopRadius = useTransform(scrollY, [0, 720], [0, 0]);

@@ -10446,8 +10446,8 @@ body {
 }
 
 .nex-hero-premier {
-  min-height: 184vh !important;
-  height: 184vh !important;
+  min-height: calc(100svh + 920px) !important;
+  height: calc(100svh + 920px) !important;
   padding: 0 !important;
   overflow: visible !important;
   background: transparent !important;
@@ -10593,7 +10593,7 @@ body {
   left: 50% !important;
   right: auto !important;
   bottom: auto !important;
-  width: min(1290px, calc(100vw - 100px)) !important;
+  width: min(1290px, calc(100vw - 100px), calc(165.18svh - 280.8px)) !important;
   max-width: none !important;
   min-width: 0 !important;
   margin: 0 !important;
@@ -10757,8 +10757,8 @@ body {
   }
 
   .nex-hero-premier {
-    min-height: 174vh !important;
-    height: 174vh !important;
+    min-height: calc(100svh + 760px) !important;
+    height: calc(100svh + 760px) !important;
   }
 
   .nex-hero-premier-sticky {
