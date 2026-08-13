@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="3840"
+  height="2858"
+  viewBox="0 -80 1720 1280"
+  fill="none"
+  role="img"
+  aria-labelledby="codical-signature-title codical-signature-description"
+  shape-rendering="geometricPrecision"
+>
+  <title id="codical-signature-title">Codical Health signature wave</title>
+  <desc id="codical-signature-description">Five Codical Health bars make one restrained left-to-right pulse, then rest. The rounded ends retain their exact circular geometry.</desc>
+  <style>
+    .signature-cap,
+    .signature-stem {
+      transform-box: fill-box;
+      will-change: transform;
+    }
+
+    .signature-cap-top {
+      animation: signature-lift 5.4s cubic-bezier(.22, 1, .36, 1) infinite both;
+    }
+
+    .signature-cap-bottom {
+      animation: signature-drop 5.4s cubic-bezier(.22, 1, .36, 1) infinite both;
+    }
+
+    .signature-stem {
+      transform-origin: center;
+      animation: signature-breathe 5.4s cubic-bezier(.22, 1, .36, 1) infinite both;
+    }
+
+    .signature-bar-1 > * { animation-delay: 0ms; }
+    .signature-bar-2 > * { animation-delay: 95ms; }
+    .signature-bar-3 > * { animation-delay: 190ms; }
+    .signature-bar-4 > * { animation-delay: 285ms; }
+    .signature-bar-5 > * { animation-delay: 380ms; }
+
+    @keyframes signature-lift {
+      0%, 7%, 31%, 100% { transform: translateY(0); }
+      15% { transform: translateY(var(--lift)); }
+      22% { transform: translateY(var(--rebound-top)); }
+    }
+
+    @keyframes signature-drop {
+      0%, 7%, 31%, 100% { transform: translateY(0); }
+      15% { transform: translateY(var(--drop)); }
+      22% { transform: translateY(var(--rebound-bottom)); }
+    }
+
+    @keyframes signature-breathe {
+      0%, 7%, 31%, 100% { transform: scaleY(1); }
+      15% { transform: scaleY(var(--grow)); }
+      22% { transform: scaleY(var(--settle)); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .signature-cap,
+      .signature-stem {
+        animation: none;
+      }
+    }
+  </style>
+
+  <g class="signature-bar signature-bar-1" style="--lift:-26px;--drop:26px;--rebound-top:4px;--rebound-bottom:-4px;--grow:1.26;--settle:.96">
+    <rect class="signature-stem" x="0" y="480" width="320" height="200" fill="#EE7D4B" />
+    <circle class="signature-cap signature-cap-top" cx="160" cy="480" r="160" fill="#EE7D4B" />
+    <circle class="signature-cap signature-cap-bottom" cx="160" cy="680" r="160" fill="#EE7D4B" />
+  </g>
+
+  <g class="signature-bar signature-bar-2" style="--lift:-46px;--drop:46px;--rebound-top:5px;--rebound-bottom:-5px;--grow:1.115;--settle:.9875">
+    <rect class="signature-stem" x="350" y="160" width="320" height="800" fill="#0F1EB4" />
+    <circle class="signature-cap signature-cap-top" cx="510" cy="160" r="160" fill="#0F1EB4" />
+    <circle class="signature-cap signature-cap-bottom" cx="510" cy="960" r="160" fill="#0F1EB4" />
+  </g>
+
+  <g class="signature-bar signature-bar-3" style="--lift:-29px;--drop:29px;--rebound-top:4px;--rebound-bottom:-4px;--grow:1.241667;--settle:.966667">
+    <rect class="signature-stem" x="700" y="440" width="320" height="240" fill="#EB966E" />
+    <circle class="signature-cap signature-cap-top" cx="860" cy="440" r="160" fill="#EB966E" />
+    <circle class="signature-cap signature-cap-bottom" cx="860" cy="680" r="160" fill="#EB966E" />
+  </g>
+
+  <g class="signature-bar signature-bar-4" style="--lift:-44px;--drop:44px;--rebound-top:5px;--rebound-bottom:-5px;--grow:1.11579;--settle:.986842">
+    <rect class="signature-stem" x="1050" y="200" width="320" height="760" fill="#F5B250" />
+    <circle class="signature-cap signature-cap-top" cx="1210" cy="200" r="160" fill="#F5B250" />
+    <circle class="signature-cap signature-cap-bottom" cx="1210" cy="960" r="160" fill="#F5B250" />
+  </g>
+
+  <g class="signature-bar signature-bar-5" style="--lift:-26px;--drop:26px;--rebound-top:4px;--rebound-bottom:-4px;--grow:1.26;--settle:.96">
+    <rect class="signature-stem" x="1400" y="440" width="320" height="200" fill="#4132A0" />
+    <circle class="signature-cap signature-cap-top" cx="1560" cy="440" r="160" fill="#4132A0" />
+    <circle class="signature-cap signature-cap-bottom" cx="1560" cy="640" r="160" fill="#4132A0" />
+  </g>
+</svg>

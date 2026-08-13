@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="3840"
+  height="2504"
+  viewBox="-60 -40 1840 1200"
+  fill="none"
+  role="img"
+  aria-labelledby="codical-ident-v2-title codical-ident-v2-description"
+  shape-rendering="geometricPrecision"
+>
+  <title id="codical-ident-v2-title">Codical Health precision signal ident</title>
+  <desc id="codical-ident-v2-description">A shaped intelligence signal activates five calibrated nodes. Each node unfolds with mass-aware timing into the exact Codical Health master mark, then remains still.</desc>
+
+  <defs>
+    <linearGradient id="codical-signal-v2" x1="-60" y1="560" x2="1780" y2="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EE7D4B" />
+      <stop offset=".245" stop-color="#0F1EB4" />
+      <stop offset=".5" stop-color="#EB966E" />
+      <stop offset=".755" stop-color="#F5B250" />
+      <stop offset="1" stop-color="#4132A0" />
+    </linearGradient>
+  </defs>
+
+  <style>
+    .precision-trace {
+      stroke-dasharray: 1900;
+      stroke-dashoffset: 1900;
+      animation: precision-trace .92s cubic-bezier(.4, 0, .2, 1) 1 both;
+    }
+
+    .precision-echo,
+    .precision-cap,
+    .precision-stem {
+      transform-box: fill-box;
+      transform-origin: center;
+      will-change: transform, opacity;
+    }
+
+    .precision-echo {
+      opacity: 0;
+      animation: precision-echo .4s cubic-bezier(.2, .72, .2, 1) var(--delay) 1 both;
+    }
+
+    .precision-cap,
+    .precision-stem {
+      animation-duration: var(--duration);
+      animation-delay: var(--delay);
+      animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+      animation-iteration-count: 1;
+      animation-fill-mode: both;
+    }
+
+    .precision-cap-top { animation-name: precision-cap-top; }
+    .precision-cap-bottom { animation-name: precision-cap-bottom; }
+    .precision-stem { animation-name: precision-stem; }
+
+    @keyframes precision-trace {
+      0% { opacity: 0; stroke-dashoffset: 1900; }
+      9% { opacity: .08; }
+      48% { opacity: .24; }
+      74% { opacity: .12; }
+      100% { opacity: 0; stroke-dashoffset: 0; }
+    }
+
+    @keyframes precision-echo {
+      0%, 7% { opacity: 0; transform: scale(.68); }
+      30% { opacity: .24; transform: scale(.82); }
+      100% { opacity: 0; transform: scale(1.28); }
+    }
+
+    @keyframes precision-cap-top {
+      0% {
+        opacity: 0;
+        transform: translateY(var(--collapse-top)) scale(.84);
+      }
+      18% {
+        opacity: 1;
+        transform: translateY(var(--collapse-top)) scale(1);
+      }
+      31% {
+        opacity: 1;
+        transform: translateY(var(--collapse-top)) scale(1);
+      }
+      89% {
+        opacity: 1;
+        transform: translateY(var(--overshoot-top)) scale(1);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes precision-cap-bottom {
+      0% {
+        opacity: 0;
+        transform: translateY(var(--collapse-bottom)) scale(.84);
+      }
+      18% {
+        opacity: 1;
+        transform: translateY(var(--collapse-bottom)) scale(1);
+      }
+      31% {
+        opacity: 1;
+        transform: translateY(var(--collapse-bottom)) scale(1);
+      }
+      89% {
+        opacity: 1;
+        transform: translateY(var(--overshoot-bottom)) scale(1);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes precision-stem {
+      0%, 28% {
+        opacity: 0;
+        transform: scaleY(.001);
+      }
+      39% {
+        opacity: 1;
+        transform: scaleY(.045);
+      }
+      89% {
+        opacity: 1;
+        transform: scaleY(1.016);
+      }
+      100% {
+        opacity: 1;
+        transform: scaleY(1);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .precision-trace,
+      .precision-echo { display: none; animation: none; }
+      .precision-cap,
+      .precision-stem { animation: none; }
+    }
+  </style>
+
+  <path
+    class="precision-trace"
+    d="M -60 580 C 22 580 92 580 160 580 C 278 580 366 560 510 560 C 642 560 730 560 860 560 C 998 560 1082 580 1210 580 C 1352 580 1434 540 1560 540 C 1652 540 1730 560 1780 560"
+    stroke="url(#codical-signal-v2)"
+    stroke-width="6"
+    stroke-linecap="round"
+  />
+
+  <g class="precision-bar precision-bar-1" style="--delay:0ms;--duration:.62s;--collapse-top:100px;--collapse-bottom:-100px;--overshoot-top:-5px;--overshoot-bottom:5px">
+    <circle class="precision-echo" cx="160" cy="580" r="176" fill="none" stroke="#EE7D4B" stroke-width="9" />
+    <rect class="precision-stem" x="0" y="480" width="320" height="200" fill="#EE7D4B" />
+    <circle class="precision-cap precision-cap-top" cx="160" cy="480" r="160" fill="#EE7D4B" />
+    <circle class="precision-cap precision-cap-bottom" cx="160" cy="680" r="160" fill="#EE7D4B" />
+  </g>
+
+  <g class="precision-bar precision-bar-2" style="--delay:48ms;--duration:.72s;--collapse-top:400px;--collapse-bottom:-400px;--overshoot-top:-8px;--overshoot-bottom:8px">
+    <circle class="precision-echo" cx="510" cy="560" r="176" fill="none" stroke="#0F1EB4" stroke-width="9" />
+    <rect class="precision-stem" x="350" y="160" width="320" height="800" fill="#0F1EB4" />
+    <circle class="precision-cap precision-cap-top" cx="510" cy="160" r="160" fill="#0F1EB4" />
+    <circle class="precision-cap precision-cap-bottom" cx="510" cy="960" r="160" fill="#0F1EB4" />
+  </g>
+
+  <g class="precision-bar precision-bar-3" style="--delay:96ms;--duration:.62s;--collapse-top:120px;--collapse-bottom:-120px;--overshoot-top:-5px;--overshoot-bottom:5px">
+    <circle class="precision-echo" cx="860" cy="560" r="176" fill="none" stroke="#EB966E" stroke-width="9" />
+    <rect class="precision-stem" x="700" y="440" width="320" height="240" fill="#EB966E" />
+    <circle class="precision-cap precision-cap-top" cx="860" cy="440" r="160" fill="#EB966E" />
+    <circle class="precision-cap precision-cap-bottom" cx="860" cy="680" r="160" fill="#EB966E" />
+  </g>
+
+  <g class="precision-bar precision-bar-4" style="--delay:144ms;--duration:.7s;--collapse-top:380px;--collapse-bottom:-380px;--overshoot-top:-8px;--overshoot-bottom:8px">
+    <circle class="precision-echo" cx="1210" cy="580" r="176" fill="none" stroke="#F5B250" stroke-width="9" />
+    <rect class="precision-stem" x="1050" y="200" width="320" height="760" fill="#F5B250" />
+    <circle class="precision-cap precision-cap-top" cx="1210" cy="200" r="160" fill="#F5B250" />
+    <circle class="precision-cap precision-cap-bottom" cx="1210" cy="960" r="160" fill="#F5B250" />
+  </g>
+
+  <g class="precision-bar precision-bar-5" style="--delay:192ms;--duration:.62s;--collapse-top:100px;--collapse-bottom:-100px;--overshoot-top:-5px;--overshoot-bottom:5px">
+    <circle class="precision-echo" cx="1560" cy="540" r="176" fill="none" stroke="#4132A0" stroke-width="9" />
+    <rect class="precision-stem" x="1400" y="440" width="320" height="200" fill="#4132A0" />
+    <circle class="precision-cap precision-cap-top" cx="1560" cy="440" r="160" fill="#4132A0" />
+    <circle class="precision-cap precision-cap-bottom" cx="1560" cy="640" r="160" fill="#4132A0" />
+  </g>
+</svg>

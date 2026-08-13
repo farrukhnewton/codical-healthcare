@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Codical Health — Signature Wave Sample</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      color: #15103f;
+      background:
+        radial-gradient(circle at 50% 24%, rgba(140, 91, 255, .18), transparent 42%),
+        linear-gradient(145deg, #f9f7ff, #eae4ff);
+    }
+    main { width: min(980px, 100%); }
+    .sample {
+      overflow: hidden;
+      border: 1px solid rgba(86, 53, 155, .18);
+      border-radius: 28px;
+      background: rgba(255, 255, 255, .82);
+      box-shadow: 0 28px 80px rgba(46, 22, 92, .16);
+      backdrop-filter: blur(18px);
+    }
+    .stage {
+      min-height: 460px;
+      display: grid;
+      place-items: center;
+      padding: 72px 88px;
+    }
+    .stage img { display: block; width: min(620px, 100%); height: auto; }
+    .details {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 22px 28px;
+      border-top: 1px solid rgba(86, 53, 155, .12);
+      background: rgba(250, 248, 255, .76);
+    }
+    h1 { margin: 0 0 5px; font-size: 18px; letter-spacing: -.02em; }
+    p { margin: 0; color: #726b91; font-size: 13px; line-height: 1.55; }
+    .mini-mark { width: 72px; flex: 0 0 auto; }
+    .mini-mark img { display: block; width: 100%; height: auto; }
+    @media (max-width: 620px) {
+      body { padding: 16px; }
+      .stage { min-height: 340px; padding: 48px 30px; }
+      .details { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="sample" aria-labelledby="sample-title">
+      <div class="stage">
+        <img src="codical-bars-signature-wave-sample.svg" alt="Animated Codical Health signature bars" />
+      </div>
+      <div class="details">
+        <div>
+          <h1 id="sample-title">Signature pulse — sample 03</h1>
+          <p>One left-to-right pulse, a soft rebound, then a long rest. Exact approved silhouette and colors.</p>
+        </div>
+        <div class="mini-mark" aria-label="Navbar-size preview">
+          <img src="codical-bars-signature-wave-sample.svg" alt="" />
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

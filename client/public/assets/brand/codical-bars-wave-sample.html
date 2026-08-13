@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Codical Health — intelligence wave sample</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, Arial, sans-serif; }
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 40px;
+        color: #11143b;
+        background: linear-gradient(135deg, #f8fbff, #eee8ff 55%, #e2d6fa);
+      }
+      main { width: min(920px, 100%); display: grid; gap: 22px; }
+      .preview {
+        min-height: 480px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(67, 50, 160, .12);
+        border-radius: 30px;
+        background: rgba(255, 255, 255, .76);
+        box-shadow: 0 30px 90px rgba(65, 50, 160, .14);
+        backdrop-filter: blur(24px);
+      }
+      .preview img { width: min(560px, 78%); height: auto; }
+      .navbar-sample {
+        min-height: 78px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 22px;
+        border: 1px solid rgba(255,255,255,.92);
+        border-radius: 26px;
+        background: rgba(245, 242, 255, .86);
+        box-shadow: 0 18px 48px rgba(65, 50, 160, .12);
+      }
+      .navbar-sample img { width: 58px; height: 48px; object-fit: contain; }
+      .wordmark { display: grid; line-height: .88; color: #0f1eb4; font-weight: 900; }
+      .wordmark span { font-size: 17px; }
+      .wordmark small { font-size: 14px; }
+      p { margin: 0; color: rgba(17, 20, 59, .66); font-size: 14px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="preview" aria-label="Large animated logo preview">
+        <img src="./codical-bars-wave-sample.svg" alt="Animated Codical Health bars" />
+      </section>
+      <section class="navbar-sample" aria-label="Navbar-size animated logo preview">
+        <img src="./codical-bars-wave-sample.svg" alt="" />
+        <div class="wordmark"><span>CODICAL</span><small>HEALTH</small></div>
+      </section>
+      <p>2.8-second sequential intelligence wave · 7.5% maximum movement · reduced-motion safe</p>
+    </main>
+  </body>
+</html>

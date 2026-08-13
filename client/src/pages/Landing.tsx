@@ -240,6 +240,72 @@ function CtaButton({
   );
 }
 
+function NavbarBrandIdent() {
+  return (
+    <svg
+      className="nex-navbar-ident"
+      viewBox="-60 -40 1840 1200"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+      shapeRendering="geometricPrecision"
+    >
+      <defs>
+        <linearGradient id="nex-navbar-ident-signal" x1="-60" y1="560" x2="1780" y2="560" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#EE7D4B" />
+          <stop offset=".245" stopColor="#0F1EB4" />
+          <stop offset=".5" stopColor="#EB966E" />
+          <stop offset=".755" stopColor="#F5B250" />
+          <stop offset="1" stopColor="#4132A0" />
+        </linearGradient>
+      </defs>
+
+      <path
+        className="nex-navbar-ident-trace"
+        d="M -60 580 C 22 580 92 580 160 580 C 278 580 366 560 510 560 C 642 560 730 560 860 560 C 998 560 1082 580 1210 580 C 1352 580 1434 540 1560 540 C 1652 540 1730 560 1780 560"
+        stroke="url(#nex-navbar-ident-signal)"
+        strokeWidth="6"
+        strokeLinecap="round"
+      />
+
+      <g className="nex-navbar-ident-bar nex-navbar-ident-bar-1">
+        <circle className="nex-navbar-ident-echo" cx="160" cy="580" r="176" fill="none" stroke="#EE7D4B" strokeWidth="9" />
+        <rect className="nex-navbar-ident-stem" x="0" y="480" width="320" height="200" fill="#EE7D4B" />
+        <circle className="nex-navbar-ident-cap nex-navbar-ident-cap-top" cx="160" cy="480" r="160" fill="#EE7D4B" />
+        <circle className="nex-navbar-ident-cap nex-navbar-ident-cap-bottom" cx="160" cy="680" r="160" fill="#EE7D4B" />
+      </g>
+
+      <g className="nex-navbar-ident-bar nex-navbar-ident-bar-2">
+        <circle className="nex-navbar-ident-echo" cx="510" cy="560" r="176" fill="none" stroke="#0F1EB4" strokeWidth="9" />
+        <rect className="nex-navbar-ident-stem" x="350" y="160" width="320" height="800" fill="#0F1EB4" />
+        <circle className="nex-navbar-ident-cap nex-navbar-ident-cap-top" cx="510" cy="160" r="160" fill="#0F1EB4" />
+        <circle className="nex-navbar-ident-cap nex-navbar-ident-cap-bottom" cx="510" cy="960" r="160" fill="#0F1EB4" />
+      </g>
+
+      <g className="nex-navbar-ident-bar nex-navbar-ident-bar-3">
+        <circle className="nex-navbar-ident-echo" cx="860" cy="560" r="176" fill="none" stroke="#EB966E" strokeWidth="9" />
+        <rect className="nex-navbar-ident-stem" x="700" y="440" width="320" height="240" fill="#EB966E" />
+        <circle className="nex-navbar-ident-cap nex-navbar-ident-cap-top" cx="860" cy="440" r="160" fill="#EB966E" />
+        <circle className="nex-navbar-ident-cap nex-navbar-ident-cap-bottom" cx="860" cy="680" r="160" fill="#EB966E" />
+      </g>
+
+      <g className="nex-navbar-ident-bar nex-navbar-ident-bar-4">
+        <circle className="nex-navbar-ident-echo" cx="1210" cy="580" r="176" fill="none" stroke="#F5B250" strokeWidth="9" />
+        <rect className="nex-navbar-ident-stem" x="1050" y="200" width="320" height="760" fill="#F5B250" />
+        <circle className="nex-navbar-ident-cap nex-navbar-ident-cap-top" cx="1210" cy="200" r="160" fill="#F5B250" />
+        <circle className="nex-navbar-ident-cap nex-navbar-ident-cap-bottom" cx="1210" cy="960" r="160" fill="#F5B250" />
+      </g>
+
+      <g className="nex-navbar-ident-bar nex-navbar-ident-bar-5">
+        <circle className="nex-navbar-ident-echo" cx="1560" cy="540" r="176" fill="none" stroke="#4132A0" strokeWidth="9" />
+        <rect className="nex-navbar-ident-stem" x="1400" y="440" width="320" height="200" fill="#4132A0" />
+        <circle className="nex-navbar-ident-cap nex-navbar-ident-cap-top" cx="1560" cy="440" r="160" fill="#4132A0" />
+        <circle className="nex-navbar-ident-cap nex-navbar-ident-cap-bottom" cx="1560" cy="640" r="160" fill="#4132A0" />
+      </g>
+    </svg>
+  );
+}
+
 function Header() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -257,7 +323,10 @@ function Header() {
         }}
       >
         <a className="nex-brand" href="#top" aria-label="Codical Health home">
-          <BrandMark animated />
+          <span className="nex-navbar-brand-lockup">
+            <NavbarBrandIdent />
+            <span className="nex-navbar-brand-name">Codical Health</span>
+          </span>
         </a>
 
         <nav className="nex-nav" aria-label="Landing navigation">
