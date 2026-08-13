@@ -5,6 +5,10 @@ uploads/
 .idx/
 .local/
 attached_assets/
+docs/design-sources/
+.tmp-*/
+.vscode/
+NUL
 *.tar.gz
 *.bak
 *.backup.ts
