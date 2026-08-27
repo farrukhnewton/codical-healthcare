@@ -245,6 +245,273 @@ export const payerPolicies = pgTable("payer_policies", {
   payerSourceUrlIdx: uniqueIndex("payer_policies_payer_source_url_idx").on(table.payerId, table.sourceUrl),
 }));
 
+// ============ REVENUE INTEGRITY TABLES ============
+
+export const revenueOrganizations = pgTable("revenue_organizations", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  status: text("status").notNull().default("onboarding"),
+  clearinghouseProvider: text("clearinghouse_provider").notNull().default("stedi"),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const revenueOrganizationMembers = pgTable("revenue_organization_members", {
+  id: serial("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("analyst"),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  organizationUserIdx: uniqueIndex("revenue_organization_members_org_user_idx").on(table.organizationId, table.userId),
+  userIdx: index("revenue_organization_members_user_idx").on(table.userId),
+}));
+
+export const revenueClaims = pgTable("revenue_claims", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  patientId: integer("patient_id").references(() => patients.id, { onDelete: "set null" }),
+  encounterId: integer("encounter_id").references(() => encounters.id, { onDelete: "set null" }),
+  patientControlNumber: text("patient_control_number").notNull(),
+  claimType: text("claim_type").notNull().default("professional"),
+  status: text("status").notNull().default("draft"),
+  payerId: text("payer_id").notNull(),
+  payerName: text("payer_name").notNull(),
+  payerClaimControlNumber: text("payer_claim_control_number"),
+  serviceFrom: text("service_from").notNull(),
+  serviceTo: text("service_to"),
+  billingProviderNpi: text("billing_provider_npi").notNull(),
+  renderingProviderNpi: text("rendering_provider_npi"),
+  diagnosisCodes: jsonb("diagnosis_codes").$type<string[]>().notNull().default([]),
+  totalCharge: numeric("total_charge", { precision: 14, scale: 2 }).notNull().default("0"),
+  expectedAmount: numeric("expected_amount", { precision: 14, scale: 2 }),
+  paidAmount: numeric("paid_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+  integrityScore: integer("integrity_score").notNull().default(0),
+  riskLevel: text("risk_level").notNull().default("unscored"),
+  clearinghouseProvider: text("clearinghouse_provider").notNull().default("stedi"),
+  externalClaimId: text("external_claim_id"),
+  assignedTo: integer("assigned_to").references(() => users.id, { onDelete: "set null" }),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  version: integer("version").notNull().default(1),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  lastTransactionAt: timestamp("last_transaction_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  organizationStatusIdx: index("revenue_claims_org_status_idx").on(table.organizationId, table.status),
+  organizationCreatedIdx: index("revenue_claims_org_created_idx").on(table.organizationId, table.createdAt),
+  patientControlIdx: uniqueIndex("revenue_claims_org_patient_control_idx").on(table.organizationId, table.patientControlNumber),
+  externalClaimIdx: index("revenue_claims_external_claim_idx").on(table.externalClaimId),
+}));
+
+export const revenueClaimLines = pgTable("revenue_claim_lines", {
+  id: serial("id").primaryKey(),
+  claimId: text("claim_id").notNull().references(() => revenueClaims.id, { onDelete: "cascade" }),
+  lineNumber: integer("line_number").notNull(),
+  procedureCode: text("procedure_code").notNull(),
+  description: text("description"),
+  modifiers: jsonb("modifiers").$type<string[]>().notNull().default([]),
+  diagnosisPointers: jsonb("diagnosis_pointers").$type<number[]>().notNull().default([]),
+  placeOfService: text("place_of_service"),
+  units: numeric("units", { precision: 10, scale: 3 }).notNull().default("1"),
+  chargeAmount: numeric("charge_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+  expectedAmount: numeric("expected_amount", { precision: 14, scale: 2 }),
+  paidAmount: numeric("paid_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+  status: text("status").notNull().default("draft"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  claimLineIdx: uniqueIndex("revenue_claim_lines_claim_line_idx").on(table.claimId, table.lineNumber),
+  procedureIdx: index("revenue_claim_lines_procedure_idx").on(table.procedureCode),
+}));
+
+export const revenueClaimEvents = pgTable("revenue_claim_events", {
+  id: serial("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  claimId: text("claim_id").references(() => revenueClaims.id, { onDelete: "cascade" }),
+  eventType: text("event_type").notNull(),
+  source: text("source").notNull(),
+  externalEventId: text("external_event_id"),
+  idempotencyKey: text("idempotency_key"),
+  payloadHash: text("payload_hash"),
+  rawObjectKey: text("raw_object_key"),
+  summary: jsonb("summary").$type<Record<string, unknown>>().notNull().default({}),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  claimOccurredIdx: index("revenue_claim_events_claim_occurred_idx").on(table.claimId, table.occurredAt),
+  organizationReceivedIdx: index("revenue_claim_events_org_received_idx").on(table.organizationId, table.receivedAt),
+  externalEventIdx: uniqueIndex("revenue_claim_events_org_source_external_idx").on(table.organizationId, table.source, table.externalEventId),
+}));
+
+export const revenueWorkItems = pgTable("revenue_work_items", {
+  id: serial("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  claimId: text("claim_id").notNull().references(() => revenueClaims.id, { onDelete: "cascade" }),
+  claimLineId: integer("claim_line_id").references(() => revenueClaimLines.id, { onDelete: "cascade" }),
+  category: text("category").notNull(),
+  issueCode: text("issue_code").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  recommendedAction: text("recommended_action").notNull(),
+  status: text("status").notNull().default("open"),
+  severity: text("severity").notNull().default("medium"),
+  priorityScore: integer("priority_score").notNull().default(0),
+  recoverableAmount: numeric("recoverable_amount", { precision: 14, scale: 2 }),
+  assignedTo: integer("assigned_to").references(() => users.id, { onDelete: "set null" }),
+  dueAt: timestamp("due_at", { withTimezone: true }),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  resolvedBy: integer("resolved_by").references(() => users.id, { onDelete: "set null" }),
+  resolutionNote: text("resolution_note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  organizationStatusPriorityIdx: index("revenue_work_items_org_status_priority_idx").on(table.organizationId, table.status, table.priorityScore),
+  claimStatusIdx: index("revenue_work_items_claim_status_idx").on(table.claimId, table.status),
+}));
+
+export const revenueEvidenceLinks = pgTable("revenue_evidence_links", {
+  id: serial("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  claimId: text("claim_id").notNull().references(() => revenueClaims.id, { onDelete: "cascade" }),
+  claimLineId: integer("claim_line_id").references(() => revenueClaimLines.id, { onDelete: "cascade" }),
+  evidenceType: text("evidence_type").notNull(),
+  sourceRef: text("source_ref").notNull(),
+  sourceLabel: text("source_label"),
+  excerpt: text("excerpt"),
+  sourceLocation: jsonb("source_location").$type<Record<string, unknown>>().notNull().default({}),
+  ruleRef: text("rule_ref"),
+  sourceUrl: text("source_url"),
+  effectiveFrom: text("effective_from"),
+  effectiveTo: text("effective_to"),
+  confidence: numeric("confidence", { precision: 5, scale: 4 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  claimIdx: index("revenue_evidence_links_claim_idx").on(table.claimId),
+  ruleIdx: index("revenue_evidence_links_rule_idx").on(table.ruleRef),
+}));
+
+export const revenueClearinghouseConnections = pgTable("revenue_clearinghouse_connections", {
+  id: serial("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull().default("stedi"),
+  mode: text("mode").notNull().default("test"),
+  status: text("status").notNull().default("not_configured"),
+  credentialRef: text("credential_ref"),
+  submitterId: text("submitter_id"),
+  webhookDestinationId: text("webhook_destination_id"),
+  capabilities: jsonb("capabilities").$type<string[]>().notNull().default([]),
+  liveSubmissionEnabled: boolean("live_submission_enabled").notNull().default(false),
+  lastHealthCheckAt: timestamp("last_health_check_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  organizationProviderIdx: uniqueIndex("revenue_clearinghouse_connections_org_provider_idx").on(table.organizationId, table.provider),
+}));
+
+export const revenueClaimTransmissions = pgTable("revenue_claim_transmissions", {
+  id: serial("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  claimId: text("claim_id").notNull().references(() => revenueClaims.id, { onDelete: "cascade" }),
+  schemaVersion: text("schema_version").notNull().default("stedi-837p-v3"),
+  transmissionData: jsonb("transmission_data").$type<Record<string, unknown>>().notNull(),
+  source: text("source").notNull().default("manual_verified"),
+  verifiedBy: integer("verified_by").references(() => users.id, { onDelete: "set null" }),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  claimIdx: uniqueIndex("revenue_claim_transmissions_claim_idx").on(table.claimId),
+  organizationIdx: index("revenue_claim_transmissions_org_idx").on(table.organizationId),
+}));
+
+export const revenueClaimSubmissions = pgTable("revenue_claim_submissions", {
+  id: serial("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  claimId: text("claim_id").notNull().references(() => revenueClaims.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull().default("stedi"),
+  mode: text("mode").notNull(),
+  status: text("status").notNull().default("queued"),
+  idempotencyKey: text("idempotency_key").notNull(),
+  payloadHash: text("payload_hash").notNull(),
+  externalTransactionId: text("external_transaction_id"),
+  correlationId: text("correlation_id"),
+  responseSummary: jsonb("response_summary").$type<Record<string, unknown>>().notNull().default({}),
+  lastError: text("last_error"),
+  submittedBy: integer("submitted_by").references(() => users.id, { onDelete: "set null" }),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  idempotencyIdx: uniqueIndex("revenue_claim_submissions_org_provider_idempotency_idx").on(table.organizationId, table.provider, table.idempotencyKey),
+  claimCreatedIdx: index("revenue_claim_submissions_claim_created_idx").on(table.claimId, table.createdAt),
+}));
+
+export const revenueWebhookEvents = pgTable("revenue_webhook_events", {
+  id: serial("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull().default("stedi"),
+  eventId: text("event_id").notNull(),
+  eventType: text("event_type").notNull(),
+  transactionType: text("transaction_type"),
+  transactionId: text("transaction_id"),
+  status: text("status").notNull().default("queued"),
+  attempts: integer("attempts").notNull().default(0),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).defaultNow(),
+  leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+  lastError: text("last_error"),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow(),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+}, (table) => ({
+  eventIdx: uniqueIndex("revenue_webhook_events_org_provider_event_idx").on(table.organizationId, table.provider, table.eventId),
+  queueIdx: index("revenue_webhook_events_queue_idx").on(table.status, table.nextAttemptAt),
+}));
+
+export const revenueRemittances = pgTable("revenue_remittances", {
+  id: serial("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  claimId: text("claim_id").references(() => revenueClaims.id, { onDelete: "set null" }),
+  provider: text("provider").notNull().default("stedi"),
+  transactionId: text("transaction_id").notNull(),
+  patientControlNumber: text("patient_control_number").notNull(),
+  payerClaimControlNumber: text("payer_claim_control_number"),
+  claimStatusCode: text("claim_status_code"),
+  totalCharge: numeric("total_charge", { precision: 14, scale: 2 }).notNull().default("0"),
+  paidAmount: numeric("paid_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+  patientResponsibilityAmount: numeric("patient_responsibility_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+  summary: jsonb("summary").$type<Record<string, unknown>>().notNull().default({}),
+  receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  transactionClaimIdx: uniqueIndex("revenue_remittances_org_provider_tx_pcn_idx").on(table.organizationId, table.provider, table.transactionId, table.patientControlNumber),
+  claimIdx: index("revenue_remittances_claim_idx").on(table.claimId),
+}));
+
+export const revenueLineRemittances = pgTable("revenue_line_remittances", {
+  id: serial("id").primaryKey(),
+  remittanceId: integer("remittance_id").notNull().references(() => revenueRemittances.id, { onDelete: "cascade" }),
+  claimLineId: integer("claim_line_id").references(() => revenueClaimLines.id, { onDelete: "set null" }),
+  lineItemControlNumber: text("line_item_control_number"),
+  procedureCode: text("procedure_code"),
+  chargeAmount: numeric("charge_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+  paidAmount: numeric("paid_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+  allowedAmount: numeric("allowed_amount", { precision: 14, scale: 2 }),
+  adjustments: jsonb("adjustments").$type<unknown[]>().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  remittanceIdx: index("revenue_line_remittances_remittance_idx").on(table.remittanceId),
+  claimLineIdx: index("revenue_line_remittances_claim_line_idx").on(table.claimLineId),
+}));
+
 
 
 export const icd10Codes = pgTable("icd10_codes", {
@@ -468,6 +735,33 @@ export const commercialPayersRelations = relations(commercialPayers, ({ many }) 
   policies: many(payerPolicies),
 }));
 
+export const revenueOrganizationsRelations = relations(revenueOrganizations, ({ one, many }) => ({
+  creator: one(users, { fields: [revenueOrganizations.createdBy], references: [users.id] }),
+  members: many(revenueOrganizationMembers),
+  claims: many(revenueClaims),
+  connections: many(revenueClearinghouseConnections),
+  webhookEvents: many(revenueWebhookEvents),
+}));
+
+export const revenueClaimsRelations = relations(revenueClaims, ({ one, many }) => ({
+  organization: one(revenueOrganizations, { fields: [revenueClaims.organizationId], references: [revenueOrganizations.id] }),
+  patient: one(patients, { fields: [revenueClaims.patientId], references: [patients.id] }),
+  encounter: one(encounters, { fields: [revenueClaims.encounterId], references: [encounters.id] }),
+  lines: many(revenueClaimLines),
+  events: many(revenueClaimEvents),
+  workItems: many(revenueWorkItems),
+  evidenceLinks: many(revenueEvidenceLinks),
+  transmission: many(revenueClaimTransmissions),
+  submissions: many(revenueClaimSubmissions),
+  remittances: many(revenueRemittances),
+}));
+
+export const revenueClaimLinesRelations = relations(revenueClaimLines, ({ one, many }) => ({
+  claim: one(revenueClaims, { fields: [revenueClaimLines.claimId], references: [revenueClaims.id] }),
+  workItems: many(revenueWorkItems),
+  evidenceLinks: many(revenueEvidenceLinks),
+}));
+
 export const savedAiFilesRelations = relations(savedAiFiles, ({ one }) => ({
   user: one(users, { fields: [savedAiFiles.userId], references: [users.id] }),
 }));
@@ -518,6 +812,19 @@ export type Assignment = typeof assignments.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type CommercialPayer = typeof commercialPayers.$inferSelect;
 export type PayerPolicy = typeof payerPolicies.$inferSelect;
+export type RevenueOrganization = typeof revenueOrganizations.$inferSelect;
+export type RevenueOrganizationMember = typeof revenueOrganizationMembers.$inferSelect;
+export type RevenueClaim = typeof revenueClaims.$inferSelect;
+export type RevenueClaimLine = typeof revenueClaimLines.$inferSelect;
+export type RevenueClaimEvent = typeof revenueClaimEvents.$inferSelect;
+export type RevenueWorkItem = typeof revenueWorkItems.$inferSelect;
+export type RevenueEvidenceLink = typeof revenueEvidenceLinks.$inferSelect;
+export type RevenueClearinghouseConnection = typeof revenueClearinghouseConnections.$inferSelect;
+export type RevenueClaimTransmission = typeof revenueClaimTransmissions.$inferSelect;
+export type RevenueClaimSubmission = typeof revenueClaimSubmissions.$inferSelect;
+export type RevenueWebhookEvent = typeof revenueWebhookEvents.$inferSelect;
+export type RevenueRemittance = typeof revenueRemittances.$inferSelect;
+export type RevenueLineRemittance = typeof revenueLineRemittances.$inferSelect;
 
 export type MedicalCode = {
   type: string;

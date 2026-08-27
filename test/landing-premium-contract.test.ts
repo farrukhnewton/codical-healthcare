@@ -4,6 +4,8 @@ import test from "node:test";
 
 const landing = readFileSync("client/src/pages/Landing.tsx", "utf8");
 const premiumSections = readFileSync("client/src/components/landing/PremiumLandingSections.tsx", "utf8");
+const scrollDrivenWorkflows = readFileSync("client/src/components/landing/ScrollDrivenWorkflowSection.tsx", "utf8");
+const productFilms = readFileSync("client/src/components/landing/ProductFilmsSection.tsx", "utf8");
 const brandMark = readFileSync("client/src/components/BrandMark.tsx", "utf8");
 const brandStyles = readFileSync("client/src/styles/brand-system.css", "utf8");
 const landingStyles = readFileSync("client/src/styles/landing-refresh.css", "utf8");
@@ -30,6 +32,8 @@ test("navbar brand bars have no capsule treatment", () => {
 
 test("landing navbar uses the approved precision ident and single brand name", () => {
   assert.match(landing, /function NavbarBrandIdent\(\)/);
+  assert.match(landing, /data-brand-asset="locked-precision-ident-v2"/);
+  assert.match(landing, /className="nex-navbar-brand-lockup" data-lockup-layout="stacked-left-expanded"/);
   assert.match(landing, /<span className="nex-navbar-brand-name">Codical Health<\/span>/);
   assert.match(landingStitchStyles, /\.nex-header \.nex-navbar-ident\s*\{[^}]*width:\s*56px;[^}]*height:\s*40px/s);
   assert.match(landingStitchStyles, /\.nex-header \.nex-navbar-brand-name\s*\{[^}]*color:\s*#0f1eb4/s);
@@ -37,6 +41,46 @@ test("landing navbar uses the approved precision ident and single brand name", (
   assert.match(landingStitchStyles, /animation:\s*nex-navbar-trace 5\.2s[^;]*infinite/);
   assert.match(landingStitchStyles, /@keyframes nex-navbar-cap-top/);
   assert.match(landingStitchStyles, /prefers-reduced-motion:\s*reduce/);
+  assert.match(landingStitchStyles, /\.codical-scope__brand \.nex-navbar-brand-lockup\s*\{[\s\S]*?flex-direction:\s*column/);
+  assert.match(landingStitchStyles, /\.codical-scope__brand \.nex-navbar-brand-name\s*\{[\s\S]*?color:\s*var\(--scope-tube-color\)/);
+  assert.match(landingStitchStyles, /\.codical-scope__brand\s*\{[\s\S]*?left:\s*31\.5%;[\s\S]*?width:\s*min\(176px, 64%\)/);
+});
+
+test("landing navbar restores the supplied ZIP stethoscope composition", () => {
+  assert.match(landing, /className="codical-scope"[\s\S]*?data-navbar-quality="zip-reference"/);
+  assert.match(landing, /data-navbar-reference="screenshot-2026-08-14-213517"/);
+  assert.match(landing, /data-pipe-finish="solid-aligned-v6"/);
+  assert.match(landing, /data-chrome-quality="refined-v2"/);
+  assert.match(landing, /data-tube-color="#6E32E1"/);
+  assert.match(landing, /stethoscope-loop-violet-v8\.webp/);
+  assert.match(landing, /stethoscope-chest-violet-v6\.webp/);
+  assert.match(landing, /data-diaphragm-finish="wide-composite-v3"/);
+  assert.match(landing, /className="codical-scope__chest-composite"/);
+  assert.match(landing, /<div\s+className="codical-scope__chest"[\s\S]*?<Link\s+className="codical-scope__demo"[\s\S]*?href="\/signup\?intent=demo"/);
+  assert.doesNotMatch(landing, /<Link\s+className="codical-scope__chest"/);
+  assert.doesNotMatch(landing, /codical-scope__chest-(?:base|diaphragm)/);
+  assert.match(landing, /<NavbarBrandIdent \/>[\s\S]*?<span className="nex-navbar-brand-name">Codical Health<\/span>/);
+  assert.match(landing, /<textPath href=\{`#\$\{demoArcId\}`\}[^>]*>REQUEST A DEMO<\/textPath>/);
+  assert.match(landing, /href="\/signup\?intent=demo"[\s\S]*?aria-label="Request a demo"/);
+  assert.match(landingStitchStyles, /--scope-violet:\s*#9638d9/);
+  assert.match(landingStitchStyles, /--scope-tube-color:\s*#6E32E1/);
+  assert.match(landingStitchStyles, /--scope-tube-surface:\s*var\(--scope-tube-color\)/);
+  assert.match(landingStitchStyles, /\.codical-scope__ears::after,[\s\S]*?\.codical-scope__chest::before/);
+  assert.match(landingStitchStyles, /\.codical-scope__demo text\s*\{[\s\S]*?font-size:\s*13px/);
+  assert.match(landingStitchStyles, /\.codical-scope__chest\s*>\s*img\s*\{[\s\S]*?translateY\(3\.5%\)/);
+  assert.match(landingStitchStyles, /\.codical-scope__demo\s*\{[\s\S]*?left:\s*65\.51%;[\s\S]*?width:\s*calc\(var\(--scope-h\) \* 0\.49\)/);
+  assert.match(landingStitchStyles, /\.codical-scope__tube-skin\s*\{[\s\S]*?border-radius:\s*0/);
+  assert.match(landingStitchStyles, /\.codical-scope__ears\s*>\s*img\s*\{[\s\S]*?filter:\s*none;[\s\S]*?translateY\(0\.5%\)/);
+  assert.match(landingStitchStyles, /\.codical-scope__ears::after\s*\{[\s\S]*?display:\s*none/);
+  assert.match(landingStitchStyles, /\.codical-scope__chest::before\s*\{[\s\S]*?width:\s*calc\(10px \+ \(var\(--scope-h\) \* 252 \/ 820\)\);[\s\S]*?border-radius:\s*0 3px 3px 0;[\s\S]*?clip-path:\s*polygon/);
+  assert.match(landingStitchStyles, /Hand-finished right end:[\s\S]*?\.codical-scope__chest\s*\{[\s\S]*?scale:\s*1;/);
+  assert.match(landingStitchStyles, /\.codical-scope__chest-composite\s*\{[\s\S]*?transform:\s*translateY\(-2px\);[\s\S]*?filter:\s*none/);
+  assert.match(landingStitchStyles, /\.codical-scope__demo\s*\{[\s\S]*?left:\s*59\.29%;[\s\S]*?top:\s*calc\(50\.12% \+ 6px\);[\s\S]*?width:\s*calc\(var\(--scope-h\) \* 0\.6517\);[\s\S]*?clip-path:\s*circle\(50% at 50% 50%\);[\s\S]*?cursor:\s*pointer;[\s\S]*?scale:\s*1;/);
+  assert.match(landingStitchStyles, /\.codical-scope__demo:hover,[\s\S]*?\.codical-scope__demo:focus-visible/);
+  assert.match(landingStitchStyles, /--scope-tube-height:\s*calc\(var\(--scope-h\) \* 72 \/ 410\)/);
+  assert.match(landingStitchStyles, /\.codical-scope__tube-skin\s*\{[\s\S]*?height:\s*var\(--scope-tube-height\)/);
+  assert.match(landingStitchStyles, /\.codical-scope__demo text/);
+  assert.match(landingStitchStyles, /@media \(max-width: 1180px\)[\s\S]*?\.codical-scope__links[\s\S]*?display:\s*none/);
 });
 
 test("vector brand master preserves the approved five-bar geometry", () => {
@@ -156,12 +200,28 @@ test("premium landing content uses exact pricing without an invented interval", 
   assert.match(premiumSections, /name:\s*"Enterprise"[\s\S]*?featured:\s*true/);
 });
 
-test("product films are distinct from verified customer media", () => {
-  for (const id of ["ai-coding", "ai-transcription", "specialty-coding", "claim-validation"]) {
-    assert.ok(premiumSections.includes(`id: "${id}"`));
+test("video stories use the original thumbnail-only YouTube handoff", () => {
+  for (const videoId of ["k9GXupX1TSs", "KpTPlGfE_sY"]) {
+    assert.ok(productFilms.includes(`videoId: "${videoId}"`));
   }
+  assert.match(productFilms, /i\.ytimg\.com\/vi\/\$\{story\.videoId\}\/maxresdefault\.jpg/);
+  assert.match(productFilms, /youtube\.com\/watch\?v=\$\{story\.videoId\}/);
+  assert.match(productFilms, /target="_blank"/);
+  assert.match(productFilms, /rel="noreferrer noopener"/);
+  assert.doesNotMatch(productFilms, /<video|<iframe|\.mp4/);
   assert.match(premiumSections, /VERIFIED_CUSTOMER_VIDEOS:\s*CustomerVideo\[\]\s*=\s*\[\]/);
   assert.match(premiumSections, /VERIFIED_TESTIMONIALS:\s*WrittenTestimonial\[\]\s*=\s*\[\]/);
+});
+
+test("featured workflows retain the original scroll-driven sequence and MP4 finale", () => {
+  assert.match(premiumSections, /<ScrollDrivenWorkflowSection\s*\/>/);
+  assert.match(scrollDrivenWorkflows, /className="nex-solutions nex-creative-tools"/);
+  assert.match(scrollDrivenWorkflows, /CREATIVE_SCATTER_LAYOUTS\.map/);
+  assert.match(scrollDrivenWorkflows, /CREATIVE_SHOWCASES\.map/);
+  assert.match(scrollDrivenWorkflows, /creative-eyeball\.mp4/);
+  assert.match(scrollDrivenWorkflows, /<video[\s\S]*?autoPlay[\s\S]*?muted[\s\S]*?loop[\s\S]*?playsInline/);
+  assert.match(scrollDrivenWorkflows, /useReducedMotion/);
+  assert.match(scrollDrivenWorkflows, />Free demo <ArrowRight/);
 });
 
 test("landing additions include responsive and reduced-motion fallbacks", () => {

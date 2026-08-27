@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "applicationMode": "test",
+    "transactionId": "tx-835-test-001"
+  },
+  "transactions": [
+    {
+      "detailInfo": [
+        {
+          "paymentInfo": [
+            {
+              "claimPaymentInfo": {
+                "claimPaymentAmount": "100.00",
+                "claimStatusCode": "1",
+                "patientControlNumber": "RI837P000000001",
+                "patientResponsibilityAmount": "20.00",
+                "payerClaimControlNumber": "PAYER-CONTROL-1",
+                "totalClaimChargeAmount": "150.00"
+              },
+              "serviceLines": [
+                {
+                  "lineItemControlNumber": "RI837P000000001-1",
+                  "serviceAdjustments": [
+                    {
+                      "adjustmentAmount1": "30.00",
+                      "adjustmentReasonCode1": "45",
+                      "claimAdjustmentGroupCode": "CO"
+                    }
+                  ],
+                  "servicePaymentInformation": {
+                    "adjudicatedProcedureCode": "99213",
+                    "lineItemChargeAmount": "150.00",
+                    "lineItemProviderPaymentAmount": "100.00"
+                  },
+                  "serviceSupplementalAmounts": {
+                    "allowedActual": "120.00"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

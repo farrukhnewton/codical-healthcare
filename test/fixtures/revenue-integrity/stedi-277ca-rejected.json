@@ -1,0 +1,45 @@
+{
+  "transactions": [
+    {
+      "payers": [
+        {
+          "claimStatusTransactions": [
+            {
+              "claimStatusDetails": [
+                {
+                  "patientClaimStatusDetails": {
+                    "referencedTransactionTraceNumber": "RI837P000000001",
+                    "claims": [
+                      {
+                        "claimStatus": {
+                          "patientAccountNumber": "RI837P000000001"
+                        },
+                        "serviceLines": [
+                          {
+                            "lineItemControlNumber": "RI837P000000001-1",
+                            "serviceClaimStatuses": [
+                              {
+                                "serviceStatuses": [
+                                  {
+                                    "healthCareClaimStatusCategoryCode": "A3",
+                                    "healthCareClaimStatusCategoryCodeValue": "Acknowledgement/Returned as unprocessable claim.",
+                                    "statusCode": "164",
+                                    "statusCodeValue": "Entity contract or member number is invalid."
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "@shared/schema";
 import { PGX_CMS_GROUPS, PGX_CPT_CODES, PGX_GENE_DRUG_PAIRS, PGX_GENES, PGX_TIER_1_MAP } from "./pgx-engine";
+import { ensureRevenueIntegritySchema } from "./services/revenue-integrity/schema";
 
 const { Pool } = pg;
 const BOOTSTRAP_SCHEMA_VERSION = "2026-07-22-pgx-phase1";
@@ -843,6 +844,7 @@ export async function ensureDatabaseSchema() {
   await ensureBootstrapStateTable();
 
   if (await hasCurrentBootstrapVersion()) {
+    await ensureRevenueIntegritySchema(pool);
     await ensurePgxSchema();
     await seedPgxReferenceData();
     return;
@@ -851,6 +853,7 @@ export async function ensureDatabaseSchema() {
   await createBaseTables();
   await ensureSerialDefaults();
   await ensurePerformanceIndexes();
+  await ensureRevenueIntegritySchema(pool);
   await ensurePgxSchema();
 
   await pool.query(`

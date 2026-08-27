@@ -13,6 +13,7 @@ import "@/styles/nicu-specialty.css";
 import "@/styles/vad-ecmo-specialty.css";
 import "@/styles/cabg-specialty.css";
 import "@/styles/cath-pci-specialty.css";
+import "@/styles/revenue-integrity.css";
 
 import { lazy, Suspense, type ReactNode } from "react";
 import { Redirect, Route, Switch } from "wouter";
@@ -57,6 +58,7 @@ const NicuWorkspace = lazy(() => import("@/pages/NicuWorkspace").then((module) =
 const VadEcmoWorkspace = lazy(() => import("@/pages/VadEcmoWorkspace").then((module) => ({ default: module.VadEcmoWorkspace })));
 const CabgWorkspace = lazy(() => import("@/pages/CabgWorkspace").then((module) => ({ default: module.CabgWorkspace })));
 const CathPciWorkspace = lazy(() => import("@/pages/CathPciWorkspace").then((module) => ({ default: module.CathPciWorkspace })));
+const RevenueIntegrity = lazy(() => import("@/pages/RevenueIntegrity").then((module) => ({ default: module.RevenueIntegrity })));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const ChatRealtimeBridge = lazy(() =>
   import("@/components/chat/ChatRealtimeBridge").then((module) => ({ default: module.ChatRealtimeBridge })),
@@ -95,6 +97,7 @@ function AuthenticatedRoutes() {
   return (
     <Switch>
       <Route path="/dashboard">{() => <AppPage><Home /></AppPage>}</Route>
+      <Route path="/revenue-integrity">{() => <AppPage><RevenueIntegrity /></AppPage>}</Route>
       <Route path="/workspace">{() => <AppPage><Workspace /></AppPage>}</Route>
       <Route path="/chat">{() => <AppPage><TeamChat /></AppPage>}</Route>
       <Route path="/workbench">{() => <AppPage><Workbench /></AppPage>}</Route>

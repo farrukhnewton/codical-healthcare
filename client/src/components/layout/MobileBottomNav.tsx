@@ -1,12 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { Brain, LayoutDashboard, MessageSquare, MoreHorizontal, Search } from "lucide-react";
+import { Brain, CircleDollarSign, LayoutDashboard, MessageSquare, Search } from "lucide-react";
 
 const MOBILE_NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/search", label: "Search", icon: Search },
   { href: "/workspace", label: "Assistant", icon: Brain },
   { href: "/chat", label: "Chat", icon: MessageSquare },
-  { href: "/reports", label: "More", icon: MoreHorizontal },
+  { href: "/revenue-integrity", label: "Revenue", icon: CircleDollarSign },
 ];
 
 export function MobileBottomNav() {

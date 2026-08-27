@@ -25,6 +25,8 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
+      const showTechnicalDetails = typeof window !== "undefined"
+        && ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
       return (
         <div className="landingAurora appShell min-h-screen flex items-center justify-center p-4">
@@ -36,6 +38,11 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-gray-500 mb-6">
               We encountered an unexpected error. Please try refreshing the page.
             </p>
+            {showTechnicalDetails && this.state.error?.message ? (
+              <pre className="mb-6 max-w-xl overflow-auto whitespace-pre-wrap rounded-xl bg-red-50 p-3 text-left text-xs text-red-800">
+                {this.state.error.message}
+              </pre>
+            ) : null}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button type="button" onClick={() => window.location.reload()} className="error-boundary-action error-boundary-action-primary">
                 Refresh Page

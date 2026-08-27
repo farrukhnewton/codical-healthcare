@@ -1,0 +1,35 @@
+{
+  "scenarioId": "RI-837P-READY-001",
+  "description": "Synthetic professional office claim that should pass Codical structural integrity checks.",
+  "containsPhi": false,
+  "claim": {
+    "patientControlNumber": "TEST-PCN-0001",
+    "payerId": "STEDITEST",
+    "payerName": "Stedi Test Payer",
+    "serviceFrom": "2026-08-21",
+    "billingProviderNpi": "1234567893",
+    "diagnosisCodes": ["I10"],
+    "totalCharge": 150,
+    "metadata": {
+      "testScenario": "RI-837P-READY-001",
+      "synthetic": true
+    },
+    "lines": [
+      {
+        "lineNumber": 1,
+        "procedureCode": "99213",
+        "description": "Synthetic established-patient office visit",
+        "modifiers": [],
+        "diagnosisPointers": [1],
+        "placeOfService": "11",
+        "units": 1,
+        "chargeAmount": 150
+      }
+    ]
+  },
+  "expected": {
+    "ready": true,
+    "integrityScore": 100,
+    "issueCodes": []
+  }
+}

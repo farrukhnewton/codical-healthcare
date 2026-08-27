@@ -1,0 +1,313 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "Revenue Integrity Competitive Strategy",
+    "description": "A source-backed competitor benchmark and product roadmap for Codical Health.",
+    "generatedAt": "2026-08-21T12:00:00+05:00",
+    "cards": [],
+    "charts": [
+      {
+        "id": "public_capability_breadth",
+        "title": "Publicly described broad capability areas",
+        "subtitle": "Count of seven reviewed revenue-integrity domains labeled Broad from official product material; this measures public positioning breadth, not product quality or market share.",
+        "headerMarkdown": "Waystar publicly presents the broadest connected footprint in the reviewed material; several focused leaders concentrate on clinical integrity or financial master data.",
+        "type": "bar",
+        "dataset": "breadth",
+        "sourceId": "breadth_derived",
+        "encodings": {
+          "x": { "field": "vendor", "type": "nominal", "label": "Platform" },
+          "y": { "field": "broad_areas", "type": "quantitative", "label": "Broad capability areas", "format": "number" },
+          "tooltip": [
+            { "field": "focused_areas", "type": "quantitative", "label": "Focused capability areas", "format": "number" }
+          ]
+        },
+        "yAxisTitle": "Broad areas (maximum 7)",
+        "valueFormat": "number",
+        "layout": "full"
+      }
+    ],
+    "tables": [
+      {
+        "id": "competitor_matrix",
+        "title": "Publicly confirmed competitor capability matrix",
+        "subtitle": "Official product information reviewed August 21, 2026; Not confirmed means the capability was not found in the reviewed material, not that it does not exist.",
+        "dataset": "competitors",
+        "sourceId": "market_research",
+        "density": "dense",
+        "layout": "full",
+        "columns": [
+          { "field": "vendor", "label": "Platform", "type": "text" },
+          { "field": "pre_service", "label": "Financial clearance / PA", "type": "text" },
+          { "field": "clinical", "label": "CDI / coding", "type": "text" },
+          { "field": "charge", "label": "Charge integrity", "type": "text" },
+          { "field": "claims", "label": "Claims / remits", "type": "text" },
+          { "field": "denials", "label": "Denials / appeals", "type": "text" },
+          { "field": "contracts", "label": "Contracts / underpayments", "type": "text" },
+          { "field": "ai", "label": "AI automation", "type": "text" },
+          { "field": "strength", "label": "Publicly emphasized strength", "type": "text" }
+        ]
+      },
+      {
+        "id": "codical_gap_matrix",
+        "title": "Codical Health gap and sourcing decisions",
+        "subtitle": "Current position is based on the repository audit; recommendations separate differentiating product IP from commodity transaction infrastructure.",
+        "dataset": "codical_gaps",
+        "sourceId": "codical_audit",
+        "density": "spacious",
+        "layout": "full",
+        "columns": [
+          { "field": "capability", "label": "Capability", "type": "text" },
+          { "field": "current", "label": "Current position", "type": "text" },
+          { "field": "gap", "label": "Missing gap", "type": "text" },
+          { "field": "decision", "label": "Build / partner / license", "type": "text" },
+          { "field": "priority", "label": "Priority", "type": "text" }
+        ]
+      },
+      {
+        "id": "roadmap",
+        "title": "Recommended delivery sequence",
+        "subtitle": "Sequence is dependency-based; dates should be estimated only after integration partners and the first target customer profile are selected.",
+        "dataset": "roadmap",
+        "sourceId": "strategy_synthesis",
+        "density": "spacious",
+        "layout": "full",
+        "columns": [
+          { "field": "phase", "label": "Phase", "type": "text" },
+          { "field": "focus", "label": "Focus", "type": "text" },
+          { "field": "deliverables", "label": "Primary deliverables", "type": "text" },
+          { "field": "outcome", "label": "Decision outcome", "type": "text" },
+          { "field": "dependency", "label": "Critical dependency", "type": "text" }
+        ]
+      }
+    ],
+    "sources": [
+      { "id": "market_research", "label": "Official competitor product pages", "href": "https://www.waystar.com/" },
+      { "id": "breadth_derived", "label": "Derived public capability breadth", "path": "research/public-capability-breadth.sql" },
+      { "id": "codical_audit", "label": "Codical Health source audit", "path": "client/src/components/layout/AuthenticatedApp.tsx" },
+      { "id": "cms_regulatory", "label": "CMS interoperability and claims attachment rules", "href": "https://www.cms.gov/newsroom/fact-sheets/cms-interoperability-prior-authorization-final-rule-cms-0057-f" },
+      { "id": "strategy_synthesis", "label": "Competitive research and Codical source synthesis", "href": "https://www.waystar.com/our-platform/clinical-integrity-revenue-capture/" }
+    ],
+    "blocks": [
+      {
+        "id": "title",
+        "type": "markdown",
+        "body": "# Revenue Integrity Competitive Strategy"
+      },
+      {
+        "id": "executive_summary",
+        "type": "markdown",
+        "body": "## Executive Summary\n\n- **Codical Health should not copy a legacy end-to-end RCM suite feature for feature.** Leaders such as Waystar, Optum, FinThrive and Experian win through transaction reach, integrated work queues, proprietary content and measurable financial outcomes. Codical should partner for commodity connectivity and build the clinical-policy intelligence layer.\n- **The immediate product gap is the closed revenue loop.** Codical already has unusually deep specialty coding, CMS/payer research, document extraction, validation and collaboration. It does not yet connect the encounter to authorization, charges, 837 claims, payer status, 835 remittance, denial, appeal and final payment.\n- **The defensible edge should be an Evidence Graph.** Every extracted clinical fact, code, rule, claim line, payer response and appeal outcome should be linked, dated and explainable. Competitors publicly emphasize automation; Codical can differentiate on specialty-aware reasoning, exact source provenance and policy-effective-date accuracy.\n- **Build Revenue Integrity as one operational system, not ten isolated pages.** Launch a common claim digital twin and work queue first, then financial clearance, charge integrity, pre-bill integrity, remittance/denials and contract recovery on the same data model."
+      },
+      {
+        "id": "market_pattern",
+        "type": "markdown",
+        "sourceId": "market_research",
+        "body": "## The leaders compete with connected workflows, content and distribution\n\n**Waystar** presents the broadest connected provider workflow: financial clearance, clinical integrity and revenue capture, claims and remits, denial recovery, and analytics. Its public clinical-integrity suite includes utilization management, CDI, physician queries, pre-bill anomaly detection, charge integrity and DRG anomaly detection. [Waystar platform](https://www.waystar.com/) and [Clinical Integrity + Revenue Capture](https://www.waystar.com/our-platform/clinical-integrity-revenue-capture/)\n\n**FinThrive** emphasizes shared reimbursement logic across claims, denials, contracts and underpayments. Its Contract Manager exposes expected reimbursement, line-level variance, payer performance and unified worklists, while its denial products predict risk before submission and connect recovery to contract logic. [FinThrive denial and underpayment prevention](https://finthrive.com/outcomes/denial-underpayment-prevention) and [Contract Manager](https://finthrive.com/solutions/revenue-collect/contract-manager)\n\n**Craneware Trisus** is strongest in the financial master data that general coding platforms often neglect: chargemaster governance, pricing, pharmacy formulary, supply/item-master alignment and retrospective claim/remit analytics. Its root-cause workflow distinguishes potential gross impact from actual remittance impact. [Trisus Data Integrity](https://www.thecranewaregroup.com/solutions/trisus-data-integrity-suite/) and [Claims Informatics](https://www.thecranewaregroup.com/solutions/revenue/trisus-claims-informatics/)\n\n**Solventum, Optum and Iodine** dominate clinical integrity through computer-assisted coding, CDI prioritization, quality signals, transparent edit libraries and human review. [Solventum 360 Encompass](https://www.solventum.com/en-us/home/health-information-technology/solutions/360-encompass-cac/), [Optum Claims Manager](https://business.optum.com/en/operations-technology/revenue-cycle-management/reimbursement/claims-manager.html), [Optum claim editing](https://business.optum.com/en/operations-technology/payment-integrity/claim-editing.html), and [Iodine](https://iodinesoftware.com/home)\n\n**Experian Health and AKASA** demonstrate the importance of front-end data quality and task automation: eligibility, coverage discovery, prior authorization, claim status, predictive denials and AI assistance embedded in existing staff workflows. [Experian Health products](https://www.experian.com/healthcare/products) and [AKASA](https://akasa.com/)"
+      },
+      {
+        "id": "breadth_explanation",
+        "type": "markdown",
+        "sourceId": "market_research",
+        "body": "## Breadth belongs in the platform layer; depth can remain Codical's advantage\n\nThe visual counts only domains that official product material describes broadly across the seven reviewed areas. It does **not** score implementation quality, accuracy, customer satisfaction or financial return. The practical implication is that Codical must connect the lifecycle well enough to compete with platform vendors while preserving deeper specialty evidence and policy reasoning than a generic suite."
+      },
+      { "id": "breadth_chart_block", "type": "chart", "chartId": "public_capability_breadth", "layout": "full" },
+      { "id": "competitor_matrix_block", "type": "table", "tableId": "competitor_matrix", "layout": "full" },
+      {
+        "id": "leader_lessons",
+        "type": "markdown",
+        "body": "## Five market lessons Codical must meet\n\n1. **Prevention is worth more than downstream cleanup.** Competitive platforms move edits, documentation checks and authorization intelligence upstream, before a claim is released.\n2. **A work queue is the product.** Rules and AI only create value when cases are prioritized by financial value, deadline, clinical risk and recoverability, then routed to the correct role.\n3. **Content operations are permanent.** Leaders maintain payer rules, regulatory content, contract logic and clinical edit libraries continuously; this cannot be treated as a one-time seed project.\n4. **Outcome feedback is the learning signal.** Remittances, denials, appeal decisions and coder overrides must update future pre-bill recommendations.\n5. **Integration depth creates switching cost.** EHR, patient-accounting, clearinghouse and payer connections are as important as the visible UI."
+      },
+      {
+        "id": "codical_position",
+        "type": "markdown",
+        "sourceId": "codical_audit",
+        "body": "## Codical is differentiated in specialty reasoning but incomplete operationally\n\nThe repository contains more than 30 authenticated routes, approximately 131 API handlers and 12 specialty engines. It already covers AI-assisted coding, OCR/document extraction, CMS coverage, commercial payer policies, NCCI, claim validation, HCC, specialty billing logic, collaboration and audit activity.\n\nThe strongest existing asset is not a generic code search—it is the ability to assemble specialty-specific clinical evidence and translate it into coder-ready recommendations. The material gaps are transaction ingestion, facility charge data, remittance and denial history, contract logic, production analytics, and reusable EHR/clearinghouse integration. Current dashboard, analytics and report content is visually mature but largely static, so it cannot yet prove recovered revenue or operational performance."
+      },
+      { "id": "gap_matrix_block", "type": "table", "tableId": "codical_gap_matrix", "layout": "full" },
+      {
+        "id": "differentiation",
+        "type": "markdown",
+        "body": "## Codical can win with a specialty-aware Revenue Evidence Graph\n\n### 1. Evidence Graph instead of black-box recommendations\n\nLink the original document region, extracted clinical fact, normalized terminology, code suggestion, CMS or payer rule, jurisdiction, effective date, claim line, edit, payer response and final disposition. Users should be able to answer: **What evidence produced this recommendation, which rule controlled it on the service date, and what happened after submission?**\n\n### 2. Closed-loop denial prevention\n\nWhen an 835 denial or appeal decision arrives, trace it to the responsible upstream step—registration, authorization, documentation, coding, charge capture, claim formatting or contract variance. Convert confirmed outcomes into versioned pre-bill rules and specialty-engine feedback, subject to human governance.\n\n### 3. Specialty-aware claim digital twin\n\nBefore submission, simulate the complete professional or institutional claim using specialty logic, NCCI/MUE edits, coverage, diagnosis-to-procedure support, authorization, documentation completeness and expected reimbursement. Let a user compare safe alternatives without inventing documentation or diagnoses.\n\n### 4. Policy time machine\n\nEvaluate claims against the payer, product, state, MAC jurisdiction and policy version effective on the date of service. Show policy changes, impacted work queues and which previously clean claims would fail under the new version.\n\n### 5. Explainable work prioritization\n\nRank each task using expected recoverable value, probability of success, timely-filing or appeal deadline, confidence, patient impact and staff effort. Show every component so users can override the priority.\n\n### 6. Payer behavior intelligence\n\nCreate payer scorecards for authorization response time, denial patterns, overturn rate, underpayment variance, request-for-information frequency and policy volatility. Keep contractual and regulatory conclusions separate from observed operational behavior.\n\n### 7. Governed agentic automation\n\nUse graduated action levels: recommend, draft, prepare transaction, submit with approval, and narrowly auto-execute only after customer policy and compliance gates. Preserve immutable audit logs, model/rule versions and the exact payload changed.\n\n### 8. One collaborative review packet\n\nCDI specialists, coders, billers, clinicians and appeal teams should work from the same evidence packet rather than creating disconnected notes in separate modules."
+      },
+      {
+        "id": "architecture",
+        "type": "markdown",
+        "body": "## Recommended Revenue Integrity section\n\n1. **Revenue Command Center** — enterprise work queue, revenue at risk, deadlines, ownership and throughput.\n2. **Financial Clearance** — eligibility/benefits, coverage discovery, prior authorization, medical necessity, estimates and authorization status.\n3. **Clinical Integrity** — concurrent CDI, facility/professional coding, physician queries, utilization review and specialty-engine evidence.\n4. **Charge Integrity** — chargemaster governance, order-to-charge reconciliation, pharmacy/NDC, supplies/implants, missing and duplicate charges.\n5. **Pre-bill Claim Integrity** — claim digital twin, 837P/837I validation, payer-specific edits, attachments and submission readiness.\n6. **Claim Status & Remittance** — acknowledgements, 276/277 status, 835 posting, CARC/RARC/PLB normalization and claim-line reconciliation.\n7. **Denials & Appeals** — root cause, preventability, triage, appeal packet, correspondence, deadline and outcome tracking.\n8. **Contracts & Underpayments** — expected reimbursement, line-level variance, payer compliance, recovery and negotiation intelligence.\n9. **Payer Intelligence** — policy library, operational scorecards, effective-date changes and local rule management.\n10. **Knowledge & Governance** — source versions, rule testing, approvals, release notes, model monitoring and audit exports."
+      },
+      { "id": "roadmap_block", "type": "table", "tableId": "roadmap", "layout": "full" },
+      {
+        "id": "build_partner_license",
+        "type": "markdown",
+        "body": "## Build the differentiator; partner for the network\n\n**Build inside Codical:** the canonical encounter/claim model, Evidence Graph, specialty-aware edit engine, policy time machine, claim simulation, work prioritization, denial learning, collaborative review packet, governance and outcome analytics.\n\n**Partner first:** clearinghouse connectivity, payer transaction routing, eligibility networks, 837 delivery, acknowledgements, 835 feeds, claim status and payer-portal connectivity. Attempting to become a clearinghouse before product-market fit would consume capital without strengthening Codical's clinical-policy advantage.\n\n**License or formally source:** CPT and proprietary coding content, production-grade grouper/editor content where redistribution is restricted, commercial payer contracts, customer-specific fee schedules and any clinical criteria requiring a commercial license."
+      },
+      {
+        "id": "regulatory_timing",
+        "type": "markdown",
+        "sourceId": "cms_regulatory",
+        "body": "## Regulatory timing strengthens the case for authorization and attachments\n\nCMS requires impacted payers to provide specific prior-authorization denial reasons and meet 72-hour expedited and seven-calendar-day standard decision timeframes, while FHIR prior-authorization APIs generally begin in 2027. [CMS-0057-F](https://www.cms.gov/newsroom/fact-sheets/cms-interoperability-prior-authorization-final-rule-cms-0057-f)\n\nCMS also finalized the first HIPAA claims-attachment standards in 2026, adopting X12N 275/277 Version 6020, HL7 attachment guidance and electronic signatures. The rule is effective May 26, 2026, with compliance deadlines 24 months later. [CMS-0053-F](https://www.cms.gov/newsroom/fact-sheets/administrative-simplification-adoption-standards-health-care-claims-attachments-transactions)\n\nCodical should therefore design authorization and attachment data models now, even if initial payer connectivity is supplied by a partner."
+      },
+      {
+        "id": "success_measures",
+        "type": "markdown",
+        "body": "## Success must be measured in financial and operational outcomes\n\nThe production dashboard should replace placeholder numbers with: first-pass acceptance, clean-claim rate, preventable denial rate, authorization turnaround, missing-charge value found, documentation-query response and yield, expected-versus-paid variance, appeal overturn rate, recovered underpayments, days in A/R, cost to collect, staff touches per account, automation-without-rework rate, rule false-positive rate and net recovered or protected revenue.\n\nEvery metric needs a defined denominator, payer and facility drill-down, service-date cohort, confidence range where modeled, and reconciliation to claim/remittance data."
+      },
+      {
+        "id": "next_steps",
+        "type": "markdown",
+        "body": "## Recommended next decision\n\nApprove a **Revenue Integrity Foundation phase**, not all ten modules at once. The approval should authorize product design and technical architecture for the canonical claim model, Evidence Graph, integration adapter contract, production work queue and outcome measurement. In parallel, select one design-partner segment—hospital/health system or physician group—and evaluate clearinghouse/transaction partners.\n\nOnly after that foundation is agreed should the first commercial module be chosen. For a hospital-first strategy, start with pre-bill integrity plus denials. For a physician-group strategy, start with financial clearance, prior authorization and professional-claim denial prevention."
+      },
+      {
+        "id": "further_questions",
+        "type": "markdown",
+        "body": "## Further Questions\n\n- Is the first target customer a hospital/health system, multi-specialty physician group, laboratory, billing company or another segment?\n- Will Codical submit transactions through a clearinghouse partner, integrate with customers' existing clearinghouses, or support both?\n- Which EHR and patient-accounting systems must be first-class in the initial release?\n- Does the first release need institutional claims and facility charge data, or can professional claims establish the closed-loop foundation?\n- Which customer will supply de-identified 837, 835, denial, contract and authorization histories for validation?\n- What action level may AI take without human approval under the intended compliance model?"
+      },
+      {
+        "id": "caveats",
+        "type": "markdown",
+        "body": "## Caveats and Assumptions\n\nThis comparison uses publicly available official product information reviewed on August 21, 2026. Vendor pages emphasize strengths and rarely disclose complete limitations, implementation effort, pricing, accuracy by cohort or failed deployments. **Not confirmed** means a capability was not found in the reviewed sources; it is not proof that the vendor lacks it. Vendor-reported financial results and awards were not used to calculate market share or expected Codical ROI.\n\nThe Codical assessment is based on the current repository, routes, APIs, migrations and documentation. It did not include customer interviews, production claims, payer contracts, live remittance data or a fresh browser-based usability study. Roadmap ordering is therefore strategic and dependency-based, not a committed delivery estimate."
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-08-21T12:00:00+05:00",
+    "status": "ready",
+    "datasets": {
+      "breadth": [
+        { "vendor": "Waystar", "broad_areas": 6, "focused_areas": 1 },
+        { "vendor": "FinThrive", "broad_areas": 5, "focused_areas": 2 },
+        { "vendor": "Optum", "broad_areas": 5, "focused_areas": 2 },
+        { "vendor": "Experian Health", "broad_areas": 5, "focused_areas": 1 },
+        { "vendor": "AKASA", "broad_areas": 3, "focused_areas": 3 },
+        { "vendor": "Craneware Trisus", "broad_areas": 2, "focused_areas": 5 },
+        { "vendor": "Solventum", "broad_areas": 2, "focused_areas": 2 },
+        { "vendor": "Iodine", "broad_areas": 2, "focused_areas": 2 }
+      ],
+      "competitors": [
+        { "vendor": "Waystar", "pre_service": "Broad", "clinical": "Broad", "charge": "Broad", "claims": "Broad", "denials": "Broad", "contracts": "Focused", "ai": "Broad", "strength": "Connected end-to-end provider payment workflow" },
+        { "vendor": "FinThrive", "pre_service": "Focused", "clinical": "Focused", "charge": "Broad", "claims": "Broad", "denials": "Broad", "contracts": "Broad", "ai": "Broad", "strength": "Shared contract, claim, denial and underpayment logic" },
+        { "vendor": "Craneware Trisus", "pre_service": "Focused", "clinical": "Focused", "charge": "Broad", "claims": "Focused", "denials": "Focused", "contracts": "Broad", "ai": "Focused", "strength": "Chargemaster, pricing, pharmacy, supply and claim data integrity" },
+        { "vendor": "Solventum 360 Encompass", "pre_service": "Not confirmed", "clinical": "Broad", "charge": "Focused", "claims": "Not confirmed", "denials": "Focused", "contracts": "Not confirmed", "ai": "Broad", "strength": "Enterprise CAC, CDI, quality signals and coding workflow" },
+        { "vendor": "Optum", "pre_service": "Focused", "clinical": "Broad", "charge": "Broad", "claims": "Broad", "denials": "Broad", "contracts": "Focused", "ai": "Broad", "strength": "Large sourced edit library plus services and integrated coding" },
+        { "vendor": "Experian Health", "pre_service": "Broad", "clinical": "Focused", "charge": "Not confirmed", "claims": "Broad", "denials": "Broad", "contracts": "Broad", "ai": "Broad", "strength": "Front-end data quality, eligibility, authorization and claims" },
+        { "vendor": "Iodine Software", "pre_service": "Not confirmed", "clinical": "Broad", "charge": "Focused", "claims": "Not confirmed", "denials": "Focused", "contracts": "Not confirmed", "ai": "Broad", "strength": "Continuous CDI and mid-cycle documentation intelligence" },
+        { "vendor": "AKASA", "pre_service": "Broad", "clinical": "Broad", "charge": "Not confirmed", "claims": "Focused", "denials": "Focused", "contracts": "Not confirmed", "ai": "Broad", "strength": "Generative-AI assistants embedded in coding, CDI and status tasks" }
+      ],
+      "codical_gaps": [
+        { "capability": "Canonical encounter and claim model", "current": "Specialty-specific cases and claim drafts", "gap": "No single longitudinal authorization-to-payment object", "decision": "Build", "priority": "Foundation" },
+        { "capability": "Transaction connectivity", "current": "Claim formats referenced in specialty logic", "gap": "No production 837, acknowledgement, 276/277 or 835 lifecycle", "decision": "Partner first; build adapters", "priority": "Foundation" },
+        { "capability": "Revenue Evidence Graph", "current": "Strong source-linked coding rationale in selected workflows", "gap": "Evidence does not yet persist through payer response and outcome", "decision": "Build as core IP", "priority": "Foundation" },
+        { "capability": "Financial clearance", "current": "Coverage intelligence and payer portal references", "gap": "Eligibility, benefits, coverage discovery, PA submission and status", "decision": "Partner connectivity; build workflow", "priority": "High" },
+        { "capability": "Facility CDI and DRG", "current": "Professional and specialty coding depth", "gap": "Concurrent CDI, ICD-10-PCS, MS-DRG, MCE and query lifecycle", "decision": "Build; license restricted content", "priority": "High for hospital strategy" },
+        { "capability": "Charge integrity", "current": "Service-specific coding logic", "gap": "CDM, item master, OR implants, pharmacy/NDC and order-to-charge reconciliation", "decision": "Build after data contracts", "priority": "High for hospital strategy" },
+        { "capability": "Pre-bill claim integrity", "current": "NCCI, coverage and claim validation tools", "gap": "Unified payer-specific claim twin, attachments and release controls", "decision": "Build", "priority": "High" },
+        { "capability": "Denials and appeals", "current": "No closed-loop operational module", "gap": "CARC/RARC normalization, root cause, deadlines, appeal packets and outcomes", "decision": "Build on 835 feed", "priority": "High" },
+        { "capability": "Contracts and underpayments", "current": "RVU and selected Medicare pricing logic", "gap": "Customer contracts, expected reimbursement and paid variance", "decision": "Build engine; customer supplies contracts", "priority": "Medium" },
+        { "capability": "Production analytics and reports", "current": "Polished static dashboard and report UI", "gap": "Metrics and exports are not reconciled to transaction data", "decision": "Build after canonical model", "priority": "Foundation" },
+        { "capability": "Knowledge operations", "current": "CMS imports and curated specialty knowledge", "gap": "Unified source versions, effective-date diffs, tests, approvals and rollback", "decision": "Build as core IP", "priority": "Foundation" },
+        { "capability": "Governed automation", "current": "Assistive AI with human review boundaries", "gap": "Action tiers, policy gates, outcome monitoring and model/rule audit", "decision": "Build", "priority": "High" }
+      ],
+      "roadmap": [
+        { "phase": "0 — Decision and design", "focus": "Target market and transaction strategy", "deliverables": "Design partner, workflow maps, integration RFP, data rights, security and PHI gates", "outcome": "Hospital-first or physician-group-first scope", "dependency": "Executive customer and partner decisions" },
+        { "phase": "1 — Revenue Integrity Foundation", "focus": "One canonical operational model", "deliverables": "Encounter/claim digital twin, Evidence Graph, work queue, event/audit model, integration adapter contract, real KPIs", "outcome": "Every case is traceable from evidence to outcome", "dependency": "De-identified representative transactions" },
+        { "phase": "2 — First commercial loop", "focus": "Pre-bill and denial prevention", "deliverables": "837 validation, acknowledgements, 835 ingestion, CARC/RARC, denial triage, appeal packet and outcome feedback", "outcome": "Demonstrable protected and recovered revenue", "dependency": "Clearinghouse and remittance feed" },
+        { "phase": "3A — Hospital expansion", "focus": "Clinical and charge integrity", "deliverables": "CDI/DRG, physician query, utilization, chargemaster, supply/pharmacy and order-to-charge reconciliation", "outcome": "Enterprise mid-cycle differentiation", "dependency": "EHR, patient accounting and CDM data" },
+        { "phase": "3B — Physician-group expansion", "focus": "Financial clearance", "deliverables": "270/271 eligibility, benefits, prior authorization, medical necessity, status, estimates and professional-claim edits", "outcome": "Front-end denial prevention", "dependency": "Payer connectivity and practice-management integration" },
+        { "phase": "4 — Payment recovery", "focus": "Contracts and underpayments", "deliverables": "Expected reimbursement, line variance, payer scorecards, recovery workflows and negotiation evidence", "outcome": "Closed payment-accuracy loop", "dependency": "Digitized contracts and reliable 835 posting" },
+        { "phase": "5 — Governed autonomy", "focus": "Safe scaled execution", "deliverables": "Customer-configured action tiers, approval policies, monitored agents, rollback and continuous rule evaluation", "outcome": "Lower cost to collect without losing control", "dependency": "Validated accuracy and stable operating controls" }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "market_research",
+      "label": "Official competitor product pages",
+      "href": "https://www.waystar.com/",
+      "query": {
+        "engine": "web_research",
+        "sql": "SELECT * FROM (VALUES ('Waystar','Broad','Broad','Broad','Broad','Broad','Focused','Broad','Connected end-to-end provider payment workflow'),('FinThrive','Focused','Focused','Broad','Broad','Broad','Broad','Broad','Shared contract, claim, denial and underpayment logic'),('Craneware Trisus','Focused','Focused','Broad','Focused','Focused','Broad','Focused','Chargemaster, pricing, pharmacy, supply and claim data integrity'),('Solventum 360 Encompass','Not confirmed','Broad','Focused','Not confirmed','Focused','Not confirmed','Broad','Enterprise CAC, CDI, quality signals and coding workflow'),('Optum','Focused','Broad','Broad','Broad','Broad','Focused','Broad','Large sourced edit library plus services and integrated coding'),('Experian Health','Broad','Focused','Not confirmed','Broad','Broad','Broad','Broad','Front-end data quality, eligibility, authorization and claims'),('Iodine Software','Not confirmed','Broad','Focused','Not confirmed','Focused','Not confirmed','Broad','Continuous CDI and mid-cycle documentation intelligence'),('AKASA','Broad','Broad','Not confirmed','Focused','Focused','Not confirmed','Broad','Generative-AI assistants embedded in coding, CDI and status tasks')) AS reviewed(vendor,pre_service,clinical,charge,claims,denials,contracts,ai,strength);",
+        "description": "Capability matrix synthesized from official Waystar, FinThrive, Craneware, Solventum, Optum, Experian Health, Iodine Software and AKASA product pages reviewed August 21, 2026.",
+        "executed_at": "2026-08-21T11:20:00+05:00",
+        "tables_used": [
+          "https://www.waystar.com/",
+          "https://www.waystar.com/our-platform/clinical-integrity-revenue-capture/",
+          "https://finthrive.com/outcomes/denial-underpayment-prevention",
+          "https://finthrive.com/solutions/revenue-collect/contract-manager",
+          "https://www.thecranewaregroup.com/solutions/trisus-data-integrity-suite/",
+          "https://www.thecranewaregroup.com/solutions/revenue/trisus-claims-informatics/",
+          "https://www.solventum.com/en-us/home/health-information-technology/solutions/360-encompass-cac/",
+          "https://business.optum.com/en/operations-technology/revenue-cycle-management.html",
+          "https://www.experian.com/healthcare/products",
+          "https://iodinesoftware.com/home",
+          "https://akasa.com/"
+        ]
+      }
+    },
+    {
+      "id": "breadth_derived",
+      "label": "Derived public capability breadth",
+      "path": "research/public-capability-breadth.sql",
+      "query": {
+        "engine": "postgresql",
+        "sql": "WITH reviewed(vendor, pre_service, clinical, charge, claims, denials, contracts, ai) AS (VALUES ('Waystar','Broad','Broad','Broad','Broad','Broad','Focused','Broad'),('FinThrive','Focused','Focused','Broad','Broad','Broad','Broad','Broad'),('Optum','Focused','Broad','Broad','Broad','Broad','Focused','Broad'),('Experian Health','Broad','Focused','Not confirmed','Broad','Broad','Broad','Broad'),('AKASA','Broad','Broad','Not confirmed','Focused','Focused','Not confirmed','Broad'),('Craneware Trisus','Focused','Focused','Broad','Focused','Focused','Broad','Focused'),('Solventum','Not confirmed','Broad','Focused','Not confirmed','Focused','Not confirmed','Broad'),('Iodine','Not confirmed','Broad','Focused','Not confirmed','Focused','Not confirmed','Broad')) SELECT vendor, (SELECT COUNT(*) FROM unnest(ARRAY[pre_service, clinical, charge, claims, denials, contracts, ai]) AS capability WHERE capability = 'Broad') AS broad_areas, (SELECT COUNT(*) FROM unnest(ARRAY[pre_service, clinical, charge, claims, denials, contracts, ai]) AS capability WHERE capability = 'Focused') AS focused_areas FROM reviewed ORDER BY broad_areas DESC, vendor;",
+        "description": "Reproducible count of Broad and Focused labels in the reviewed public capability matrix. The labels are research classifications, not vendor performance measurements.",
+        "executed_at": "2026-08-21T11:50:00+05:00",
+        "tables_used": ["Reviewed official competitor capability matrix"]
+      }
+    },
+    {
+      "id": "codical_audit",
+      "label": "Codical Health source audit",
+      "path": "client/src/components/layout/AuthenticatedApp.tsx",
+      "query": {
+        "engine": "postgresql",
+        "sql": "SELECT * FROM (VALUES ('Canonical encounter and claim model','Specialty-specific cases and claim drafts','No single longitudinal authorization-to-payment object','Build','Foundation'),('Transaction connectivity','Claim formats referenced in specialty logic','No production 837, acknowledgement, 276/277 or 835 lifecycle','Partner first; build adapters','Foundation'),('Revenue Evidence Graph','Strong source-linked coding rationale in selected workflows','Evidence does not yet persist through payer response and outcome','Build as core IP','Foundation'),('Financial clearance','Coverage intelligence and payer portal references','Eligibility, benefits, coverage discovery, PA submission and status','Partner connectivity; build workflow','High'),('Facility CDI and DRG','Professional and specialty coding depth','Concurrent CDI, ICD-10-PCS, MS-DRG, MCE and query lifecycle','Build; license restricted content','High for hospital strategy'),('Charge integrity','Service-specific coding logic','CDM, item master, OR implants, pharmacy/NDC and order-to-charge reconciliation','Build after data contracts','High for hospital strategy'),('Pre-bill claim integrity','NCCI, coverage and claim validation tools','Unified payer-specific claim twin, attachments and release controls','Build','High'),('Denials and appeals','No closed-loop operational module','CARC/RARC normalization, root cause, deadlines, appeal packets and outcomes','Build on 835 feed','High'),('Contracts and underpayments','RVU and selected Medicare pricing logic','Customer contracts, expected reimbursement and paid variance','Build engine; customer supplies contracts','Medium'),('Production analytics and reports','Polished static dashboard and report UI','Metrics and exports are not reconciled to transaction data','Build after canonical model','Foundation'),('Knowledge operations','CMS imports and curated specialty knowledge','Unified source versions, effective-date diffs, tests, approvals and rollback','Build as core IP','Foundation'),('Governed automation','Assistive AI with human review boundaries','Action tiers, policy gates, outcome monitoring and model/rule audit','Build','High')) AS gaps(capability,current_position,gap,decision,priority);",
+        "description": "Review of Codical routes, specialty registry, API handlers, migrations, dashboard, analytics, reports and PHI/security documentation.",
+        "executed_at": "2026-08-21T10:15:00+05:00",
+        "tables_used": [
+          "client/src/components/layout/AuthenticatedApp.tsx",
+          "shared/specialty-registry.ts",
+          "server/routes.ts",
+          "client/src/pages/Home.tsx",
+          "client/src/pages/Analytics.tsx",
+          "client/src/pages/Reports.tsx",
+          "docs/pgx-phi-security.md"
+        ]
+      }
+    },
+    {
+      "id": "cms_regulatory",
+      "label": "CMS interoperability and claims attachment rules",
+      "href": "https://www.cms.gov/newsroom/fact-sheets/cms-interoperability-prior-authorization-final-rule-cms-0057-f",
+      "query": {
+        "engine": "web_research",
+        "description": "Current CMS regulatory requirements relevant to prior authorization and electronic claims attachments.",
+        "executed_at": "2026-08-21T11:35:00+05:00",
+        "tables_used": [
+          "https://www.cms.gov/newsroom/fact-sheets/cms-interoperability-prior-authorization-final-rule-cms-0057-f",
+          "https://www.cms.gov/newsroom/fact-sheets/administrative-simplification-adoption-standards-health-care-claims-attachments-transactions"
+        ]
+      }
+    },
+    {
+      "id": "strategy_synthesis",
+      "label": "Competitive research and Codical source synthesis",
+      "href": "https://www.waystar.com/our-platform/clinical-integrity-revenue-capture/",
+      "query": {
+        "engine": "postgresql",
+        "sql": "SELECT * FROM (VALUES ('0 — Decision and design','Target market and transaction strategy','Design partner, workflow maps, integration RFP, data rights, security and PHI gates','Hospital-first or physician-group-first scope','Executive customer and partner decisions'),('1 — Revenue Integrity Foundation','One canonical operational model','Encounter/claim digital twin, Evidence Graph, work queue, event/audit model, integration adapter contract, real KPIs','Every case is traceable from evidence to outcome','De-identified representative transactions'),('2 — First commercial loop','Pre-bill and denial prevention','837 validation, acknowledgements, 835 ingestion, CARC/RARC, denial triage, appeal packet and outcome feedback','Demonstrable protected and recovered revenue','Clearinghouse and remittance feed'),('3A — Hospital expansion','Clinical and charge integrity','CDI/DRG, physician query, utilization, chargemaster, supply/pharmacy and order-to-charge reconciliation','Enterprise mid-cycle differentiation','EHR, patient accounting and CDM data'),('3B — Physician-group expansion','Financial clearance','270/271 eligibility, benefits, prior authorization, medical necessity, status, estimates and professional-claim edits','Front-end denial prevention','Payer connectivity and practice-management integration'),('4 — Payment recovery','Contracts and underpayments','Expected reimbursement, line variance, payer scorecards, recovery workflows and negotiation evidence','Closed payment-accuracy loop','Digitized contracts and reliable 835 posting'),('5 — Governed autonomy','Safe scaled execution','Customer-configured action tiers, approval policies, monitored agents, rollback and continuous rule evaluation','Lower cost to collect without losing control','Validated accuracy and stable operating controls')) AS roadmap(phase,focus,deliverables,outcome,dependency);",
+        "description": "Dependency-based roadmap combining the competitor capability benchmark, current Codical architecture and current CMS deadlines.",
+        "executed_at": "2026-08-21T12:00:00+05:00",
+        "tables_used": [
+          "Official competitor product pages",
+          "Codical Health repository audit",
+          "CMS-0057-F",
+          "CMS-0053-F"
+        ]
+      }
+    }
+  ],
+  "package_info": {}
+}

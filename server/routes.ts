@@ -31,6 +31,7 @@ import {
 import { getMcdCrosswalk } from "./mcd-crosswalk-service";
 import { discoverPayerPolicies } from "./services/payer-policy-ingestion";
 import { DrChronoService } from "./services/emr/drchrono";
+import { registerRevenueIntegrityRoutes } from "./revenue-integrity-routes";
 import { patients, encounters, assignments, clinicalNotes, auditLogs, commercialPayers, payerPolicies, pgxAnalyses, pgxCmsGroups, pgxGenes, pgxGeneDrugPairs } from "@shared/schema";
 import {
   PGX_CMS_GROUPS,
@@ -1150,6 +1151,8 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  registerRevenueIntegrityRoutes(app);
 
   // ============ CARDIAC CATH / PCI CODER ROUTES ============
 

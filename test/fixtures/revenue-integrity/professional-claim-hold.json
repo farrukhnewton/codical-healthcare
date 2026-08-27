@@ -1,0 +1,34 @@
+{
+  "scenarioId": "RI-837P-HOLD-001",
+  "description": "Synthetic claim with an invalid diagnosis pointer and mismatched total that must be held before submission.",
+  "containsPhi": false,
+  "claim": {
+    "patientControlNumber": "TEST-PCN-0002",
+    "payerId": "STEDITEST",
+    "payerName": "Stedi Test Payer",
+    "serviceFrom": "2026-08-21",
+    "billingProviderNpi": "1234567893",
+    "diagnosisCodes": ["I10"],
+    "totalCharge": 250,
+    "metadata": {
+      "testScenario": "RI-837P-HOLD-001",
+      "synthetic": true
+    },
+    "lines": [
+      {
+        "lineNumber": 1,
+        "procedureCode": "99213",
+        "description": "Synthetic established-patient office visit",
+        "modifiers": [],
+        "diagnosisPointers": [2],
+        "placeOfService": "11",
+        "units": 1,
+        "chargeAmount": 150
+      }
+    ]
+  },
+  "expected": {
+    "ready": false,
+    "issueCodes": ["INVALID_DIAGNOSIS_POINTER", "CHARGE_TOTAL_MISMATCH"]
+  }
+}

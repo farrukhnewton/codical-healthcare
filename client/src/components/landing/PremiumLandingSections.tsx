@@ -1,44 +1,24 @@
 import {
   motion,
-  type MotionStyle,
   type MotionValue,
   useScroll,
   useTransform,
 } from "framer-motion";
-import { useRef, useState, type ComponentType, type ReactNode } from "react";
+import { useRef, type ComponentType, type ReactNode } from "react";
 import { Link } from "wouter";
 import {
   ArrowRight,
   BadgeCheck,
   BrainCircuit,
   Landmark,
-  Play,
   ShieldCheck,
   Stethoscope,
   UsersRound,
   Workflow,
 } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
-
-type FeaturedModule = {
-  id: string;
-  eyebrow: string;
-  title: string;
-  summary: string;
-  image: string;
-  accent: string;
-};
-
-type VideoStory = {
-  id: string;
-  title: string;
-  category: string;
-  video: string;
-  fallback: string;
-  poster: string;
-  duration: string;
-  note: string;
-};
+import { ProductFilmsSection } from "@/components/landing/ProductFilmsSection";
+import { ScrollDrivenWorkflowSection } from "@/components/landing/ScrollDrivenWorkflowSection";
 
 type CustomerVideo = {
   id: string;
@@ -60,188 +40,16 @@ type WrittenTestimonial = {
   portrait?: string;
 };
 
-const PUBLIC_MEDIA_BASE = (
-  import.meta.env.VITE_PUBLIC_MEDIA_URL ||
-  "https://codical-public-assets.farrukhnewton.workers.dev"
-).replace(/\/$/, "");
-
-const FEATURED_MODULES: FeaturedModule[] = [
-  {
-    id: "ai-coding",
-    eyebrow: "Evidence-first automation",
-    title: "AI Medical Coding",
-    summary:
-      "Source-linked code suggestions, documentation evidence and claim checks stay together until coder signoff.",
-    image: "/assets/landing/ai-coding.webp",
-    accent: "#19c6c3",
-  },
-  {
-    id: "ai-transcription",
-    eyebrow: "Clinical speech to structure",
-    title: "AI Clinical Transcription",
-    summary:
-      "Encounter audio becomes a reviewable transcript, structured note and coding context without leaving the workspace.",
-    image: "/assets/landing/ai-transcription.webp",
-    accent: "#8667f6",
-  },
-  {
-    id: "specialty-coding",
-    eyebrow: "Purpose-built clinical logic",
-    title: "Specialty Coding",
-    summary:
-      "Dedicated PGx, burn, ambulance, transplant and high-acuity workflows bring specialty evidence into focused coding engines.",
-    image: "/assets/landing/specialty-coding.webp",
-    accent: "#ff8b58",
-  },
-  {
-    id: "claim-validation",
-    eyebrow: "Review before handoff",
-    title: "Claim Validation",
-    summary:
-      "NCCI, documentation and claim checks surface while corrections are still actionable and reviewer context is intact.",
-    image: "/assets/landing/claim-validation.webp",
-    accent: "#ef6681",
-  },
-];
-
-const PRODUCT_FILMS: VideoStory[] = FEATURED_MODULES.map((module) => ({
-  id: module.id,
-  title: module.title,
-  category: module.eyebrow,
-  video: `${PUBLIC_MEDIA_BASE}/landing-media/${module.id}-tour.mp4`,
-  fallback: `/assets/videos/landing/${module.id}-tour.mp4`,
-  poster: module.image,
-  duration: "0:07",
-  note: module.summary,
-}));
-
 // Publish only approved, company-controlled customer media and quotes here.
 // The repository and public-source audit found none that can currently be verified.
 const VERIFIED_CUSTOMER_VIDEOS: CustomerVideo[] = [];
 const VERIFIED_TESTIMONIALS: WrittenTestimonial[] = [];
 
-function FeaturedModuleMoment({
-  module,
-  index,
-  progress,
-}: {
-  module: FeaturedModule;
-  index: number;
-  progress: MotionValue<number>;
-}) {
-  const segment = 1 / FEATURED_MODULES.length;
-  const start = index * segment;
-  const enter = Math.max(0, start - segment * 0.18);
-  const visible = start + segment * 0.08;
-  const hold = start + segment * 0.76;
-  const exit = Math.min(1, start + segment);
-  const opacity = index === 0
-    ? useTransform(progress, [0, hold, exit], [1, 1, 0])
-    : index === FEATURED_MODULES.length - 1
-      ? useTransform(progress, [enter, visible, 1], [0, 1, 1])
-      : useTransform(progress, [enter, visible, hold, exit], [0, 1, 1, 0]);
-  const filter = index === 0
-    ? useTransform(progress, [0, hold, exit], ["blur(0px)", "blur(0px)", "blur(18px)"])
-    : useTransform(progress, [enter, visible, hold, exit], ["blur(18px)", "blur(0px)", "blur(0px)", "blur(18px)"]);
-  const copyY = useTransform(progress, [enter, visible, exit], ["42px", "0px", "-36px"]);
-  const imageScale = useTransform(progress, [enter, visible, exit], [0.92, 1, 1.035]);
-
-  return (
-    <motion.article
-      className="ch-feature-moment"
-      style={{ opacity, filter, "--feature-accent": module.accent } as unknown as MotionStyle}
-    >
-      <motion.div className="ch-feature-copy" style={{ y: copyY }}>
-        <span>{module.eyebrow}</span>
-        <h3>{module.title}</h3>
-        <p>{module.summary}</p>
-        <span className="ch-feature-action">Explore the workflow <ArrowRight size={16} /></span>
-      </motion.div>
-      <motion.figure className="ch-feature-visual" style={{ scale: imageScale }}>
-        <img src={module.image} alt={`${module.title} product visualization`} loading="lazy" />
-        <div className="ch-feature-logo"><BrandMark animated compact /></div>
-        <figcaption>{String(index + 1).padStart(2, "0")} / {String(FEATURED_MODULES.length).padStart(2, "0")}</figcaption>
-      </motion.figure>
-    </motion.article>
-  );
-}
-
 export function SolutionsSection() {
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
-
-  return (
-    <section className="ch-feature-scroll" id="solutions" ref={sectionRef}>
-      <div className="ch-feature-sticky">
-        <div className="ch-feature-progress" aria-hidden="true"><motion.span style={{ scaleX: scrollYProgress }} /></div>
-        <header>
-          <span>Featured workflows</span>
-          <p>Built inside Codical Health</p>
-        </header>
-        <div className="ch-feature-stage">
-          {FEATURED_MODULES.map((module, index) => (
-            <FeaturedModuleMoment key={module.id} module={module} index={index} progress={scrollYProgress} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+  return <ScrollDrivenWorkflowSection />;
 }
 
-export function FeatureDemoBand() {
-  return (
-    <section className="ch-feature-demo-band">
-      <BrandMark animated compact />
-      <p>See the complete workflow with your team.</p>
-      <Link href="/signup">Free demo <ArrowRight size={16} /></Link>
-    </section>
-  );
-}
-
-function VideoPlayer({ story }: { story: VideoStory }) {
-  const [playing, setPlaying] = useState(false);
-
-  return (
-    <div className="nex-video-frame">
-      {playing ? (
-        <video title={story.title} controls autoPlay playsInline poster={story.poster} preload="metadata">
-          <source src={story.video} type="video/mp4" />
-          <source src={story.fallback} type="video/mp4" />
-        </video>
-      ) : (
-        <button type="button" onClick={() => setPlaying(true)} aria-label={`Play ${story.title}`}>
-          <img src={story.poster} alt="" loading="lazy" />
-          <span aria-hidden="true"><Play size={24} /></span>
-          <small>{story.duration}</small>
-        </button>
-      )}
-    </div>
-  );
-}
-
-export function ProductFilmsSection() {
-  return (
-    <section className="nex-video-stories" id="stories">
-      <div className="nex-section-center">
-        <span className="nex-section-label">Codical product films</span>
-        <h2>See the workflows in motion.</h2>
-        <p>Four original Codical product previews, served from the Cloudflare media layer.</p>
-      </div>
-      <div className="nex-video-grid">
-        {PRODUCT_FILMS.map((story) => (
-          <article className="nex-video-card" key={story.id}>
-            <VideoPlayer story={story} />
-            <div className="nex-video-copy">
-              <small>{story.category}</small>
-              <h3>{story.title}</h3>
-              <p>{story.note}</p>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
+export { ProductFilmsSection };
 
 export function VerifiedCustomerStoriesSection() {
   if (VERIFIED_CUSTOMER_VIDEOS.length === 0) return null;

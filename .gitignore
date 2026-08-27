@@ -41,6 +41,7 @@ client/.env.*
 
 .vercel
 .wrangler/
+.venv-blender/
 
 # Machine-local research and editor state
 .tmp-*/

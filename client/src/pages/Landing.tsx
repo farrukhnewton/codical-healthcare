@@ -8,7 +8,7 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "wouter";
 import {
   Activity,
@@ -22,7 +22,6 @@ import {
   FileAudio,
   FileChartColumnIncreasing,
   Gauge,
-  Globe2,
   Landmark,
   Menu,
   MessagesSquare,
@@ -40,7 +39,6 @@ import type { LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import {
   DifferenceSection,
-  FeatureDemoBand,
   GlassLogoCta,
   PricingSection,
   ProductFilmsSection,
@@ -244,6 +242,7 @@ function NavbarBrandIdent() {
   return (
     <svg
       className="nex-navbar-ident"
+      data-brand-asset="locked-precision-ident-v2"
       viewBox="-60 -40 1840 1200"
       fill="none"
       aria-hidden="true"
@@ -309,12 +308,13 @@ function NavbarBrandIdent() {
 function Header() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const demoArcId = `codical-scope-demo-arc-${useId().replace(/:/g, "")}`;
   const activeGroup = MENU_GROUPS.find((group) => group.id === activeMenu);
 
   return (
     <>
       <header
-        className={`nex-header ${activeMenu ? "is-hovered" : ""}`}
+        className={`nex-header codical-scope-header ${activeMenu ? "is-hovered" : ""}`}
         onMouseLeave={() => setActiveMenu(null)}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
@@ -322,56 +322,83 @@ function Header() {
           }
         }}
       >
-        <a className="nex-brand" href="#top" aria-label="Codical Health home">
-          <span className="nex-navbar-brand-lockup">
-            <NavbarBrandIdent />
-            <span className="nex-navbar-brand-name">Codical Health</span>
-          </span>
-        </a>
-
-        <nav className="nex-nav" aria-label="Landing navigation">
-          {MENU_GROUPS.map((group) => (
-            <button
-              className={`nex-nav-item ${activeMenu === group.id ? "is-active" : ""}`}
-              key={group.id}
-              type="button"
-              onMouseEnter={() => setActiveMenu(group.id)}
-              onFocus={() => setActiveMenu(group.id)}
-              aria-expanded={activeMenu === group.id}
-            >
-              {group.label}
-              <ChevronDown size={15} />
-            </button>
-          ))}
-          <a className="nex-nav-item nex-nav-link" href="#ecosystem">
-            Ecosystem
-          </a>
-          <a className="nex-nav-item nex-nav-link" href="#stories">
-            Stories
-          </a>
-          <a className="nex-nav-item nex-nav-link" href="#pricing">
-            Pricing
-          </a>
-        </nav>
-
-        <div className="nex-header-actions">
-          <a className="nex-nav-icon" href="#ecosystem" aria-label="Healthcare ecosystem">
-            <Globe2 size={20} />
-          </a>
-          <Link className="nex-login" href="/login">
-            Sign in
-          </Link>
-          <CtaButton href="/signup">Request a demo</CtaButton>
-        </div>
-
-        <button
-          className="nex-mobile-toggle"
-          type="button"
-          aria-label="Open navigation"
-          onClick={() => setMobileOpen(true)}
+        <div
+          className="codical-scope"
+          data-navbar-quality="zip-reference"
+          data-navbar-reference="screenshot-2026-08-14-213517"
+          data-pipe-finish="solid-aligned-v6"
+          data-chrome-quality="refined-v2"
+          data-tube-color="#6E32E1"
         >
-          <Menu size={23} />
-        </button>
+          <div className="codical-scope__ears">
+            <img src="/assets/landing/stethoscope-nav/stethoscope-loop-violet-v8.webp" alt="" aria-hidden="true" />
+            <a className="nex-brand codical-scope__brand" href="#top" aria-label="Codical Health home">
+              <span className="nex-navbar-brand-lockup" data-lockup-layout="stacked-left-expanded">
+                <NavbarBrandIdent />
+                <span className="nex-navbar-brand-name">Codical Health</span>
+              </span>
+            </a>
+          </div>
+
+          <div className="codical-scope__tube">
+            <div className="codical-scope__tube-skin" aria-hidden="true" />
+            <nav className="nex-nav codical-scope__links" aria-label="Landing navigation">
+              {MENU_GROUPS.map((group) => (
+                <button
+                  className={`nex-nav-item ${activeMenu === group.id ? "is-active" : ""}`}
+                  key={group.id}
+                  type="button"
+                  onMouseEnter={() => setActiveMenu(group.id)}
+                  onFocus={() => setActiveMenu(group.id)}
+                  aria-expanded={activeMenu === group.id}
+                >
+                  {group.label}
+                  <ChevronDown size={13} />
+                </button>
+              ))}
+              <a className="nex-nav-item nex-nav-link" href="#ecosystem">Ecosystem</a>
+              <a className="nex-nav-item nex-nav-link" href="#stories">Stories</a>
+              <a className="nex-nav-item nex-nav-link" href="#pricing">Pricing</a>
+              <Link className="nex-nav-item nex-nav-link codical-scope__signin" href="/login">Sign in</Link>
+            </nav>
+
+            <button
+              className="nex-mobile-toggle codical-scope__burger"
+              type="button"
+              aria-label="Open navigation"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu size={22} />
+            </button>
+          </div>
+
+          <div
+            className="codical-scope__chest"
+            data-diaphragm-finish="wide-composite-v3"
+          >
+            <img
+              className="codical-scope__chest-composite"
+              src="/assets/landing/stethoscope-nav/stethoscope-chest-violet-v6.webp"
+              alt=""
+              aria-hidden="true"
+            />
+            <Link
+              className="codical-scope__demo"
+              href="/signup?intent=demo"
+              aria-label="Request a demo"
+            >
+              <svg viewBox="0 0 120 120" focusable="false" aria-hidden="true">
+                <defs>
+                  <path id={demoArcId} d="M 17 68 A 45 45 0 0 1 103 68" />
+                </defs>
+                <text>
+                  <textPath href={`#${demoArcId}`} startOffset="50%" textAnchor="middle">REQUEST A DEMO</textPath>
+                </text>
+                <path className="codical-scope__demo-arrow" d="M49 64h22m-8-8 8 8-8 8" />
+              </svg>
+            </Link>
+          </div>
+        </div>
 
         {activeGroup && (
           <div className="nex-mega-menu" onMouseEnter={() => setActiveMenu(activeGroup.id)}>
@@ -1051,7 +1078,6 @@ export function Landing() {
         <EcosystemMarquee />
         <CommandCenterSection />
         <SolutionsSection />
-        <FeatureDemoBand />
         <ProductFilmsSection />
         <VerifiedCustomerStoriesSection />
         <VerifiedTestimonialsSection />

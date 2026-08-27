@@ -8,6 +8,7 @@ import {
   ChartNoAxesColumnIncreasing,
   ChevronDown,
   ClipboardCheck,
+  CircleDollarSign,
   FileChartColumnIncreasing,
   FileCode2,
   Dna,
@@ -41,6 +42,7 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: Home, section: "MAIN" },
+  { href: "/revenue-integrity", label: "Revenue Integrity", icon: CircleDollarSign, section: "MAIN", badge: "New" },
   { href: "/intelligence", label: "Coverage & Guidelines", icon: BookOpen, section: "MAIN", badge: "Live" },
   { href: "/crosswalk", label: "ICD/CPT Crosswalk", icon: GitCompareArrows, section: "MAIN" },
   { href: "/search", label: "Code Search", icon: Search, section: "MAIN" },
