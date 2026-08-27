@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -54,6 +54,7 @@ function EmptyState({ mode }: { mode: ViewMode }) {
 }
 
 export function RevenueIntegrity() {
+  const claimDetailRef = useRef<HTMLElement | null>(null);
   const [view, setView] = useState<ViewMode>("claims");
   const [search, setSearch] = useState("");
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
@@ -139,8 +140,12 @@ export function RevenueIntegrity() {
     setIsCorrecting(false);
     setClaimAction({ state: "idle" });
     setView("claims");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  useEffect(() => {
+    if (!selectedClaimId || detailQuery.data?.claim.id !== selectedClaimId) return;
+    const frame = window.requestAnimationFrame(() => claimDetailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [detailQuery.data?.claim.id, selectedClaimId]);
   const refreshClaim = async () => {
     await Promise.all([detailQuery.refetch(), refresh()]);
   };
@@ -171,9 +176,30 @@ export function RevenueIntegrity() {
       setView("claims");
       setClaimAction({ state: "success", message: "Work item started. Correct the claim, then revalidate it to resolve the edit." });
       await refreshClaim();
-      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (actionError) {
       setClaimAction({ state: "error", message: actionError instanceof Error ? actionError.message : "The work item could not be started." });
+    } finally {
+      setWorkActionId(null);
+    }
+  };
+  const beginClaimCorrection = async () => {
+    const detail = detailQuery.data;
+    if (!detail) return;
+    const task = detail.workItems.find((item) => ["open", "blocked", "in_progress"].includes(item.status));
+    setClaimAction({ state: "running", message: task?.status === "in_progress" ? "Opening the correction workspace..." : "Starting the integrity task..." });
+    try {
+      if (task && task.status !== "in_progress") {
+        setWorkActionId(task.id);
+        await revenueIntegrityRequest(`/api/revenue-integrity/work-items/${task.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ action: "start" }),
+        });
+        await Promise.all([detailQuery.refetch(), workQuery.refetch(), overviewQuery.refetch()]);
+      }
+      setClaimAction({ state: "idle" });
+      setIsCorrecting(true);
+    } catch (actionError) {
+      setClaimAction({ state: "error", message: actionError instanceof Error ? actionError.message : "The correction workspace could not be opened." });
     } finally {
       setWorkActionId(null);
     }
@@ -244,7 +270,7 @@ export function RevenueIntegrity() {
       ) : null}
 
       {selectedClaimId ? (
-        <section className="ri-card ri-claim-detail" aria-label="Claim review">
+        <section ref={claimDetailRef} className="ri-card ri-claim-detail" aria-label="Claim review">
           <header>
             <div>
               <span className="ri-detail-kicker">Claim review</span>
@@ -253,7 +279,7 @@ export function RevenueIntegrity() {
             </div>
             <div className="ri-detail-actions">
               {detailQuery.data && ["draft", "needs_review", "ready", "rejected"].includes(detailQuery.data.claim.status) && !isCorrecting ? (
-                <button type="button" className="ri-secondary-action" onClick={() => { setIsCorrecting(true); setClaimAction({ state: "idle" }); }}><PencilLine size={15} /> Correct claim</button>
+                <button type="button" className="ri-primary-action" onClick={beginClaimCorrection} disabled={claimAction.state === "running"}><PencilLine size={15} /> {detailQuery.data.workItems.some((item) => item.issueCode.startsWith("OPTUM_VALIDATION_") && ["open", "blocked", "in_progress"].includes(item.status)) ? "Resolve Optum edit" : "Correct claim"}</button>
               ) : null}
               {detailQuery.data && (detailQuery.data.claim.clearinghouseProvider === "optum" || detailQuery.data.transmission?.schemaVersion.startsWith("optum-")) && !isCorrecting ? (
                 <button type="button" className="ri-primary-action" onClick={revalidateSelectedClaim} disabled={claimAction.state === "running"}><PlayCircle size={15} /> {claimAction.state === "running" ? "Revalidating..." : "Revalidate"}</button>
@@ -264,6 +290,18 @@ export function RevenueIntegrity() {
           {detailQuery.isLoading ? <div className="ri-detail-loading">Loading the claim evidence and transaction history...</div> : null}
           {detailQuery.error ? <div className="ri-detail-loading is-error">{detailQuery.error instanceof Error ? detailQuery.error.message : "Claim review failed."}</div> : null}
           {claimAction.message ? <div className={`ri-claim-action-message is-${claimAction.state}`}>{claimAction.state === "error" ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}<span>{claimAction.message}</span></div> : null}
+          {detailQuery.data && !isCorrecting && detailQuery.data.workItems.some((item) => item.issueCode.startsWith("OPTUM_VALIDATION_") && ["open", "blocked", "in_progress"].includes(item.status)) ? (
+            <div className="ri-resolution-banner">
+              <div>
+                <span>Action required</span>
+                <strong>Resolve the Optum 837P edit</strong>
+                <p>Open the controlled correction workspace, apply the synthetic correction, and revalidate the claim in one guided flow.</p>
+              </div>
+              <button type="button" onClick={beginClaimCorrection} disabled={claimAction.state === "running"}>
+                <PencilLine size={15} /> {claimAction.state === "running" ? "Opening..." : "Correct & revalidate"}
+              </button>
+            </div>
+          ) : null}
           {detailQuery.data && isCorrecting ? (
             <RevenueClaimCorrection
               key={`${detailQuery.data.claim.id}-${detailQuery.data.claim.version}`}

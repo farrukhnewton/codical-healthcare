@@ -136,6 +136,13 @@
 .ri-claim-action-message, .ri-correction-message { display: flex; align-items: flex-start; gap: 9px; padding: 11px 14px; border-bottom: 1px solid #a7ead2; color: #08734a; background: #effcf7; font-size: 10px; font-weight: 800; line-height: 1.45; }
 .ri-claim-action-message.is-running, .ri-correction-message.is-saving { border-color: #cfc2f3; color: #5d2ac1; background: #f6f2ff; }
 .ri-claim-action-message.is-error, .ri-correction-message.is-error { border-color: #f3b8c1; color: #a42438; background: #fff4f5; }
+.ri-resolution-banner { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 20px; border-bottom: 1px solid #f2c78f; background: linear-gradient(115deg, #fff8ed, #fffdf8); }
+.ri-resolution-banner > div { min-width: 0; }
+.ri-resolution-banner span { display: block; color: #a34d08; font-size: 8px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.ri-resolution-banner strong { display: block; margin-top: 4px; font-size: 13px; }
+.ri-resolution-banner p { margin: 4px 0 0; color: #7c5a3b; font-size: 9px; line-height: 1.5; }
+.ri-resolution-banner button { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 11px; padding: 10px 13px; color: #fff; background: #a34d08; font: inherit; font-size: 10px; font-weight: 900; cursor: pointer; box-shadow: 0 8px 18px rgba(163, 77, 8, .16); }
+.ri-resolution-banner button:disabled { cursor: wait; opacity: .55; }
 .ri-detail-loading { padding: 28px 22px; color: var(--ri-muted); font-size: 11px; font-weight: 700; }
 .ri-detail-loading.is-error { color: #a42438; }
 .ri-detail-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--ri-line); border-bottom: 1px solid var(--ri-line); }
@@ -197,5 +204,5 @@
 @media (max-width: 720px) {
   .ri-page { padding: 16px 12px 90px; }.ri-hero { align-items: flex-start; flex-direction: column; border-radius: 22px; }.ri-hero-status { min-width: 0; justify-items: start; }.ri-hero-status small { text-align: left; }
   .ri-metrics { grid-template-columns: 1fr; }.ri-control-panel { align-items: stretch; flex-direction: column; }.ri-tabs { overflow-x: auto; }.ri-tabs button { white-space: nowrap; }.ri-controls label { min-width: 0; flex: 1; }.ri-work-list article { grid-template-columns: 54px 1fr; }.ri-work-value { grid-column: 2; justify-items: start; }.ri-detail-summary { grid-template-columns: 1fr 1fr; }.ri-detail-summary > div { min-height: 68px; padding: 14px; }.ri-detail-grid { padding: 10px; }.ri-certification-result { grid-template-columns: auto 1fr; }.ri-certification-result > button { grid-column: 2; justify-self: start; }
-  .ri-claim-detail > header, .ri-correction-heading { align-items: stretch; flex-direction: column; }.ri-detail-actions { justify-content: flex-start; }.ri-sandbox-guidance { grid-template-columns: auto 1fr; }.ri-sandbox-guidance button { grid-column: 2; justify-self: start; }.ri-editor-grid, .ri-line-editor-grid { grid-template-columns: 1fr; }.ri-span-2 { grid-column: auto; }.ri-detail-task { align-items: flex-start; flex-direction: column; }.ri-correction-actions { position: sticky; bottom: 76px; margin: 0 -18px -18px; padding: 12px 18px; border-top: 1px solid var(--ri-line); background: color-mix(in srgb, var(--mac-card-bg, #fff) 96%, transparent); }
+  .ri-claim-detail > header, .ri-correction-heading, .ri-resolution-banner { align-items: stretch; flex-direction: column; }.ri-detail-actions { justify-content: flex-start; }.ri-resolution-banner button { align-self: flex-start; }.ri-sandbox-guidance { grid-template-columns: auto 1fr; }.ri-sandbox-guidance button { grid-column: 2; justify-self: start; }.ri-editor-grid, .ri-line-editor-grid { grid-template-columns: 1fr; }.ri-span-2 { grid-column: auto; }.ri-detail-task { align-items: flex-start; flex-direction: column; }.ri-correction-actions { position: sticky; bottom: 76px; margin: 0 -18px -18px; padding: 12px 18px; border-top: 1px solid var(--ri-line); background: color-mix(in srgb, var(--mac-card-bg, #fff) 96%, transparent); }
 }
