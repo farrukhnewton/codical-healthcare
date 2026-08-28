@@ -13,7 +13,6 @@ import {
   type RevenueClaimCreateInput,
 } from "@shared/revenue-integrity";
 import { db, pool } from "./db";
-import { supabaseAdmin } from "./supabase-admin";
 import { createOptumSandboxAdapterFromEnvironment } from "./services/revenue-integrity/optum-sandbox-adapter";
 import { createOptumCertificationFixture, type OptumCertificationScenario } from "./services/revenue-integrity/optum-certification-fixtures";
 import { mapProfessionalClaimToOptum } from "./services/revenue-integrity/optum-professional-claim";
@@ -22,6 +21,14 @@ import { mapProfessionalClaimToStedi } from "./services/revenue-integrity/stedi-
 import { parseStediWebhookEvent } from "./services/revenue-integrity/stedi-responses";
 import { processNextStediWebhook } from "./services/revenue-integrity/stedi-webhook-processor";
 import { canCorrectRevenueClaim, summarizeClaimChanges } from "./services/revenue-integrity/claim-correction";
+import {
+  REVENUE_SESSION_COOKIE,
+  cookieValue,
+  createRevenueSession,
+  serializeRevenueSessionCookie,
+  verifyRevenueSession,
+  type RevenueSessionIdentity,
+} from "./services/revenue-integrity/revenue-session";
 
 type RevenueRequestContext = {
   user: typeof users.$inferSelect;
@@ -34,6 +41,49 @@ const REVENUE_WRITE_ROLES = new Set(["owner", "admin", "integrity_manager", "cod
 function bearerToken(req: Request) {
   const authorization = String(req.headers.authorization || "");
   return authorization.toLowerCase().startsWith("bearer ") ? authorization.slice(7).trim() : "";
+}
+
+function revenueSessionSecret() {
+  return process.env.REVENUE_INTEGRITY_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+}
+
+async function verifySupabaseAccessToken(token: string): Promise<RevenueSessionIdentity> {
+  const supabaseUrl = String(process.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
+  const apiKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || "");
+  if (!supabaseUrl || !apiKey) {
+    const error = new Error("Authentication service is not configured.") as Error & { status?: number };
+    error.status = 503;
+    throw error;
+  }
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        headers: { apikey: apiKey, Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (response.status === 401 || response.status === 403) {
+        const error = new Error("The session is invalid or expired.") as Error & { status?: number };
+        error.status = 401;
+        throw error;
+      }
+      if (!response.ok) throw new Error(`Supabase Auth returned ${response.status}.`);
+      const user = await response.json() as RevenueSessionIdentity;
+      if (!user.id) throw new Error("Supabase Auth returned an incomplete user record.");
+      return user;
+    } catch (error) {
+      if ((error as { status?: number }).status === 401) throw error;
+      lastError = error;
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+  }
+
+  const error = new Error("Authentication verification is temporarily unavailable.") as Error & { status?: number; publicMessage?: string; cause?: unknown };
+  error.status = 503;
+  error.publicMessage = "Authentication verification is temporarily unavailable. Refresh the page and try again.";
+  error.cause = lastError;
+  throw error;
 }
 
 function secretsMatch(expected: string | undefined, received: string) {
@@ -106,14 +156,19 @@ async function ensureRevenueContext(req: Request): Promise<RevenueRequestContext
     throw error;
   }
 
-  const { data, error: authError } = await supabaseAdmin.auth.getUser(token);
-  if (authError || !data.user) {
-    const error = new Error("The session is invalid or expired.") as Error & { status?: number };
-    error.status = 401;
-    throw error;
+  const secret = revenueSessionSecret();
+  const sessionIdentity = verifyRevenueSession({
+    sessionToken: cookieValue(req.headers.cookie, REVENUE_SESSION_COOKIE),
+    bearerToken: token,
+    secret,
+  });
+  const identity = sessionIdentity || await verifySupabaseAccessToken(token);
+  if (!sessionIdentity && secret) {
+    const sessionToken = createRevenueSession({ identity, bearerToken: token, secret });
+    req.res?.setHeader("Set-Cookie", serializeRevenueSessionCookie(sessionToken, process.env.NODE_ENV === "production"));
   }
 
-  const user = await ensureRevenueUser(data.user);
+  const user = await ensureRevenueUser(identity);
   const requestedOrganizationId = String(req.headers["x-codical-organization-id"] || "").trim();
   const membershipResult = await pool.query<{
     organizationId: string;

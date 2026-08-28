@@ -19,6 +19,13 @@ import { mapProfessionalClaimToOptum } from "../server/services/revenue-integrit
 import { StediClearinghouseAdapter } from "../server/services/revenue-integrity/stedi-adapter";
 import { mapProfessionalClaimToStedi } from "../server/services/revenue-integrity/stedi-professional-claim";
 import { normalize277ClaimAcknowledgments, normalize835Remittances, parseStediWebhookEvent } from "../server/services/revenue-integrity/stedi-responses";
+import {
+  REVENUE_SESSION_COOKIE,
+  cookieValue,
+  createRevenueSession,
+  serializeRevenueSessionCookie,
+  verifyRevenueSession,
+} from "../server/services/revenue-integrity/revenue-session";
 
 const validClaim = revenueClaimCreateSchema.parse({
   patientControlNumber: "PCN-10001",
@@ -44,6 +51,67 @@ function loadFixture(name: string) {
     expected: { ready: boolean; integrityScore?: number; issueCodes: string[] };
   };
 }
+
+test("round-trips a Revenue Integrity session only for the bearer token that created it", () => {
+  const now = Date.UTC(2026, 7, 28, 12, 0, 0);
+  const sessionToken = createRevenueSession({
+    identity: { id: "user-123", email: "coder@example.com", user_metadata: { full_name: "Test Coder" } },
+    bearerToken: "supabase-access-token",
+    secret: "test-session-secret",
+    now,
+  });
+
+  assert.deepEqual(verifyRevenueSession({
+    sessionToken,
+    bearerToken: "supabase-access-token",
+    secret: "test-session-secret",
+    now: now + 60_000,
+  }), {
+    id: "user-123",
+    email: "coder@example.com",
+    user_metadata: { full_name: "Test Coder" },
+  });
+  assert.equal(verifyRevenueSession({
+    sessionToken,
+    bearerToken: "a-different-access-token",
+    secret: "test-session-secret",
+    now: now + 60_000,
+  }), null);
+});
+
+test("rejects tampered and expired Revenue Integrity sessions", () => {
+  const now = Date.UTC(2026, 7, 28, 12, 0, 0);
+  const sessionToken = createRevenueSession({
+    identity: { id: "user-123" },
+    bearerToken: "supabase-access-token",
+    secret: "test-session-secret",
+    now,
+  });
+  const tampered = `${sessionToken.slice(0, -1)}${sessionToken.endsWith("a") ? "b" : "a"}`;
+
+  assert.equal(verifyRevenueSession({
+    sessionToken: tampered,
+    bearerToken: "supabase-access-token",
+    secret: "test-session-secret",
+    now: now + 60_000,
+  }), null);
+  assert.equal(verifyRevenueSession({
+    sessionToken,
+    bearerToken: "supabase-access-token",
+    secret: "test-session-secret",
+    now: now + 11 * 60_000,
+  }), null);
+});
+
+test("serializes a scoped secure HTTP-only Revenue Integrity cookie", () => {
+  const serialized = serializeRevenueSessionCookie("signed.session", true);
+  assert.match(serialized, new RegExp(`^${REVENUE_SESSION_COOKIE}=`));
+  assert.match(serialized, /Path=\/api\/revenue-integrity/);
+  assert.match(serialized, /HttpOnly/);
+  assert.match(serialized, /SameSite=Strict/);
+  assert.match(serialized, /Secure/);
+  assert.equal(cookieValue(`unrelated=1; ${REVENUE_SESSION_COOKIE}=signed.session; another=2`, REVENUE_SESSION_COOKIE), "signed.session");
+});
 
 test("validates an NPI using the CMS check-digit convention", () => {
   assert.equal(isValidNpi("1234567893"), true);
