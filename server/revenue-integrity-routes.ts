@@ -1194,11 +1194,11 @@ export function registerRevenueIntegrityRoutes(app: Express) {
       }
       const isClosed = transition.to === "resolved" || transition.to === "dismissed";
       await pool.query(`
-        update revenue_work_items set status = $3,
-          started_at = case when $3 = 'in_progress' then coalesce(started_at, now()) else started_at end,
-          resolved_at = case when $4 then now() else null end,
-          resolved_by = case when $4 then $5 else null end,
-          resolution_note = $6, updated_at = now()
+        update revenue_work_items set status = $3::text,
+          started_at = case when $3::text = 'in_progress' then coalesce(started_at, now()) else started_at end,
+          resolved_at = case when $4::boolean then now() else null::timestamptz end,
+          resolved_by = case when $4::boolean then $5::integer else null::integer end,
+          resolution_note = $6::text, updated_at = now()
         where id = $1 and organization_id = $2
       `, [workItemId, context.organization.id, transition.to, isClosed, context.user.id, parsed.data.note || null]);
       await pool.query(`
