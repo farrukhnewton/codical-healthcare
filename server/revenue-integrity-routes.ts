@@ -13,6 +13,7 @@ import {
   type RevenueClaimCreateInput,
 } from "@shared/revenue-integrity";
 import { db, pool } from "./db";
+import { createAvailityDemoAdapterFromEnvironment } from "./services/revenue-integrity/availity-demo-adapter";
 import { createOptumSandboxAdapterFromEnvironment } from "./services/revenue-integrity/optum-sandbox-adapter";
 import { createOptumCertificationFixture, type OptumCertificationScenario } from "./services/revenue-integrity/optum-certification-fixtures";
 import { mapProfessionalClaimToOptum } from "./services/revenue-integrity/optum-professional-claim";
@@ -387,6 +388,20 @@ function optumValidationSnapshot() {
     environment: adapter.environment,
     credentialsConfigured: readiness.configured,
     validationEnabled: readiness.validationEnabled,
+    submissionEnabled: readiness.submissionEnabled,
+    blockers: readiness.blockers,
+    capabilities: adapter.capabilities,
+  };
+}
+
+function availityDemoSnapshot() {
+  const adapter = createAvailityDemoAdapterFromEnvironment();
+  const readiness = adapter.readiness();
+  return {
+    provider: adapter.provider,
+    environment: adapter.environment,
+    credentialsConfigured: readiness.configured,
+    validationEnabled: readiness.demoEnabled,
     submissionEnabled: readiness.submissionEnabled,
     blockers: readiness.blockers,
     capabilities: adapter.capabilities,
@@ -772,7 +787,7 @@ export function registerRevenueIntegrityRoutes(app: Express) {
             productionSubmissions: Number(operationsResult.rows[0]?.productionSubmissions || 0),
           },
         },
-        validationPartners: [optumValidationSnapshot()],
+        validationPartners: [optumValidationSnapshot(), availityDemoSnapshot()],
       });
     } catch (error) {
       requestError(res, error);
@@ -1399,6 +1414,25 @@ export function registerRevenueIntegrityRoutes(app: Express) {
     }
   });
 
+  app.post("/api/revenue-integrity/integrations/availity/health", async (req, res) => {
+    try {
+      await ensureRevenueContext(req);
+      const adapter = createAvailityDemoAdapterFromEnvironment();
+      const result = await adapter.healthCheck();
+      return res.json({
+        ok: true,
+        provider: adapter.provider,
+        environment: adapter.environment,
+        status: result.status,
+        payerCount: result.payerCount,
+        returnedCount: result.returnedCount,
+        responseIsMock: result.responseIsMock,
+      });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
   app.post("/api/revenue-integrity/certification/optum", async (req, res) => {
     try {
       const context = await ensureRevenueContext(req);
@@ -1599,7 +1633,7 @@ export function registerRevenueIntegrityRoutes(app: Express) {
       return res.json({
         organization: context.organization,
         integration: integrationSnapshot(result.rows[0]),
-        validationPartners: [optumValidationSnapshot()],
+        validationPartners: [optumValidationSnapshot(), availityDemoSnapshot()],
         requiredProductionSteps: [
           "Execute a clearinghouse agreement and BAA.",
           "Create the production account and restricted API credential.",

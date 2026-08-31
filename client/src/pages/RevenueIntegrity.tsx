@@ -62,6 +62,7 @@ export function RevenueIntegrity() {
   const [claimAction, setClaimAction] = useState<{ state: "idle" | "running" | "success" | "error"; message?: string }>({ state: "idle" });
   const [workActionId, setWorkActionId] = useState<number | null>(null);
   const [optumHealth, setOptumHealth] = useState<{ state: "idle" | "testing" | "success" | "error"; message?: string }>({ state: "idle" });
+  const [availityHealth, setAvailityHealth] = useState<{ state: "idle" | "testing" | "success" | "error"; message?: string }>({ state: "idle" });
   const [optumCertification, setOptumCertification] = useState<{
     state: "idle" | "running" | "complete" | "error";
     scenario?: "success" | "edits";
@@ -116,6 +117,18 @@ export function RevenueIntegrity() {
       setOptumHealth({ state: result.ok ? "success" : "error", message: result.ok ? `Connected · ${result.status}` : "Connection failed" });
     } catch (error) {
       setOptumHealth({ state: "error", message: error instanceof Error ? error.message : "Connection failed" });
+    }
+  };
+  const testAvailityConnection = async () => {
+    setAvailityHealth({ state: "testing" });
+    try {
+      const result = await revenueIntegrityRequest<{ ok: boolean; status: string; payerCount: number }>("/api/revenue-integrity/integrations/availity/health", { method: "POST" });
+      setAvailityHealth({
+        state: result.ok ? "success" : "error",
+        message: result.ok ? `Connected · ${result.payerCount.toLocaleString()} payer records accessible` : "Connection failed",
+      });
+    } catch (error) {
+      setAvailityHealth({ state: "error", message: error instanceof Error ? error.message : "Connection failed" });
     }
   };
   const runOptumCertification = async (scenario: "success" | "edits") => {
@@ -213,6 +226,7 @@ export function RevenueIntegrity() {
   const overviewMetrics = overview?.metrics;
   const integration = overview?.integration;
   const optumValidator = overview?.validationPartners?.find((partner) => partner.provider === "optum");
+  const availityDemo = overview?.validationPartners?.find((partner) => partner.provider === "availity");
   const integrationReady = Boolean(integration?.liveSubmissionEnabled);
 
   const metrics = [
@@ -500,6 +514,40 @@ export function RevenueIntegrity() {
                   </div>
                 ) : null}
                 {optumCertification.state === "error" ? <small className="ri-certification-error">{optumCertification.message}</small> : null}
+              </div>
+            </div>
+          </article>
+          <article className="ri-card ri-connection-card">
+            <header>
+              <div>
+                <h2>Availity API Demo</h2>
+                <p>OAuth and payer-directory connectivity with predefined transaction scenarios only.</p>
+              </div>
+              <ShieldCheck size={20} />
+            </header>
+            <div className="ri-connection-state">
+              <span className={availityDemo?.validationEnabled ? "is-ready" : "is-onboarding"}>
+                {availityDemo?.validationEnabled ? "Demo ready" : "Demo onboarding"}
+              </span>
+              <dl>
+                <div><dt>Environment</dt><dd>Demo</dd></div>
+                <div><dt>Credentials</dt><dd>{availityDemo?.credentialsConfigured ? "Configured" : "Pending"}</dd></div>
+                <div><dt>OAuth and payer directory</dt><dd>{availityDemo?.validationEnabled ? "Enabled" : "Locked"}</dd></div>
+                <div><dt>Claim status</dt><dd>Predefined scenarios</dd></div>
+                <div><dt>Claim submission</dt><dd>Unavailable</dd></div>
+                <div><dt>Data policy</dt><dd>Predefined demo data only</dd></div>
+              </dl>
+              <div className="ri-connection-test">
+                <button type="button" onClick={testAvailityConnection} disabled={!availityDemo?.validationEnabled || availityHealth.state === "testing"}>
+                  {availityHealth.state === "testing" ? "Testing…" : "Test Availity connection"}
+                </button>
+                {availityHealth.state !== "idle" && availityHealth.state !== "testing" ? (
+                  <small className={availityHealth.state === "success" ? "is-success" : "is-error"}>{availityHealth.message}</small>
+                ) : null}
+              </div>
+              <div className="ri-certification-panel">
+                <strong>Free Demo safety boundary</strong>
+                <p>Codical does not send PHI or live claims through this connector. Transaction calls remain locked until an exact Availity predefined scenario is implemented and tested.</p>
               </div>
             </div>
           </article>

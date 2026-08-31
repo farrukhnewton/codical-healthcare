@@ -13,6 +13,7 @@ import {
 } from "../shared/revenue-integrity";
 import { canCorrectRevenueClaim, summarizeClaimChanges } from "../server/services/revenue-integrity/claim-correction";
 import { ClearinghouseConfigurationError } from "../server/services/revenue-integrity/clearinghouse";
+import { AvailityDemoAdapter } from "../server/services/revenue-integrity/availity-demo-adapter";
 import { OptumSandboxAdapter } from "../server/services/revenue-integrity/optum-sandbox-adapter";
 import { createOptumCertificationFixture } from "../server/services/revenue-integrity/optum-certification-fixtures";
 import { mapProfessionalClaimToOptum } from "../server/services/revenue-integrity/optum-professional-claim";
@@ -217,6 +218,63 @@ test("keeps Optum sandbox validation locked when submission is enabled", () => {
   assert.equal(readiness.validationEnabled, false);
   assert.equal(readiness.submissionEnabled, false);
   assert.ok(readiness.blockers.some((blocker) => blocker.includes("must remain false")));
+});
+
+test("requires the exact Availity Demo scope and never enables claim submission", () => {
+  const missingScope = new AvailityDemoAdapter({ clientId: "demo-client", clientSecret: "demo-secret", scope: "openid" });
+  assert.equal(missingScope.readiness().demoEnabled, false);
+  assert.ok(missingScope.readiness().blockers.some((blocker) => blocker.includes("healthcare-hipaa-transactions-demo")));
+
+  const ready = new AvailityDemoAdapter({
+    clientId: "demo-client",
+    clientSecret: "demo-secret",
+    scope: "openid healthcare-hipaa-transactions-demo",
+  }).readiness();
+  assert.equal(ready.configured, true);
+  assert.equal(ready.demoEnabled, true);
+  assert.equal(ready.submissionEnabled, false);
+});
+
+test("authenticates and checks the Availity Demo payer directory without exposing a live-submit path", async () => {
+  const requested: Array<{ url: string; method: string; body: string; authorization: string }> = [];
+  const adapter = new AvailityDemoAdapter({
+    clientId: "demo-client",
+    clientSecret: "demo-secret",
+    scope: "healthcare-hipaa-transactions-demo",
+    fetchImpl: async (input, init) => {
+      const url = String(input);
+      requested.push({
+        url,
+        method: String(init?.method || "GET"),
+        body: String(init?.body || ""),
+        authorization: new Headers(init?.headers).get("Authorization") || "",
+      });
+      if (url.endsWith("/v1/token")) {
+        return new Response(JSON.stringify({ access_token: "demo-token", token_type: "Bearer", expires_in: 300 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ totalCount: 11932, count: 1, payers: [{ id: "demo" }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "X-Api-Mock-Response": "true" },
+      });
+    },
+  });
+
+  const first = await adapter.healthCheck();
+  const second = await adapter.healthCheck();
+  assert.equal(first.payerCount, 11932);
+  assert.equal(first.responseIsMock, true);
+  assert.equal(second.status, "OK");
+  assert.equal(requested.filter((entry) => entry.url.endsWith("/v1/token")).length, 1);
+  assert.equal(requested[0].method, "POST");
+  assert.match(requested[0].body, /grant_type=client_credentials/);
+  assert.match(requested[0].body, /scope=healthcare-hipaa-transactions-demo/);
+  assert.ok(requested[1].url.endsWith("/availity/v1/availity-payer-list?limit=1"));
+  assert.equal(requested[1].authorization, "Bearer demo-token");
+  assert.equal(adapter.capabilities.professionalClaimSubmission, false);
+  assert.equal(adapter.capabilities.institutionalClaimSubmission, false);
 });
 
 test("validates a synthetic 837P through Optum sandbox and forces test usage", async () => {
