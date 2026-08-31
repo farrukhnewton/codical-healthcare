@@ -1,4 +1,5 @@
-﻿import { createRoot } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import { Analytics } from "@vercel/analytics/react";
 import App from "./App";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import "@fontsource/inter/latin-400.css";
@@ -23,6 +24,7 @@ import "./styles/public-shell.css";
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
     <App />
+    <Analytics />
   </ErrorBoundary>
 );
 
