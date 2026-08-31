@@ -13,7 +13,11 @@ import {
   type RevenueClaimCreateInput,
 } from "@shared/revenue-integrity";
 import { db, pool } from "./db";
-import { createAvailityDemoAdapterFromEnvironment } from "./services/revenue-integrity/availity-demo-adapter";
+import {
+  AVAILITY_COVERAGE_SCENARIOS,
+  createAvailityDemoAdapterFromEnvironment,
+  type AvailityCoverageScenario,
+} from "./services/revenue-integrity/availity-demo-adapter";
 import { createOptumSandboxAdapterFromEnvironment } from "./services/revenue-integrity/optum-sandbox-adapter";
 import { createOptumCertificationFixture, type OptumCertificationScenario } from "./services/revenue-integrity/optum-certification-fixtures";
 import { mapProfessionalClaimToOptum } from "./services/revenue-integrity/optum-professional-claim";
@@ -1428,6 +1432,30 @@ export function registerRevenueIntegrityRoutes(app: Express) {
         returnedCount: result.returnedCount,
         responseIsMock: result.responseIsMock,
       });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.post("/api/revenue-integrity/integrations/availity/coverage-demo", async (req, res) => {
+    try {
+      await ensureRevenueContext(req);
+      const scenario = String(req.body?.scenario || "complete") as AvailityCoverageScenario;
+      if (!Object.prototype.hasOwnProperty.call(AVAILITY_COVERAGE_SCENARIOS, scenario)) {
+        return res.status(400).json({ message: "Unsupported Availity Coverage demo scenario." });
+      }
+      const adapter = createAvailityDemoAdapterFromEnvironment();
+      return res.json({ ok: true, provider: adapter.provider, environment: adapter.environment, result: await adapter.runCoverageScenario(scenario) });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.post("/api/revenue-integrity/integrations/availity/claim-status-demo", async (req, res) => {
+    try {
+      await ensureRevenueContext(req);
+      const adapter = createAvailityDemoAdapterFromEnvironment();
+      return res.json({ ok: true, provider: adapter.provider, environment: adapter.environment, result: await adapter.runClaimStatusScenario() });
     } catch (error) {
       return requestError(res, error);
     }

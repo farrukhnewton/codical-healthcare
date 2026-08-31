@@ -27,6 +27,32 @@ import {
 } from "@/lib/revenue-integrity-api";
 
 type ViewMode = "claims" | "work" | "integration";
+type AvailityCoverageScenario = "complete" | "providerIneligible" | "invalidSubscriberName" | "inProgress" | "retrying" | "requestErrorOne" | "requestErrorTwo";
+type AvailityCoverageDemoResult = {
+  scenario: AvailityCoverageScenario;
+  outcome: string;
+  httpStatus: number;
+  mockVerified: boolean;
+  totalCount: number;
+  coverageStatus: string | null;
+  coverageStatusCode: string | null;
+  payerId: string | null;
+  planCount: number;
+  messages: string[];
+};
+type AvailityClaimStatusDemoResult = {
+  scenario: "complete";
+  httpStatus: number;
+  mockVerified: boolean;
+  responseId: string;
+  status: string | null;
+  statusCode: string | null;
+  payerId: string | null;
+  claimAmount: string | null;
+  claimCount: number;
+  serviceLineCount: number;
+  statusDetails: Array<{ category: string | null; categoryCode: string | null; status: string | null; statusCode: string | null; entity: string | null; entityCode: string | null; paymentAmount: string | null }>;
+};
 
 function currency(value: string | number | null | undefined) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
@@ -63,6 +89,9 @@ export function RevenueIntegrity() {
   const [workActionId, setWorkActionId] = useState<number | null>(null);
   const [optumHealth, setOptumHealth] = useState<{ state: "idle" | "testing" | "success" | "error"; message?: string }>({ state: "idle" });
   const [availityHealth, setAvailityHealth] = useState<{ state: "idle" | "testing" | "success" | "error"; message?: string }>({ state: "idle" });
+  const [availityCoverageScenario, setAvailityCoverageScenario] = useState<AvailityCoverageScenario>("complete");
+  const [availityCoverageDemo, setAvailityCoverageDemo] = useState<{ state: "idle" | "running" | "complete" | "error"; result?: AvailityCoverageDemoResult; message?: string }>({ state: "idle" });
+  const [availityClaimStatusDemo, setAvailityClaimStatusDemo] = useState<{ state: "idle" | "running" | "complete" | "error"; result?: AvailityClaimStatusDemoResult; message?: string }>({ state: "idle" });
   const [optumCertification, setOptumCertification] = useState<{
     state: "idle" | "running" | "complete" | "error";
     scenario?: "success" | "edits";
@@ -129,6 +158,27 @@ export function RevenueIntegrity() {
       });
     } catch (error) {
       setAvailityHealth({ state: "error", message: error instanceof Error ? error.message : "Connection failed" });
+    }
+  };
+  const runAvailityCoverageDemo = async () => {
+    setAvailityCoverageDemo({ state: "running" });
+    try {
+      const response = await revenueIntegrityRequest<{ ok: boolean; result: AvailityCoverageDemoResult }>("/api/revenue-integrity/integrations/availity/coverage-demo", {
+        method: "POST",
+        body: JSON.stringify({ scenario: availityCoverageScenario }),
+      });
+      setAvailityCoverageDemo({ state: "complete", result: response.result });
+    } catch (error) {
+      setAvailityCoverageDemo({ state: "error", message: error instanceof Error ? error.message : "Availity Coverage Demo failed." });
+    }
+  };
+  const runAvailityClaimStatusDemo = async () => {
+    setAvailityClaimStatusDemo({ state: "running" });
+    try {
+      const response = await revenueIntegrityRequest<{ ok: boolean; result: AvailityClaimStatusDemoResult }>("/api/revenue-integrity/integrations/availity/claim-status-demo", { method: "POST" });
+      setAvailityClaimStatusDemo({ state: "complete", result: response.result });
+    } catch (error) {
+      setAvailityClaimStatusDemo({ state: "error", message: error instanceof Error ? error.message : "Availity Claim Status Demo failed." });
     }
   };
   const runOptumCertification = async (scenario: "success" | "edits") => {
@@ -546,8 +596,68 @@ export function RevenueIntegrity() {
                 ) : null}
               </div>
               <div className="ri-certification-panel">
-                <strong>Free Demo safety boundary</strong>
-                <p>Codical does not send PHI or live claims through this connector. Transaction calls remain locked until an exact Availity predefined scenario is implemented and tested.</p>
+                <div>
+                  <strong>Predefined HIPAA transaction scenarios</strong>
+                  <p>Run Availity's fixed 270/271 Coverage and 276/277 Claim Status examples. Inputs are locked to published synthetic values; users cannot enter PHI.</p>
+                </div>
+                <div className="ri-availity-demo-grid">
+                  <section>
+                    <label htmlFor="availity-coverage-scenario">Coverage / eligibility outcome</label>
+                    <div className="ri-availity-scenario">
+                      <select
+                        id="availity-coverage-scenario"
+                        value={availityCoverageScenario}
+                        onChange={(event) => setAvailityCoverageScenario(event.target.value as AvailityCoverageScenario)}
+                        disabled={!availityDemo?.validationEnabled || availityCoverageDemo.state === "running"}
+                      >
+                        <option value="complete">Complete coverage</option>
+                        <option value="providerIneligible">Provider ineligible</option>
+                        <option value="invalidSubscriberName">Invalid subscriber name</option>
+                        <option value="inProgress">In progress</option>
+                        <option value="retrying">Payer retrying</option>
+                        <option value="requestErrorOne">Request validation error 1</option>
+                        <option value="requestErrorTwo">Request validation error 2</option>
+                      </select>
+                      <button type="button" onClick={runAvailityCoverageDemo} disabled={!availityDemo?.validationEnabled || availityCoverageDemo.state === "running"}>
+                        {availityCoverageDemo.state === "running" ? "Running…" : "Run 270/271 demo"}
+                      </button>
+                    </div>
+                    {availityCoverageDemo.state === "complete" && availityCoverageDemo.result ? (
+                      <div className={`ri-availity-result ${availityCoverageDemo.result.outcome === "complete" ? "is-valid" : "has-edits"}`}>
+                        {availityCoverageDemo.result.outcome === "complete" ? <CheckCircle2 size={17} /> : <AlertTriangle size={17} />}
+                        <div>
+                          <strong>{label(availityCoverageDemo.result.outcome)}</strong>
+                          <p>HTTP {availityCoverageDemo.result.httpStatus} · Mock verified · {availityCoverageDemo.result.totalCount} result{availityCoverageDemo.result.totalCount === 1 ? "" : "s"}</p>
+                          {availityCoverageDemo.result.payerId ? <small>Payer {availityCoverageDemo.result.payerId} · {availityCoverageDemo.result.planCount} plan{availityCoverageDemo.result.planCount === 1 ? "" : "s"}</small> : null}
+                          {availityCoverageDemo.result.messages.slice(0, 2).map((message) => <small key={message}>{message}</small>)}
+                        </div>
+                      </div>
+                    ) : null}
+                    {availityCoverageDemo.state === "error" ? <small className="ri-certification-error">{availityCoverageDemo.message}</small> : null}
+                  </section>
+                  <section>
+                    <label>Claim status roundtrip</label>
+                    <p className="ri-availity-note">Runs the fixed synthetic 276 inquiry, then retrieves its 277 detail response.</p>
+                    <button type="button" onClick={runAvailityClaimStatusDemo} disabled={!availityDemo?.validationEnabled || availityClaimStatusDemo.state === "running"}>
+                      {availityClaimStatusDemo.state === "running" ? "Running…" : "Run 276/277 demo"}
+                    </button>
+                    {availityClaimStatusDemo.state === "complete" && availityClaimStatusDemo.result ? (
+                      <div className="ri-availity-result is-valid">
+                        <CheckCircle2 size={17} />
+                        <div>
+                          <strong>{availityClaimStatusDemo.result.status || "Complete"}</strong>
+                          <p>HTTP {availityClaimStatusDemo.result.httpStatus} · Mock verified · Response {availityClaimStatusDemo.result.responseId}</p>
+                          <small>{availityClaimStatusDemo.result.claimCount} claim result · {availityClaimStatusDemo.result.serviceLineCount} service line{availityClaimStatusDemo.result.serviceLineCount === 1 ? "" : "s"}</small>
+                          {availityClaimStatusDemo.result.statusDetails.slice(0, 2).map((detail, index) => (
+                            <small key={`${detail.categoryCode}-${detail.statusCode}-${index}`}>{detail.categoryCode || "Status"}: {detail.category || detail.status || "Response received"}</small>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                    {availityClaimStatusDemo.state === "error" ? <small className="ri-certification-error">{availityClaimStatusDemo.message}</small> : null}
+                  </section>
+                </div>
+                <p className="ri-availity-boundary"><ShieldCheck size={14} /> Demo only: no member input, no PHI, and no live payer submission.</p>
               </div>
             </div>
           </article>

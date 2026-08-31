@@ -13,7 +13,7 @@ import {
 } from "../shared/revenue-integrity";
 import { canCorrectRevenueClaim, summarizeClaimChanges } from "../server/services/revenue-integrity/claim-correction";
 import { ClearinghouseConfigurationError } from "../server/services/revenue-integrity/clearinghouse";
-import { AvailityDemoAdapter } from "../server/services/revenue-integrity/availity-demo-adapter";
+import { AVAILITY_COVERAGE_SCENARIOS, AvailityDemoAdapter } from "../server/services/revenue-integrity/availity-demo-adapter";
 import { OptumSandboxAdapter } from "../server/services/revenue-integrity/optum-sandbox-adapter";
 import { createOptumCertificationFixture } from "../server/services/revenue-integrity/optum-certification-fixtures";
 import { mapProfessionalClaimToOptum } from "../server/services/revenue-integrity/optum-professional-claim";
@@ -275,6 +275,82 @@ test("authenticates and checks the Availity Demo payer directory without exposin
   assert.equal(requested[1].authorization, "Bearer demo-token");
   assert.equal(adapter.capabilities.professionalClaimSubmission, false);
   assert.equal(adapter.capabilities.institutionalClaimSubmission, false);
+});
+
+test("runs only the allow-listed Availity Coverage scenarios with an empty member payload", async () => {
+  const requested: Array<{ url: string; scenario: string; body: string }> = [];
+  const adapter = new AvailityDemoAdapter({
+    clientId: "demo-client",
+    clientSecret: "demo-secret",
+    scope: "healthcare-hipaa-transactions-demo",
+    fetchImpl: async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/v1/token")) {
+        return new Response(JSON.stringify({ access_token: "demo-token", expires_in: 300 }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      requested.push({
+        url,
+        scenario: new Headers(init?.headers).get("X-Api-Mock-Scenario-ID") || "",
+        body: String(init?.body || ""),
+      });
+      return new Response(JSON.stringify({
+        totalCount: 1,
+        count: 1,
+        coverages: [{ id: "123", status: "Complete", statusCode: "4", payer: { payerId: "BCBSF" }, plans: [{}], validationMessages: [] }],
+      }), { status: 200, headers: { "Content-Type": "application/json", "X-Api-Mock-Response": "true" } });
+    },
+  });
+
+  const result = await adapter.runCoverageScenario("complete");
+  assert.equal(result.mockVerified, true);
+  assert.equal(result.outcome, "complete");
+  assert.equal(result.payerId, "BCBSF");
+  assert.equal(result.planCount, 1);
+  assert.equal(requested[0].scenario, AVAILITY_COVERAGE_SCENARIOS.complete.id);
+  assert.equal(requested[0].body, "");
+  assert.ok(requested[0].url.endsWith("/availity/v1/coverages"));
+});
+
+test("runs the fixed Availity 276 request and retrieves its canned 277 detail", async () => {
+  const requested: Array<{ url: string; method: string; body: string; override: string }> = [];
+  const adapter = new AvailityDemoAdapter({
+    clientId: "demo-client",
+    clientSecret: "demo-secret",
+    scope: "healthcare-hipaa-transactions-demo",
+    fetchImpl: async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/v1/token")) {
+        return new Response(JSON.stringify({ access_token: "demo-token", expires_in: 300 }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      requested.push({ url, method: String(init?.method || "GET"), body: String(init?.body || ""), override: new Headers(init?.headers).get("X-HTTP-Method-Override") || "" });
+      if (init?.method === "POST") {
+        return new Response(JSON.stringify({ totalCount: 1, count: 1, claimStatuses: [{ id: "123" }] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "X-Api-Mock-Response": "true" },
+        });
+      }
+      return new Response(JSON.stringify({
+        id: "123",
+        status: "Complete",
+        statusCode: "4",
+        payer: { id: "BCBSF" },
+        claimAmount: "0",
+        claimCount: "1",
+        claimStatuses: [{ statusDetails: [{ category: "Acknowledgement", categoryCode: "A1", status: "Received", statusCode: "19" }], serviceLines: [] }],
+      }), { status: 200, headers: { "Content-Type": "application/json", "X-Api-Mock-Response": "true" } });
+    },
+  });
+
+  const result = await adapter.runClaimStatusScenario();
+  assert.equal(result.mockVerified, true);
+  assert.equal(result.responseId, "123");
+  assert.equal(result.status, "Complete");
+  assert.equal(result.statusDetails[0].categoryCode, "A1");
+  assert.equal(requested.length, 2);
+  assert.equal(requested[0].method, "POST");
+  assert.equal(requested[0].override, "GET");
+  assert.match(requested[0].body, /patient\.accountNumber=PAT1ENTACC0UNTNUMB3R/);
+  assert.ok(requested[1].url.endsWith("/availity/v1/claim-statuses/123"));
 });
 
 test("validates a synthetic 837P through Optum sandbox and forces test usage", async () => {
