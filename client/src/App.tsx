@@ -2,6 +2,7 @@ import "@/styles/landing-aurora-scene.css";
 
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { Redirect, Route, Switch } from "wouter";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { BrandMark } from "@/components/BrandMark";
 import { supabase } from "./lib/supabase";
 import type { Session } from "@supabase/supabase-js";
@@ -114,6 +115,7 @@ function App() {
       <Suspense fallback={null}>
         <Toaster />
       </Suspense>
+      <SpeedInsights />
     </>
   );
 }
