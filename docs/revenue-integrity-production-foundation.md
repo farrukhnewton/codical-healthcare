@@ -1,5 +1,7 @@
 # Revenue Integrity production foundation
 
+Claim.MD test-account support is documented in [claimmd-test-connector.md](./claimmd-test-connector.md). It adds synthetic 837P upload, delayed response polling, and ERA normalization while keeping production submission hard-locked.
+
 ## Current delivery
 
 The first production foundation is implemented for professional claims. It provides:

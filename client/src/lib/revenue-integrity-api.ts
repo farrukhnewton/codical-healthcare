@@ -55,10 +55,24 @@ export type RevenueIntegrityOverview = {
     environment: string;
     credentialsConfigured: boolean;
     validationEnabled: boolean;
+    testSubmissionEnabled?: boolean;
     submissionEnabled: boolean;
     blockers: string[];
     capabilities: Record<string, boolean>;
   }>;
+};
+
+export type ClaimMdCertificationResult = {
+  claimId: string;
+  patientControlNumber: string;
+  scenario: "accepted" | "rejected" | "denied";
+  reused: boolean;
+  provider: "claimmd";
+  mode: "test";
+  claimStatus: string;
+  transactionId: string | null;
+  correlationId: string | null;
+  result: "accepted_for_processing" | "rejected";
 };
 
 export type RevenueIntegrityClaim = {

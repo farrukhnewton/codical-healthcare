@@ -17,6 +17,10 @@ import { AVAILITY_COVERAGE_SCENARIOS, AvailityDemoAdapter } from "../server/serv
 import { OptumSandboxAdapter } from "../server/services/revenue-integrity/optum-sandbox-adapter";
 import { createOptumCertificationFixture } from "../server/services/revenue-integrity/optum-certification-fixtures";
 import { mapProfessionalClaimToOptum } from "../server/services/revenue-integrity/optum-professional-claim";
+import { ClaimMdClearinghouseAdapter } from "../server/services/revenue-integrity/claimmd-adapter";
+import { createClaimMdCertificationFixture } from "../server/services/revenue-integrity/claimmd-certification-fixtures";
+import { mapProfessionalClaimToClaimMd } from "../server/services/revenue-integrity/claimmd-professional-claim";
+import { normalizeClaimMdEraList, normalizeClaimMdRemittances, normalizeClaimMdResponses } from "../server/services/revenue-integrity/claimmd-responses";
 import { StediClearinghouseAdapter } from "../server/services/revenue-integrity/stedi-adapter";
 import { mapProfessionalClaimToStedi } from "../server/services/revenue-integrity/stedi-professional-claim";
 import { normalize277ClaimAcknowledgments, normalize835Remittances, parseStediWebhookEvent } from "../server/services/revenue-integrity/stedi-responses";
@@ -233,6 +237,143 @@ test("requires the exact Availity Demo scope and never enables claim submission"
   assert.equal(ready.configured, true);
   assert.equal(ready.demoEnabled, true);
   assert.equal(ready.submissionEnabled, false);
+});
+
+test("hard-locks Claim.MD production and requires an explicit synthetic test switch", async () => {
+  const production = new ClaimMdClearinghouseAdapter({
+    accountKey: "account-key",
+    mode: "production",
+    liveSubmissionEnabled: true,
+    testSubmissionEnabled: true,
+  });
+  assert.equal(production.readiness().liveSubmissionEnabled, false);
+  assert.equal(production.readiness().testSubmissionEnabled, false);
+  await assert.rejects(
+    () => production.submitProfessionalClaim({ payload: {}, idempotencyKey: "unsafe", dataClassification: "synthetic" }),
+    ClearinghouseConfigurationError,
+  );
+
+  const disabled = new ClaimMdClearinghouseAdapter({ accountKey: "account-key", mode: "test" });
+  await assert.rejects(
+    () => disabled.submitProfessionalClaim({ payload: {}, idempotencyKey: "disabled", dataClassification: "synthetic" }),
+    /certification submission is disabled/,
+  );
+});
+
+test("uploads only synthetic Claim.MD certification JSON as multipart form data", async () => {
+  let captured: FormData | null = null;
+  const adapter = new ClaimMdClearinghouseAdapter({
+    accountKey: "test-account-key",
+    mode: "test",
+    testSubmissionEnabled: true,
+    fetchImpl: async (input, init) => {
+      assert.ok(String(input).endsWith("/services/upload/"));
+      captured = init?.body as FormData;
+      return new Response(JSON.stringify({
+        result: {
+          claim: [{ claimmd_id: "396891541", remote_claimid: "CREMOTE01", pcn: "CMDACCEPTED01", status: "A", messages: [{ mesgid: "ACK", status: "A", message: "Acknowledged" }] }],
+        },
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    },
+  });
+  await assert.rejects(
+    () => adapter.submitProfessionalClaim({ payload: {}, idempotencyKey: "real-data" }),
+    /synthetic data only/,
+  );
+  const response = await adapter.submitProfessionalClaim({
+    payload: { fileid: "FILE1", claim: [] },
+    idempotencyKey: "claimmd:test:1",
+    dataClassification: "synthetic",
+  });
+  assert.ok(captured);
+  assert.equal(captured!.get("AccountKey"), "test-account-key");
+  assert.ok(captured!.get("File") instanceof Blob);
+  assert.match(String(captured!.get("Filename")), /^codical-claimmd-test-1\.json$/);
+  assert.equal(response.status, "accepted_for_processing");
+  assert.equal(response.transactionId, "396891541");
+});
+
+test("maps Claim.MD certification claims with stable claim and service-line correlation IDs", () => {
+  for (const scenario of ["accepted", "rejected", "denied"] as const) {
+    const fixture = createClaimMdCertificationFixture(scenario);
+    const mapping = mapProfessionalClaimToClaimMd(fixture.claim, fixture.transmission);
+    assert.deepEqual(mapping.issues, []);
+    assert.ok(mapping.payload);
+    const claim = mapping.payload!.claim[0];
+    const charges = claim.charge as Array<Record<string, unknown>>;
+    assert.equal(claim.claim_form, "1500");
+    assert.equal(claim.bill_npi, "1111111112");
+    assert.equal(claim.bill_taxid, "741111111");
+    assert.match(String(claim.remote_claimid), /^[A-Z0-9]+$/);
+    assert.match(String(charges[0].remote_chgid), /^[A-Z0-9]{1,12}$/);
+    assert.equal(charges[0].diag_ref, "A");
+    assert.equal(fixture.claim.metadata.dataClassification, "synthetic");
+  }
+  assert.equal(createClaimMdCertificationFixture("rejected").transmission.subscriber.policyNumber, "REJECT");
+  assert.equal(createClaimMdCertificationFixture("denied").transmission.subscriber.policyNumber, "DENY");
+});
+
+test("normalizes Claim.MD response cursors, status messages, ERA lists, and remittance lines", () => {
+  const responses = normalizeClaimMdResponses({ result: {
+    last_responseid: "755595618",
+    claim: { claimmd_id: "396891541", remote_claimid: "CREMOTE01", pcn: "CMDACCEPTED01", payerid: "22099", status: "A", total_charge: "100.00", messages: { responseid: "755595618", mesgid: "ACK", status: "A", message: "CLAIM ACKNOWLEDGED" } },
+  } });
+  assert.equal(responses.lastResponseId, "755595618");
+  assert.equal(responses.claims[0].accepted, true);
+  assert.equal(responses.claims[0].patientControlNumber, "CMDACCEPTED01");
+
+  const eras = normalizeClaimMdEraList({ result: { last_eraid: "23853671", era: { eraid: "23853671", payerid: "22099", paid_amount: "65.00" } } });
+  assert.equal(eras.lastEraId, "23853671");
+  assert.equal(eras.eras[0].paidAmount, 65);
+
+  const remittances = normalizeClaimMdRemittances({ result: {
+    eraid: "23853671",
+    claim: { pcn: "CMDACCEPTED01", payer_icn: "TST397547104", status_code: "1", total_charge: "100", total_paid: "65", charge: {
+      remote_chgid: "CREMOTE001", proc_code: "99214", charge: "100", paid: "65", allowed: "80",
+      adjustment: [{ group: "CO", code: "45", amount: "20" }, { group: "PR", code: "2", amount: "10" }, { group: "PR", code: "3", amount: "5" }],
+    } },
+  } });
+  assert.equal(remittances[0].eraId, "23853671");
+  assert.equal(remittances[0].paidAmount, 65);
+  assert.equal(remittances[0].patientResponsibilityAmount, 15);
+  assert.equal(remittances[0].lines[0].allowedAmount, 80);
+  assert.equal(remittances[0].lines[0].lineItemControlNumber, "CREMOTE001");
+
+  const directResponses = normalizeClaimMdResponses({
+    last_responseid: "755595620",
+    result: [
+      { claimmd_id: "396891542", pcn: "CMD2", status: "A", messages: { responseid: "755595619", status: "A", message: "Acknowledged" } },
+      { claimmd_id: "396891543", pcn: "CMD3", status: "R", messages: { responseid: "755595620", status: "R", message: "Rejected" } },
+    ],
+  });
+  assert.equal(directResponses.claims.length, 2);
+  assert.equal(directResponses.lastResponseId, "755595620");
+  assert.equal(directResponses.claims[1].accepted, false);
+
+  const directEras = normalizeClaimMdEraList({ result: [
+    { eraid: "23853672", payerid: "22099", paid_amount: "12.00" },
+    { eraid: "23853673", payerid: "60054", paid_amount: "24.00" },
+  ] });
+  assert.equal(directEras.eras.length, 2);
+  assert.equal(directEras.lastEraId, "23853673");
+
+  const directRemittances = normalizeClaimMdRemittances({ result: [
+    { eraid: "23853674", pcn: "CMD4", total_charge: "25", total_paid: "20", charge: { proc_code: "99213", charge: "25", paid: "20" } },
+  ] });
+  assert.equal(directRemittances[0].eraId, "23853674");
+  assert.equal(directRemittances[0].patientControlNumber, "CMD4");
+});
+
+test("counts payer rows when Claim.MD returns a direct JSON result array", async () => {
+  const adapter = new ClaimMdClearinghouseAdapter({
+    accountKey: "test-account-key",
+    mode: "test",
+    fetchImpl: async () => new Response(JSON.stringify({ result: [
+      { payerid: "22099", payer_name: "Test payer one" },
+      { payerid: "60054", payer_name: "Test payer two" },
+    ] }), { status: 200, headers: { "Content-Type": "application/json" } }),
+  });
+  assert.deepEqual(await adapter.healthCheck(), { status: "OK", payerCount: 2 });
 });
 
 test("authenticates and checks the Availity Demo payer directory without exposing a live-submit path", async () => {

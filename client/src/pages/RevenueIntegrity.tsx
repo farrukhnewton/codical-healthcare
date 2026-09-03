@@ -19,6 +19,7 @@ import {
 import { RevenueClaimCorrection } from "@/components/revenue-integrity/RevenueClaimCorrection";
 import {
   revenueIntegrityRequest,
+  type ClaimMdCertificationResult,
   type OptumCertificationResult,
   type RevenueIntegrityClaim,
   type RevenueIntegrityClaimDetail,
@@ -89,6 +90,14 @@ export function RevenueIntegrity() {
   const [workActionId, setWorkActionId] = useState<number | null>(null);
   const [optumHealth, setOptumHealth] = useState<{ state: "idle" | "testing" | "success" | "error"; message?: string }>({ state: "idle" });
   const [availityHealth, setAvailityHealth] = useState<{ state: "idle" | "testing" | "success" | "error"; message?: string }>({ state: "idle" });
+  const [claimMdHealth, setClaimMdHealth] = useState<{ state: "idle" | "testing" | "success" | "error"; message?: string }>({ state: "idle" });
+  const [claimMdSync, setClaimMdSync] = useState<{ state: "idle" | "running" | "success" | "error"; message?: string }>({ state: "idle" });
+  const [claimMdCertification, setClaimMdCertification] = useState<{
+    state: "idle" | "running" | "complete" | "error";
+    scenario?: "accepted" | "rejected" | "denied";
+    result?: ClaimMdCertificationResult;
+    message?: string;
+  }>({ state: "idle" });
   const [availityCoverageScenario, setAvailityCoverageScenario] = useState<AvailityCoverageScenario>("complete");
   const [availityCoverageDemo, setAvailityCoverageDemo] = useState<{ state: "idle" | "running" | "complete" | "error"; result?: AvailityCoverageDemoResult; message?: string }>({ state: "idle" });
   const [availityClaimStatusDemo, setAvailityClaimStatusDemo] = useState<{ state: "idle" | "running" | "complete" | "error"; result?: AvailityClaimStatusDemoResult; message?: string }>({ state: "idle" });
@@ -198,6 +207,41 @@ export function RevenueIntegrity() {
       });
     }
   };
+  const testClaimMdConnection = async () => {
+    setClaimMdHealth({ state: "testing" });
+    try {
+      const result = await revenueIntegrityRequest<{ ok: boolean; status: string; payerCount: number }>("/api/revenue-integrity/integrations/claimmd/health", { method: "POST" });
+      setClaimMdHealth({
+        state: result.ok ? "success" : "error",
+        message: result.ok ? `Connected · payer directory reachable${result.payerCount ? ` (${result.payerCount} returned)` : ""}` : "Connection failed",
+      });
+    } catch (error) {
+      setClaimMdHealth({ state: "error", message: error instanceof Error ? error.message : "Claim.MD connection failed." });
+    }
+  };
+  const runClaimMdCertification = async (scenario: "accepted" | "rejected" | "denied") => {
+    setClaimMdCertification({ state: "running", scenario });
+    try {
+      const result = await revenueIntegrityRequest<ClaimMdCertificationResult>("/api/revenue-integrity/certification/claimmd", {
+        method: "POST",
+        body: JSON.stringify({ scenario }),
+      });
+      setClaimMdCertification({ state: "complete", scenario, result });
+      await refresh();
+    } catch (error) {
+      setClaimMdCertification({ state: "error", scenario, message: error instanceof Error ? error.message : "Claim.MD certification failed." });
+    }
+  };
+  const syncClaimMd = async () => {
+    setClaimMdSync({ state: "running" });
+    try {
+      const response = await revenueIntegrityRequest<{ ok: boolean; result: { responseCount: number; remittanceCount: number; hasMoreEra?: boolean } }>("/api/revenue-integrity/integrations/claimmd/sync", { method: "POST" });
+      setClaimMdSync({ state: "success", message: `Synced ${response.result.responseCount} response${response.result.responseCount === 1 ? "" : "s"} and ${response.result.remittanceCount} remittance${response.result.remittanceCount === 1 ? "" : "s"}.${response.result.hasMoreEra ? " Another safe-size ERA batch is available; sync again to continue." : ""}` });
+      await refresh();
+    } catch (error) {
+      setClaimMdSync({ state: "error", message: error instanceof Error ? error.message : "Claim.MD lifecycle sync failed." });
+    }
+  };
   const openCertifiedClaim = (claimId: string) => {
     setSelectedClaimId(claimId);
     setIsCorrecting(false);
@@ -277,6 +321,7 @@ export function RevenueIntegrity() {
   const integration = overview?.integration;
   const optumValidator = overview?.validationPartners?.find((partner) => partner.provider === "optum");
   const availityDemo = overview?.validationPartners?.find((partner) => partner.provider === "availity");
+  const claimMdTest = overview?.validationPartners?.find((partner) => partner.provider === "claimmd");
   const integrationReady = Boolean(integration?.liveSubmissionEnabled);
 
   const metrics = [
@@ -658,6 +703,76 @@ export function RevenueIntegrity() {
                   </section>
                 </div>
                 <p className="ri-availity-boundary"><ShieldCheck size={14} /> Demo only: no member input, no PHI, and no live payer submission.</p>
+              </div>
+            </div>
+          </article>
+          <article className="ri-card ri-connection-card">
+            <header>
+              <div>
+                <h2>Claim.MD test connector</h2>
+                <p>Professional claim upload, delayed responses, and ERA normalization with live submission hard-locked.</p>
+              </div>
+              <ShieldCheck size={20} />
+            </header>
+            <div className="ri-connection-state">
+              <span className={claimMdTest?.testSubmissionEnabled ? "is-ready" : "is-onboarding"}>
+                {claimMdTest?.testSubmissionEnabled ? "Certification ready" : "Awaiting test credentials"}
+              </span>
+              <dl>
+                <div><dt>Environment</dt><dd>Test account</dd></div>
+                <div><dt>Credentials</dt><dd>{claimMdTest?.credentialsConfigured ? "Configured" : "Pending"}</dd></div>
+                <div><dt>837P JSON upload</dt><dd>{claimMdTest?.testSubmissionEnabled ? "Enabled" : "Locked"}</dd></div>
+                <div><dt>Responses and ERA</dt><dd>Normalized</dd></div>
+                <div><dt>Live submission</dt><dd>Hard locked</dd></div>
+                <div><dt>Data policy</dt><dd>Synthetic only</dd></div>
+              </dl>
+              <div className="ri-connection-test">
+                <button type="button" onClick={testClaimMdConnection} disabled={!claimMdTest?.credentialsConfigured || claimMdHealth.state === "testing"}>
+                  {claimMdHealth.state === "testing" ? "Testing…" : "Test Claim.MD connection"}
+                </button>
+                <button type="button" onClick={syncClaimMd} disabled={!claimMdTest?.credentialsConfigured || claimMdSync.state === "running"}>
+                  {claimMdSync.state === "running" ? "Syncing…" : "Sync responses & ERA"}
+                </button>
+                {claimMdHealth.state !== "idle" && claimMdHealth.state !== "testing" ? (
+                  <small className={claimMdHealth.state === "success" ? "is-success" : "is-error"}>{claimMdHealth.message}</small>
+                ) : null}
+                {claimMdSync.state !== "idle" && claimMdSync.state !== "running" ? (
+                  <small className={claimMdSync.state === "success" ? "is-success" : "is-error"}>{claimMdSync.message}</small>
+                ) : null}
+              </div>
+              <div className="ri-certification-panel">
+                <div>
+                  <strong>837P lifecycle certification</strong>
+                  <p>Uses Claim.MD test-account triggers and fictional patients only. Each run writes the submission result into the existing claim timeline.</p>
+                </div>
+                <div className="ri-certification-actions">
+                  {(["accepted", "rejected", "denied"] as const).map((scenario) => (
+                    <button
+                      key={scenario}
+                      type="button"
+                      className={scenario === "accepted" ? "" : "is-secondary"}
+                      onClick={() => runClaimMdCertification(scenario)}
+                      disabled={!claimMdTest?.testSubmissionEnabled || claimMdCertification.state === "running"}
+                    >
+                      {claimMdCertification.state === "running" && claimMdCertification.scenario === scenario
+                        ? `Running ${scenario} case…`
+                        : `Run ${scenario} claim`}
+                    </button>
+                  ))}
+                </div>
+                {claimMdCertification.state === "complete" && claimMdCertification.result ? (
+                  <div className={`ri-certification-result ${claimMdCertification.result.result === "rejected" ? "has-edits" : "is-valid"}`}>
+                    <span>{claimMdCertification.result.result === "rejected" ? <AlertTriangle size={17} /> : <CheckCircle2 size={17} />}</span>
+                    <div>
+                      <strong>{claimMdCertification.result.result === "rejected" ? "Claim.MD rejection returned" : "Claim.MD accepted the test claim"}</strong>
+                      <p>Claim {claimMdCertification.result.patientControlNumber} · {label(claimMdCertification.result.claimStatus)}{claimMdCertification.result.transactionId ? ` · Claim.MD ${claimMdCertification.result.transactionId}` : ""}</p>
+                      {claimMdCertification.result.scenario === "denied" ? <small>The test denial is expected later through Claim.MD response/ERA polling.</small> : null}
+                    </div>
+                    <button type="button" onClick={() => openCertifiedClaim(claimMdCertification.result!.claimId)}>Open claim</button>
+                  </div>
+                ) : null}
+                {claimMdCertification.state === "error" ? <small className="ri-certification-error">{claimMdCertification.message}</small> : null}
+                <p className="ri-availity-boundary"><ShieldCheck size={14} /> Test-only control: no PHI and no production claim path.</p>
               </div>
             </div>
           </article>

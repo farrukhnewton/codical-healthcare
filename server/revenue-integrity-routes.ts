@@ -21,6 +21,9 @@ import {
 import { createOptumSandboxAdapterFromEnvironment } from "./services/revenue-integrity/optum-sandbox-adapter";
 import { createOptumCertificationFixture, type OptumCertificationScenario } from "./services/revenue-integrity/optum-certification-fixtures";
 import { mapProfessionalClaimToOptum } from "./services/revenue-integrity/optum-professional-claim";
+import { createClaimMdAdapterFromEnvironment } from "./services/revenue-integrity/claimmd-adapter";
+import { createClaimMdCertificationFixture, type ClaimMdCertificationScenario } from "./services/revenue-integrity/claimmd-certification-fixtures";
+import { mapProfessionalClaimToClaimMd } from "./services/revenue-integrity/claimmd-professional-claim";
 import { createStediAdapterFromEnvironment } from "./services/revenue-integrity/stedi-adapter";
 import { mapProfessionalClaimToStedi } from "./services/revenue-integrity/stedi-professional-claim";
 import { parseStediWebhookEvent } from "./services/revenue-integrity/stedi-responses";
@@ -412,6 +415,21 @@ function availityDemoSnapshot() {
   };
 }
 
+function claimMdTestSnapshot() {
+  const adapter = createClaimMdAdapterFromEnvironment();
+  const readiness = adapter.readiness();
+  return {
+    provider: adapter.provider,
+    environment: adapter.mode,
+    credentialsConfigured: readiness.configured,
+    validationEnabled: readiness.testSubmissionEnabled,
+    testSubmissionEnabled: readiness.testSubmissionEnabled,
+    submissionEnabled: readiness.liveSubmissionEnabled,
+    blockers: readiness.blockers,
+    capabilities: adapter.capabilities,
+  };
+}
+
 function riskLevelForIssues(issues: ClaimIntegrityIssue[]) {
   if (issues.some((issue) => issue.severity === "critical")) return "critical";
   if (issues.some((issue) => issue.severity === "high")) return "high";
@@ -671,6 +689,379 @@ async function ensureOptumCertificationClaim(input: {
   return { claimId, fixture, reused: false };
 }
 
+async function runClaimMdCertification(input: {
+  context: RevenueRequestContext;
+  scenario: ClaimMdCertificationScenario;
+}) {
+  const fixture = createClaimMdCertificationFixture(input.scenario);
+  const mapping = mapProfessionalClaimToClaimMd(fixture.claim, fixture.transmission);
+  if (!mapping.payload) {
+    const error = new Error("The synthetic claim does not pass the Claim.MD JSON mapping profile.") as Error & { status?: number; issues?: unknown };
+    error.status = 422;
+    error.issues = mapping.issues;
+    throw error;
+  }
+
+  const existing = await pool.query<{ id: string }>(`
+    select id from revenue_claims
+    where organization_id = $1 and metadata->>'certificationKey' = $2
+    limit 1
+  `, [input.context.organization.id, fixture.certificationKey]);
+  const claimId = existing.rows[0]?.id || `clm_${randomUUID()}`;
+  const integrity = evaluateClaimIntegrity(fixture.claim);
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    if (existing.rows[0]) {
+      await client.query(`
+        update revenue_claims
+        set patient_control_number = $3, status = $4, payer_id = $5, payer_name = $6,
+          service_from = $7, service_to = $7, billing_provider_npi = $8, rendering_provider_npi = $9,
+          diagnosis_codes = $10::jsonb, total_charge = $11, expected_amount = $12,
+          integrity_score = $13, risk_level = $14, clearinghouse_provider = 'claimmd', metadata = $15::jsonb,
+          updated_at = now()
+        where id = $1 and organization_id = $2
+      `, [
+        claimId, input.context.organization.id, fixture.claim.patientControlNumber,
+        integrity.ready ? "ready" : "needs_review", fixture.claim.payerId, fixture.claim.payerName,
+        fixture.claim.serviceFrom, fixture.claim.billingProviderNpi, fixture.claim.renderingProviderNpi || null,
+        JSON.stringify(fixture.claim.diagnosisCodes), fixture.claim.totalCharge, fixture.claim.expectedAmount ?? null,
+        integrity.score, riskLevelForIssues(integrity.issues), JSON.stringify({ ...fixture.claim.metadata, claimMdRemoteClaimId: mapping.remoteClaimId }),
+      ]);
+      await client.query("delete from revenue_claim_lines where claim_id = $1", [claimId]);
+    } else {
+      await client.query(`
+        insert into revenue_claims
+          (id, organization_id, patient_control_number, claim_type, status, payer_id, payer_name,
+           service_from, service_to, billing_provider_npi, rendering_provider_npi, diagnosis_codes,
+           total_charge, expected_amount, integrity_score, risk_level, clearinghouse_provider, created_by, metadata)
+        values ($1, $2, $3, 'professional', $4, $5, $6, $7, $7, $8, $9, $10::jsonb,
+          $11, $12, $13, $14, 'claimmd', $15, $16::jsonb)
+      `, [
+        claimId, input.context.organization.id, fixture.claim.patientControlNumber,
+        integrity.ready ? "ready" : "needs_review", fixture.claim.payerId, fixture.claim.payerName,
+        fixture.claim.serviceFrom, fixture.claim.billingProviderNpi, fixture.claim.renderingProviderNpi || null,
+        JSON.stringify(fixture.claim.diagnosisCodes), fixture.claim.totalCharge, fixture.claim.expectedAmount ?? null,
+        integrity.score, riskLevelForIssues(integrity.issues), input.context.user.id,
+        JSON.stringify({ ...fixture.claim.metadata, claimMdRemoteClaimId: mapping.remoteClaimId }),
+      ]);
+    }
+    for (const line of fixture.claim.lines) {
+      await client.query(`
+        insert into revenue_claim_lines
+          (claim_id, line_number, procedure_code, description, modifiers, diagnosis_pointers,
+           place_of_service, units, charge_amount, expected_amount, status)
+        values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10, $11)
+      `, [
+        claimId, line.lineNumber, line.procedureCode.toUpperCase(), line.description || null,
+        JSON.stringify(line.modifiers), JSON.stringify(line.diagnosisPointers), line.placeOfService || null,
+        line.units, line.chargeAmount, line.expectedAmount ?? null, integrity.ready ? "ready" : "needs_review",
+      ]);
+    }
+    await client.query(`
+      insert into revenue_claim_transmissions
+        (organization_id, claim_id, schema_version, transmission_data, source, verified_by, verified_at)
+      values ($1, $2, 'claimmd-professional-json-v1', $3::jsonb, 'synthetic_certification', $4, now())
+      on conflict (claim_id) do update set
+        schema_version = excluded.schema_version, transmission_data = excluded.transmission_data,
+        source = excluded.source, verified_by = excluded.verified_by, verified_at = now(), updated_at = now()
+    `, [input.context.organization.id, claimId, JSON.stringify(fixture.transmission), input.context.user.id]);
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  const adapter = createClaimMdAdapterFromEnvironment();
+  const idempotencyKey = `claimmd-certification:${claimId}:${input.scenario}`;
+  const payloadHash = submissionHash(mapping.payload);
+  let response;
+  try {
+    response = await adapter.submitProfessionalClaim({
+      payload: mapping.payload,
+      idempotencyKey,
+      dataClassification: "synthetic",
+    });
+  } catch (error) {
+    const safeError = String(error instanceof Error ? error.message : "Claim.MD upload failed.").slice(0, 500);
+    const failure = await pool.connect();
+    try {
+      await failure.query("begin");
+      await failure.query(`
+        insert into revenue_claim_submissions
+          (organization_id, claim_id, provider, mode, status, idempotency_key, payload_hash,
+           response_summary, last_error, submitted_by, submitted_at)
+        values ($1, $2, 'claimmd', 'test', 'failed', $3, $4, $5::jsonb, $6, $7, now())
+        on conflict (organization_id, provider, idempotency_key) do update set
+          status = 'failed', payload_hash = excluded.payload_hash,
+          response_summary = excluded.response_summary, last_error = excluded.last_error,
+          submitted_by = excluded.submitted_by, submitted_at = now(), updated_at = now()
+      `, [
+        input.context.organization.id, claimId, idempotencyKey, payloadHash,
+        JSON.stringify({ scenario: input.scenario, testOnly: true, transportFailure: true }),
+        safeError, input.context.user.id,
+      ]);
+      await failure.query(`
+        update revenue_claims set status = 'needs_review', last_transaction_at = now(), updated_at = now()
+        where id = $1 and organization_id = $2
+      `, [claimId, input.context.organization.id]);
+      await failure.query(`
+        insert into revenue_claim_events
+          (organization_id, claim_id, event_type, source, external_event_id, payload_hash, summary, occurred_at)
+        values ($1, $2, 'submission_failed', 'claimmd', $3, $4, $5::jsonb, now())
+        on conflict do nothing
+      `, [
+        input.context.organization.id, claimId, `${idempotencyKey}:transport-failed`, payloadHash,
+        JSON.stringify({ scenario: input.scenario, testOnly: true, message: safeError }),
+      ]);
+      await failure.query(`
+        insert into revenue_work_items
+          (organization_id, claim_id, category, issue_code, title, description, recommended_action,
+           severity, priority_score, recoverable_amount)
+        select $1, $2, 'claim_format', 'CLAIMMD_TRANSPORT_FAILURE', 'Claim.MD submission failed', $3,
+          'Verify the test connector and retry the synthetic certification claim.', 'high', 75, c.total_charge
+        from revenue_claims c where c.id = $2
+          and not exists (
+            select 1 from revenue_work_items w where w.claim_id = $2 and w.issue_code = 'CLAIMMD_TRANSPORT_FAILURE'
+              and w.status in ('open', 'in_progress', 'blocked')
+          )
+      `, [input.context.organization.id, claimId, safeError]);
+      await failure.query("commit");
+    } catch (persistenceError) {
+      await failure.query("rollback");
+      console.error("[revenue-integrity] unable to persist Claim.MD failure", persistenceError);
+    } finally {
+      failure.release();
+    }
+    throw error;
+  }
+  const status = response.status === "rejected" ? "rejected" : "submitted";
+  const submissionStatus = response.status === "rejected" ? "failed" : "submitted";
+  const persistence = await pool.connect();
+  try {
+    await persistence.query("begin");
+    await persistence.query(`
+      insert into revenue_claim_submissions
+        (organization_id, claim_id, provider, mode, status, idempotency_key, payload_hash,
+         external_transaction_id, correlation_id, response_summary, submitted_by, submitted_at)
+      values ($1, $2, 'claimmd', 'test', $3, $4, $5, $6, $7, $8::jsonb, $9, now())
+      on conflict (organization_id, provider, idempotency_key) do update set
+        status = excluded.status, payload_hash = excluded.payload_hash,
+        external_transaction_id = excluded.external_transaction_id, correlation_id = excluded.correlation_id,
+        response_summary = excluded.response_summary, last_error = null, submitted_by = excluded.submitted_by,
+        submitted_at = now(), updated_at = now()
+    `, [
+      input.context.organization.id, claimId, submissionStatus, idempotencyKey, payloadHash,
+      response.transactionId, response.correlationId,
+      JSON.stringify({ status: response.status, scenario: input.scenario }), input.context.user.id,
+    ]);
+    await persistence.query(`
+      update revenue_claims set status = $3, last_transaction_at = now(), updated_at = now()
+      where id = $1 and organization_id = $2
+    `, [claimId, input.context.organization.id, status]);
+    await persistence.query(`
+      insert into revenue_claim_events
+        (organization_id, claim_id, event_type, source, idempotency_key, payload_hash, summary, occurred_at)
+      values ($1, $2, $3, 'claimmd', $4, $5, $6::jsonb, now())
+    `, [
+      input.context.organization.id, claimId,
+      response.status === "rejected" ? "claim_rejected" : "claim_submitted",
+      `${idempotencyKey}:${Date.now()}`, payloadHash,
+      JSON.stringify({ scenario: input.scenario, transactionId: response.transactionId, correlationId: response.correlationId, testOnly: true }),
+    ]);
+    await persistence.query("commit");
+  } catch (error) {
+    await persistence.query("rollback");
+    throw error;
+  } finally {
+    persistence.release();
+  }
+
+  return {
+    claimId,
+    patientControlNumber: fixture.claim.patientControlNumber,
+    scenario: input.scenario,
+    reused: Boolean(existing.rows[0]),
+    provider: adapter.provider,
+    mode: adapter.mode,
+    claimStatus: status,
+    transactionId: response.transactionId,
+    correlationId: response.correlationId,
+    result: response.status,
+  };
+}
+
+const CLAIMMD_ERA_DETAILS_PER_SYNC = 40;
+
+function laterNumericCursor(current: string, candidate: string) {
+  if (!/^\d+$/.test(candidate)) return current;
+  try {
+    return BigInt(candidate) > BigInt(current) ? candidate : current;
+  } catch {
+    return current;
+  }
+}
+
+async function syncClaimMdLifecycle(organizationId: string) {
+  const cursorResult = await pool.query<{ responseCursor: string; eraCursor: string }>(`
+    select response_cursor as "responseCursor", era_cursor as "eraCursor"
+    from revenue_connector_cursors where organization_id = $1 and provider = 'claimmd' limit 1
+  `, [organizationId]);
+  const cursor = cursorResult.rows[0] || { responseCursor: "0", eraCursor: "0" };
+  const adapter = createClaimMdAdapterFromEnvironment();
+  const [responses, eraList] = await Promise.all([
+    adapter.retrieveClaimAcknowledgment(cursor.responseCursor),
+    adapter.listRemittances(cursor.eraCursor),
+  ]);
+  let responseCount = 0;
+  let remittanceCount = 0;
+  const eraBatch = eraList.eras.slice(0, CLAIMMD_ERA_DETAILS_PER_SYNC);
+  const hasMoreEra = eraList.eras.length > eraBatch.length;
+  let nextEraCursor = hasMoreEra ? cursor.eraCursor : eraList.lastEraId;
+
+  for (const response of responses.claims) {
+    const claimResult = await pool.query<{ id: string }>(`
+      select id from revenue_claims
+      where organization_id = $1 and (
+        metadata->>'claimMdRemoteClaimId' = $2 or patient_control_number = $3
+      ) limit 1
+    `, [organizationId, response.remoteClaimId || "", response.patientControlNumber || ""]);
+    const claimId = claimResult.rows[0]?.id;
+    if (!claimId) continue;
+    const claimStatus = response.accepted ? "accepted" : "rejected";
+    const submissionStatus = response.accepted ? "acknowledged" : "failed";
+    const responseEventId = `claimmd-response:${response.responseId || response.claimMdId || response.remoteClaimId || response.patientControlNumber}:${claimStatus}`;
+    const client = await pool.connect();
+    try {
+      await client.query("begin");
+      await client.query(`
+        update revenue_claims set status = $3, last_transaction_at = now(), updated_at = now()
+        where id = $1 and organization_id = $2 and status not in ('paid', 'denied')
+      `, [claimId, organizationId, claimStatus]);
+      await client.query(`
+        update revenue_claim_submissions set status = $3, response_summary = $4::jsonb, updated_at = now()
+        where organization_id = $1 and claim_id = $2 and provider = 'claimmd'
+      `, [organizationId, claimId, submissionStatus, JSON.stringify({ status: response.status, accepted: response.accepted, messages: response.messages })]);
+      await client.query(`
+        insert into revenue_claim_events
+          (organization_id, claim_id, event_type, source, external_event_id, summary, occurred_at)
+        values ($1, $2, $3, 'claimmd', $4, $5::jsonb, now())
+        on conflict do nothing
+      `, [organizationId, claimId, response.accepted ? "claim_acknowledged" : "claim_rejected", responseEventId, JSON.stringify(response)]);
+      if (!response.accepted) {
+        await client.query(`
+          insert into revenue_work_items
+            (organization_id, claim_id, category, issue_code, title, description, recommended_action,
+             severity, priority_score, recoverable_amount)
+          select $1, $2, 'claim_format', 'CLAIMMD_REJECTION', 'Claim.MD claim rejection', $3,
+            'Review Claim.MD response fields, correct the claim, and submit a new version.', 'high', 75, c.total_charge
+          from revenue_claims c where c.id = $2
+            and not exists (
+              select 1 from revenue_work_items w where w.claim_id = $2 and w.issue_code = 'CLAIMMD_REJECTION'
+                and w.status in ('open', 'in_progress', 'blocked')
+            )
+        `, [organizationId, claimId, response.messages.map((message) => message.message).filter(Boolean).join("; ") || "Claim.MD returned a rejection."]);
+      }
+      await client.query("commit");
+      responseCount += 1;
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  for (const era of eraBatch) {
+    const eraId = String(era.eraId || "");
+    if (!eraId) continue;
+    nextEraCursor = laterNumericCursor(nextEraCursor, eraId);
+    const detail = await adapter.retrieveRemittance(eraId);
+    for (const remittance of detail.remittances) {
+      const claimResult = await pool.query<{ id: string }>(`
+        select id from revenue_claims where organization_id = $1 and patient_control_number = $2 limit 1
+      `, [organizationId, remittance.patientControlNumber]);
+      const claimId = claimResult.rows[0]?.id || null;
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        const stored = await client.query<{ id: number }>(`
+          insert into revenue_remittances
+            (organization_id, claim_id, provider, transaction_id, patient_control_number,
+             payer_claim_control_number, claim_status_code, total_charge, paid_amount,
+             patient_responsibility_amount, summary, received_at)
+          values ($1, $2, 'claimmd', $3, $4, $5, $6, $7, $8, $9, $10::jsonb, now())
+          on conflict (organization_id, provider, transaction_id, patient_control_number) do update set
+            claim_id = excluded.claim_id, payer_claim_control_number = excluded.payer_claim_control_number,
+            claim_status_code = excluded.claim_status_code, total_charge = excluded.total_charge,
+            paid_amount = excluded.paid_amount, patient_responsibility_amount = excluded.patient_responsibility_amount,
+            summary = excluded.summary, received_at = now()
+          returning id
+        `, [
+          organizationId, claimId, eraId, remittance.patientControlNumber,
+          remittance.payerClaimControlNumber, remittance.claimStatusCode, remittance.totalCharge,
+          remittance.paidAmount, remittance.patientResponsibilityAmount,
+          JSON.stringify({ era, source: "claimmd-eradata" }),
+        ]);
+        const remittanceId = stored.rows[0].id;
+        await client.query("delete from revenue_line_remittances where remittance_id = $1", [remittanceId]);
+        for (const line of remittance.lines) {
+          const lineMatch = claimId ? await client.query<{ id: number }>(`
+            select id from revenue_claim_lines where claim_id = $1 and procedure_code = $2 order by line_number limit 1
+          `, [claimId, line.procedureCode]) : { rows: [] as Array<{ id: number }> };
+          await client.query(`
+            insert into revenue_line_remittances
+              (remittance_id, claim_line_id, line_item_control_number, procedure_code,
+               charge_amount, paid_amount, allowed_amount, adjustments)
+            values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+          `, [
+            remittanceId, lineMatch.rows[0]?.id || null, line.lineItemControlNumber, line.procedureCode,
+            line.chargeAmount, line.paidAmount, line.allowedAmount, JSON.stringify(line.adjustments),
+          ]);
+        }
+        if (claimId) {
+          const nextStatus = remittance.paidAmount > 0 ? "paid" : remittance.claimStatusCode === "4" ? "denied" : "adjudicating";
+          await client.query(`
+            update revenue_claims set status = $3, paid_amount = $4, payer_claim_control_number = $5,
+              last_transaction_at = now(), updated_at = now()
+            where id = $1 and organization_id = $2
+          `, [claimId, organizationId, nextStatus, remittance.paidAmount, remittance.payerClaimControlNumber]);
+          await client.query(`
+            insert into revenue_claim_events
+              (organization_id, claim_id, event_type, source, external_event_id, summary, occurred_at)
+            values ($1, $2, 'remittance_received', 'claimmd', $3, $4::jsonb, now()) on conflict do nothing
+          `, [organizationId, claimId, `claimmd-era:${eraId}:${remittance.patientControlNumber}`, JSON.stringify(remittance)]);
+        }
+        await client.query("commit");
+        remittanceCount += 1;
+      } catch (error) {
+        await client.query("rollback");
+        throw error;
+      } finally {
+        client.release();
+      }
+    }
+  }
+
+  await pool.query(`
+    insert into revenue_connector_cursors
+      (organization_id, provider, response_cursor, era_cursor, last_polled_at, last_error, metadata)
+    values ($1, 'claimmd', $2, $3, now(), null, $4::jsonb)
+    on conflict (organization_id, provider) do update set
+      response_cursor = excluded.response_cursor, era_cursor = excluded.era_cursor,
+      last_polled_at = now(), last_error = null, metadata = excluded.metadata, updated_at = now()
+  `, [organizationId, responses.lastResponseId, nextEraCursor, JSON.stringify({ responseCount, remittanceCount, hasMoreEra, eraBatchLimit: CLAIMMD_ERA_DETAILS_PER_SYNC })]);
+  return {
+    responseCount,
+    remittanceCount,
+    responseCursor: responses.lastResponseId,
+    eraCursor: nextEraCursor,
+    hasMoreEra,
+  };
+}
+
 async function writeIntegrityWorkItems(input: {
   organizationId: string;
   claimId: string;
@@ -791,7 +1182,7 @@ export function registerRevenueIntegrityRoutes(app: Express) {
             productionSubmissions: Number(operationsResult.rows[0]?.productionSubmissions || 0),
           },
         },
-        validationPartners: [optumValidationSnapshot(), availityDemoSnapshot()],
+        validationPartners: [optumValidationSnapshot(), availityDemoSnapshot(), claimMdTestSnapshot()],
       });
     } catch (error) {
       requestError(res, error);
@@ -1461,6 +1852,41 @@ export function registerRevenueIntegrityRoutes(app: Express) {
     }
   });
 
+  app.post("/api/revenue-integrity/integrations/claimmd/health", async (req, res) => {
+    try {
+      await ensureRevenueContext(req);
+      const adapter = createClaimMdAdapterFromEnvironment();
+      const result = await adapter.healthCheck();
+      return res.json({ ok: true, provider: adapter.provider, mode: adapter.mode, ...result });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.post("/api/revenue-integrity/certification/claimmd", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      requireRevenueWriteAccess(context);
+      const scenario = String(req.body?.scenario || "accepted") as ClaimMdCertificationScenario;
+      if (!(["accepted", "rejected", "denied"] as string[]).includes(scenario)) {
+        return res.status(400).json({ message: "The Claim.MD certification scenario must be accepted, rejected, or denied." });
+      }
+      return res.json(await runClaimMdCertification({ context, scenario }));
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.post("/api/revenue-integrity/integrations/claimmd/sync", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      requireRevenueWriteAccess(context);
+      return res.json({ ok: true, provider: "claimmd", result: await syncClaimMdLifecycle(context.organization.id) });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
   app.post("/api/revenue-integrity/certification/optum", async (req, res) => {
     try {
       const context = await ensureRevenueContext(req);
@@ -1661,7 +2087,7 @@ export function registerRevenueIntegrityRoutes(app: Express) {
       return res.json({
         organization: context.organization,
         integration: integrationSnapshot(result.rows[0]),
-        validationPartners: [optumValidationSnapshot(), availityDemoSnapshot()],
+        validationPartners: [optumValidationSnapshot(), availityDemoSnapshot(), claimMdTestSnapshot()],
         requiredProductionSteps: [
           "Execute a clearinghouse agreement and BAA.",
           "Create the production account and restricted API credential.",

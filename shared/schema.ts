@@ -512,6 +512,21 @@ export const revenueLineRemittances = pgTable("revenue_line_remittances", {
   claimLineIdx: index("revenue_line_remittances_claim_line_idx").on(table.claimLineId),
 }));
 
+export const revenueConnectorCursors = pgTable("revenue_connector_cursors", {
+  id: serial("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  responseCursor: text("response_cursor").notNull().default("0"),
+  eraCursor: text("era_cursor").notNull().default("0"),
+  lastPolledAt: timestamp("last_polled_at", { withTimezone: true }),
+  lastError: text("last_error"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  organizationProviderIdx: uniqueIndex("revenue_connector_cursors_org_provider_idx").on(table.organizationId, table.provider),
+}));
+
 
 
 export const icd10Codes = pgTable("icd10_codes", {
