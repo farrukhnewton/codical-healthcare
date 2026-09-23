@@ -1,4 +1,4 @@
-import type { EligibilityCheckInput, NormalizedEligibilityResponse } from "@shared/revenue-cycle";
+import type { AuthorizationCheckInput, EligibilityCheckInput, NormalizedAuthorizationResponse, NormalizedEligibilityResponse } from "@shared/revenue-cycle";
 
 export async function revenueCycleRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { supabase } = await import("./supabase");
@@ -32,6 +32,7 @@ export type RevenueCycleOverview = {
   environment: "sandbox";
   dataPolicy: "synthetic_only";
   eligibility: { totalChecks: number; activeChecks: number; exceptionChecks: number; latestCheckAt: string | null };
+  authorizations: { total: number; approved: number; pending: number };
   modules: RevenueCycleModule[];
 };
 
@@ -50,4 +51,25 @@ export type EligibilityCheck = {
   response: NormalizedEligibilityResponse;
   checkedAt: string;
   createdAt?: string;
+};
+
+export type RevenueAuthorization = {
+  id: string;
+  provider: "codical";
+  environment: "sandbox";
+  dataClassification: "synthetic";
+  scenario: AuthorizationCheckInput["scenario"];
+  sampleProfile: AuthorizationCheckInput["sampleProfile"];
+  status: NormalizedAuthorizationResponse["status"];
+  payerId: string;
+  payerName: string;
+  memberIdMasked: string;
+  procedureCode: string;
+  diagnosisCode: string;
+  serviceFrom: string;
+  serviceTo: string;
+  requestedUnits: string | number;
+  authorizationNumber: string | null;
+  response: NormalizedAuthorizationResponse;
+  checkedAt: string;
 };

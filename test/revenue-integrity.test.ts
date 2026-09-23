@@ -33,6 +33,8 @@ import {
 } from "../server/services/revenue-integrity/revenue-session";
 import { eligibilityCheckInputSchema } from "../shared/revenue-cycle";
 import { AvailityEligibilityAdapter } from "../server/services/revenue-integrity/eligibility";
+import { authorizationCheckInputSchema } from "../shared/revenue-cycle";
+import { runSyntheticAuthorization } from "../server/services/revenue-integrity/prior-authorization";
 
 const validClaim = revenueClaimCreateSchema.parse({
   patientControlNumber: "PCN-10001",
@@ -102,6 +104,23 @@ test("normalizes an Availity demo coverage response into biller-readable benefit
   assert.equal(result.payer.id, "DEMO001");
   assert.ok(result.benefits.some((benefit) => benefit.amountType === "deductible"));
   assert.ok(result.benefits.some((benefit) => benefit.amountType === "copay"));
+});
+
+test("prior authorization sandbox accepts only synthetic allow-listed cases", () => {
+  assert.equal(authorizationCheckInputSchema.parse({ scenario: "approved", sampleProfile: "outpatient_imaging", dataClassification: "synthetic" }).dataClassification, "synthetic");
+  assert.throws(() => authorizationCheckInputSchema.parse({ scenario: "approved", sampleProfile: "outpatient_imaging", dataClassification: "phi", patientName: "Real Patient" }));
+});
+
+test("prior authorization sandbox preserves requirement and determination boundaries", () => {
+  const approved = runSyntheticAuthorization({ scenario: "approved", sampleProfile: "outpatient_imaging", dataClassification: "synthetic" }, new Date("2026-09-24T00:00:00.000Z"));
+  const pended = runSyntheticAuthorization({ scenario: "pended", sampleProfile: "specialty_medication", dataClassification: "synthetic" }, new Date("2026-09-24T00:00:00.000Z"));
+  const notRequired = runSyntheticAuthorization({ scenario: "not_required", sampleProfile: "ambulance_transport", dataClassification: "synthetic" }, new Date("2026-09-24T00:00:00.000Z"));
+  assert.match(approved.determination.authorizationNumber || "", /^SYN-/);
+  assert.equal(approved.requirement.required, true);
+  assert.equal(pended.determination.authorizationNumber, null);
+  assert.ok(pended.requirement.documentation.length > 0);
+  assert.equal(notRequired.requirement.required, false);
+  assert.deepEqual(notRequired.requirement.documentation, []);
 });
 
 function loadFixture(name: string) {

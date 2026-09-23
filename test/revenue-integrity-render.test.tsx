@@ -7,6 +7,7 @@ import { Router } from "wouter";
 import { RevenueIntegrity } from "../client/src/pages/RevenueIntegrity";
 import { RevenueCycle } from "../client/src/pages/RevenueCycle";
 import { EligibilityBenefits } from "../client/src/pages/EligibilityBenefits";
+import { PriorAuthorizations } from "../client/src/pages/PriorAuthorizations";
 
 test("Revenue Cycle command center renders the module map and sandbox boundary", () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -33,6 +34,16 @@ test("Eligibility workspace renders its controlled synthetic inquiry", () => {
   assert.match(html, /synthetic Availity scenarios/i);
   assert.match(html, /Run eligibility check/i);
   assert.match(html, /No eligibility response yet/i);
+});
+
+test("Prior Authorizations renders the synthetic 278-style workflow", () => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const html = renderToStaticMarkup(
+    <Router ssrPath="/revenue-cycle/authorizations"><QueryClientProvider client={queryClient}><PriorAuthorizations /></QueryClientProvider></Router>,
+  );
+  assert.match(html, /Prior Authorizations/i);
+  assert.match(html, /synthetic 278-style workflow/i);
+  assert.match(html, /No authorization case yet/i);
 });
 
 test("Revenue Integrity renders its initial route state without throwing", () => {

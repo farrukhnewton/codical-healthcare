@@ -272,6 +272,31 @@ export async function ensureRevenueIntegritySchema(pool: Pool) {
       "updated_at" timestamptz not null default now()
     );
 
+    create table if not exists "revenue_authorizations" (
+      "id" text primary key,
+      "organization_id" text not null references "revenue_organizations" ("id") on delete cascade,
+      "created_by" integer references "users" ("id") on delete set null,
+      "provider" text not null,
+      "environment" text not null,
+      "data_classification" text not null,
+      "scenario" text not null,
+      "sample_profile" text not null,
+      "status" text not null,
+      "payer_id" text not null,
+      "payer_name" text not null,
+      "member_id_masked" text not null,
+      "procedure_code" text not null,
+      "diagnosis_code" text not null,
+      "service_from" text not null,
+      "service_to" text not null,
+      "requested_units" numeric(10,3) not null default 1,
+      "authorization_number" text,
+      "normalized_response" jsonb not null default '{}'::jsonb,
+      "checked_at" timestamptz not null default now(),
+      "created_at" timestamptz not null default now(),
+      "updated_at" timestamptz not null default now()
+    );
+
     alter table "revenue_webhook_events" add column if not exists "lease_expires_at" timestamptz;
     alter table "revenue_work_items" add column if not exists "started_at" timestamptz;
     alter table "revenue_work_items" add column if not exists "resolved_by" integer references "users" ("id") on delete set null;
@@ -297,6 +322,8 @@ export async function ensureRevenueIntegritySchema(pool: Pool) {
     create index if not exists "revenue_connector_cursors_org_provider_idx" on "revenue_connector_cursors" ("organization_id", "provider");
     create index if not exists "revenue_eligibility_checks_org_checked_idx" on "revenue_eligibility_checks" ("organization_id", "checked_at" desc);
     create index if not exists "revenue_eligibility_checks_org_status_idx" on "revenue_eligibility_checks" ("organization_id", "status");
+    create index if not exists "revenue_authorizations_org_checked_idx" on "revenue_authorizations" ("organization_id", "checked_at" desc);
+    create index if not exists "revenue_authorizations_org_status_idx" on "revenue_authorizations" ("organization_id", "status");
 
     alter table "revenue_organizations" enable row level security;
     alter table "revenue_organization_members" enable row level security;
@@ -313,5 +340,6 @@ export async function ensureRevenueIntegritySchema(pool: Pool) {
     alter table "revenue_line_remittances" enable row level security;
     alter table "revenue_connector_cursors" enable row level security;
     alter table "revenue_eligibility_checks" enable row level security;
+    alter table "revenue_authorizations" enable row level security;
   `);
 }

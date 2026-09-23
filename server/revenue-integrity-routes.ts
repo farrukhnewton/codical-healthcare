@@ -12,7 +12,7 @@ import {
   type ClaimIntegrityIssue,
   type RevenueClaimCreateInput,
 } from "@shared/revenue-integrity";
-import { eligibilityCheckInputSchema } from "@shared/revenue-cycle";
+import { authorizationCheckInputSchema, eligibilityCheckInputSchema } from "@shared/revenue-cycle";
 import { db, pool } from "./db";
 import {
   AVAILITY_COVERAGE_SCENARIOS,
@@ -31,6 +31,7 @@ import { parseStediWebhookEvent } from "./services/revenue-integrity/stedi-respo
 import { processNextStediWebhook } from "./services/revenue-integrity/stedi-webhook-processor";
 import { canCorrectRevenueClaim, summarizeClaimChanges } from "./services/revenue-integrity/claim-correction";
 import { AvailityEligibilityAdapter } from "./services/revenue-integrity/eligibility";
+import { runSyntheticAuthorization } from "./services/revenue-integrity/prior-authorization";
 import {
   REVENUE_SESSION_COOKIE,
   cookieValue,
@@ -1117,12 +1118,18 @@ export function registerRevenueIntegrityRoutes(app: Express) {
         activeChecks: string;
         exceptionChecks: string;
         latestCheckAt: string | null;
+        totalAuthorizations: string;
+        approvedAuthorizations: string;
+        pendingAuthorizations: string;
       }>(`
         select
           count(*)::text as "totalChecks",
           count(*) filter (where status = 'active')::text as "activeChecks",
           count(*) filter (where status = 'error')::text as "exceptionChecks",
-          max(checked_at)::text as "latestCheckAt"
+          max(checked_at)::text as "latestCheckAt",
+          (select count(*)::text from revenue_authorizations where organization_id = $1) as "totalAuthorizations",
+          (select count(*)::text from revenue_authorizations where organization_id = $1 and status = 'approved') as "approvedAuthorizations",
+          (select count(*)::text from revenue_authorizations where organization_id = $1 and status = 'pended') as "pendingAuthorizations"
         from revenue_eligibility_checks
         where organization_id = $1
       `, [context.organization.id]);
@@ -1138,15 +1145,75 @@ export function registerRevenueIntegrityRoutes(app: Express) {
           exceptionChecks: Number(eligibility.exceptionChecks || 0),
           latestCheckAt: eligibility.latestCheckAt,
         },
+        authorizations: {
+          total: Number(eligibility.totalAuthorizations || 0),
+          approved: Number(eligibility.approvedAuthorizations || 0),
+          pending: Number(eligibility.pendingAuthorizations || 0),
+        },
         modules: [
           { id: "eligibility", name: "Eligibility & Benefits", status: "active", href: "/revenue-cycle/eligibility" },
           { id: "claims", name: "Claims & Validation", status: "active", href: "/revenue-cycle/claims" },
           { id: "claim-status", name: "Claim Status", status: "foundation", href: "/revenue-cycle/claims" },
-          { id: "authorizations", name: "Authorizations", status: "planned", href: null },
+          { id: "authorizations", name: "Prior Authorizations", status: "active", href: "/revenue-cycle/authorizations" },
           { id: "payments", name: "Payments & Remittances", status: "foundation", href: "/revenue-cycle/claims" },
           { id: "denials", name: "Denials & Appeals", status: "foundation", href: "/revenue-cycle/claims" },
         ],
       });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.get("/api/revenue-cycle/authorizations", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      const result = await pool.query(`
+        select id, provider, environment, data_classification as "dataClassification",
+          scenario, sample_profile as "sampleProfile", status, payer_id as "payerId",
+          payer_name as "payerName", member_id_masked as "memberIdMasked",
+          procedure_code as "procedureCode", diagnosis_code as "diagnosisCode",
+          service_from as "serviceFrom", service_to as "serviceTo", requested_units as "requestedUnits",
+          authorization_number as "authorizationNumber", normalized_response as "response",
+          checked_at as "checkedAt", created_at as "createdAt"
+        from revenue_authorizations where organization_id = $1
+        order by checked_at desc limit 50
+      `, [context.organization.id]);
+      return res.json({ authorizations: result.rows });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.post("/api/revenue-cycle/authorizations/check", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      requireRevenueWriteAccess(context);
+      const input = authorizationCheckInputSchema.parse(req.body);
+      const response = runSyntheticAuthorization(input);
+      const authorizationId = `auth_${randomUUID()}`;
+      await pool.query(`
+        insert into revenue_authorizations
+          (id, organization_id, created_by, provider, environment, data_classification, scenario,
+           sample_profile, status, payer_id, payer_name, member_id_masked, procedure_code,
+           diagnosis_code, service_from, service_to, requested_units, authorization_number,
+           normalized_response, checked_at)
+        values ($1, $2, $3, $4, $5, 'synthetic', $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18::jsonb, $19)
+      `, [
+        authorizationId, context.organization.id, context.user.id, response.provider, response.environment,
+        input.scenario, input.sampleProfile, response.status, response.payer.id, response.payer.name,
+        response.patient.memberIdMasked, response.service.procedureCode, response.service.diagnosisCode,
+        response.service.serviceFrom, response.service.serviceTo, response.service.requestedUnits,
+        response.determination.authorizationNumber, JSON.stringify(response), response.checkedAt,
+      ]);
+      return res.status(201).json({ authorization: {
+        id: authorizationId, provider: response.provider, environment: response.environment,
+        dataClassification: "synthetic", scenario: input.scenario, sampleProfile: input.sampleProfile,
+        status: response.status, payerId: response.payer.id, payerName: response.payer.name,
+        memberIdMasked: response.patient.memberIdMasked, procedureCode: response.service.procedureCode,
+        diagnosisCode: response.service.diagnosisCode, serviceFrom: response.service.serviceFrom,
+        serviceTo: response.service.serviceTo, requestedUnits: response.service.requestedUnits,
+        authorizationNumber: response.determination.authorizationNumber, response, checkedAt: response.checkedAt,
+      } });
     } catch (error) {
       return requestError(res, error);
     }

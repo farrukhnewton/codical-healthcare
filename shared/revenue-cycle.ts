@@ -49,3 +49,26 @@ export type NormalizedEligibilityResponse = {
   messages: string[];
   checkedAt: string;
 };
+
+export const authorizationScenarioSchema = z.enum(["not_required", "approved", "pended", "denied"]);
+
+export const authorizationCheckInputSchema = z.object({
+  scenario: authorizationScenarioSchema.default("approved"),
+  sampleProfile: z.enum(["outpatient_imaging", "ambulance_transport", "specialty_medication"]).default("outpatient_imaging"),
+  dataClassification: z.literal("synthetic"),
+}).strict();
+
+export type AuthorizationCheckInput = z.infer<typeof authorizationCheckInputSchema>;
+
+export type NormalizedAuthorizationResponse = {
+  status: "not_required" | "approved" | "pended" | "denied";
+  provider: "codical";
+  environment: "sandbox";
+  mockVerified: true;
+  patient: { displayName: string; memberIdMasked: string };
+  payer: { id: string; name: string };
+  service: { procedureCode: string; description: string; diagnosisCode: string; serviceFrom: string; serviceTo: string; requestedUnits: number };
+  requirement: { required: boolean; summary: string; documentation: string[] };
+  determination: { authorizationNumber: string | null; effectiveFrom: string | null; effectiveTo: string | null; reason: string; nextAction: string };
+  checkedAt: string;
+};

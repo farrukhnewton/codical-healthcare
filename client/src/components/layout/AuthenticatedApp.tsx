@@ -62,6 +62,7 @@ const CathPciWorkspace = lazy(() => import("@/pages/CathPciWorkspace").then((mod
 const RevenueIntegrity = lazy(() => import("@/pages/RevenueIntegrity").then((module) => ({ default: module.RevenueIntegrity })));
 const RevenueCycle = lazy(() => import("@/pages/RevenueCycle").then((module) => ({ default: module.RevenueCycle })));
 const EligibilityBenefits = lazy(() => import("@/pages/EligibilityBenefits").then((module) => ({ default: module.EligibilityBenefits })));
+const PriorAuthorizations = lazy(() => import("@/pages/PriorAuthorizations").then((module) => ({ default: module.PriorAuthorizations })));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const ChatRealtimeBridge = lazy(() =>
   import("@/components/chat/ChatRealtimeBridge").then((module) => ({ default: module.ChatRealtimeBridge })),
@@ -101,6 +102,7 @@ function AuthenticatedRoutes() {
     <Switch>
       <Route path="/dashboard">{() => <AppPage><Home /></AppPage>}</Route>
       <Route path="/revenue-cycle/eligibility">{() => <AppPage><EligibilityBenefits /></AppPage>}</Route>
+      <Route path="/revenue-cycle/authorizations">{() => <AppPage><PriorAuthorizations /></AppPage>}</Route>
       <Route path="/revenue-cycle/claims">{() => <AppPage><RevenueIntegrity /></AppPage>}</Route>
       <Route path="/revenue-cycle">{() => <AppPage><RevenueCycle /></AppPage>}</Route>
       <Route path="/revenue-integrity">{() => <Redirect to="/revenue-cycle/claims" />}</Route>
