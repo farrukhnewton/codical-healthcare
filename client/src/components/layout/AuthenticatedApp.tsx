@@ -14,6 +14,7 @@ import "@/styles/vad-ecmo-specialty.css";
 import "@/styles/cabg-specialty.css";
 import "@/styles/cath-pci-specialty.css";
 import "@/styles/revenue-integrity.css";
+import "@/styles/revenue-cycle.css";
 
 import { lazy, Suspense, type ReactNode } from "react";
 import { Redirect, Route, Switch } from "wouter";
@@ -59,6 +60,8 @@ const VadEcmoWorkspace = lazy(() => import("@/pages/VadEcmoWorkspace").then((mod
 const CabgWorkspace = lazy(() => import("@/pages/CabgWorkspace").then((module) => ({ default: module.CabgWorkspace })));
 const CathPciWorkspace = lazy(() => import("@/pages/CathPciWorkspace").then((module) => ({ default: module.CathPciWorkspace })));
 const RevenueIntegrity = lazy(() => import("@/pages/RevenueIntegrity").then((module) => ({ default: module.RevenueIntegrity })));
+const RevenueCycle = lazy(() => import("@/pages/RevenueCycle").then((module) => ({ default: module.RevenueCycle })));
+const EligibilityBenefits = lazy(() => import("@/pages/EligibilityBenefits").then((module) => ({ default: module.EligibilityBenefits })));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const ChatRealtimeBridge = lazy(() =>
   import("@/components/chat/ChatRealtimeBridge").then((module) => ({ default: module.ChatRealtimeBridge })),
@@ -97,7 +100,10 @@ function AuthenticatedRoutes() {
   return (
     <Switch>
       <Route path="/dashboard">{() => <AppPage><Home /></AppPage>}</Route>
-      <Route path="/revenue-integrity">{() => <AppPage><RevenueIntegrity /></AppPage>}</Route>
+      <Route path="/revenue-cycle/eligibility">{() => <AppPage><EligibilityBenefits /></AppPage>}</Route>
+      <Route path="/revenue-cycle/claims">{() => <AppPage><RevenueIntegrity /></AppPage>}</Route>
+      <Route path="/revenue-cycle">{() => <AppPage><RevenueCycle /></AppPage>}</Route>
+      <Route path="/revenue-integrity">{() => <Redirect to="/revenue-cycle/claims" />}</Route>
       <Route path="/workspace">{() => <AppPage><Workspace /></AppPage>}</Route>
       <Route path="/chat">{() => <AppPage><TeamChat /></AppPage>}</Route>
       <Route path="/workbench">{() => <AppPage><Workbench /></AppPage>}</Route>

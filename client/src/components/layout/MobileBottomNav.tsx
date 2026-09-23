@@ -6,7 +6,7 @@ const MOBILE_NAV_ITEMS = [
   { href: "/search", label: "Search", icon: Search },
   { href: "/workspace", label: "Assistant", icon: Brain },
   { href: "/chat", label: "Chat", icon: MessageSquare },
-  { href: "/revenue-integrity", label: "Revenue", icon: CircleDollarSign },
+  { href: "/revenue-cycle", label: "Revenue", icon: CircleDollarSign },
 ];
 
 export function MobileBottomNav() {

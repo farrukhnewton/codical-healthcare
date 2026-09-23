@@ -12,6 +12,7 @@ import {
   type ClaimIntegrityIssue,
   type RevenueClaimCreateInput,
 } from "@shared/revenue-integrity";
+import { eligibilityCheckInputSchema } from "@shared/revenue-cycle";
 import { db, pool } from "./db";
 import {
   AVAILITY_COVERAGE_SCENARIOS,
@@ -29,6 +30,7 @@ import { mapProfessionalClaimToStedi } from "./services/revenue-integrity/stedi-
 import { parseStediWebhookEvent } from "./services/revenue-integrity/stedi-responses";
 import { processNextStediWebhook } from "./services/revenue-integrity/stedi-webhook-processor";
 import { canCorrectRevenueClaim, summarizeClaimChanges } from "./services/revenue-integrity/claim-correction";
+import { AvailityEligibilityAdapter } from "./services/revenue-integrity/eligibility";
 import {
   REVENUE_SESSION_COOKIE,
   cookieValue,
@@ -1107,6 +1109,147 @@ function requestError(res: { status: (status: number) => { json: (body: unknown)
 }
 
 export function registerRevenueIntegrityRoutes(app: Express) {
+  app.get("/api/revenue-cycle/overview", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      const result = await pool.query<{
+        totalChecks: string;
+        activeChecks: string;
+        exceptionChecks: string;
+        latestCheckAt: string | null;
+      }>(`
+        select
+          count(*)::text as "totalChecks",
+          count(*) filter (where status = 'active')::text as "activeChecks",
+          count(*) filter (where status = 'error')::text as "exceptionChecks",
+          max(checked_at)::text as "latestCheckAt"
+        from revenue_eligibility_checks
+        where organization_id = $1
+      `, [context.organization.id]);
+      const eligibility = result.rows[0];
+      return res.json({
+        generatedAt: new Date().toISOString(),
+        organization: context.organization,
+        environment: "sandbox",
+        dataPolicy: "synthetic_only",
+        eligibility: {
+          totalChecks: Number(eligibility.totalChecks || 0),
+          activeChecks: Number(eligibility.activeChecks || 0),
+          exceptionChecks: Number(eligibility.exceptionChecks || 0),
+          latestCheckAt: eligibility.latestCheckAt,
+        },
+        modules: [
+          { id: "eligibility", name: "Eligibility & Benefits", status: "active", href: "/revenue-cycle/eligibility" },
+          { id: "claims", name: "Claims & Validation", status: "active", href: "/revenue-cycle/claims" },
+          { id: "claim-status", name: "Claim Status", status: "foundation", href: "/revenue-cycle/claims" },
+          { id: "authorizations", name: "Authorizations", status: "planned", href: null },
+          { id: "payments", name: "Payments & Remittances", status: "foundation", href: "/revenue-cycle/claims" },
+          { id: "denials", name: "Denials & Appeals", status: "foundation", href: "/revenue-cycle/claims" },
+        ],
+      });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.get("/api/revenue-cycle/eligibility", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      const requestedLimit = Number(req.query.limit || 30);
+      const limit = Number.isFinite(requestedLimit) ? Math.min(100, Math.max(1, requestedLimit)) : 30;
+      const result = await pool.query(`
+        select
+          id, provider, environment, data_classification as "dataClassification",
+          scenario, sample_profile as "sampleProfile", service_type as "serviceType",
+          status, payer_id as "payerId", payer_name as "payerName",
+          member_id_masked as "memberIdMasked", normalized_response as "response",
+          checked_at as "checkedAt", created_at as "createdAt"
+        from revenue_eligibility_checks
+        where organization_id = $1
+        order by checked_at desc
+        limit $2
+      `, [context.organization.id, limit]);
+      return res.json({ checks: result.rows });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.get("/api/revenue-cycle/eligibility/:checkId", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      const result = await pool.query(`
+        select
+          id, provider, environment, data_classification as "dataClassification",
+          scenario, sample_profile as "sampleProfile", service_type as "serviceType",
+          status, payer_id as "payerId", payer_name as "payerName",
+          member_id_masked as "memberIdMasked", request_summary as "requestSummary",
+          normalized_response as "response", external_transaction_id as "externalTransactionId",
+          checked_at as "checkedAt", created_at as "createdAt"
+        from revenue_eligibility_checks
+        where organization_id = $1 and id = $2
+        limit 1
+      `, [context.organization.id, req.params.checkId]);
+      if (!result.rows[0]) return res.status(404).json({ message: "Eligibility check not found." });
+      return res.json({ check: result.rows[0] });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.post("/api/revenue-cycle/eligibility/check", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      requireRevenueWriteAccess(context);
+      const input = eligibilityCheckInputSchema.parse(req.body);
+      const response = await new AvailityEligibilityAdapter().check(input);
+      const checkId = `elig_${randomUUID()}`;
+      await pool.query(`
+        insert into revenue_eligibility_checks
+          (id, organization_id, created_by, provider, environment, data_classification,
+           scenario, sample_profile, service_type, status, payer_id, payer_name,
+           member_id_masked, request_summary, normalized_response, checked_at)
+        values
+          ($1, $2, $3, $4, $5, 'synthetic', $6, $7, $8, $9, $10, $11, $12, $13::jsonb, $14::jsonb, $15)
+      `, [
+        checkId,
+        context.organization.id,
+        context.user.id,
+        response.provider,
+        response.environment,
+        input.scenario,
+        input.sampleProfile,
+        input.serviceType,
+        response.status,
+        response.payer.id,
+        response.payer.name,
+        response.patient.memberIdMasked,
+        JSON.stringify(input),
+        JSON.stringify(response),
+        response.checkedAt,
+      ]);
+      return res.status(201).json({
+        check: {
+          id: checkId,
+          provider: response.provider,
+          environment: response.environment,
+          dataClassification: "synthetic",
+          scenario: input.scenario,
+          sampleProfile: input.sampleProfile,
+          serviceType: input.serviceType,
+          status: response.status,
+          payerId: response.payer.id,
+          payerName: response.payer.name,
+          memberIdMasked: response.patient.memberIdMasked,
+          response,
+          checkedAt: response.checkedAt,
+        },
+      });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
   app.get("/api/revenue-integrity/overview", async (req, res) => {
     try {
       const context = await ensureRevenueContext(req);

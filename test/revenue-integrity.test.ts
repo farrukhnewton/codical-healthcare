@@ -31,6 +31,8 @@ import {
   serializeRevenueSessionCookie,
   verifyRevenueSession,
 } from "../server/services/revenue-integrity/revenue-session";
+import { eligibilityCheckInputSchema } from "../shared/revenue-cycle";
+import { AvailityEligibilityAdapter } from "../server/services/revenue-integrity/eligibility";
 
 const validClaim = revenueClaimCreateSchema.parse({
   patientControlNumber: "PCN-10001",
@@ -48,6 +50,58 @@ const validClaim = revenueClaimCreateSchema.parse({
     chargeAmount: 150,
     placeOfService: "11",
   }],
+});
+
+test("allows only synthetic, scenario-based eligibility requests", () => {
+  assert.equal(eligibilityCheckInputSchema.parse({
+    scenario: "complete",
+    sampleProfile: "commercial_individual",
+    serviceType: "health_benefit_plan",
+    dataClassification: "synthetic",
+  }).dataClassification, "synthetic");
+  assert.throws(() => eligibilityCheckInputSchema.parse({
+    scenario: "complete",
+    sampleProfile: "commercial_individual",
+    serviceType: "health_benefit_plan",
+    dataClassification: "phi",
+    patientName: "Real Patient",
+  }));
+});
+
+test("normalizes an Availity demo coverage response into biller-readable benefits", async () => {
+  let requestCount = 0;
+  const availity = new AvailityDemoAdapter({
+    clientId: "demo-client",
+    clientSecret: "demo-secret",
+    scope: "healthcare-hipaa-transactions-demo",
+    fetchImpl: async () => {
+      requestCount += 1;
+      if (requestCount === 1) {
+        return new Response(JSON.stringify({ access_token: "demo-token", expires_in: 300 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({
+        totalCount: 1,
+        coverages: [{ status: "Active", payer: { payerId: "DEMO001" }, plans: [{ id: "plan-1" }] }],
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "x-api-mock-response": "true" },
+      });
+    },
+  });
+  const result = await new AvailityEligibilityAdapter(availity).check({
+    scenario: "complete",
+    sampleProfile: "commercial_individual",
+    serviceType: "professional",
+    dataClassification: "synthetic",
+  });
+  assert.equal(result.status, "active");
+  assert.equal(result.mockVerified, true);
+  assert.equal(result.payer.id, "DEMO001");
+  assert.ok(result.benefits.some((benefit) => benefit.amountType === "deductible"));
+  assert.ok(result.benefits.some((benefit) => benefit.amountType === "copay"));
 });
 
 function loadFixture(name: string) {
