@@ -1,4 +1,4 @@
-import type { AuthorizationCheckInput, EligibilityCheckInput, NormalizedAuthorizationResponse, NormalizedEligibilityResponse } from "@shared/revenue-cycle";
+import type { AuthorizationCheckInput, ClaimStatusInquiryInput, EligibilityCheckInput, NormalizedAuthorizationResponse, NormalizedClaimStatusResponse, NormalizedEligibilityResponse } from "@shared/revenue-cycle";
 
 export async function revenueCycleRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { supabase } = await import("./supabase");
@@ -33,6 +33,7 @@ export type RevenueCycleOverview = {
   dataPolicy: "synthetic_only";
   eligibility: { totalChecks: number; activeChecks: number; exceptionChecks: number; latestCheckAt: string | null };
   authorizations: { total: number; approved: number; pending: number };
+  claimStatus: { total: number; open: number; resolved: number };
   modules: RevenueCycleModule[];
 };
 
@@ -72,4 +73,24 @@ export type RevenueAuthorization = {
   authorizationNumber: string | null;
   response: NormalizedAuthorizationResponse;
   checkedAt: string;
+};
+
+export type RevenueClaimStatusInquiry = {
+  id: string;
+  provider: "availity";
+  environment: "demo";
+  dataClassification: "synthetic";
+  scenario: ClaimStatusInquiryInput["scenario"];
+  inquiryType: "standard_276_277";
+  status: NormalizedClaimStatusResponse["status"];
+  payerId: string;
+  payerName: string;
+  claimNumberMasked: string;
+  patientAccountMasked: string;
+  claimAmount: string | number | null;
+  paymentAmount: string | number | null;
+  responseId: string;
+  response: NormalizedClaimStatusResponse;
+  checkedAt: string;
+  createdAt?: string;
 };

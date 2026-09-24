@@ -12,7 +12,7 @@ import {
   type ClaimIntegrityIssue,
   type RevenueClaimCreateInput,
 } from "@shared/revenue-integrity";
-import { authorizationCheckInputSchema, eligibilityCheckInputSchema } from "@shared/revenue-cycle";
+import { authorizationCheckInputSchema, claimStatusInquiryInputSchema, eligibilityCheckInputSchema } from "@shared/revenue-cycle";
 import { db, pool } from "./db";
 import {
   AVAILITY_COVERAGE_SCENARIOS,
@@ -32,6 +32,7 @@ import { processNextStediWebhook } from "./services/revenue-integrity/stedi-webh
 import { canCorrectRevenueClaim, summarizeClaimChanges } from "./services/revenue-integrity/claim-correction";
 import { AvailityEligibilityAdapter } from "./services/revenue-integrity/eligibility";
 import { runSyntheticAuthorization } from "./services/revenue-integrity/prior-authorization";
+import { runAvailityClaimStatusInquiry } from "./services/revenue-integrity/claim-status";
 import {
   REVENUE_SESSION_COOKIE,
   cookieValue,
@@ -1121,6 +1122,9 @@ export function registerRevenueIntegrityRoutes(app: Express) {
         totalAuthorizations: string;
         approvedAuthorizations: string;
         pendingAuthorizations: string;
+        totalStatusInquiries: string;
+        openStatusInquiries: string;
+        resolvedStatusInquiries: string;
       }>(`
         select
           count(*)::text as "totalChecks",
@@ -1129,7 +1133,10 @@ export function registerRevenueIntegrityRoutes(app: Express) {
           max(checked_at)::text as "latestCheckAt",
           (select count(*)::text from revenue_authorizations where organization_id = $1) as "totalAuthorizations",
           (select count(*)::text from revenue_authorizations where organization_id = $1 and status = 'approved') as "approvedAuthorizations",
-          (select count(*)::text from revenue_authorizations where organization_id = $1 and status = 'pended') as "pendingAuthorizations"
+          (select count(*)::text from revenue_authorizations where organization_id = $1 and status = 'pended') as "pendingAuthorizations",
+          (select count(*)::text from revenue_claim_status_inquiries where organization_id = $1) as "totalStatusInquiries",
+          (select count(*)::text from revenue_claim_status_inquiries where organization_id = $1 and status in ('received', 'processing')) as "openStatusInquiries",
+          (select count(*)::text from revenue_claim_status_inquiries where organization_id = $1 and status in ('paid', 'denied')) as "resolvedStatusInquiries"
         from revenue_eligibility_checks
         where organization_id = $1
       `, [context.organization.id]);
@@ -1150,15 +1157,71 @@ export function registerRevenueIntegrityRoutes(app: Express) {
           approved: Number(eligibility.approvedAuthorizations || 0),
           pending: Number(eligibility.pendingAuthorizations || 0),
         },
+        claimStatus: {
+          total: Number(eligibility.totalStatusInquiries || 0),
+          open: Number(eligibility.openStatusInquiries || 0),
+          resolved: Number(eligibility.resolvedStatusInquiries || 0),
+        },
         modules: [
           { id: "eligibility", name: "Eligibility & Benefits", status: "active", href: "/revenue-cycle/eligibility" },
           { id: "claims", name: "Claims & Validation", status: "active", href: "/revenue-cycle/claims" },
-          { id: "claim-status", name: "Claim Status", status: "foundation", href: "/revenue-cycle/claims" },
+          { id: "claim-status", name: "Claim Status", status: "active", href: "/revenue-cycle/claim-status" },
           { id: "authorizations", name: "Prior Authorizations", status: "active", href: "/revenue-cycle/authorizations" },
           { id: "payments", name: "Payments & Remittances", status: "foundation", href: "/revenue-cycle/claims" },
           { id: "denials", name: "Denials & Appeals", status: "foundation", href: "/revenue-cycle/claims" },
         ],
       });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.get("/api/revenue-cycle/claim-status", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      const result = await pool.query(`
+        select id, provider, environment, data_classification as "dataClassification",
+          scenario, inquiry_type as "inquiryType", status, payer_id as "payerId",
+          payer_name as "payerName", claim_number_masked as "claimNumberMasked",
+          patient_account_masked as "patientAccountMasked", claim_amount as "claimAmount",
+          payment_amount as "paymentAmount", response_id as "responseId",
+          normalized_response as "response", checked_at as "checkedAt", created_at as "createdAt"
+        from revenue_claim_status_inquiries where organization_id = $1
+        order by checked_at desc limit 50
+      `, [context.organization.id]);
+      return res.json({ inquiries: result.rows });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.post("/api/revenue-cycle/claim-status/check", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      requireRevenueWriteAccess(context);
+      const input = claimStatusInquiryInputSchema.parse(req.body);
+      const response = await runAvailityClaimStatusInquiry(input);
+      const inquiryId = `status_${randomUUID()}`;
+      await pool.query(`
+        insert into revenue_claim_status_inquiries
+          (id, organization_id, created_by, provider, environment, data_classification, scenario,
+           inquiry_type, status, payer_id, payer_name, claim_number_masked, patient_account_masked,
+           claim_amount, payment_amount, response_id, normalized_response, checked_at)
+        values ($1, $2, $3, $4, $5, 'synthetic', $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::jsonb, $17)
+      `, [
+        inquiryId, context.organization.id, context.user.id, response.provider, response.environment,
+        input.scenario, response.inquiryType, response.status, response.payer.id, response.payer.name,
+        response.claim.claimNumberMasked, response.claim.patientAccountMasked, response.claim.claimAmount,
+        response.claim.paymentAmount, response.responseId, JSON.stringify(response), response.checkedAt,
+      ]);
+      return res.status(201).json({ inquiry: {
+        id: inquiryId, provider: response.provider, environment: response.environment,
+        dataClassification: "synthetic", scenario: input.scenario, inquiryType: response.inquiryType,
+        status: response.status, payerId: response.payer.id, payerName: response.payer.name,
+        claimNumberMasked: response.claim.claimNumberMasked, patientAccountMasked: response.claim.patientAccountMasked,
+        claimAmount: response.claim.claimAmount, paymentAmount: response.claim.paymentAmount,
+        responseId: response.responseId, response, checkedAt: response.checkedAt,
+      } });
     } catch (error) {
       return requestError(res, error);
     }

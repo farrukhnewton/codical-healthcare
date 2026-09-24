@@ -8,6 +8,7 @@ import { RevenueIntegrity } from "../client/src/pages/RevenueIntegrity";
 import { RevenueCycle } from "../client/src/pages/RevenueCycle";
 import { EligibilityBenefits } from "../client/src/pages/EligibilityBenefits";
 import { PriorAuthorizations } from "../client/src/pages/PriorAuthorizations";
+import { ClaimStatus } from "../client/src/pages/ClaimStatus";
 
 test("Revenue Cycle command center renders the module map and sandbox boundary", () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -44,6 +45,16 @@ test("Prior Authorizations renders the synthetic 278-style workflow", () => {
   assert.match(html, /Prior Authorizations/i);
   assert.match(html, /synthetic 278-style workflow/i);
   assert.match(html, /No authorization case yet/i);
+});
+
+test("Claim Status renders the controlled synthetic 276/277 workflow", () => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const html = renderToStaticMarkup(
+    <Router ssrPath="/revenue-cycle/claim-status"><QueryClientProvider client={queryClient}><ClaimStatus /></QueryClientProvider></Router>,
+  );
+  assert.match(html, /Claim Status/i);
+  assert.match(html, /Run claim status inquiry/i);
+  assert.match(html, /No claim status response yet/i);
 });
 
 test("Revenue Integrity renders its initial route state without throwing", () => {

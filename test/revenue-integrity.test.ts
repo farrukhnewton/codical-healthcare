@@ -31,10 +31,11 @@ import {
   serializeRevenueSessionCookie,
   verifyRevenueSession,
 } from "../server/services/revenue-integrity/revenue-session";
-import { eligibilityCheckInputSchema } from "../shared/revenue-cycle";
+import { claimStatusInquiryInputSchema, eligibilityCheckInputSchema } from "../shared/revenue-cycle";
 import { AvailityEligibilityAdapter } from "../server/services/revenue-integrity/eligibility";
 import { authorizationCheckInputSchema } from "../shared/revenue-cycle";
 import { runSyntheticAuthorization } from "../server/services/revenue-integrity/prior-authorization";
+import { runAvailityClaimStatusInquiry } from "../server/services/revenue-integrity/claim-status";
 
 const validClaim = revenueClaimCreateSchema.parse({
   patientControlNumber: "PCN-10001",
@@ -121,6 +122,60 @@ test("prior authorization sandbox preserves requirement and determination bounda
   assert.ok(pended.requirement.documentation.length > 0);
   assert.equal(notRequired.requirement.required, false);
   assert.deepEqual(notRequired.requirement.documentation, []);
+});
+
+test("claim status accepts only the fixed synthetic 276/277 inquiry", () => {
+  assert.deepEqual(claimStatusInquiryInputSchema.parse({
+    scenario: "standard_complete",
+    dataClassification: "synthetic",
+  }), {
+    scenario: "standard_complete",
+    dataClassification: "synthetic",
+  });
+  assert.throws(() => claimStatusInquiryInputSchema.parse({
+    scenario: "standard_complete",
+    dataClassification: "phi",
+  }));
+  assert.throws(() => claimStatusInquiryInputSchema.parse({
+    scenario: "standard_complete",
+    dataClassification: "synthetic",
+    patientName: "Real Patient",
+  }));
+});
+
+test("normalizes the fixed Availity 277 response into an actionable claim status", async () => {
+  const result = await runAvailityClaimStatusInquiry({
+    scenario: "standard_complete",
+    dataClassification: "synthetic",
+  }, async () => ({
+    scenario: "complete",
+    httpStatus: 200,
+    mockVerified: true,
+    responseId: "123",
+    status: "Complete",
+    statusCode: "4",
+    payerId: "BCBSF",
+    claimAmount: "125.00",
+    claimCount: 1,
+    serviceLineCount: 1,
+    statusDetails: [{
+      category: "Acknowledgement",
+      categoryCode: "A1",
+      status: "Received",
+      statusCode: "19",
+      entity: null,
+      entityCode: null,
+      paymentAmount: null,
+    }],
+  }));
+
+  assert.equal(result.status, "received");
+  assert.equal(result.mockVerified, true);
+  assert.equal(result.inquiryType, "standard_276_277");
+  assert.equal(result.payer.id, "BCBSF");
+  assert.equal(result.claim.claimAmount, 125);
+  assert.equal(result.statusDetails[0].categoryCode, "A1");
+  assert.match(result.nextAction, /monitoring/i);
 });
 
 function loadFixture(name: string) {

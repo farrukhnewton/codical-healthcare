@@ -1,0 +1,64 @@
+.rc-fixed-profile {
+  display: grid;
+  gap: 6px;
+  margin: 18px 22px;
+  padding: 16px;
+  border: 1px solid #e3d8f7;
+  border-radius: 13px;
+  background: #f8f4ff;
+}
+
+.rc-fixed-profile span,
+.rc-status-action span {
+  color: #6e32e1;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.rc-fixed-profile strong { font-size: 13px; }
+.rc-fixed-profile small { color: #78849b; font-size: 10px; line-height: 1.45; }
+
+.rc-status-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 17px 20px;
+  padding: 14px 15px;
+  border-radius: 12px;
+  background: #f7f3fd;
+  color: #6e32e1;
+}
+
+.rc-status-action div { display: grid; gap: 5px; }
+.rc-status-action strong { color: #28314e; font-size: 11px; line-height: 1.5; }
+.rc-status-detail-list { display: grid; gap: 8px; padding: 0 20px 18px; }
+.rc-status-detail-list article {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 14px;
+  border: 1px solid #e8e1f2;
+  border-radius: 12px;
+}
+
+.rc-status-detail-list article > div { display: grid; gap: 4px; }
+.rc-status-detail-list span { width: max-content; padding: 3px 6px; border-radius: 6px; background: #f1eaff; color: #6e32e1; font-size: 8px; font-weight: 900; }
+.rc-status-detail-list strong { font-size: 10px; line-height: 1.45; }
+.rc-status-detail-list small { color: #78849b; font-size: 9px; }
+.rc-result-summary strong[data-status="received"],
+.rc-result-summary strong[data-status="processing"] { color: #a35a00; }
+.rc-result-summary strong[data-status="paid"] { color: #08795a; }
+.rc-result-summary strong[data-status="denied"],
+.rc-result-summary strong[data-status="not_found"] { color: #b42318; }
+.rc-history-list button > span[data-status="received"],
+.rc-history-list button > span[data-status="processing"] { background: #fff1d8; color: #a35a00; }
+.rc-history-list button > span[data-status="paid"] { background: #ddfaee; color: #08795a; }
+.rc-history-list button > span[data-status="denied"],
+.rc-history-list button > span[data-status="not_found"] { background: #ffe5e7; color: #b42318; }
+
+@media (max-width: 680px) {
+  .rc-status-detail-list article { grid-template-columns: 1fr; }
+}

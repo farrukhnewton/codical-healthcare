@@ -44,7 +44,7 @@ export function RevenueCycle() {
       <section className="rc-metric-grid" aria-label="Revenue Cycle metrics">
         <article><span>Eligibility checks</span><strong>{data?.eligibility.totalChecks || 0}</strong><small>Saved synthetic inquiries</small></article>
         <article><span>Active coverage</span><strong>{data?.eligibility.activeChecks || 0}</strong><small>Confirmed demo responses</small></article>
-        <article><span>Exceptions</span><strong>{data?.eligibility.exceptionChecks || 0}</strong><small>Responses needing review</small></article>
+        <article><span>Claim status inquiries</span><strong>{data?.claimStatus?.total || 0}</strong><small>{data?.claimStatus?.open || 0} under monitoring</small></article>
       </section>
 
       <section className="rc-section-heading">
@@ -61,7 +61,7 @@ export function RevenueCycle() {
             <>
               <div className="rc-module-top"><span><Icon size={20} /></span><em data-status={module.status}>{module.status === "active" ? "Live" : module.status === "foundation" ? "Foundation" : "Planned"}</em></div>
               <h3>{module.name}</h3>
-              <p>{module.id === "eligibility" ? "Run safe 270/271-style demo checks and review normalized benefits." : module.id === "claims" ? "Open the validated claim lifecycle and integration workbench." : "Shared data, identity, audit, and work-queue patterns reserved."}</p>
+              <p>{module.id === "eligibility" ? "Run safe 270/271-style demo checks and review normalized benefits." : module.id === "claims" ? "Open the validated claim lifecycle and integration workbench." : module.id === "claim-status" ? "Run the fixed Availity 276/277 demo and review normalized payer status codes." : module.id === "authorizations" ? "Model authorization requirements, decisions, dates, units, and documentation." : "Shared data, identity, audit, and work-queue patterns reserved."}</p>
               <footer>{module.href ? <>Open workspace <ArrowRight size={15} /></> : <>Next build phase</>}</footer>
             </>
           );

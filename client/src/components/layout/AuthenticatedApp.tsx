@@ -15,6 +15,7 @@ import "@/styles/cabg-specialty.css";
 import "@/styles/cath-pci-specialty.css";
 import "@/styles/revenue-integrity.css";
 import "@/styles/revenue-cycle.css";
+import "@/styles/claim-status.css";
 
 import { lazy, Suspense, type ReactNode } from "react";
 import { Redirect, Route, Switch } from "wouter";
@@ -63,6 +64,7 @@ const RevenueIntegrity = lazy(() => import("@/pages/RevenueIntegrity").then((mod
 const RevenueCycle = lazy(() => import("@/pages/RevenueCycle").then((module) => ({ default: module.RevenueCycle })));
 const EligibilityBenefits = lazy(() => import("@/pages/EligibilityBenefits").then((module) => ({ default: module.EligibilityBenefits })));
 const PriorAuthorizations = lazy(() => import("@/pages/PriorAuthorizations").then((module) => ({ default: module.PriorAuthorizations })));
+const ClaimStatus = lazy(() => import("@/pages/ClaimStatus").then((module) => ({ default: module.ClaimStatus })));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const ChatRealtimeBridge = lazy(() =>
   import("@/components/chat/ChatRealtimeBridge").then((module) => ({ default: module.ChatRealtimeBridge })),
@@ -103,6 +105,7 @@ function AuthenticatedRoutes() {
       <Route path="/dashboard">{() => <AppPage><Home /></AppPage>}</Route>
       <Route path="/revenue-cycle/eligibility">{() => <AppPage><EligibilityBenefits /></AppPage>}</Route>
       <Route path="/revenue-cycle/authorizations">{() => <AppPage><PriorAuthorizations /></AppPage>}</Route>
+      <Route path="/revenue-cycle/claim-status">{() => <AppPage><ClaimStatus /></AppPage>}</Route>
       <Route path="/revenue-cycle/claims">{() => <AppPage><RevenueIntegrity /></AppPage>}</Route>
       <Route path="/revenue-cycle">{() => <AppPage><RevenueCycle /></AppPage>}</Route>
       <Route path="/revenue-integrity">{() => <Redirect to="/revenue-cycle/claims" />}</Route>

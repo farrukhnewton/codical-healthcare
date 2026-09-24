@@ -72,3 +72,42 @@ export type NormalizedAuthorizationResponse = {
   determination: { authorizationNumber: string | null; effectiveFrom: string | null; effectiveTo: string | null; reason: string; nextAction: string };
   checkedAt: string;
 };
+
+export const claimStatusInquiryInputSchema = z.object({
+  scenario: z.literal("standard_complete").default("standard_complete"),
+  dataClassification: z.literal("synthetic"),
+}).strict();
+
+export type ClaimStatusInquiryInput = z.infer<typeof claimStatusInquiryInputSchema>;
+
+export type ClaimStatusDetail = {
+  category: string;
+  categoryCode: string;
+  status: string;
+  statusCode: string;
+  entity: string | null;
+  entityCode: string | null;
+  paymentAmount: number | null;
+};
+
+export type NormalizedClaimStatusResponse = {
+  status: "received" | "processing" | "paid" | "denied" | "not_found";
+  provider: "availity";
+  environment: "demo";
+  mockVerified: true;
+  inquiryType: "standard_276_277";
+  responseId: string;
+  payer: { id: string; name: string };
+  claim: {
+    claimNumberMasked: string;
+    patientAccountMasked: string;
+    claimAmount: number | null;
+    paymentAmount: number | null;
+    responseStatus: string;
+    responseStatusCode: string | null;
+    serviceLineCount: number;
+  };
+  statusDetails: ClaimStatusDetail[];
+  nextAction: string;
+  checkedAt: string;
+};
