@@ -31,11 +31,12 @@ import {
   serializeRevenueSessionCookie,
   verifyRevenueSession,
 } from "../server/services/revenue-integrity/revenue-session";
-import { claimStatusInquiryInputSchema, eligibilityCheckInputSchema } from "../shared/revenue-cycle";
+import { claimStatusInquiryInputSchema, eligibilityCheckInputSchema, paymentDemoInputSchema } from "../shared/revenue-cycle";
 import { AvailityEligibilityAdapter } from "../server/services/revenue-integrity/eligibility";
 import { authorizationCheckInputSchema } from "../shared/revenue-cycle";
 import { runSyntheticAuthorization } from "../server/services/revenue-integrity/prior-authorization";
 import { runAvailityClaimStatusInquiry } from "../server/services/revenue-integrity/claim-status";
+import { buildSyntheticPayment } from "../server/services/revenue-integrity/payments";
 
 const validClaim = revenueClaimCreateSchema.parse({
   patientControlNumber: "PCN-10001",
@@ -69,6 +70,30 @@ test("allows only synthetic, scenario-based eligibility requests", () => {
     dataClassification: "phi",
     patientName: "Real Patient",
   }));
+});
+
+test("allows only controlled synthetic payment scenarios", () => {
+  assert.equal(paymentDemoInputSchema.parse({ scenario: "clean_payment", dataClassification: "synthetic" }).scenario, "clean_payment");
+  assert.throws(() => paymentDemoInputSchema.parse({ scenario: "clean_payment", dataClassification: "phi", patientName: "Real Person" }));
+});
+
+test("reconciles a balanced 835 without double-counting patient responsibility", () => {
+  const payment = buildSyntheticPayment({ scenario: "clean_payment", dataClassification: "synthetic" }, new Date("2026-09-24T12:00:00Z"));
+  assert.equal(payment.payment.paidAmount, 100);
+  assert.equal(payment.payment.patientResponsibilityAmount, 20);
+  assert.equal(payment.reconciliation.adjustmentTotal, 50);
+  assert.equal(payment.reconciliation.variance, 0);
+  assert.equal(payment.reconciliation.status, "unreviewed");
+});
+
+test("routes payment variances and explicit 835 denials as exceptions", () => {
+  const variance = buildSyntheticPayment({ scenario: "payment_variance", dataClassification: "synthetic" });
+  const denial = buildSyntheticPayment({ scenario: "denied_claim", dataClassification: "synthetic" });
+  assert.equal(variance.reconciliation.variance, 20);
+  assert.equal(variance.reconciliation.status, "exception");
+  assert.equal(denial.claimStatusCode, "4");
+  assert.equal(denial.reconciliation.status, "exception");
+  assert.match(denial.reconciliation.explanation, /explicit denied claim status/i);
 });
 
 test("normalizes an Availity demo coverage response into biller-readable benefits", async () => {

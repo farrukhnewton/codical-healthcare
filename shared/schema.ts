@@ -486,14 +486,25 @@ export const revenueRemittances = pgTable("revenue_remittances", {
   patientControlNumber: text("patient_control_number").notNull(),
   payerClaimControlNumber: text("payer_claim_control_number"),
   claimStatusCode: text("claim_status_code"),
+  payerId: text("payer_id"),
+  payerName: text("payer_name"),
+  paymentReference: text("payment_reference"),
+  paymentDate: text("payment_date"),
+  paymentMethod: text("payment_method"),
   totalCharge: numeric("total_charge", { precision: 14, scale: 2 }).notNull().default("0"),
   paidAmount: numeric("paid_amount", { precision: 14, scale: 2 }).notNull().default("0"),
   patientResponsibilityAmount: numeric("patient_responsibility_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+  reconciliationStatus: text("reconciliation_status").notNull().default("unreviewed"),
+  reconciliationVariance: numeric("reconciliation_variance", { precision: 14, scale: 2 }).notNull().default("0"),
+  reconciledBy: integer("reconciled_by").references(() => users.id, { onDelete: "set null" }),
+  reconciledAt: timestamp("reconciled_at", { withTimezone: true }),
   summary: jsonb("summary").$type<Record<string, unknown>>().notNull().default({}),
   receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 }, (table) => ({
   transactionClaimIdx: uniqueIndex("revenue_remittances_org_provider_tx_pcn_idx").on(table.organizationId, table.provider, table.transactionId, table.patientControlNumber),
   claimIdx: index("revenue_remittances_claim_idx").on(table.claimId),
+  reconciliationIdx: index("revenue_remittances_org_reconciliation_idx").on(table.organizationId, table.reconciliationStatus, table.receivedAt),
 }));
 
 export const revenueLineRemittances = pgTable("revenue_line_remittances", {

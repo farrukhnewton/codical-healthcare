@@ -223,7 +223,7 @@ export async function ensureRevenueIntegritySchema(pool: Pool) {
       unique ("organization_id", "provider", "transaction_id", "patient_control_number")
     );
 
-    create table if not exists "revenue_line_remittances" (
+      create table if not exists "revenue_line_remittances" (
       "id" serial primary key,
       "remittance_id" integer not null references "revenue_remittances" ("id") on delete cascade,
       "claim_line_id" integer references "revenue_claim_lines" ("id") on delete set null,
@@ -234,7 +234,19 @@ export async function ensureRevenueIntegritySchema(pool: Pool) {
       "allowed_amount" numeric(14,2),
       "adjustments" jsonb not null default '[]'::jsonb,
       "created_at" timestamptz not null default now()
-    );
+      );
+
+      alter table "revenue_remittances"
+        add column if not exists "payer_id" text,
+        add column if not exists "payer_name" text,
+        add column if not exists "payment_reference" text,
+        add column if not exists "payment_date" text,
+        add column if not exists "payment_method" text,
+        add column if not exists "reconciliation_status" text not null default 'unreviewed',
+        add column if not exists "reconciliation_variance" numeric(14,2) not null default 0,
+        add column if not exists "reconciled_by" integer references "users" ("id") on delete set null,
+        add column if not exists "reconciled_at" timestamptz,
+        add column if not exists "updated_at" timestamptz not null default now();
 
     create table if not exists "revenue_connector_cursors" (
       "id" serial primary key,
@@ -339,7 +351,8 @@ export async function ensureRevenueIntegritySchema(pool: Pool) {
     create index if not exists "revenue_claim_transmissions_org_idx" on "revenue_claim_transmissions" ("organization_id");
     create index if not exists "revenue_claim_submissions_claim_created_idx" on "revenue_claim_submissions" ("claim_id", "created_at" desc);
     create index if not exists "revenue_webhook_events_queue_idx" on "revenue_webhook_events" ("status", "next_attempt_at");
-    create index if not exists "revenue_remittances_claim_idx" on "revenue_remittances" ("claim_id");
+      create index if not exists "revenue_remittances_claim_idx" on "revenue_remittances" ("claim_id");
+      create index if not exists "revenue_remittances_org_reconciliation_idx" on "revenue_remittances" ("organization_id", "reconciliation_status", "received_at" desc);
     create index if not exists "revenue_line_remittances_remittance_idx" on "revenue_line_remittances" ("remittance_id");
     create index if not exists "revenue_line_remittances_claim_line_idx" on "revenue_line_remittances" ("claim_line_id");
     create index if not exists "revenue_connector_cursors_org_provider_idx" on "revenue_connector_cursors" ("organization_id", "provider");

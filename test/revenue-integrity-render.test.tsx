@@ -9,6 +9,7 @@ import { RevenueCycle } from "../client/src/pages/RevenueCycle";
 import { EligibilityBenefits } from "../client/src/pages/EligibilityBenefits";
 import { PriorAuthorizations } from "../client/src/pages/PriorAuthorizations";
 import { ClaimStatus } from "../client/src/pages/ClaimStatus";
+import { PaymentsRemittances } from "../client/src/pages/PaymentsRemittances";
 
 test("Revenue Cycle command center renders the module map and sandbox boundary", () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -55,6 +56,16 @@ test("Claim Status renders the controlled synthetic 276/277 workflow", () => {
   assert.match(html, /Claim Status/i);
   assert.match(html, /Run claim status inquiry/i);
   assert.match(html, /No claim status response yet/i);
+});
+
+test("Payments and Remittances renders the controlled synthetic 835 workflow", () => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const html = renderToStaticMarkup(
+    <Router ssrPath="/revenue-cycle/payments"><QueryClientProvider client={queryClient}><PaymentsRemittances /></QueryClientProvider></Router>,
+  );
+  assert.match(html, /Payments &amp; Remittances/i);
+  assert.match(html, /Process a synthetic 835/i);
+  assert.match(html, /No ERA selected/i);
 });
 
 test("Revenue Integrity renders its initial route state without throwing", () => {

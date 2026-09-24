@@ -111,3 +111,53 @@ export type NormalizedClaimStatusResponse = {
   nextAction: string;
   checkedAt: string;
 };
+
+export const paymentScenarioSchema = z.enum(["clean_payment", "payment_variance", "denied_claim"]);
+
+export const paymentDemoInputSchema = z.object({
+  scenario: paymentScenarioSchema.default("clean_payment"),
+  dataClassification: z.literal("synthetic"),
+}).strict();
+
+export const paymentReconciliationActionSchema = z.object({
+  note: z.string().trim().min(10).max(500),
+}).strict();
+
+export type PaymentDemoInput = z.infer<typeof paymentDemoInputSchema>;
+
+export type PaymentAdjustment = {
+  groupCode: "CO" | "PR" | "OA" | "PI";
+  reasonCode: string;
+  amount: number;
+  description: string;
+  remarkCodes: string[];
+};
+
+export type NormalizedPaymentResponse = {
+  provider: "codical";
+  environment: "sandbox";
+  dataClassification: "synthetic";
+  scenario: PaymentDemoInput["scenario"];
+  transactionId: string;
+  patientControlNumber: string;
+  payerClaimControlNumber: string;
+  claimStatusCode: string;
+  payer: { id: string; name: string };
+  payment: { reference: string; date: string; method: "ACH"; totalCharge: number; allowedAmount: number; paidAmount: number; patientResponsibilityAmount: number };
+  lines: Array<{
+    lineItemControlNumber: string;
+    procedureCode: string;
+    chargeAmount: number;
+    allowedAmount: number;
+    paidAmount: number;
+    adjustments: PaymentAdjustment[];
+  }>;
+  reconciliation: {
+    status: "unreviewed" | "reconciled" | "exception";
+    adjustmentTotal: number;
+    variance: number;
+    explanation: string;
+    nextAction: string;
+  };
+  receivedAt: string;
+};

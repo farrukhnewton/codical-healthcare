@@ -12,7 +12,7 @@ import {
   type ClaimIntegrityIssue,
   type RevenueClaimCreateInput,
 } from "@shared/revenue-integrity";
-import { authorizationCheckInputSchema, claimStatusInquiryInputSchema, eligibilityCheckInputSchema } from "@shared/revenue-cycle";
+import { authorizationCheckInputSchema, claimStatusInquiryInputSchema, eligibilityCheckInputSchema, paymentDemoInputSchema, paymentReconciliationActionSchema } from "@shared/revenue-cycle";
 import { db, pool } from "./db";
 import {
   AVAILITY_COVERAGE_SCENARIOS,
@@ -33,6 +33,7 @@ import { canCorrectRevenueClaim, summarizeClaimChanges } from "./services/revenu
 import { AvailityEligibilityAdapter } from "./services/revenue-integrity/eligibility";
 import { runSyntheticAuthorization } from "./services/revenue-integrity/prior-authorization";
 import { runAvailityClaimStatusInquiry } from "./services/revenue-integrity/claim-status";
+import { buildSyntheticPayment } from "./services/revenue-integrity/payments";
 import {
   REVENUE_SESSION_COOKIE,
   cookieValue,
@@ -1167,10 +1168,166 @@ export function registerRevenueIntegrityRoutes(app: Express) {
           { id: "claims", name: "Claims & Validation", status: "active", href: "/revenue-cycle/claims" },
           { id: "claim-status", name: "Claim Status", status: "active", href: "/revenue-cycle/claim-status" },
           { id: "authorizations", name: "Prior Authorizations", status: "active", href: "/revenue-cycle/authorizations" },
-          { id: "payments", name: "Payments & Remittances", status: "foundation", href: "/revenue-cycle/claims" },
+          { id: "payments", name: "Payments & Remittances", status: "active", href: "/revenue-cycle/payments" },
           { id: "denials", name: "Denials & Appeals", status: "foundation", href: "/revenue-cycle/claims" },
         ],
       });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.get("/api/revenue-cycle/payments", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      const remittances = await pool.query(`
+        select r.id, r.claim_id as "claimId", r.provider, r.transaction_id as "transactionId",
+          r.patient_control_number as "patientControlNumber", r.payer_claim_control_number as "payerClaimControlNumber",
+          r.claim_status_code as "claimStatusCode", r.payer_id as "payerId", r.payer_name as "payerName",
+          r.payment_reference as "paymentReference", r.payment_date as "paymentDate", r.payment_method as "paymentMethod",
+          r.total_charge as "totalCharge", r.paid_amount as "paidAmount",
+          r.patient_responsibility_amount as "patientResponsibilityAmount",
+          r.reconciliation_status as "reconciliationStatus", r.reconciliation_variance as "reconciliationVariance",
+          r.reconciled_at as "reconciledAt", r.summary, r.received_at as "receivedAt", r.updated_at as "updatedAt"
+        from revenue_remittances r where r.organization_id = $1
+        order by r.received_at desc limit 100
+      `, [context.organization.id]);
+      const ids = remittances.rows.map((row) => row.id);
+      const lines = ids.length ? await pool.query(`
+        select id, remittance_id as "remittanceId", claim_line_id as "claimLineId",
+          line_item_control_number as "lineItemControlNumber", procedure_code as "procedureCode",
+          charge_amount as "chargeAmount", paid_amount as "paidAmount", allowed_amount as "allowedAmount", adjustments
+        from revenue_line_remittances where remittance_id = any($1::int[]) order by id
+      `, [ids]) : { rows: [] };
+      const items = remittances.rows.map((row) => ({
+        ...row,
+        lines: lines.rows.filter((line) => line.remittanceId === row.id),
+      }));
+      const metrics = items.reduce((totals, item) => {
+        totals.paidAmount += Number(item.paidAmount || 0);
+        if (item.reconciliationStatus === "exception") totals.exceptions += 1;
+        if (!item.claimId) totals.unmatched += 1;
+        return totals;
+      }, { total: items.length, paidAmount: 0, exceptions: 0, unmatched: 0 });
+      return res.json({ remittances: items, metrics });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.post("/api/revenue-cycle/payments/demo", async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const context = await ensureRevenueContext(req);
+      requireRevenueWriteAccess(context);
+      const input = paymentDemoInputSchema.parse(req.body);
+      const response = buildSyntheticPayment(input);
+      await client.query("begin");
+      const existingClaim = await client.query(`select id from revenue_claims where organization_id = $1 and patient_control_number = $2 limit 1`, [context.organization.id, response.patientControlNumber]);
+      const claimId = existingClaim.rows[0]?.id || `pay_${randomUUID()}`;
+      await client.query(`
+        insert into revenue_claims
+          (id, organization_id, patient_control_number, claim_type, status, payer_id, payer_name,
+           payer_claim_control_number, service_from, billing_provider_npi, diagnosis_codes, total_charge,
+           expected_amount, paid_amount, integrity_score, risk_level, clearinghouse_provider, created_by, metadata,
+           last_transaction_at, updated_at)
+        values ($1, $2, $3, 'professional', $4, $5, $6, $7, $8, '1234567893', '["I10"]'::jsonb,
+          $9, $10, $11, $12, $13, 'codical', $14, $15::jsonb, $16, now())
+        on conflict (organization_id, patient_control_number) do update set
+          status = excluded.status, payer_claim_control_number = excluded.payer_claim_control_number,
+          paid_amount = excluded.paid_amount, integrity_score = excluded.integrity_score,
+          risk_level = excluded.risk_level, metadata = excluded.metadata, last_transaction_at = excluded.last_transaction_at,
+          updated_at = now()
+      `, [
+        claimId, context.organization.id, response.patientControlNumber,
+        response.claimStatusCode === "4" ? "denied" : "paid", response.payer.id, response.payer.name,
+        response.payerClaimControlNumber, response.payment.date, response.payment.totalCharge,
+        response.payment.allowedAmount, response.payment.paidAmount,
+        response.reconciliation.status === "exception" ? 72 : 100,
+        response.reconciliation.status === "exception" ? "high" : "low", context.user.id,
+        JSON.stringify({ dataClassification: "synthetic", paymentScenario: input.scenario }), response.receivedAt,
+      ]);
+      const claimRow = await client.query(`select id from revenue_claims where organization_id = $1 and patient_control_number = $2`, [context.organization.id, response.patientControlNumber]);
+      const resolvedClaimId = claimRow.rows[0].id;
+      const line = response.lines[0];
+      const claimLine = await client.query(`
+        insert into revenue_claim_lines
+          (claim_id, line_number, procedure_code, description, diagnosis_pointers, place_of_service, units,
+           charge_amount, expected_amount, paid_amount, status, metadata, updated_at)
+        values ($1, 1, $2, 'Established patient office visit', '[1]'::jsonb, '11', 1, $3, $4, $5, $6, $7::jsonb, now())
+        on conflict (claim_id, line_number) do update set paid_amount = excluded.paid_amount,
+          expected_amount = excluded.expected_amount, status = excluded.status, metadata = excluded.metadata, updated_at = now()
+        returning id
+      `, [resolvedClaimId, line.procedureCode, line.chargeAmount, line.allowedAmount, line.paidAmount, response.claimStatusCode === "4" ? "denied" : "paid", JSON.stringify({ synthetic: true })]);
+      const remittance = await client.query(`
+        insert into revenue_remittances
+          (organization_id, claim_id, provider, transaction_id, patient_control_number, payer_claim_control_number,
+           claim_status_code, payer_id, payer_name, payment_reference, payment_date, payment_method, total_charge,
+           paid_amount, patient_responsibility_amount, reconciliation_status, reconciliation_variance, summary, received_at, updated_at)
+        values ($1, $2, 'codical', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb, $18, now())
+        on conflict (organization_id, provider, transaction_id, patient_control_number) do update set
+          claim_id = excluded.claim_id, claim_status_code = excluded.claim_status_code, paid_amount = excluded.paid_amount,
+          patient_responsibility_amount = excluded.patient_responsibility_amount,
+          reconciliation_status = excluded.reconciliation_status, reconciliation_variance = excluded.reconciliation_variance,
+          summary = excluded.summary, received_at = excluded.received_at, reconciled_by = null, reconciled_at = null, updated_at = now()
+        returning id
+      `, [
+        context.organization.id, resolvedClaimId, response.transactionId, response.patientControlNumber,
+        response.payerClaimControlNumber, response.claimStatusCode, response.payer.id, response.payer.name,
+        response.payment.reference, response.payment.date, response.payment.method, response.payment.totalCharge,
+        response.payment.paidAmount, response.payment.patientResponsibilityAmount,
+        response.reconciliation.status, response.reconciliation.variance, JSON.stringify(response), response.receivedAt,
+      ]);
+      await client.query(`delete from revenue_line_remittances where remittance_id = $1`, [remittance.rows[0].id]);
+      await client.query(`
+        insert into revenue_line_remittances
+          (remittance_id, claim_line_id, line_item_control_number, procedure_code, charge_amount, paid_amount, allowed_amount, adjustments)
+        values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+      `, [remittance.rows[0].id, claimLine.rows[0].id, line.lineItemControlNumber, line.procedureCode, line.chargeAmount, line.paidAmount, line.allowedAmount, JSON.stringify(line.adjustments)]);
+      await client.query(`delete from revenue_work_items where claim_id = $1 and issue_code in ('ERA_VARIANCE', 'ERA_DENIAL') and status = 'open'`, [resolvedClaimId]);
+      if (response.reconciliation.status === "exception") {
+        const denial = response.claimStatusCode === "4";
+        await client.query(`
+          insert into revenue_work_items
+            (organization_id, claim_id, claim_line_id, category, issue_code, title, description, recommended_action,
+             severity, priority_score, recoverable_amount)
+          values ($1, $2, $3, $4, $5, $6, $7, $8, 'high', 82, $9)
+        `, [context.organization.id, resolvedClaimId, claimLine.rows[0].id, denial ? "denial" : "payment_variance",
+          denial ? "ERA_DENIAL" : "ERA_VARIANCE", denial ? "ERA denial requires review" : "ERA does not balance",
+          response.reconciliation.explanation, response.reconciliation.nextAction,
+          denial ? response.payment.totalCharge : Math.abs(response.reconciliation.variance)]);
+      }
+      await client.query(`
+        insert into revenue_claim_events (organization_id, claim_id, event_type, source, external_event_id, summary, occurred_at)
+        values ($1, $2, 'remittance_received', 'codical_sandbox', $3, $4::jsonb, $5)
+        on conflict (organization_id, source, external_event_id) do update set summary = excluded.summary, occurred_at = excluded.occurred_at
+      `, [context.organization.id, resolvedClaimId, response.transactionId, JSON.stringify({ scenario: input.scenario, reconciliation: response.reconciliation }), response.receivedAt]);
+      await client.query("commit");
+      return res.status(201).json({ remittanceId: remittance.rows[0].id, response });
+    } catch (error) {
+      await client.query("rollback").catch(() => undefined);
+      return requestError(res, error);
+    } finally {
+      client.release();
+    }
+  });
+
+  app.patch("/api/revenue-cycle/payments/:remittanceId/reconcile", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      requireRevenueWriteAccess(context);
+      const input = paymentReconciliationActionSchema.parse(req.body);
+      const remittanceId = Number(req.params.remittanceId);
+      if (!Number.isInteger(remittanceId)) return res.status(400).json({ message: "Invalid remittance ID." });
+      const result = await pool.query(`
+        update revenue_remittances set reconciliation_status = 'reconciled', reconciled_by = $1,
+          reconciled_at = now(), updated_at = now(), summary = summary || jsonb_build_object('reconciliationNote', $2)
+        where id = $3 and organization_id = $4 and abs(reconciliation_variance) < 0.01
+          and claim_status_code <> '4'
+        returning id, reconciliation_status as "reconciliationStatus", reconciled_at as "reconciledAt"
+      `, [context.user.id, input.note, remittanceId, context.organization.id]);
+      if (!result.rows[0]) return res.status(409).json({ message: "Only a balanced, non-denied ERA can be marked reconciled." });
+      return res.json({ remittance: result.rows[0] });
     } catch (error) {
       return requestError(res, error);
     }

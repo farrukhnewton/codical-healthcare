@@ -1,0 +1,25 @@
+.rc-payment-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:18px 0; }
+.rc-payment-metrics article { display:grid; grid-template-columns:auto 1fr; gap:3px 10px; align-items:center; padding:16px; border:1px solid #ded5f5; border-radius:18px; background:rgba(255,255,255,.88); }
+.rc-payment-metrics svg { grid-row:1/3; color:#6e32e1; padding:8px; width:38px; height:38px; border-radius:12px; background:#f1eaff; }
+.rc-payment-metrics span { color:#71809a; font-size:11px; font-weight:700; }.rc-payment-metrics strong { color:#111936; font-size:22px; }
+.rc-payment-layout { display:grid; grid-template-columns:minmax(300px,.78fr) minmax(500px,1.4fr); gap:16px; align-items:start; }
+.rc-payment-builder,.rc-payment-detail { min-height:470px; }.rc-payment-scenarios { display:grid; gap:10px; margin-top:18px; }
+.rc-payment-scenarios article { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px; border:1px solid #e6def7; border-radius:15px; background:#faf8ff; }
+.rc-payment-scenarios strong { color:#151d3a; font-size:13px; }.rc-payment-scenarios p { margin:4px 0 0; color:#697894; font-size:11px; line-height:1.45; }
+.rc-payment-scenarios button { display:inline-flex; align-items:center; gap:6px; border:0; border-radius:10px; padding:9px 12px; color:white; background:#6e32e1; font-weight:800; font-size:11px; cursor:pointer; white-space:nowrap; }
+.rc-payment-scenarios button:disabled { opacity:.55; cursor:not-allowed; }.rc-payment-status { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.rc-payment-status span,.rc-history-list button>span { padding:6px 9px; border-radius:99px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:.04em; }
+.rc-payment-status span[data-status="exception"],.rc-history-list span[data-status="exception"] { color:#b42318; background:#ffe8e8; }
+.rc-payment-status span[data-status="unreviewed"],.rc-history-list span[data-status="unreviewed"] { color:#9a5200; background:#fff1d7; }
+.rc-payment-status span[data-status="reconciled"],.rc-history-list span[data-status="reconciled"] { color:#08795a; background:#dcfaee; }
+.rc-payment-status small { color:#78849b; }.rc-payment-totals { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.rc-payment-totals div { padding:11px; background:#f8f5ff; border-radius:12px; }.rc-payment-totals span { display:block; color:#71809a; font-size:9px; font-weight:800; text-transform:uppercase; }
+.rc-payment-totals strong { display:block; margin-top:3px; color:#101832; font-size:15px; }.rc-payment-totals .is-danger { color:#b42318; }.rc-payment-totals .is-good { color:#08795a; }
+.rc-payment-guidance { margin:12px 0; padding:13px; border-left:3px solid #6e32e1; border-radius:4px 12px 12px 4px; background:#f6f0ff; }.rc-payment-guidance strong { font-size:12px; color:#24204a; }.rc-payment-guidance p { margin:5px 0 0; color:#67758e; font-size:11px; }
+.rc-payment-lines { overflow:hidden; border:1px solid #e4dcf4; border-radius:14px; }.rc-payment-line-head,.rc-payment-lines article { display:grid; grid-template-columns:minmax(190px,1fr) 70px 70px 70px; gap:8px; align-items:start; padding:10px 12px; }
+.rc-payment-line-head { background:#f6f3fb; color:#71809a; font-size:9px; font-weight:900; text-transform:uppercase; }.rc-payment-lines article { font-size:11px; }.rc-payment-lines article+article { border-top:1px solid #e9e3f4; }
+.rc-payment-lines article div { display:flex; flex-direction:column; gap:3px; }.rc-payment-lines small { color:#7b879d; }.rc-payment-lines em { color:#7442a6; font-style:normal; font-size:10px; line-height:1.4; }
+.rc-reconcile-box { display:grid; gap:7px; margin-top:12px; }.rc-reconcile-box label { color:#313a55; font-size:10px; font-weight:900; }.rc-reconcile-box textarea { min-height:66px; resize:vertical; border:1px solid #dcd2ef; border-radius:12px; padding:10px; font:inherit; font-size:11px; }.rc-reconcile-box .rc-primary { justify-self:start; }
+.rc-reconciled { display:flex; align-items:center; gap:7px; margin-top:12px; padding:11px; border-radius:12px; color:#08795a; background:#e6fbf3; font-size:11px; font-weight:800; }
+@media (max-width:1000px){.rc-payment-layout{grid-template-columns:1fr}.rc-payment-metrics{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:620px){.rc-payment-metrics{grid-template-columns:1fr}.rc-payment-totals{grid-template-columns:repeat(2,1fr)}.rc-payment-line-head,.rc-payment-lines article{grid-template-columns:1fr 1fr}.rc-payment-line-head span:nth-child(n+3){display:none}}

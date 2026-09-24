@@ -1,4 +1,4 @@
-import type { AuthorizationCheckInput, ClaimStatusInquiryInput, EligibilityCheckInput, NormalizedAuthorizationResponse, NormalizedClaimStatusResponse, NormalizedEligibilityResponse } from "@shared/revenue-cycle";
+import type { AuthorizationCheckInput, ClaimStatusInquiryInput, EligibilityCheckInput, NormalizedAuthorizationResponse, NormalizedClaimStatusResponse, NormalizedEligibilityResponse, NormalizedPaymentResponse, PaymentAdjustment } from "@shared/revenue-cycle";
 
 export async function revenueCycleRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { supabase } = await import("./supabase");
@@ -93,4 +93,41 @@ export type RevenueClaimStatusInquiry = {
   response: NormalizedClaimStatusResponse;
   checkedAt: string;
   createdAt?: string;
+};
+
+export type RevenuePaymentLine = {
+  id: number;
+  remittanceId: number;
+  claimLineId: number | null;
+  lineItemControlNumber: string | null;
+  procedureCode: string | null;
+  chargeAmount: string | number;
+  paidAmount: string | number;
+  allowedAmount: string | number | null;
+  adjustments: PaymentAdjustment[];
+};
+
+export type RevenuePayment = {
+  id: number;
+  claimId: string | null;
+  provider: string;
+  transactionId: string;
+  patientControlNumber: string;
+  payerClaimControlNumber: string | null;
+  claimStatusCode: string | null;
+  payerId: string | null;
+  payerName: string | null;
+  paymentReference: string | null;
+  paymentDate: string | null;
+  paymentMethod: string | null;
+  totalCharge: string | number;
+  paidAmount: string | number;
+  patientResponsibilityAmount: string | number;
+  reconciliationStatus: "unreviewed" | "reviewed" | "reconciled" | "exception";
+  reconciliationVariance: string | number;
+  reconciledAt: string | null;
+  summary: NormalizedPaymentResponse & { reconciliationNote?: string };
+  receivedAt: string;
+  updatedAt: string;
+  lines: RevenuePaymentLine[];
 };
