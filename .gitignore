@@ -46,6 +46,8 @@ client/.env.*
 # Machine-local research and editor state
 .tmp-*/
 .vscode/
+.local/
+attached_assets/
 NUL
 
 # Supabase CLI local link/cache data
