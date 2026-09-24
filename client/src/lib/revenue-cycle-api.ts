@@ -1,4 +1,4 @@
-import type { AuthorizationCheckInput, ClaimStatusInquiryInput, EligibilityCheckInput, NormalizedAuthorizationResponse, NormalizedClaimStatusResponse, NormalizedEligibilityResponse, NormalizedPaymentResponse, PaymentAdjustment } from "@shared/revenue-cycle";
+import type { AuthorizationCheckInput, ClaimStatusInquiryInput, EligibilityCheckInput, NormalizedAuthorizationResponse, NormalizedClaimStatusResponse, NormalizedDenialCase, NormalizedEligibilityResponse, NormalizedPaymentResponse, PaymentAdjustment } from "@shared/revenue-cycle";
 
 export async function revenueCycleRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { supabase } = await import("./supabase");
@@ -130,4 +130,32 @@ export type RevenuePayment = {
   receivedAt: string;
   updatedAt: string;
   lines: RevenuePaymentLine[];
+};
+
+export type RevenueDenialEvent = { id: number; denialCaseId: string; action: string; fromStatus: string | null; toStatus: string; note: string; createdAt: string };
+
+export type RevenueDenialCase = {
+  id: string;
+  claimId: string;
+  scenario: NormalizedDenialCase["scenario"];
+  status: "evidence_needed" | "evidence_added" | "ready" | "submitted" | "overturned" | "upheld" | "closed";
+  pathway: NormalizedDenialCase["routing"]["pathway"];
+  payerName: string;
+  groupCode: string;
+  carc: string;
+  rarcs: string[];
+  denialReason: string;
+  determinationDate: string;
+  filingDeadline: string | null;
+  amountAtRisk: string | number;
+  requiredEvidence: string[];
+  evidenceNotes: Array<{ note: string; addedAt: string; addedBy: number }>;
+  normalizedCase: NormalizedDenialCase;
+  patientControlNumber: string;
+  payerClaimControlNumber: string | null;
+  submittedAt: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  events: RevenueDenialEvent[];
 };

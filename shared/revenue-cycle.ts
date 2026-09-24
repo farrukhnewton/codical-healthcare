@@ -161,3 +161,37 @@ export type NormalizedPaymentResponse = {
   };
   receivedAt: string;
 };
+
+export const denialScenarioSchema = z.enum(["minor_coding_error", "medical_necessity", "duplicate_dispute"]);
+
+export const denialDemoInputSchema = z.object({
+  scenario: denialScenarioSchema.default("minor_coding_error"),
+  dataClassification: z.literal("synthetic"),
+}).strict();
+
+export const denialActionSchema = z.object({
+  action: z.enum(["add_evidence", "mark_ready", "submit", "overturn", "uphold"]),
+  note: z.string().trim().min(10).max(1000),
+}).strict();
+
+export type DenialDemoInput = z.infer<typeof denialDemoInputSchema>;
+export type DenialActionInput = z.infer<typeof denialActionSchema>;
+
+export type NormalizedDenialCase = {
+  provider: "codical";
+  environment: "sandbox";
+  dataClassification: "synthetic";
+  scenario: DenialDemoInput["scenario"];
+  payer: { id: string; name: string; program: "Medicare FFS" };
+  claim: { patientControlNumber: string; payerClaimControlNumber: string; procedureCode: string; serviceDate: string; amountAtRisk: number };
+  denial: { groupCode: string; carc: string; rarcs: string[]; reason: string; determinationDate: string };
+  routing: {
+    pathway: "reopening" | "redetermination" | "duplicate_review";
+    rationale: string;
+    filingDeadline: string | null;
+    deadlineDays: number | null;
+    requiredEvidence: string[];
+    nextAction: string;
+  };
+  createdAt: string;
+};

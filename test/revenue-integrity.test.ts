@@ -31,12 +31,13 @@ import {
   serializeRevenueSessionCookie,
   verifyRevenueSession,
 } from "../server/services/revenue-integrity/revenue-session";
-import { claimStatusInquiryInputSchema, eligibilityCheckInputSchema, paymentDemoInputSchema } from "../shared/revenue-cycle";
+import { claimStatusInquiryInputSchema, denialActionSchema, denialDemoInputSchema, eligibilityCheckInputSchema, paymentDemoInputSchema } from "../shared/revenue-cycle";
 import { AvailityEligibilityAdapter } from "../server/services/revenue-integrity/eligibility";
 import { authorizationCheckInputSchema } from "../shared/revenue-cycle";
 import { runSyntheticAuthorization } from "../server/services/revenue-integrity/prior-authorization";
 import { runAvailityClaimStatusInquiry } from "../server/services/revenue-integrity/claim-status";
 import { buildSyntheticPayment } from "../server/services/revenue-integrity/payments";
+import { buildSyntheticDenial, canAdvanceDenial } from "../server/services/revenue-integrity/denials";
 
 const validClaim = revenueClaimCreateSchema.parse({
   patientControlNumber: "PCN-10001",
@@ -94,6 +95,34 @@ test("routes payment variances and explicit 835 denials as exceptions", () => {
   assert.equal(denial.claimStatusCode, "4");
   assert.equal(denial.reconciliation.status, "exception");
   assert.match(denial.reconciliation.explanation, /explicit denied claim status/i);
+});
+
+test("accepts only synthetic denial scenarios and documented actions", () => {
+  assert.equal(denialDemoInputSchema.parse({ scenario: "medical_necessity", dataClassification: "synthetic" }).scenario, "medical_necessity");
+  assert.throws(() => denialDemoInputSchema.parse({ scenario: "medical_necessity", dataClassification: "phi", patient: "Real Patient" }));
+  assert.equal(denialActionSchema.parse({ action: "submit", note: "Reviewed and ready for sandbox submission." }).action, "submit");
+  assert.throws(() => denialActionSchema.parse({ action: "submit", note: "short" }));
+});
+
+test("routes clerical, medical-necessity, and duplicate denials to distinct pathways", () => {
+  const now = new Date("2026-09-24T12:00:00Z");
+  const clerical = buildSyntheticDenial({ scenario: "minor_coding_error", dataClassification: "synthetic" }, now);
+  const medical = buildSyntheticDenial({ scenario: "medical_necessity", dataClassification: "synthetic" }, now);
+  const duplicate = buildSyntheticDenial({ scenario: "duplicate_dispute", dataClassification: "synthetic" }, now);
+  assert.equal(clerical.routing.pathway, "reopening");
+  assert.equal(clerical.routing.filingDeadline, null);
+  assert.equal(medical.routing.pathway, "redetermination");
+  assert.equal(medical.routing.filingDeadline, "2027-01-27");
+  assert.equal(duplicate.routing.pathway, "duplicate_review");
+});
+
+test("enforces the denial evidence and determination state machine", () => {
+  assert.equal(canAdvanceDenial("evidence_needed", "add_evidence"), true);
+  assert.equal(canAdvanceDenial("evidence_needed", "submit"), false);
+  assert.equal(canAdvanceDenial("evidence_added", "mark_ready"), true);
+  assert.equal(canAdvanceDenial("ready", "submit"), true);
+  assert.equal(canAdvanceDenial("submitted", "overturn"), true);
+  assert.equal(canAdvanceDenial("overturned", "submit"), false);
 });
 
 test("normalizes an Availity demo coverage response into biller-readable benefits", async () => {

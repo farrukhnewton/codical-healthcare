@@ -332,6 +332,44 @@ export async function ensureRevenueIntegritySchema(pool: Pool) {
       "updated_at" timestamptz not null default now()
     );
 
+    create table if not exists "revenue_denial_cases" (
+      "id" text primary key,
+      "organization_id" text not null references "revenue_organizations" ("id") on delete cascade,
+      "claim_id" text not null references "revenue_claims" ("id") on delete cascade,
+      "remittance_id" integer references "revenue_remittances" ("id") on delete set null,
+      "created_by" integer references "users" ("id") on delete set null,
+      "scenario" text not null,
+      "status" text not null default 'evidence_needed',
+      "pathway" text not null,
+      "payer_name" text not null,
+      "group_code" text not null,
+      "carc" text not null,
+      "rarcs" jsonb not null default '[]'::jsonb,
+      "denial_reason" text not null,
+      "determination_date" text not null,
+      "filing_deadline" text,
+      "amount_at_risk" numeric(14,2) not null default 0,
+      "required_evidence" jsonb not null default '[]'::jsonb,
+      "evidence_notes" jsonb not null default '[]'::jsonb,
+      "normalized_case" jsonb not null default '{}'::jsonb,
+      "submitted_at" timestamptz,
+      "resolved_at" timestamptz,
+      "created_at" timestamptz not null default now(),
+      "updated_at" timestamptz not null default now()
+    );
+
+    create table if not exists "revenue_denial_events" (
+      "id" serial primary key,
+      "denial_case_id" text not null references "revenue_denial_cases" ("id") on delete cascade,
+      "organization_id" text not null references "revenue_organizations" ("id") on delete cascade,
+      "action" text not null,
+      "from_status" text,
+      "to_status" text not null,
+      "note" text not null,
+      "created_by" integer references "users" ("id") on delete set null,
+      "created_at" timestamptz not null default now()
+    );
+
     alter table "revenue_webhook_events" add column if not exists "lease_expires_at" timestamptz;
     alter table "revenue_work_items" add column if not exists "started_at" timestamptz;
     alter table "revenue_work_items" add column if not exists "resolved_by" integer references "users" ("id") on delete set null;
@@ -362,6 +400,9 @@ export async function ensureRevenueIntegritySchema(pool: Pool) {
     create index if not exists "revenue_authorizations_org_status_idx" on "revenue_authorizations" ("organization_id", "status");
     create index if not exists "revenue_claim_status_org_checked_idx" on "revenue_claim_status_inquiries" ("organization_id", "checked_at" desc);
     create index if not exists "revenue_claim_status_org_status_idx" on "revenue_claim_status_inquiries" ("organization_id", "status");
+    create index if not exists "revenue_denial_cases_org_status_idx" on "revenue_denial_cases" ("organization_id", "status", "filing_deadline");
+    create index if not exists "revenue_denial_cases_claim_idx" on "revenue_denial_cases" ("claim_id");
+    create index if not exists "revenue_denial_events_case_created_idx" on "revenue_denial_events" ("denial_case_id", "created_at");
 
     alter table "revenue_organizations" enable row level security;
     alter table "revenue_organization_members" enable row level security;
@@ -380,5 +421,7 @@ export async function ensureRevenueIntegritySchema(pool: Pool) {
     alter table "revenue_eligibility_checks" enable row level security;
     alter table "revenue_authorizations" enable row level security;
     alter table "revenue_claim_status_inquiries" enable row level security;
+    alter table "revenue_denial_cases" enable row level security;
+    alter table "revenue_denial_events" enable row level security;
   `);
 }

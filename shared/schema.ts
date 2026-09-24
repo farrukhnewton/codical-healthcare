@@ -523,6 +523,49 @@ export const revenueLineRemittances = pgTable("revenue_line_remittances", {
   claimLineIdx: index("revenue_line_remittances_claim_line_idx").on(table.claimLineId),
 }));
 
+export const revenueDenialCases = pgTable("revenue_denial_cases", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  claimId: text("claim_id").notNull().references(() => revenueClaims.id, { onDelete: "cascade" }),
+  remittanceId: integer("remittance_id").references(() => revenueRemittances.id, { onDelete: "set null" }),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  scenario: text("scenario").notNull(),
+  status: text("status").notNull().default("evidence_needed"),
+  pathway: text("pathway").notNull(),
+  payerName: text("payer_name").notNull(),
+  groupCode: text("group_code").notNull(),
+  carc: text("carc").notNull(),
+  rarcs: jsonb("rarcs").$type<string[]>().notNull().default([]),
+  denialReason: text("denial_reason").notNull(),
+  determinationDate: text("determination_date").notNull(),
+  filingDeadline: text("filing_deadline"),
+  amountAtRisk: numeric("amount_at_risk", { precision: 14, scale: 2 }).notNull().default("0"),
+  requiredEvidence: jsonb("required_evidence").$type<string[]>().notNull().default([]),
+  evidenceNotes: jsonb("evidence_notes").$type<Array<Record<string, unknown>>>().notNull().default([]),
+  normalizedCase: jsonb("normalized_case").$type<Record<string, unknown>>().notNull().default({}),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  organizationStatusIdx: index("revenue_denial_cases_org_status_idx").on(table.organizationId, table.status, table.filingDeadline),
+  claimIdx: index("revenue_denial_cases_claim_idx").on(table.claimId),
+}));
+
+export const revenueDenialEvents = pgTable("revenue_denial_events", {
+  id: serial("id").primaryKey(),
+  denialCaseId: text("denial_case_id").notNull().references(() => revenueDenialCases.id, { onDelete: "cascade" }),
+  organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),
+  action: text("action").notNull(),
+  fromStatus: text("from_status"),
+  toStatus: text("to_status").notNull(),
+  note: text("note").notNull(),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  caseCreatedIdx: index("revenue_denial_events_case_created_idx").on(table.denialCaseId, table.createdAt),
+}));
+
 export const revenueConnectorCursors = pgTable("revenue_connector_cursors", {
   id: serial("id").primaryKey(),
   organizationId: text("organization_id").notNull().references(() => revenueOrganizations.id, { onDelete: "cascade" }),

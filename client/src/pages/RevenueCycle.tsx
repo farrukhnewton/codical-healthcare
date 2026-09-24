@@ -61,7 +61,7 @@ export function RevenueCycle() {
             <>
               <div className="rc-module-top"><span><Icon size={20} /></span><em data-status={module.status}>{module.status === "active" ? "Live" : module.status === "foundation" ? "Foundation" : "Planned"}</em></div>
               <h3>{module.name}</h3>
-              <p>{module.id === "eligibility" ? "Run safe 270/271-style demo checks and review normalized benefits." : module.id === "claims" ? "Open the validated claim lifecycle and integration workbench." : module.id === "claim-status" ? "Run the fixed Availity 276/277 demo and review normalized payer status codes." : module.id === "authorizations" ? "Model authorization requirements, decisions, dates, units, and documentation." : "Shared data, identity, audit, and work-queue patterns reserved."}</p>
+              <p>{module.id === "eligibility" ? "Run safe 270/271-style demo checks and review normalized benefits." : module.id === "claims" ? "Open the validated claim lifecycle and integration workbench." : module.id === "claim-status" ? "Run the fixed Availity 276/277 demo and review normalized payer status codes." : module.id === "authorizations" ? "Model authorization requirements, decisions, dates, units, and documentation." : module.id === "payments" ? "Reconcile synthetic 835 payments, adjustments, patient responsibility, and variances." : module.id === "denials" ? "Route denials to correction, reopening, or appeal with evidence and deadline controls." : "Shared data, identity, audit, and work-queue patterns reserved."}</p>
               <footer>{module.href ? <>Open workspace <ArrowRight size={15} /></> : <>Next build phase</>}</footer>
             </>
           );

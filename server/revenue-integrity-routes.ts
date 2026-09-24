@@ -12,7 +12,7 @@ import {
   type ClaimIntegrityIssue,
   type RevenueClaimCreateInput,
 } from "@shared/revenue-integrity";
-import { authorizationCheckInputSchema, claimStatusInquiryInputSchema, eligibilityCheckInputSchema, paymentDemoInputSchema, paymentReconciliationActionSchema } from "@shared/revenue-cycle";
+import { authorizationCheckInputSchema, claimStatusInquiryInputSchema, denialActionSchema, denialDemoInputSchema, eligibilityCheckInputSchema, paymentDemoInputSchema, paymentReconciliationActionSchema } from "@shared/revenue-cycle";
 import { db, pool } from "./db";
 import {
   AVAILITY_COVERAGE_SCENARIOS,
@@ -34,6 +34,7 @@ import { AvailityEligibilityAdapter } from "./services/revenue-integrity/eligibi
 import { runSyntheticAuthorization } from "./services/revenue-integrity/prior-authorization";
 import { runAvailityClaimStatusInquiry } from "./services/revenue-integrity/claim-status";
 import { buildSyntheticPayment } from "./services/revenue-integrity/payments";
+import { buildSyntheticDenial, canAdvanceDenial } from "./services/revenue-integrity/denials";
 import {
   REVENUE_SESSION_COOKIE,
   cookieValue,
@@ -1169,7 +1170,7 @@ export function registerRevenueIntegrityRoutes(app: Express) {
           { id: "claim-status", name: "Claim Status", status: "active", href: "/revenue-cycle/claim-status" },
           { id: "authorizations", name: "Prior Authorizations", status: "active", href: "/revenue-cycle/authorizations" },
           { id: "payments", name: "Payments & Remittances", status: "active", href: "/revenue-cycle/payments" },
-          { id: "denials", name: "Denials & Appeals", status: "foundation", href: "/revenue-cycle/claims" },
+          { id: "denials", name: "Denials & Appeals", status: "active", href: "/revenue-cycle/denials" },
         ],
       });
     } catch (error) {
@@ -1330,6 +1331,144 @@ export function registerRevenueIntegrityRoutes(app: Express) {
       return res.json({ remittance: result.rows[0] });
     } catch (error) {
       return requestError(res, error);
+    }
+  });
+
+  app.get("/api/revenue-cycle/denials", async (req, res) => {
+    try {
+      const context = await ensureRevenueContext(req);
+      const cases = await pool.query(`
+        select d.id, d.claim_id as "claimId", d.scenario, d.status, d.pathway, d.payer_name as "payerName",
+          d.group_code as "groupCode", d.carc, d.rarcs, d.denial_reason as "denialReason",
+          d.determination_date as "determinationDate", d.filing_deadline as "filingDeadline",
+          d.amount_at_risk as "amountAtRisk", d.required_evidence as "requiredEvidence",
+          d.evidence_notes as "evidenceNotes", d.normalized_case as "normalizedCase",
+          d.submitted_at as "submittedAt", d.resolved_at as "resolvedAt",
+          d.created_at as "createdAt", d.updated_at as "updatedAt",
+          c.patient_control_number as "patientControlNumber", c.payer_claim_control_number as "payerClaimControlNumber"
+        from revenue_denial_cases d join revenue_claims c on c.id = d.claim_id
+        where d.organization_id = $1 order by d.created_at desc limit 100
+      `, [context.organization.id]);
+      const ids = cases.rows.map((row) => row.id);
+      const events = ids.length ? await pool.query(`
+        select id, denial_case_id as "denialCaseId", action, from_status as "fromStatus",
+          to_status as "toStatus", note, created_at as "createdAt"
+        from revenue_denial_events where denial_case_id = any($1::text[]) order by created_at desc
+      `, [ids]) : { rows: [] };
+      const items = cases.rows.map((row) => ({ ...row, events: events.rows.filter((event) => event.denialCaseId === row.id) }));
+      const metrics = items.reduce((totals, item) => {
+        totals.amountAtRisk += Number(item.amountAtRisk || 0);
+        if (["evidence_needed", "evidence_added", "ready"].includes(item.status)) totals.open += 1;
+        if (item.status === "submitted") totals.submitted += 1;
+        if (item.status === "overturned") totals.overturned += 1;
+        return totals;
+      }, { total: items.length, open: 0, submitted: 0, overturned: 0, amountAtRisk: 0 });
+      return res.json({ cases: items, metrics });
+    } catch (error) {
+      return requestError(res, error);
+    }
+  });
+
+  app.post("/api/revenue-cycle/denials/demo", async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const context = await ensureRevenueContext(req);
+      requireRevenueWriteAccess(context);
+      const input = denialDemoInputSchema.parse(req.body);
+      const denial = buildSyntheticDenial(input);
+      await client.query("begin");
+      const existing = await client.query(`select id from revenue_claims where organization_id = $1 and patient_control_number = $2 limit 1`, [context.organization.id, denial.claim.patientControlNumber]);
+      const claimId = existing.rows[0]?.id || `den_${randomUUID()}`;
+      await client.query(`
+        insert into revenue_claims
+          (id, organization_id, patient_control_number, claim_type, status, payer_id, payer_name,
+           payer_claim_control_number, service_from, billing_provider_npi, diagnosis_codes, total_charge,
+           expected_amount, paid_amount, integrity_score, risk_level, clearinghouse_provider, created_by, metadata,
+           last_transaction_at, updated_at)
+        values ($1,$2,$3,'professional','denied',$4,$5,$6,$7,'1234567893','["I10"]'::jsonb,$8,$8,0,75,'high','codical',$9,$10::jsonb,$11,now())
+        on conflict (organization_id, patient_control_number) do update set status='denied', payer_claim_control_number=excluded.payer_claim_control_number,
+          total_charge=excluded.total_charge, expected_amount=excluded.expected_amount, paid_amount=0,
+          risk_level='high', metadata=excluded.metadata, last_transaction_at=excluded.last_transaction_at, updated_at=now()
+      `, [claimId, context.organization.id, denial.claim.patientControlNumber, denial.payer.id, denial.payer.name,
+        denial.claim.payerClaimControlNumber, denial.claim.serviceDate, denial.claim.amountAtRisk, context.user.id,
+        JSON.stringify({ dataClassification: "synthetic", denialScenario: input.scenario }), denial.createdAt]);
+      const claim = await client.query(`select id from revenue_claims where organization_id=$1 and patient_control_number=$2`, [context.organization.id, denial.claim.patientControlNumber]);
+      const resolvedClaimId = claim.rows[0].id;
+      await client.query(`
+        insert into revenue_claim_lines
+          (claim_id,line_number,procedure_code,description,diagnosis_pointers,place_of_service,units,charge_amount,expected_amount,paid_amount,status,metadata,updated_at)
+        values ($1,1,$2,'Synthetic denied service','[1]'::jsonb,'11',1,$3,$3,0,'denied','{"synthetic":true}'::jsonb,now())
+        on conflict (claim_id,line_number) do update set procedure_code=excluded.procedure_code,
+          charge_amount=excluded.charge_amount,expected_amount=excluded.expected_amount,paid_amount=0,status='denied',updated_at=now()
+      `, [resolvedClaimId, denial.claim.procedureCode, denial.claim.amountAtRisk]);
+      const denialId = `denial_${randomUUID()}`;
+      await client.query(`
+        insert into revenue_denial_cases
+          (id,organization_id,claim_id,created_by,scenario,status,pathway,payer_name,group_code,carc,rarcs,
+           denial_reason,determination_date,filing_deadline,amount_at_risk,required_evidence,normalized_case)
+        values ($1,$2,$3,$4,$5,'evidence_needed',$6,$7,$8,$9,$10::jsonb,$11,$12,$13,$14,$15::jsonb,$16::jsonb)
+      `, [denialId, context.organization.id, resolvedClaimId, context.user.id, input.scenario, denial.routing.pathway,
+        denial.payer.name, denial.denial.groupCode, denial.denial.carc, JSON.stringify(denial.denial.rarcs), denial.denial.reason,
+        denial.denial.determinationDate, denial.routing.filingDeadline, denial.claim.amountAtRisk,
+        JSON.stringify(denial.routing.requiredEvidence), JSON.stringify(denial)]);
+      await client.query(`
+        insert into revenue_denial_events (denial_case_id,organization_id,action,from_status,to_status,note,created_by)
+        values ($1,$2,'created',null,'evidence_needed',$3,$4)
+      `, [denialId, context.organization.id, denial.routing.rationale, context.user.id]);
+      await client.query(`
+        insert into revenue_claim_events (organization_id,claim_id,event_type,source,external_event_id,summary,occurred_at)
+        values ($1,$2,'denial_case_created','codical_sandbox',$3,$4::jsonb,$5)
+      `, [context.organization.id, resolvedClaimId, denialId, JSON.stringify({ scenario: input.scenario, pathway: denial.routing.pathway }), denial.createdAt]);
+      await client.query("commit");
+      return res.status(201).json({ denialId, denial });
+    } catch (error) {
+      await client.query("rollback").catch(() => undefined);
+      return requestError(res, error);
+    } finally {
+      client.release();
+    }
+  });
+
+  app.post("/api/revenue-cycle/denials/:denialId/action", async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const context = await ensureRevenueContext(req);
+      requireRevenueWriteAccess(context);
+      const input = denialActionSchema.parse(req.body);
+      await client.query("begin");
+      const current = await client.query(`select id,claim_id as "claimId",status,evidence_notes as "evidenceNotes" from revenue_denial_cases where id=$1 and organization_id=$2 for update`, [req.params.denialId, context.organization.id]);
+      if (!current.rows[0]) {
+        await client.query("rollback");
+        return res.status(404).json({ message: "Denial case not found." });
+      }
+      if (!canAdvanceDenial(current.rows[0].status, input.action)) {
+        await client.query("rollback");
+        return res.status(409).json({ message: `The ${input.action.replace(/_/g, " ")} action is not allowed while this case is ${current.rows[0].status.replace(/_/g, " ")}.` });
+      }
+      const statusByAction = { add_evidence: "evidence_added", mark_ready: "ready", submit: "submitted", overturn: "overturned", uphold: "upheld" } as const;
+      const nextStatus = statusByAction[input.action];
+      const evidenceNotes = input.action === "add_evidence"
+        ? [...(Array.isArray(current.rows[0].evidenceNotes) ? current.rows[0].evidenceNotes : []), { note: input.note, addedAt: new Date().toISOString(), addedBy: context.user.id }]
+        : current.rows[0].evidenceNotes;
+      const updated = await client.query(`
+        update revenue_denial_cases set status=$1,evidence_notes=$2::jsonb,
+          submitted_at=case when $1='submitted' then now() else submitted_at end,
+          resolved_at=case when $1 in ('overturned','upheld') then now() else resolved_at end,updated_at=now()
+        where id=$3 and organization_id=$4 returning id,status,submitted_at as "submittedAt",resolved_at as "resolvedAt"
+      `, [nextStatus, JSON.stringify(evidenceNotes), req.params.denialId, context.organization.id]);
+      await client.query(`insert into revenue_denial_events (denial_case_id,organization_id,action,from_status,to_status,note,created_by) values ($1,$2,$3,$4,$5,$6,$7)`, [req.params.denialId, context.organization.id, input.action, current.rows[0].status, nextStatus, input.note, context.user.id]);
+      if (input.action === "submit" || input.action === "overturn" || input.action === "uphold") {
+        const claimStatus = input.action === "submit" ? "appealed" : input.action === "overturn" ? "paid" : "denied";
+        await client.query(`update revenue_claims set status=$1,updated_at=now() where id=$2 and organization_id=$3`, [claimStatus, current.rows[0].claimId, context.organization.id]);
+        await client.query(`insert into revenue_claim_events (organization_id,claim_id,event_type,source,summary,occurred_at) values ($1,$2,$3,'codical_sandbox',$4::jsonb,now())`, [context.organization.id, current.rows[0].claimId, `denial_${input.action}`, JSON.stringify({ denialCaseId: req.params.denialId, note: input.note })]);
+      }
+      await client.query("commit");
+      return res.json({ denial: updated.rows[0] });
+    } catch (error) {
+      await client.query("rollback").catch(() => undefined);
+      return requestError(res, error);
+    } finally {
+      client.release();
     }
   });
 
